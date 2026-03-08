@@ -1,3 +1,5 @@
+import { ensureCatalogPrefix, resolveCatalogName } from "./utils";
+
 /**
  * Helper: counts how many places a string-keyed group name is referenced.
  */
@@ -187,7 +189,6 @@ export function assignSubgroup(name: string, targetMainGroupUuid: string, state:
 
     // Now assign to the new parent
     if (!draft.main_catalog_groups[targetMainGroupUuid]) {
-        // If the main group doesn't theoretically exist, we probably shouldn't do this, but just in case
         draft.main_catalog_groups[targetMainGroupUuid] = { name: "Unknown Group", subgroupNames: [] };
     }
 
@@ -197,6 +198,15 @@ export function assignSubgroup(name: string, targetMainGroupUuid: string, state:
 
     // Add to the end of the new parent's list
     draft.main_catalog_groups[targetMainGroupUuid].subgroupNames.push(name);
+
+    // ALSO keep subgroup_order in sync (this is what the editor reads from to render subgroups)
+    if (!draft.subgroup_order) draft.subgroup_order = {};
+    if (!Array.isArray(draft.subgroup_order[targetMainGroupUuid])) {
+        draft.subgroup_order[targetMainGroupUuid] = [];
+    }
+    if (!draft.subgroup_order[targetMainGroupUuid].includes(name)) {
+        draft.subgroup_order[targetMainGroupUuid].push(name);
+    }
 
     return draft;
 }
@@ -240,7 +250,8 @@ export function createSubgroup(name: string, targetMainGroupUuid: string, imageU
     if (!draft.catalog_group_image_urls) draft.catalog_group_image_urls = {};
 
     // Create the subgroup with the provided catalog list
-    draft.catalog_groups[name] = initialCatalogs;
+    const normalizedCatalogs = initialCatalogs.map(id => ensureCatalogPrefix(id, resolveCatalogName(id, draft.custom_catalog_names || {})));
+    draft.catalog_groups[name] = normalizedCatalogs;
     draft.catalog_group_order.push(name);
 
     if (imageUrl) {
@@ -468,6 +479,12 @@ export function importGroups(
         mainGroups: Record<string, any>;
         subgroups: Record<string, { catalogs: string[], imageUrl?: string }>;
         standaloneAssignments: Record<string, string>;
+        metadata?: {
+            custom_catalog_names?: Record<string, string>;
+            regex_pattern_image_urls?: Record<string, string>;
+            enabled_patterns?: string[];
+        };
+        globalSettings?: Record<string, any>;
     },
     state: Record<string, any>
 ): Record<string, any> {
@@ -478,37 +495,66 @@ export function importGroups(
     if (!draft.catalog_groups) draft.catalog_groups = {};
     if (!draft.catalog_group_order) draft.catalog_group_order = [];
     if (!draft.catalog_group_image_urls) draft.catalog_group_image_urls = {};
-    if (!draft.subgroup_order) draft.subgroup_order = {};
+    if (!draft.subgroup_order || Array.isArray(draft.subgroup_order)) {
+        draft.subgroup_order = {};
+    }
+
+    // Build a reverse lookup: main group name -> existing UUID in current config
+    const existingMgByName: Record<string, string> = {};
+    Object.entries(draft.main_catalog_groups).forEach(([uid, mg]: [string, any]) => {
+        if (mg?.name) existingMgByName[mg.name] = uid;
+    });
 
     // 1. Import Main Groups
     Object.keys(payload.mainGroups).forEach(uuid => {
-        let targetUuid = uuid;
-        if (draft.main_catalog_groups[targetUuid]) {
-            targetUuid = crypto.randomUUID();
-        }
-
         const mg = payload.mainGroups[uuid];
-        draft.main_catalog_groups[targetUuid] = {
-            name: mg.name,
-            subgroupNames: [...(mg.subgroupNames || [])],
-            posterType: mg.posterType,
-            posterSize: mg.posterSize
-        };
-        draft.main_group_order.push(targetUuid);
-        draft.subgroup_order[targetUuid] = [...(mg.subgroupNames || [])];
+        const incomingSubgroups = [...(mg.subgroupNames || [])];
+
+        // If a group with the same NAME already exists, update its subgroup links
+        // instead of creating a brand-new duplicate entry
+        const existingUuid = existingMgByName[mg.name];
+        if (existingUuid) {
+            // Merge subgroup names into the existing group
+            if (!draft.main_catalog_groups[existingUuid].subgroupNames) {
+                draft.main_catalog_groups[existingUuid].subgroupNames = [];
+            }
+            incomingSubgroups.forEach(sgName => {
+                if (!draft.main_catalog_groups[existingUuid].subgroupNames.includes(sgName)) {
+                    draft.main_catalog_groups[existingUuid].subgroupNames.push(sgName);
+                }
+            });
+
+            // Rebuild subgroup_order for the existing group (replace + merge)
+            if (!draft.subgroup_order[existingUuid]) draft.subgroup_order[existingUuid] = [];
+            incomingSubgroups.forEach(sgName => {
+                if (!draft.subgroup_order[existingUuid].includes(sgName)) {
+                    draft.subgroup_order[existingUuid].push(sgName);
+                }
+            });
+        } else {
+            // Brand new main group
+            let targetUuid = uuid;
+            if (draft.main_catalog_groups[targetUuid]) {
+                targetUuid = crypto.randomUUID();
+            }
+            draft.main_catalog_groups[targetUuid] = {
+                name: mg.name,
+                subgroupNames: incomingSubgroups,
+                posterType: mg.posterType,
+                posterSize: mg.posterSize
+            };
+            draft.main_group_order.push(targetUuid);
+            draft.subgroup_order[targetUuid] = incomingSubgroups;
+        }
     });
 
-    // 2. Import Subgroups
+    // 2. Import / Ensure Subgroups exist in catalog_groups
     Object.keys(payload.subgroups).forEach(name => {
         const sg = payload.subgroups[name];
 
-        if (draft.catalog_groups[name]) {
-            // Override catalogs if group already exists
-            draft.catalog_groups[name] = [...(sg.catalogs || [])];
-        } else {
-            // New subgroup
-            draft.catalog_groups[name] = [...(sg.catalogs || [])];
-        }
+        // Always ensure the catalog entry exists (create or update)
+        const normalized = (sg.catalogs || []).map((id: string) => ensureCatalogPrefix(id, resolveCatalogName(id, draft.custom_catalog_names || {})));
+        draft.catalog_groups[name] = normalized;
 
         if (!draft.catalog_group_order.includes(name)) {
             draft.catalog_group_order.push(name);
@@ -518,6 +564,7 @@ export function importGroups(
             draft.catalog_group_image_urls[name] = sg.imageUrl;
         }
 
+        // Handle standalone assignment (subgroups not coming from a main group)
         const targetMainUuid = payload.standaloneAssignments[name];
         if (targetMainUuid && draft.main_catalog_groups[targetMainUuid]) {
             if (!draft.main_catalog_groups[targetMainUuid].subgroupNames) {
@@ -535,6 +582,37 @@ export function importGroups(
             }
         }
     });
+
+    // 3. Import Metadata (Names, Images, Patterns)
+    if (payload.metadata) {
+        const meta = payload.metadata;
+
+        if (meta.custom_catalog_names) {
+            if (!draft.custom_catalog_names) draft.custom_catalog_names = {};
+            Object.assign(draft.custom_catalog_names, meta.custom_catalog_names);
+        }
+
+        if (meta.regex_pattern_image_urls) {
+            if (!draft.regex_pattern_image_urls) draft.regex_pattern_image_urls = {};
+            Object.assign(draft.regex_pattern_image_urls, meta.regex_pattern_image_urls);
+        }
+
+        if (Array.isArray(meta.enabled_patterns)) {
+            // Merge into both potential enable lists for coverage
+            const lists = ["auto_play_enabled_patterns", "pattern_tag_enabled_patterns"];
+            lists.forEach(list => {
+                if (!Array.isArray(draft[list])) draft[list] = [];
+                meta.enabled_patterns!.forEach(p => {
+                    if (!draft[list].includes(p)) draft[list].push(p);
+                });
+            });
+        }
+    }
+
+    // 4. Import Global Settings
+    if (payload.globalSettings) {
+        Object.assign(draft, payload.globalSettings);
+    }
 
     return validateAndFix(draft);
 }

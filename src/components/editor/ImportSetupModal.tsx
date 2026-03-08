@@ -39,6 +39,7 @@ interface ParsedMainGroup {
     posterType: string;
     posterSize: string;
     isDuplicate: boolean;
+    hasChanges?: boolean;
 }
 
 interface ParsedSubgroup {
@@ -48,15 +49,49 @@ interface ParsedSubgroup {
     isDuplicate: boolean;
     hasNewImage?: boolean;
     hasNewCatalogs?: boolean;
+    category?: string;
 }
+
+const isPlaceholderSg = (name: string, catalogs: any) => {
+    const cats = Array.isArray(catalogs) ? catalogs : [];
+    if (cats.length > 0) return false;
+    const placeholders = ["[Decades]", "[Actors]", "[Awards]", "[Discover]", "[Collections]", "[Streaming Services]", "[Directors]", "[Genres]"];
+    return placeholders.some(p => name.includes(p));
+};
+
+const getSubgroupCategory = (name: string) => {
+    if (name.includes("[Actors]")) return "Actors";
+    if (name.includes("[Directors]")) return "Directors";
+    if (name.includes("[Genres]")) return "Genres";
+    if (name.includes("[Decades]")) return "Decades";
+    if (name.includes("[Awards]")) return "Awards";
+    if (name.includes("[Discover]")) return "Discover";
+    if (name.includes("[Collections]")) return "Collections";
+    if (name.includes("[Streaming Services]")) return "Streaming Services";
+    return "Other";
+};
 
 export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
     const { currentValues, importGroups } = useConfig();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const templates = [
+        {
+            label: "v1.7.1",
+            url: "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/Older%20Versions/v1.7.1/omni-snapshot-unified-media-experience-v1.7.1-2026-03-02.json"
+        },
+    ];
+
+    const [selectedVersion, setSelectedVersion] = useState(templates[0].label);
+    const [templateLoading, setTemplateLoading] = useState(false);
+
     const [step, setStep] = useState<1 | 2>(1);
     const [fileName, setFileName] = useState("");
     const [error, setError] = useState("");
+
+    // State for all imported values (needed for metadata extraction)
+    const [importedValues, setImportedValues] = useState<Record<string, any>>({});
+    const [selectedGlobalKeys, setSelectedGlobalKeys] = useState<Set<string>>(new Set());
 
     // Parsed Data
     const [parsedMainGroups, setParsedMainGroups] = useState<ParsedMainGroup[]>([]);
@@ -78,6 +113,9 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
         setSelectedMainGroupUuids(new Set());
         setSelectedStandaloneSubgroups(new Set());
         setStandaloneAssignments({});
+        setImportedValues({});
+        setSelectedGlobalKeys(new Set());
+        setTemplateLoading(false);
         if (fileInputRef.current) fileInputRef.current.value = "";
     };
 
@@ -89,20 +127,22 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
     const processUploadedJson = (jsonString: string) => {
         try {
             const rawData = JSON.parse(jsonString);
-            let importedValues: Record<string, any> = {};
+            let imported: Record<string, any> = {};
 
             // Check if it's an OmniConfig (with `.values`) or a raw decoded JSON
             if (rawData.values) {
                 // Decode it like we do in ConfigContext
                 for (const [key, val] of Object.entries(rawData.values)) {
-                    importedValues[key] = decodeConfig(val as any);
+                    imported[key] = decodeConfig(val as any);
                 }
             } else if (rawData.main_catalog_groups || rawData.catalog_groups) {
                 // Already raw decoded
-                importedValues = rawData;
+                imported = rawData;
             } else {
                 throw new Error("Invalid format. Could not find configuration data.");
             }
+
+            setImportedValues(imported);
 
             // Current state for duplicate checking
             const currentMainGroupNames = new Set(
@@ -113,16 +153,9 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
             );
 
             // Parse Main Groups
-            const inMainGroups = importedValues.main_catalog_groups || {};
-            const inMainGroupOrder = importedValues.main_group_order || Object.keys(inMainGroups);
-            const inCatalogsGroups = importedValues.catalog_groups || {};
-
-            const isPlaceholderSg = (name: string, catalogs: any) => {
-                const cats = Array.isArray(catalogs) ? catalogs : [];
-                if (cats.length > 0) return false;
-                const placeholders = ["[Decades]", "[Actors]", "[Awards]", "[Discover]", "[Collections]", "[Streaming Services]", "[Directors]", "[Genres]"];
-                return placeholders.some(p => name.includes(p));
-            };
+            const inMainGroups = imported.main_catalog_groups || {};
+            const inMainGroupOrder = imported.main_group_order || Object.keys(inMainGroups);
+            const inCatalogsGroups = imported.catalog_groups || {};
 
             const parsedMGs: ParsedMainGroup[] = [];
             for (const uuid of inMainGroupOrder) {
@@ -131,16 +164,26 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                 parsedMGs.push({
                     originalUuid: uuid,
                     name: group.name || "Unnamed Group",
-                    subgroupNames: (importedValues.subgroup_order?.[uuid] || group.subgroupNames || []).filter((sg: string) => !isPlaceholderSg(sg, inCatalogsGroups[sg])),
+                    subgroupNames: (imported.subgroup_order?.[uuid] || group.subgroupNames || []).filter((sg: string) => !isPlaceholderSg(sg, inCatalogsGroups[sg])),
                     posterType: group.posterType || "Poster",
                     posterSize: group.posterSize || "Default",
                     isDuplicate: currentMainGroupNames.has(group.name)
                 });
             }
 
+            // Create a mapping from subgroup name to its parent main group category
+            const sgCategoryMap: Record<string, string> = {};
+            parsedMGs.forEach(mg => {
+                mg.subgroupNames.forEach(sgName => {
+                    if (!sgCategoryMap[sgName]) {
+                        sgCategoryMap[sgName] = mg.name;
+                    }
+                });
+            });
+
             // Parse Subgroups
-            const inImageUrls = importedValues.catalog_group_image_urls || {};
-            const inCatalogGroupOrder = importedValues.catalog_group_order || Object.keys(inCatalogsGroups);
+            const inImageUrls = imported.catalog_group_image_urls || {};
+            const inCatalogGroupOrder = imported.catalog_group_order || Object.keys(inCatalogsGroups);
             const parsedSGs: ParsedSubgroup[] = [];
 
             for (const sgName of inCatalogGroupOrder) {
@@ -162,9 +205,50 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                     imageUrl: newImage,
                     isDuplicate: isDup,
                     hasNewImage: isDup && !!newImage && newImage !== existingImage,
-                    hasNewCatalogs: hasNewCats
+                    hasNewCatalogs: hasNewCats,
+                    category: sgCategoryMap[sgName] || getSubgroupCategory(sgName)
                 });
             }
+
+            const currentMgByName: Record<string, string> = {};
+            Object.entries(currentValues.main_catalog_groups || {}).forEach(([uid, mg]: [string, any]) => {
+                if (mg?.name) currentMgByName[mg.name] = uid;
+            });
+
+            parsedMGs.forEach(mg => {
+                if (!mg.isDuplicate) {
+                    mg.hasChanges = true;
+                    return;
+                }
+
+                const existingUuid = currentMgByName[mg.name];
+                const existingSubgroups = currentValues.subgroup_order?.[existingUuid] || [];
+
+                let linksChanged = false;
+                if (existingSubgroups.length !== mg.subgroupNames.length) {
+                    linksChanged = true;
+                } else {
+                    for (let i = 0; i < mg.subgroupNames.length; i++) {
+                        if (existingSubgroups[i] !== mg.subgroupNames[i]) {
+                            linksChanged = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (linksChanged) {
+                    mg.hasChanges = true;
+                    return;
+                }
+
+                const hasSgChanges = mg.subgroupNames.some(sgName => {
+                    const sg = parsedSGs.find(s => s.name === sgName);
+                    if (!sg) return false;
+                    return !sg.isDuplicate || sg.hasNewCatalogs || sg.hasNewImage;
+                });
+
+                mg.hasChanges = hasSgChanges;
+            });
 
             const getSgWeight = (sg: ParsedSubgroup) => sg.isDuplicate ? ((sg.hasNewCatalogs || sg.hasNewImage) ? 1 : 2) : 0;
 
@@ -198,8 +282,12 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
     const handleImport = () => {
         const payloadMainGroups: Record<string, any> = {};
         const payloadSubgroups: Record<string, { catalogs: string[], imageUrl?: string }> = {};
+        const associatedMetadata: Record<string, any> = {};
 
-        // 1. Gather Selected Main Groups and their nested subgroups
+        // 1. Mark which catalogs we're importing to fetch their metadata later
+        const importedCatalogIds = new Set<string>();
+
+        // 2. Gather Selected Main Groups and their nested subgroups
         const subgroupsIncludedViaMainGroups = new Set<string>();
 
         parsedMainGroups.forEach(mg => {
@@ -220,43 +308,103 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                             catalogs: parsedSg.catalogs,
                             imageUrl: parsedSg.imageUrl
                         };
+                        parsedSg.catalogs.forEach(cId => importedCatalogIds.add(cId));
                     }
                 });
             }
         });
 
-        // 2. Gather Standalone Subgroups
+        // 3. Gather Standalone Subgroups
         parsedSubgroups.forEach(sg => {
             if (selectedStandaloneSubgroups.has(sg.name) && !subgroupsIncludedViaMainGroups.has(sg.name)) {
                 payloadSubgroups[sg.name] = {
                     catalogs: sg.catalogs,
                     imageUrl: sg.imageUrl
                 };
+                sg.catalogs.forEach(cId => importedCatalogIds.add(cId));
             }
         });
 
-        // Current Main Groups for context-aware assignments
-        const currentMainGroups = currentValues.main_catalog_groups || {};
+        // 4. Capture Associated Metadata (Custom Names, Images, Patterns)
+        if (importedCatalogIds.size > 0) {
+            associatedMetadata.custom_catalog_names = {};
+            associatedMetadata.regex_pattern_image_urls = {};
+            associatedMetadata.enabled_patterns = new Set<string>();
+
+            const inCustomNames = importedValues.custom_catalog_names || {};
+            const inImageUrls = importedValues.regex_pattern_image_urls || {};
+            const inAutoPlay = importedValues.auto_play_enabled_patterns || [];
+            const inTagEnabled = importedValues.pattern_tag_enabled_patterns || [];
+
+            importedCatalogIds.forEach(id => {
+                if (inCustomNames[id]) associatedMetadata.custom_catalog_names[id] = inCustomNames[id];
+                if (inImageUrls[id]) associatedMetadata.regex_pattern_image_urls[id] = inImageUrls[id];
+
+                // Regex patterns usually target catalog IDs either directly or via substring in their rules
+                // But for simplicity and safety, we also look for patterns named like the catalogs
+                // and check the enabled lists
+                if (inAutoPlay.includes(id)) associatedMetadata.enabled_patterns.add(id);
+                if (inTagEnabled.includes(id)) associatedMetadata.enabled_patterns.add(id);
+            });
+
+            // Convert set to array for payload
+            associatedMetadata.enabled_patterns = Array.from(associatedMetadata.enabled_patterns);
+        }
+
+        // 5. Global Settings
+        const globalSettings: Record<string, any> = {};
+        selectedGlobalKeys.forEach(key => {
+            if (importedValues[key] !== undefined) {
+                globalSettings[key] = importedValues[key];
+            }
+        });
+
+        console.log('[IMPORT DEBUG] payload:', {
+            mainGroups: payloadMainGroups,
+            subgroups: Object.keys(payloadSubgroups),
+            subgroupCount: Object.keys(payloadSubgroups).length,
+            standaloneAssignments: standaloneAssignments,
+        });
 
         importGroups({
             mainGroups: payloadMainGroups,
             subgroups: payloadSubgroups,
-            standaloneAssignments: standaloneAssignments
+            standaloneAssignments: standaloneAssignments,
+            metadata: associatedMetadata,
+            globalSettings: globalSettings
         });
 
         handleClose();
     };
 
     // Toggle Main Group Selection
-    const toggleMainGroup = (uuid: string, isDuplicate: boolean) => {
-        if (isDuplicate) return;
+    const toggleMainGroup = (uuid: string) => {
+        const mg = parsedMainGroups.find(m => m.originalUuid === uuid);
+        if (mg && mg.isDuplicate && !mg.hasChanges) return;
+
         const next = new Set(selectedMainGroupUuids);
-        if (next.has(uuid)) {
+        const isNowSelected = !next.has(uuid);
+
+        if (!isNowSelected) {
             next.delete(uuid);
         } else {
             next.add(uuid);
         }
         setSelectedMainGroupUuids(next);
+
+        // Auto-select linked subgroups (including existing ones, for re-linking purposes)
+        if (mg) {
+            const nextStandalone = new Set(selectedStandaloneSubgroups);
+            mg.subgroupNames.forEach(sgName => {
+                const sg = parsedSubgroups.find(s => s.name === sgName);
+                if (sg) {
+                    // Include even duplicates - needed to re-link existing subgroups
+                    if (isNowSelected) nextStandalone.add(sgName);
+                    else nextStandalone.delete(sgName);
+                }
+            });
+            setSelectedStandaloneSubgroups(nextStandalone);
+        }
     };
 
     // Toggle Standalone Subgroup Selection
@@ -274,7 +422,9 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
     const selectAllMain = () => {
         const next = new Set<string>();
         parsedMainGroups.forEach(mg => {
-            if (!mg.isDuplicate) next.add(mg.originalUuid);
+            if (!mg.isDuplicate || mg.hasChanges) {
+                next.add(mg.originalUuid);
+            }
         });
         setSelectedMainGroupUuids(next);
     };
@@ -338,24 +488,74 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                 </DialogHeader>
 
                 {step === 1 && (
-                    <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-neutral-800 rounded-lg hover:border-blue-500/50 hover:bg-blue-500/5 transition-all text-center">
-                        <UploadCloud className="w-12 h-12 text-neutral-500 mb-4" />
-                        <h3 className="font-medium text-lg text-neutral-300 mb-2">Upload configuration file</h3>
-                        <p className="text-sm text-neutral-500 mb-6 max-w-sm">
-                            Select an <code>omni-config.json</code> file to import Main Groups and Subgroups.
-                        </p>
-                        <Button onClick={() => fileInputRef.current?.click()} className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-semibold">
-                            Select File
-                        </Button>
-                        <input
-                            type="file"
-                            accept=".json"
-                            className="hidden"
-                            ref={fileInputRef}
-                            onChange={handleFileUpload}
-                        />
+                    <div className="space-y-4">
+                        {/* Template Loader */}
+                        <div className="p-5 border border-neutral-800 rounded-lg bg-neutral-900/50">
+                            <h3 className="font-semibold text-sm text-neutral-200 mb-3">Load Unified Media Experience Template</h3>
+                            <div className="flex items-center gap-3">
+                                <select
+                                    value={selectedVersion}
+                                    onChange={(e) => setSelectedVersion(e.target.value)}
+                                    className="flex-1 h-10 rounded-md border border-neutral-800 bg-neutral-950/50 px-3 text-xs text-neutral-100 font-mono transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                                >
+                                    {templates.map(t => (
+                                        <option key={t.label} value={t.label}>{t.label}</option>
+                                    ))}
+                                </select>
+                                <Button
+                                    onClick={async () => {
+                                        const t = templates.find(t => t.label === selectedVersion);
+                                        if (!t) return;
+                                        setTemplateLoading(true);
+                                        setError("");
+                                        try {
+                                            const res = await fetch(t.url);
+                                            if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
+                                            const buffer = await res.arrayBuffer();
+                                            const text = new TextDecoder("utf-8").decode(buffer);
+                                            setFileName(`Template ${t.label}`);
+                                            processUploadedJson(text);
+                                        } catch (err: any) {
+                                            setError(err.message || "Failed to load template.");
+                                        } finally {
+                                            setTemplateLoading(false);
+                                        }
+                                    }}
+                                    disabled={templateLoading}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold h-10 px-5"
+                                >
+                                    {templateLoading ? "Loading..." : "Load"}
+                                </Button>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            <div className="flex-1 h-px bg-neutral-800"></div>
+                            <span className="text-[10px] text-neutral-600 uppercase font-bold tracking-wider">or upload file</span>
+                            <div className="flex-1 h-px bg-neutral-800"></div>
+                        </div>
+
+                        {/* File Upload */}
+                        <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-neutral-800 rounded-lg hover:border-blue-500/50 hover:bg-blue-500/5 transition-all text-center">
+                            <UploadCloud className="w-10 h-10 text-neutral-500 mb-3" />
+                            <h3 className="font-medium text-sm text-neutral-300 mb-1">Upload configuration file</h3>
+                            <p className="text-xs text-neutral-500 mb-4 max-w-sm">
+                                Select an <code>omni-config.json</code> file to import Main Groups and Subgroups.
+                            </p>
+                            <Button onClick={() => fileInputRef.current?.click()} variant="outline" className="bg-neutral-900 border-neutral-700 hover:bg-neutral-800 text-neutral-200 text-xs font-semibold">
+                                Select File
+                            </Button>
+                            <input
+                                type="file"
+                                accept=".json"
+                                className="hidden"
+                                ref={fileInputRef}
+                                onChange={handleFileUpload}
+                            />
+                        </div>
+
                         {error && (
-                            <div className="mt-6 flex items-center text-red-400 text-sm bg-red-500/10 px-3 py-2 rounded">
+                            <div className="flex items-center text-red-400 text-sm bg-red-500/10 px-3 py-2 rounded">
                                 <AlertTriangle className="w-4 h-4 mr-2" />
                                 {error}
                             </div>
@@ -366,10 +566,10 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                 {step === 2 && (
                     <Tabs defaultValue="subgroups" className="w-full">
                         <TabsList className="grid w-full grid-cols-2 bg-neutral-900 border border-neutral-800">
-                            <TabsTrigger value="subgroups" className="data-[state=active]:bg-neutral-800 data-[state=active]:text-white">
-                                Standalone Subgroups ({parsedSubgroups.length})
+                            <TabsTrigger value="subgroups" className="data-[state=active]:bg-neutral-800 data-[state=active]:text-white text-xs">
+                                Subgroups ({parsedSubgroups.length})
                             </TabsTrigger>
-                            <TabsTrigger value="main" className="data-[state=active]:bg-neutral-800 data-[state=active]:text-white">
+                            <TabsTrigger value="main" className="data-[state=active]:bg-neutral-800 data-[state=active]:text-white text-xs">
                                 Main Groups ({parsedMainGroups.length})
                             </TabsTrigger>
                         </TabsList>
@@ -385,41 +585,49 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                                 <Button variant="secondary" size="sm" onClick={selectAllMain} className="h-7 text-xs bg-neutral-800 hover:bg-neutral-700 text-neutral-200">Select All New</Button>
                                                 <Button variant="ghost" size="sm" onClick={deselectAllMain} className="h-7 text-xs text-neutral-400 hover:text-white">Deselect All</Button>
                                             </div>
-                                            {parsedMainGroups.map(mg => (
-                                                <div
-                                                    key={mg.originalUuid}
-                                                    className={`flex items-start p-4 transition-colors ${mg.isDuplicate ? 'opacity-50 bg-neutral-900/40 cursor-not-allowed' : 'hover:bg-neutral-900/50'}`}
-                                                >
-                                                    <Checkbox
-                                                        id={`mg-${mg.originalUuid}`}
-                                                        checked={selectedMainGroupUuids.has(mg.originalUuid) || mg.isDuplicate}
-                                                        disabled={mg.isDuplicate}
-                                                        onCheckedChange={() => toggleMainGroup(mg.originalUuid, mg.isDuplicate)}
-                                                        className="mt-1"
-                                                    />
-                                                    <div className="ml-3 flex-1 min-w-0">
-                                                        <label htmlFor={`mg-${mg.originalUuid}`} className={`font-semibold block ${mg.isDuplicate ? '' : 'cursor-pointer'}`}>
-                                                            {formatDisplayName(mg.name)}
-                                                            {mg.isDuplicate && <Badge variant="outline" className="ml-2 bg-neutral-900 border-neutral-700 text-neutral-500 text-[9px] uppercase">Exists</Badge>}
-                                                        </label>
+                                            {parsedMainGroups.map(mg => {
+                                                const isFullyImported = mg.isDuplicate && !mg.hasChanges;
+                                                return (
+                                                    <div
+                                                        key={mg.originalUuid}
+                                                        className={`flex items-start p-4 transition-colors ${isFullyImported ? 'opacity-50 bg-neutral-900/40 cursor-not-allowed' : 'hover:bg-neutral-900/50 cursor-pointer'}`}
+                                                        onClick={() => !isFullyImported && toggleMainGroup(mg.originalUuid)}
+                                                    >
+                                                        <Checkbox
+                                                            id={`mg-${mg.originalUuid}`}
+                                                            checked={selectedMainGroupUuids.has(mg.originalUuid) || isFullyImported}
+                                                            disabled={isFullyImported}
+                                                            onCheckedChange={() => !isFullyImported && toggleMainGroup(mg.originalUuid)}
+                                                            className="mt-1"
+                                                        />
+                                                        <div className="ml-3 flex-1 min-w-0">
+                                                            <label htmlFor={`mg-${mg.originalUuid}`} className={`font-semibold block ${isFullyImported ? '' : 'cursor-pointer'}`}>
+                                                                {formatDisplayName(mg.name)}
+                                                                {isFullyImported ? (
+                                                                    <Badge variant="outline" className="ml-2 bg-neutral-900 border-neutral-700 text-neutral-500 text-[9px] uppercase">Imported</Badge>
+                                                                ) : mg.isDuplicate ? (
+                                                                    <Badge variant="outline" className="ml-2 bg-amber-500/10 border-amber-500/30 text-amber-400 text-[9px] uppercase">Update Links</Badge>
+                                                                ) : null}
+                                                            </label>
 
-                                                        {mg.subgroupNames.length > 0 && (
-                                                            <div className="mt-2 pl-3 border-l-2 border-neutral-800 space-y-1">
-                                                                {mg.subgroupNames.map(sg => {
-                                                                    const parsedSg = parsedSubgroups.find(p => p.name === sg);
-                                                                    const isSgDup = parsedSg?.isDuplicate;
-                                                                    return (
-                                                                        <div key={sg} className="flex items-center text-xs text-neutral-400">
-                                                                            <span className={`truncate ${isSgDup ? 'line-through opacity-70' : ''}`}>{formatDisplayName(sg)}</span>
-                                                                            {isSgDup && <span className="ml-2 text-[10px] text-neutral-600">(Will use existing)</span>}
-                                                                        </div>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        )}
+                                                            {mg.subgroupNames.length > 0 && (
+                                                                <div className="mt-2 pl-3 border-l-2 border-neutral-800 space-y-1">
+                                                                    {mg.subgroupNames.map(sg => {
+                                                                        const parsedSg = parsedSubgroups.find(p => p.name === sg);
+                                                                        const isSgDup = parsedSg?.isDuplicate;
+                                                                        return (
+                                                                            <div key={sg} className="flex items-center text-xs text-neutral-400">
+                                                                                <span className={`truncate ${isSgDup ? 'line-through opacity-70' : ''}`}>{formatDisplayName(sg)}</span>
+                                                                                {isSgDup && <span className="ml-2 text-[10px] text-neutral-600">(Will use existing)</span>}
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     )}
                                 </TabsContent>
@@ -520,7 +728,35 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                                                 <div className="p-2 bg-neutral-900 font-semibold text-xs text-neutral-400 uppercase tracking-wider sticky top-0 z-10 border-y border-y-neutral-800">
                                                                     New Subgroups ({newSgs.length})
                                                                 </div>
-                                                                {newSgs.map(renderSubgroupRow)}
+                                                                {(() => {
+                                                                    // Get unique categories present in newSgs
+                                                                    const presentCategories = Array.from(new Set(newSgs.map(sg => sg.category || "Other")));
+
+                                                                    // Sort categories: predefined ones first, then others alphabetically
+                                                                    const predefinedOrder = ["Actors", "Directors", "Genres", "Decades", "Awards", "Discover", "Collections", "Streaming Services", "Other"];
+                                                                    presentCategories.sort((a, b) => {
+                                                                        const idxA = predefinedOrder.indexOf(a);
+                                                                        const idxB = predefinedOrder.indexOf(b);
+                                                                        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+                                                                        if (idxA !== -1) return -1;
+                                                                        if (idxB !== -1) return 1;
+                                                                        return a.localeCompare(b);
+                                                                    });
+
+                                                                    return presentCategories.map(cat => {
+                                                                        const catSgs = newSgs.filter(sg => (sg.category || "Other") === cat);
+                                                                        if (catSgs.length === 0) return null;
+                                                                        return (
+                                                                            <React.Fragment key={cat}>
+                                                                                <div className="px-4 py-1.5 bg-neutral-950/80 text-[10px] font-bold text-neutral-500 uppercase tracking-widest border-b border-neutral-900 flex items-center gap-2">
+                                                                                    <div className="w-1 h-3 bg-blue-500/50 rounded-full" />
+                                                                                    {cat}
+                                                                                </div>
+                                                                                {catSgs.map(renderSubgroupRow)}
+                                                                            </React.Fragment>
+                                                                        );
+                                                                    });
+                                                                })()}
                                                             </>
                                                         )}
                                                         {existingSgs.length > 0 && (
@@ -537,6 +773,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                         </div>
                                     )}
                                 </TabsContent>
+
                             </ScrollArea>
                         </div>
                     </Tabs>

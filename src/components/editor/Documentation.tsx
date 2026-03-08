@@ -33,7 +33,7 @@ export function Documentation() {
             <DialogHeader className="border-b border-neutral-800 pb-6 mb-6">
                 <DialogTitle className="text-3xl font-extrabold flex items-center gap-3 bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
                     <BookOpen className="w-8 h-8 text-blue-500" />
-                    Omni Config Editor - Master Guide
+                    Omni Snapshot Manager - Master Guide
                 </DialogTitle>
                 <p className="text-neutral-500 text-sm mt-2">The complete manual for managing your Omni setup without headaches.</p>
             </DialogHeader>
@@ -249,7 +249,7 @@ export function Documentation() {
                 {/* FOOTER */}
                 <footer className="text-center pt-8 border-t border-neutral-800">
                     <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-widest bg-neutral-900 inline-block px-4 py-1 rounded-full border border-neutral-800">
-                        Omni Config Master Editor v1.0 • Built for simplicity
+                        Omni Snapshot Manager v0.1.0 • by Bot-Bid-Raiser
                     </p>
                 </footer>
             </div>

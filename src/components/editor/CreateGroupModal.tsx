@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useConfig } from '../../context/ConfigContext';
-import { formatDisplayName } from '@/lib/utils';
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -11,9 +10,9 @@ import { ScrollArea } from "../ui/scroll-area";
 import { Checkbox } from "../ui/checkbox";
 import { ImageIcon, Search } from 'lucide-react';
 import { CATALOG_FALLBACKS } from '@/lib/catalog-fallbacks';
-import { resolveCatalogName } from '@/lib/utils';
+import { formatDisplayName, resolveCatalogName, ensureCatalogPrefix } from '@/lib/utils';
 
-export function CreateGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
+export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpen: boolean, onClose: () => void, initialParentUUID?: string }) {
     const { currentValues, addMainCatalogGroup, addCatalogGroup, catalogs, customFallbacks } = useConfig();
     const [activeTab, setActiveTab] = useState("sub");
 
@@ -25,9 +24,17 @@ export function CreateGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose
     // Subgroup State
     const [subName, setSubName] = useState("");
     const [subImageUrl, setSubImageUrl] = useState("");
-    const [targetMainGroup, setTargetMainGroup] = useState("none");
+    const [targetMainGroup, setTargetMainGroup] = useState(initialParentUUID || "none");
     const [selectedCatalogs, setSelectedCatalogs] = useState<Set<string>>(new Set());
     const [catalogSearch, setCatalogSearch] = useState("");
+
+    // Sync targetMainGroup when initialParentUUID changes or modal opens
+    React.useEffect(() => {
+        if (isOpen && initialParentUUID) {
+            setTargetMainGroup(initialParentUUID);
+            setActiveTab("sub"); // Ensure we are on the subgroup tab if a parent is provided
+        }
+    }, [isOpen, initialParentUUID]);
 
     // Lookups
     const catalogGroups = currentValues.catalog_groups || {};
@@ -39,7 +46,6 @@ export function CreateGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose
     const customNames: Record<string, string> = React.useMemo(() => currentValues["custom_catalog_names"] || {}, [currentValues]);
 
     const catalogOptions = React.useMemo(() => {
-        const isSynthetic = catalogs.length > 0 && catalogs[0]?._synthetic === true;
         const options: { id: string, name: string }[] = [];
 
         // 1. All existing catalogs
@@ -57,15 +63,7 @@ export function CreateGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose
         Object.entries(allFallbacks).forEach(([id, name]) => {
             if (!existingBaseIds.has(id.replace(/^(movie:|series:)/, ''))) {
                 const displayName = customNames[id] || name;
-                let finalId = id;
-                if (isSynthetic && !id.includes(':')) {
-                    const lowerName = displayName.toLowerCase();
-                    let typePrefix = "movie:"; // default
-                    if (lowerName.includes("show") || lowerName.includes("series") || lowerName.includes("tv")) {
-                        typePrefix = "series:";
-                    }
-                    finalId = `${typePrefix}${id}`;
-                }
+                const finalId = ensureCatalogPrefix(id, displayName);
                 options.push({
                     id: finalId,
                     name: displayName

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
 import { OmniConfig } from "../lib/types";
+import { formatDisplayName, resolveCatalogName, ensureCatalogPrefix } from '@/lib/utils';
 import { decodeConfig, encodeConfig, pruneDisabledCatalogs, pruneDisabledKeys } from "../lib/config-utils";
 import { renameGroup, renameMainGroup, disableGroup, disableMainGroup, disableCatalog, validateAndFix, countGroupReferences, countMainGroupReferences, unassignSubgroup, assignSubgroup, createMainGroup, createSubgroup, importGroups } from "../lib/mutations";
 
@@ -34,7 +35,7 @@ interface ConfigContextType {
     assignCatalogGroup: (name: string, targetMainGroupUuid: string) => void;
     addMainCatalogGroup: (name: string, assignedSubgroups: string[]) => void;
     addCatalogGroup: (name: string, targetMainGroupUuid: string, imageUrl: string, initialCatalogs?: string[]) => void;
-    importGroups: (payload: { mainGroups: Record<string, any>; subgroups: Record<string, { catalogs: string[], imageUrl?: string }>; standaloneAssignments: Record<string, string> }) => void;
+    importGroups: (payload: { mainGroups: Record<string, any>; subgroups: Record<string, { catalogs: string[], imageUrl?: string }>; standaloneAssignments: Record<string, string>; metadata?: { custom_catalog_names?: Record<string, string>; regex_pattern_image_urls?: Record<string, string>; enabled_patterns?: string[] }; globalSettings?: Record<string, any> }) => void;
     removeCatalog: (id: string) => void;
     countReferences: (name: string, isMainGroup?: boolean) => number;
     restoreSubgroup: (subgroup: any) => void;
@@ -44,6 +45,7 @@ interface ConfigContextType {
     resetAll: () => void;
     unloadConfig: () => void;
     exportConfig: () => OmniConfig | null;
+    exportPartialConfig: (sectionKeys: string[]) => OmniConfig | null;
 
     // Custom fallbacks state
     customFallbacks: Record<string, string>;
@@ -62,6 +64,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
     const [deletedMainGroups, setDeletedMainGroups] = useState<any[]>([]);
     const [catalogs, setCatalogs] = useState<any[]>([]);
     const [fileName, setFileName] = useState<string>("omni-config.json");
+    const [isSyntheticSession, setIsSyntheticSession] = useState(false);
 
     // Custom fallbacks from localStorage
     const [customFallbacks, setCustomFallbacks] = useState<Record<string, string>>({});
@@ -87,7 +90,16 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
 
         // Decode fields if they use the base64 wrapper format (_data)
         for (const [key, val] of Object.entries(rawValues)) {
+            // Remove mdblist setting for imported setups (keep only for clean template)
+            if (fn !== "clear-config.json" && key === "mdblist_enabled_ratings") {
+                continue;
+            }
             decodedValues[key] = decodeConfig(val);
+        }
+
+        // Force-inject new settings that might be missing from older configs
+        if (decodedValues.hide_addon_info_in_catalog_names === undefined) {
+            decodedValues.hide_addon_info_in_catalog_names = true;
         }
 
         // Extract catalogs if it's a manifest format (config.catalogs[])
@@ -107,22 +119,41 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
 
             // All IDs in scope
             const allIds = new Set([...decodedCatalogOrdering, ...topRowList]);
-            extractedCatalogs = Array.from(allIds).map(id => ({
-                id,
-                name: customNames[id] || id,
-                enabled: decodedCatalogOrdering.length > 0 ? decodedCatalogOrdering.includes(id) : true,
-                showInHome: topRowList.includes(id),
-                metadata: topRowLimits[id] ? { itemCount: topRowLimits[id] } : undefined,
-                _synthetic: true, // Mark as synthetic so export knows to write back to state arrays
-            }));
+            extractedCatalogs = Array.from(allIds).map(id => {
+                const name = customNames[id] || id;
+                const finalId = ensureCatalogPrefix(id, name);
+                return {
+                    id: finalId,
+                    name: name,
+                    enabled: decodedCatalogOrdering.length > 0 ? decodedCatalogOrdering.includes(id) : true,
+                    showInHome: topRowList.includes(id),
+                    metadata: topRowLimits[id] ? { itemCount: topRowLimits[id] } : undefined,
+                    _synthetic: true, // Mark as synthetic so export knows to write back to state arrays
+                };
+            });
+            setIsSyntheticSession(true);
+        } else {
+            setIsSyntheticSession(false);
         }
-
         setCatalogs(extractedCatalogs);
 
         setCurrentValues(decodedValues);
         setInitialValues(JSON.parse(JSON.stringify(decodedValues))); // Deep clone for safety
 
-        setDisabledKeys(new Set());
+        // Populate disabledKeys from includedKeys if present
+        const newDisabledKeys = new Set<string>();
+        const includedKeys = (config.includedKeys as string[]) || [];
+        if (includedKeys.length > 0) {
+            // Check top-level keys in values
+            Object.keys(rawValues).forEach(k => {
+                // Never disable certain new keys if they are just missing from an old config's includedKeys
+                if (!includedKeys.includes(k) && k !== "hide_addon_info_in_catalog_names") {
+                    newDisabledKeys.add(k);
+                }
+            });
+        }
+        setDisabledKeys(newDisabledKeys);
+
         setDisabledCatalogs(new Set());
         setDeletedSubgroups([]);
         setDeletedMainGroups([]);
@@ -274,10 +305,13 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const addCatalogGroup = (name: string, targetMainGroupUuid: string, imageUrl: string, initialCatalogs: string[] = []) => {
-        setCurrentValues(prev => createSubgroup(name, targetMainGroupUuid, imageUrl, initialCatalogs, prev));
+        // Normalize IDs on addition to subgroup
+        const normalized = initialCatalogs.map(id => ensureCatalogPrefix(id, resolveCatalogName(id, currentValues.custom_catalog_names || {})));
+
+        setCurrentValues(prev => createSubgroup(name, targetMainGroupUuid, imageUrl, normalized, prev));
     };
 
-    const importGroupsToState = (payload: { mainGroups: Record<string, any>; subgroups: Record<string, { catalogs: string[], imageUrl?: string }>; standaloneAssignments: Record<string, string> }) => {
+    const importGroupsToState = (payload: { mainGroups: Record<string, any>; subgroups: Record<string, { catalogs: string[], imageUrl?: string }>; standaloneAssignments: Record<string, string>; metadata?: { custom_catalog_names?: Record<string, string>; regex_pattern_image_urls?: Record<string, string>; enabled_patterns?: string[] }; globalSettings?: Record<string, any> }) => {
         setCurrentValues(prev => importGroups(payload, prev));
     };
 
@@ -344,10 +378,20 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         });
     };
 
-    const addManifestCatalog = (catalog: any) => {
+    const addManifestCatalog = (catalog: { id: string; name: string; enabled?: boolean; showInHome?: boolean }) => {
+        const finalId = ensureCatalogPrefix(catalog.id, catalog.name);
         setCatalogs(prev => {
-            if (prev.find(c => c.id === catalog.id)) return prev; // No duplicates
-            return [...prev, catalog];
+            if (prev.find(c => c.id === finalId)) return prev; // No duplicates
+            const newCat = {
+                enabled: catalog.enabled ?? true, // Default to true if called from Catalog Manager
+                showInHome: catalog.showInHome ?? false,
+                ...catalog,
+                id: finalId
+            };
+            if (isSyntheticSession) {
+                (newCat as any)._synthetic = true;
+            }
+            return [...prev, newCat];
         });
     };
 
@@ -410,7 +454,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
 
         // 5a. If manifest mode (config.catalogs[]) — real objects, not synthetic
         const finalResult: any = { ...originalConfig };
-        const isSynthetic = catalogs.length > 0 && catalogs[0]?._synthetic === true;
+        const isSynthetic = isSyntheticSession;
 
         if (originalConfig.config && !isSynthetic && catalogs.length > 0) {
             // Manifest format: write catalogs back into config.catalogs[]
@@ -445,7 +489,11 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
             });
 
             // Ensure selected_catalogs is always updated as it's the main reading source
-            valuesToExport.selected_catalogs = enabledIds;
+            let finalEnabledIds = enabledIds;
+            if (finalEnabledIds.length > 1 && finalEnabledIds.includes("omni_empty_setup_placeholder")) {
+                finalEnabledIds = finalEnabledIds.filter(id => id !== "omni_empty_setup_placeholder");
+            }
+            valuesToExport.selected_catalogs = finalEnabledIds;
             // Also update catalog_ordering if the original config used it. It MUST contain all active catalogs (including hidden ones for top row)
             if (valuesToExport.catalog_ordering !== undefined) {
                 valuesToExport.catalog_ordering = activeIds;
@@ -460,10 +508,51 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
 
         if (originalConfig.values) {
             finalResult.values = encodedValues;
+            finalResult.includedKeys = Object.keys(encodedValues);
         } else if (originalConfig.config) {
             finalResult.config = encodedValues;
         } else {
             finalResult.values = encodedValues;
+            finalResult.includedKeys = Object.keys(encodedValues);
+        }
+
+        return finalResult;
+    };
+
+    const exportPartialConfig = (sectionKeys: string[]): OmniConfig | null => {
+        if (!originalConfig) return null;
+
+        // Build a filtered values map containing only the specified section keys
+        const filteredValues: Record<string, any> = {};
+        for (const key of sectionKeys) {
+            if (currentValues[key] !== undefined) {
+                filteredValues[key] = JSON.parse(JSON.stringify(currentValues[key]));
+            }
+        }
+
+        // Also include main_group_order if exporting group keys
+        if (sectionKeys.includes('main_catalog_groups') && currentValues.main_group_order) {
+            filteredValues.main_group_order = JSON.parse(JSON.stringify(currentValues.main_group_order));
+        }
+
+        // Validate & fix the filtered subset
+        const validatedValues = validateAndFix(filteredValues);
+
+        // Encode using the original values for format detection
+        const originalValues = originalConfig.values || originalConfig.config || {};
+        const encodedValues = encodeConfig(validatedValues, originalValues, disabledKeys);
+
+        // Build the full config shell
+        const finalResult: any = { ...originalConfig };
+        if (originalConfig.values) {
+            finalResult.values = encodedValues;
+            finalResult.includedKeys = Object.keys(encodedValues);
+        } else if (originalConfig.config) {
+            // Preserve config structure but only with partial values
+            finalResult.config = encodedValues;
+        } else {
+            finalResult.values = encodedValues;
+            finalResult.includedKeys = Object.keys(encodedValues);
         }
 
         return finalResult;
@@ -508,6 +597,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
             resetAll,
             unloadConfig,
             exportConfig,
+            exportPartialConfig,
             customFallbacks,
             setCustomFallbacks,
         }}>

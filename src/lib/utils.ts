@@ -21,18 +21,51 @@ export function formatDisplayName(name: string): string {
 export function resolveCatalogName(id: string, customNames: Record<string, string> = {}): string {
   if (!id) return id;
 
-  // 1. Custom Name from JSON
+  // 1. Exact Custom Name from JSON
   const customName = customNames[id];
   if (customName && customName.trim() !== "" && customName !== id) {
     return formatDisplayName(customName);
   }
 
-  // 2. Fallback from Metadata List
-  const fallbackName = CATALOG_FALLBACKS[id];
+  // Helper to strip leading prefixes like "movie:", "series:"
+  let baseId = id;
+  if (id.includes(":")) {
+    const parts = id.split(":");
+    if (parts.length === 2 && ["movie", "series", "anime"].includes(parts[0])) {
+      baseId = parts[1];
+    } else if (!id.startsWith("movie:trakt-list") && !id.startsWith("series:trakt-list")) {
+      baseId = parts.slice(1).join(":");
+    }
+  }
+
+  // 1b. Fallback Custom Name (without prefix)
+  const fallbackCustomName = customNames[baseId];
+  if (fallbackCustomName && fallbackCustomName.trim() !== "" && fallbackCustomName !== baseId) {
+    return formatDisplayName(fallbackCustomName);
+  }
+
+  // 2. Fallback from Metadata List (exact or base)
+  const fallbackName = CATALOG_FALLBACKS[id] || CATALOG_FALLBACKS[baseId];
   if (fallbackName) {
     return formatDisplayName(fallbackName);
   }
 
   // 3. Last resort: ID itself
   return id;
+}
+
+/**
+ * Ensures a catalog ID has the required "movie:" or "series:" prefix.
+ * If already prefixed, returns as is.
+ * If not, uses the displayName to guess the correct prefix.
+ */
+export function ensureCatalogPrefix(id: string, name?: string): string {
+  if (!id || id.includes(':')) return id;
+
+  const lowerName = (name || "").toLowerCase();
+  let typePrefix = "movie:"; // default
+  if (lowerName.includes("show") || lowerName.includes("series") || lowerName.includes("tv")) {
+    typePrefix = "series:";
+  }
+  return `${typePrefix}${id}`;
 }

@@ -146,13 +146,13 @@ function SortableCatalogItem({
 
             {/* Badges */}
             <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
-                {catalog.enabled === false && catalog.showInHome && (
+                {!catalog.enabled && (
                     <Badge variant="outline" className="text-[9px] h-4 px-1 bg-neutral-950 text-neutral-500 border-neutral-800">Hidden</Badge>
                 )}
                 {!isActive && (
                     <Badge variant="outline" className="text-[9px] h-4 px-1 bg-neutral-950 text-neutral-600 border-neutral-800 border-dashed">Disabled</Badge>
                 )}
-                {catalog.showInHome && catalog.enabled && (
+                {catalog.showInHome && (
                     <Badge className={`text-[9px] h-4 px-1 border ${isSmallTopRow ? 'bg-amber-900/20 text-amber-300 border-amber-900/30' : 'bg-amber-900/30 text-amber-400 border-amber-900/50'}`}>
                         {isSmallTopRow ? 'Top Row (small)' : 'Top Row'}
                     </Badge>
@@ -185,10 +185,11 @@ function SortableCatalogItem({
                     <DropdownMenuCheckboxItem
                         checked={catalog.enabled}
                         onCheckedChange={v => onUpdateField({ enabled: v })}
+                        onSelect={(e) => e.preventDefault()}
                         className="text-xs"
                     >
                         {catalog.enabled ? <Eye className="w-3.5 h-3.5 mr-2 text-blue-400" /> : <EyeOff className="w-3.5 h-3.5 mr-2 text-neutral-500" />}
-                        Enabled (in Shelf)
+                        {catalog.enabled ? "Shown in Shelf" : "Hidden in Shelf"}
                     </DropdownMenuCheckboxItem>
 
                     <DropdownMenuCheckboxItem
@@ -200,10 +201,11 @@ function SortableCatalogItem({
                                 onUpdateField({ showInHome: v });
                             }
                         }}
+                        onSelect={(e) => e.preventDefault()}
                         className="text-xs"
                     >
                         <Star className="w-3.5 h-3.5 mr-2 text-amber-400" />
-                        Show in Home (Top Row)
+                        Show in Top Row
                     </DropdownMenuCheckboxItem>
 
                     <DropdownMenuSeparator className="bg-neutral-800" />
@@ -212,15 +214,17 @@ function SortableCatalogItem({
                     <DropdownMenuCheckboxItem
                         checked={isLandscape}
                         onCheckedChange={onUpdateLandscape}
+                        onSelect={(e) => e.preventDefault()}
                         className="text-xs"
                     >
                         <Maximize className="w-3.5 h-3.5 mr-2 text-neutral-500" />
-                        Landscape (Wide)
+                        Landscape
                     </DropdownMenuCheckboxItem>
 
                     <DropdownMenuCheckboxItem
                         checked={isSmall}
                         onCheckedChange={onUpdateSmall}
+                        onSelect={(e) => e.preventDefault()}
                         className="text-xs"
                     >
                         <LayoutGrid className="w-3.5 h-3.5 mr-2 text-neutral-500" />
@@ -230,6 +234,7 @@ function SortableCatalogItem({
                     <DropdownMenuCheckboxItem
                         checked={isRandom}
                         onCheckedChange={onUpdateRandom}
+                        onSelect={(e) => e.preventDefault()}
                         className="text-xs"
                     >
                         <Shuffle className="w-3.5 h-3.5 mr-2 text-neutral-500" />
@@ -243,6 +248,7 @@ function SortableCatalogItem({
                             <DropdownMenuCheckboxItem
                                 checked={isSmallTopRow}
                                 onCheckedChange={onUpdateSmallTopRow}
+                                onSelect={(e) => e.preventDefault()}
                                 className="text-xs"
                             >
                                 <LayoutGrid className="w-3.5 h-3.5 mr-2 text-amber-500" />
@@ -380,9 +386,6 @@ export function CatalogEditor() {
             originalCatalog: c, // Stash original catalog for re-enabling
         }));
 
-        // Discover if we are in a synthetic (state-format) environment where prefixes are required
-        const isSynthetic = catalogs.length > 0 && catalogs[0]?._synthetic === true;
-
         // 2. Entirely new catalogs from CATALOG_FALLBACKS not already present
         // Strip out 'movie:' or 'series:' from existing IDs for accurate duplicate checking
         const existingBaseIds = new Set(Array.from(existingIds).map(id => id.replace(/^(movie:|series:)/, '')));
@@ -395,8 +398,8 @@ export function CatalogEditor() {
                 const displayName = customNames[id] || name;
 
                 let finalId = id;
-                // Only prepend "movie:" or "series:" if we are generating synthetic catalogs (Omni format)
-                if (isSynthetic && !id.includes(':')) {
+                // Prepend "movie:" or "series:" since Omni format requires it
+                if (!id.includes(':')) {
                     const lowerName = displayName.toLowerCase();
                     let typePrefix = "movie:"; // default
                     if (lowerName.includes("show") || lowerName.includes("series") || lowerName.includes("tv")) {
@@ -424,7 +427,9 @@ export function CatalogEditor() {
         );
     }, [addCandidates, addSearch]);
 
-    const handleAddCatalog = (cat: typeof addCandidates[0]) => {
+    const handleAddCatalog = (e: Event, cat: typeof addCandidates[0]) => {
+        e.preventDefault(); // Prevent dropdown from closing
+
         if (cat.action === 'reenable') {
             updateCatalogField(cat.id, {
                 enabled: true,
@@ -433,10 +438,8 @@ export function CatalogEditor() {
                 metadata: { ...(cat.originalCatalog?.metadata || {}) }
             });
         } else {
-            addManifestCatalog({ id: cat.id, name: cat.name });
+            addManifestCatalog({ id: cat.id, name: cat.name, enabled: true });
         }
-        setIsAddMenuOpen(false);
-        setAddSearch("");
     };
 
     return (
@@ -518,7 +521,7 @@ export function CatalogEditor() {
                                                 {groups[category].map(c => (
                                                     <DropdownMenuItem
                                                         key={c.id}
-                                                        onClick={() => handleAddCatalog(c)}
+                                                        onSelect={(e) => handleAddCatalog(e, c)}
                                                         className="flex items-start gap-2 p-2 rounded cursor-pointer focus:bg-blue-500/10 focus:text-blue-400"
                                                     >
                                                         <div className="flex-1 min-w-0">

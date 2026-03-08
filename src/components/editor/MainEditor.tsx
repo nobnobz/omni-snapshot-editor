@@ -8,6 +8,7 @@ import { GenericRenderer } from "@/components/editor/GenericRenderer";
 import { CatalogEditor } from "@/components/editor/CatalogEditor";
 import { UnifiedSubgroupEditor } from "@/components/editor/UnifiedSubgroupEditor";
 import { UnifiedPatternEditor } from "@/components/editor/UnifiedPatternEditor";
+import { ImportPatternsModal } from "@/components/editor/ImportPatternsModal";
 import { OrderingEditor } from "@/components/editor/OrderingEditor";
 import { Textarea } from "@/components/ui/textarea";
 import { Documentation } from "@/components/editor/Documentation";
@@ -17,11 +18,13 @@ import {
     Copy,
     RotateCcw,
     Eye,
-    Wrench,
     Check,
     UploadCloud,
     ClipboardPaste,
-    BookOpen
+    BookOpen,
+    Menu,
+    FileJson,
+    Trash2
 } from "lucide-react";
 import {
     Dialog,
@@ -33,13 +36,17 @@ import {
 } from "@/components/ui/dialog";
 
 export function MainEditor() {
-    const { originalConfig, currentValues, fileName, exportConfig, resetAll, cleanupOrphans, customFallbacks, setCustomFallbacks, unloadConfig } = useConfig();
+    const { originalConfig, currentValues, fileName, exportConfig, exportPartialConfig, resetAll, cleanupOrphans, customFallbacks, setCustomFallbacks, unloadConfig } = useConfig();
     const [searchTerm, setSearchTerm] = useState("");
 
     // Export Modal State
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [setupName, setSetupName] = useState("");
+    const [isImportPatternsOpen, setIsImportPatternsOpen] = useState(false);
     const [pastedJson, setPastedJson] = useState("");
+
+    // Sidebar State
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const ignoredKeys = new Set([
         "stream_button_elements_order",
@@ -67,11 +74,8 @@ export function MainEditor() {
         "high_contrast_focus",
         "show_metadata_tags",
         "recommendation_cache_duration",
-        "oled_mode_enabled",
         "metadata_cache_duration",
-        "hidden_stream_button_elements",
         "auto_play_enabled_patterns",
-        "hide_addon_info_in_catalog_names",
         "landscape_catalogs",
         "main_group_order",
         "catalog_group_order",
@@ -88,9 +92,9 @@ export function MainEditor() {
 
     const sections = [
         { id: "aiometadata", title: "AIOMetadata Integration", keys: [] },
-        { id: "groups", title: "Groups Manager", keys: ["subgroup_order", "main_catalog_groups", "catalog_group_image_urls", "catalog_groups"] },
-        { id: "catalogs", title: "Catalogs Manager", keys: ["selected_catalogs", "pinned_catalogs", "small_catalogs", "top_row_catalogs", "starred_catalogs", "randomized_catalogs", "small_toprow_catalogs", "catalog_ordering", "custom_catalog_names"] },
-        { id: "settings", title: "General Settings", keys: ["hide_external_playback_prompt", "hide_spoilers", "mdblist_enabled_ratings", "small_continue_watching_shelf", "preferred_audio_language", "preferred_subtitle_language"] },
+        { id: "groups", title: "Group Manager", keys: ["subgroup_order", "main_catalog_groups", "catalog_group_image_urls", "catalog_groups"] },
+        { id: "catalogs", title: "Catalog Manager", keys: ["selected_catalogs", "pinned_catalogs", "small_catalogs", "top_row_catalogs", "starred_catalogs", "randomized_catalogs", "small_toprow_catalogs", "catalog_ordering", "custom_catalog_names"] },
+        { id: "settings", title: "General Settings", keys: ["hide_external_playback_prompt", "hide_spoilers", "small_continue_watching_shelf", "hidden_stream_button_elements", "oled_mode_enabled", "preferred_audio_language", "preferred_subtitle_language"] },
         { id: "patterns", title: "Patterns & Regex", keys: ["pattern_tag_enabled_patterns", "regex_pattern_custom_names", "regex_pattern_image_urls", "pattern_default_filter_enabled_patterns", "pattern_image_color_indices", "pattern_border_radius_indices", "pattern_background_opacities", "pattern_border_thickness_indices", "pattern_color_indices", "pattern_color_hex_values", "auto_play_enabled_patterns", "auto_play_patterns"] },
     ];
 
@@ -131,6 +135,29 @@ export function MainEditor() {
         URL.revokeObjectURL(url);
 
         setIsExportModalOpen(false);
+    };
+
+    const handleSectionExport = (sectionId: string, sectionTitle: string, keys: string[]) => {
+        const config = exportPartialConfig(keys);
+        if (!config) return;
+
+        const now = new Date();
+        config.date = now.toISOString();
+        config.name = `${sectionTitle} Export`;
+
+        const timestampStr = now.toISOString().replace(/[:.]/g, "-").slice(0, 16);
+        const sanitizedTitle = sectionTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+        const newFileName = `omni-${sanitizedTitle}-${timestampStr}.json`;
+
+        const blob = new Blob([JSON.stringify(config, null, 2)], { type: "application/json;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = newFileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     };
 
     const handleCopy = () => {
@@ -186,27 +213,52 @@ export function MainEditor() {
         processAIOMetadata(pastedJson);
     };
 
-    return (
-        <div className="flex h-screen overflow-hidden bg-neutral-950 text-neutral-100 font-sans">
-            {/* Sidebar */}
-            <aside className="w-64 border-r border-neutral-800 bg-neutral-900 flex flex-col">
-                <div className="p-4 border-b border-neutral-800">
-                    <h1 className="text-xl font-bold flex items-center gap-2">
-                        <span className="bg-blue-600 p-1.5 rounded text-white text-xs">O</span>
-                        Omni Config
-                    </h1>
-                    <p className="text-xs text-neutral-500 mt-1 truncate">{fileName}</p>
-                </div>
+    const handleResetAIOMetadata = () => {
+        if (confirm("Are you sure you want to reset all imported catalog names from AIOMetadata? This will clear your custom names and revert to defaults for any newly added catalogs. Existing catalogs in your setup will keep their names until re-synced.")) {
+            setCustomFallbacks({});
+            localStorage.removeItem("omni_custom_fallbacks");
+            alert("AIOMetadata imported names have been cleared.");
+        }
+    };
 
-                <div className="p-4 border-b border-neutral-800 space-y-3">
-                    <div className="relative">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-neutral-500" />
-                        <Input
-                            placeholder="Search settings..."
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            className="pl-9 bg-neutral-950 border-neutral-800 text-sm h-9"
-                        />
+    return (
+        <div className="flex h-screen overflow-hidden bg-neutral-950 text-neutral-100 font-sans relative">
+
+            {/* Mobile Sidebar Overlay */}
+            {isSidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
+
+            {/* Sidebar */}
+            <aside className={`
+                fixed lg:static inset-y-0 left-0 z-50 w-72 lg:w-64 border-r border-neutral-800 bg-neutral-900 flex flex-col transform transition-transform duration-300 ease-in-out
+                ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+            `}>
+                <div className="p-5 border-b border-neutral-800 flex flex-col gap-4 bg-neutral-900/50">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <h1 className="text-base font-black flex items-center gap-3 text-white tracking-tight">
+                                <div className="w-16 h-16 flex items-center justify-center shrink-0 relative group">
+                                    <img src="/clown.png" alt="Logo" className="w-full h-full object-contain relative z-10 scale-125" />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="leading-none text-neutral-100">Omni Snapshot</span>
+                                    <span className="text-[11px] text-blue-400 font-bold uppercase tracking-widest mt-0.5">Manager</span>
+                                </div>
+                            </h1>
+                        </div>
+                        {/* Mobile Close Button */}
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="lg:hidden text-neutral-400 hover:text-white -mr-2"
+                            onClick={() => setIsSidebarOpen(false)}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </Button>
                     </div>
                 </div>
 
@@ -233,17 +285,43 @@ export function MainEditor() {
                     </div>
                 </nav>
 
-                <div className="p-4 border-t border-neutral-800 space-y-2">
+                <div className="p-4 border-t border-neutral-800 bg-neutral-900 flex flex-col gap-2">
+                    <div className="bg-neutral-950/40 rounded-lg p-2.5 border border-neutral-800/60 mb-1 lg:block hidden">
+                        <div className="flex justify-between items-center mb-1">
+                            <div className="text-[8px] font-bold uppercase tracking-widest text-neutral-500 flex items-center gap-1.5">
+                                <FileJson className="w-3 h-3 text-neutral-400" />
+                                Selected File
+                            </div>
+                        </div>
+                        <p className="text-[10px] text-neutral-400 font-mono truncate">{fileName}</p>
+                    </div>
 
+                    <div className="hidden lg:flex flex-col gap-2">
+                        <Button
+                            onClick={handleDownloadClick}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 shadow-lg shadow-blue-500/10"
+                        >
+                            <Download className="w-4 h-4 mr-2.5" />
+                            Download JSON
+                        </Button>
+                        <Button
+                            onClick={handleCopy}
+                            variant="ghost"
+                            className="w-full text-neutral-400 hover:text-white h-10 bg-neutral-800/40 border border-neutral-800/60 hover:bg-neutral-800 transition-all px-4"
+                        >
+                            <Copy className="w-4 h-4 mr-2.5" />
+                            Copy to Clipboard
+                        </Button>
+                    </div>
 
-                    <Button onClick={handleDownloadClick} className="w-full bg-blue-600 hover:bg-blue-700 h-9 shrink-0" size="sm">
-                        <Download className="w-4 h-4 mr-2" />
-                        Download JSON
-                    </Button>
-                    <Button onClick={handleCopy} variant="outline" className="w-full border-neutral-800 bg-transparent hover:bg-neutral-800 h-9 shrink-0" size="sm">
-                        <Copy className="w-4 h-4 mr-2" />
-                        Copy to Clipboard
-                    </Button>
+                    <div className="flex items-center justify-between mt-1 pt-2 border-t border-neutral-800/40">
+                        <div className="text-[9px] text-neutral-600 font-medium">
+                            Made by Bot-Bid-Raiser
+                        </div>
+                        <div className="text-[9px] text-neutral-600 font-medium text-right">
+                            v0.1.0
+                        </div>
+                    </div>
                 </div>
             </aside>
 
@@ -280,19 +358,91 @@ export function MainEditor() {
 
             {/* Main Content */}
             <main className="flex-1 overflow-y-auto scroll-smooth">
-                <div className="max-w-4xl mx-auto p-8 space-y-12">
+                {/* Desktop Static Header (Not Sticky) */}
+                <div className="hidden lg:flex items-center justify-between px-8 py-8 border-b border-neutral-800/40 bg-gradient-to-b from-neutral-900/10 to-transparent">
+                    <div>
+                        <h2 className="text-3xl font-black text-white tracking-tight">Configuration Editor</h2>
+                    </div>
+                    <Button
+                        variant="ghost"
+                        onClick={unloadConfig}
+                        className="text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors gap-2 px-4 h-10"
+                    >
+                        <RotateCcw className="w-4 h-4" />
+                        Back to Start
+                    </Button>
+                </div>
 
-                    <div className="flex items-center justify-between border-b border-neutral-800 pb-4">
-                        <h2 className="text-2xl font-semibold">Configuration Editor</h2>
-                        <Button variant="ghost" size="sm" className="text-neutral-400 hover:text-white" onClick={unloadConfig}>
-                            <RotateCcw className="w-4 h-4 mr-2" />
-                            Back to Start
-                        </Button>
+                <header className="lg:hidden h-16 border-b border-neutral-800 bg-neutral-900/50 backdrop-blur-sm shadow-sm flex items-center justify-between px-4 sm:px-6 shrink-0 sticky top-0 z-30">
+                    <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 flex items-center justify-center shrink-0 relative">
+                            <img src="/clown.png" alt="Logo" className="w-full h-full object-contain relative z-10 scale-125" />
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="leading-none text-neutral-100 font-bold text-sm">Omni Snapshot</span>
+                            <span className="text-[9px] text-blue-400 font-bold uppercase tracking-widest mt-0.5">Manager</span>
+                        </div>
                     </div>
 
+                    <div className="flex-1" />
+
+                    <div className="flex items-center gap-1.5 sm:gap-3">
+                        <Button
+                            onClick={handleCopy}
+                            variant="ghost"
+                            size="sm"
+                            className="text-neutral-400 hover:text-white h-9 px-2 sm:px-3 bg-neutral-800/30 border border-neutral-800/50 hover:bg-neutral-800 hover:border-neutral-700 transition-all"
+                        >
+                            <Copy className="w-4 h-4 sm:mr-2" />
+                            <span className="hidden sm:inline-block md:hidden">Copy</span>
+                            <span className="hidden md:inline-block">Copy to Clipboard</span>
+                        </Button>
+
+                        <Button
+                            onClick={handleDownloadClick}
+                            size="sm"
+                            className="bg-blue-600 hover:bg-blue-700 h-9 text-white shadow-lg shadow-blue-500/20 px-3 sm:px-4 flex items-center justify-center font-bold"
+                        >
+                            <Download className="w-4 h-4 sm:mr-2" />
+                            <span className="hidden sm:inline-block md:hidden">Download</span>
+                            <span className="hidden md:inline-block">Download .json</span>
+                        </Button>
+
+                        <div className="w-px h-6 bg-neutral-800 mx-0.5 sm:mx-1" />
+
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-neutral-400 hover:text-white h-9 px-2 sm:px-3 hover:bg-neutral-800 transition-colors"
+                            onClick={unloadConfig}
+                        >
+                            <RotateCcw className="w-4 h-4 sm:mr-2" />
+                            <span className="hidden sm:inline-block md:hidden">Back</span>
+                            <span className="hidden md:inline-block">Back to Start</span>
+                        </Button>
+
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setIsSidebarOpen(true)}
+                            className="text-neutral-400 hover:text-white lg:hidden h-9 w-9 shrink-0"
+                        >
+                            <Menu className="w-5 h-5" />
+                        </Button>
+                    </div>
+                </header>
+
+                <div className="max-w-4xl mx-auto p-8 space-y-12">
+
+
+
                     {sections.map(section => {
-                        // Find keys that exist in current config for this section
-                        const sectionKeys = section.keys.filter(k => currentValues[k] !== undefined);
+                        // For predefined sections, show all specified keys
+                        // For other sections, filter keys that exist in current config
+                        let sectionKeys = section.keys;
+                        if (!["settings", "groups", "catalogs", "patterns"].includes(section.id)) {
+                            sectionKeys = section.keys.filter(k => currentValues[k] !== undefined);
+                        }
 
                         // For settings section, get all assigned keys plus all keys not in other sections
                         let keysToRender = sectionKeys;
@@ -306,6 +456,17 @@ export function MainEditor() {
                             <section key={section.id} id={section.id} className="scroll-mt-8">
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-xl font-medium text-neutral-200">{section.title}</h3>
+                                    {["groups", "catalogs", "patterns"].includes(section.id) && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-neutral-500 hover:text-white h-8 px-3 text-xs hover:bg-neutral-800 transition-colors gap-1.5"
+                                            onClick={() => handleSectionExport(section.id, section.title, section.keys)}
+                                        >
+                                            <Download className="w-3.5 h-3.5" />
+                                            Export
+                                        </Button>
+                                    )}
                                 </div>
 
                                 <div className="space-y-4">
@@ -316,61 +477,87 @@ export function MainEditor() {
                                                     <strong>Note:</strong> Import your catalogs by uploading an AIOMetadata configuration file. In AIOMetadata, go to Catalogs and share your setup by downloading the .json file or copying it to the clipboard.
                                                 </div>
                                                 <div className="bg-blue-900/10 border border-blue-900/30 rounded p-4 text-sm text-blue-200/80 leading-relaxed">
-                                                    <div className="text-red-400/80 font-medium">You can skip this step if you only want to use my template and do not want to add any new catalogs.</div>
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="text-red-400/80 font-medium">You can skip this step if you only want to use my template and do not want to add any new catalogs.</div>
+                                                        {Object.keys(customFallbacks).length > 0 && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={handleResetAIOMetadata}
+                                                                className="text-red-400 hover:text-red-300 hover:bg-red-400/10 h-8 px-3 text-xs"
+                                                            >
+                                                                <Trash2 className="w-3.5 h-3.5 mr-2" />
+                                                                Reset Imported Data
+                                                            </Button>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 {/* File Upload card */}
-                                                <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-5 flex items-start gap-4 h-full">
-                                                    <div className="mt-1 bg-blue-500/10 p-2 rounded-full hidden sm:block">
-                                                        <UploadCloud className="w-5 h-5 text-blue-400" />
-                                                    </div>
-                                                    <div className="flex-1 space-y-1">
-                                                        <h4 className="text-sm font-medium text-neutral-200">Upload AIOMetadata</h4>
-                                                        <p className="text-xs text-neutral-400 leading-relaxed">
-                                                            Select your <code className="text-[10px] bg-neutral-800 px-1 rounded">aiometadata-config.json</code> to import your catalogs.
-                                                        </p>
-                                                        <div className="pt-2">
-                                                            <input
-                                                                type="file"
-                                                                id="main-fallback-upload"
-                                                                accept=".json"
-                                                                className="hidden"
-                                                                onChange={handleUploadFallbacks}
-                                                            />
-                                                            <label
-                                                                htmlFor="main-fallback-upload"
-                                                                className="inline-flex cursor-pointer items-center justify-center rounded-md text-xs font-medium bg-neutral-800 text-neutral-200 hover:bg-neutral-700 h-8 px-4 border border-neutral-700 transition-colors w-full sm:w-auto"
-                                                            >
-                                                                <UploadCloud className="w-3.5 h-3.5 mr-2" />
-                                                                Upload File
-                                                            </label>
+                                                <div className="group relative bg-[#0a0a0a] border border-white/5 hover:border-white/10 rounded-xl p-6 transition-all duration-300 flex flex-col h-full overflow-hidden shadow-sm">
+                                                    <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                                                    <div className="flex items-start gap-4 mb-auto relative z-10">
+                                                        <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-blue-400">
+                                                            <UploadCloud className="w-6 h-6" />
                                                         </div>
+                                                        <div>
+                                                            <h4 className="text-base font-medium text-neutral-200 mb-1">Upload File</h4>
+                                                            <p className="text-sm text-neutral-400 leading-relaxed">
+                                                                Import from your <code className="text-[11px] bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-neutral-300">aiometadata-config.json</code>
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="mt-6 relative z-10">
+                                                        <input
+                                                            type="file"
+                                                            id="main-fallback-upload"
+                                                            accept=".json"
+                                                            className="hidden"
+                                                            onChange={handleUploadFallbacks}
+                                                        />
+                                                        <label
+                                                            htmlFor="main-fallback-upload"
+                                                            className="w-full inline-flex cursor-pointer items-center justify-center rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white h-10 px-4 border border-transparent shadow-[0_0_15px_rgba(37,99,235,0.2)] transition-all duration-200"
+                                                        >
+                                                            <UploadCloud className="w-4 h-4 mr-2" />
+                                                            Select JSON File
+                                                        </label>
                                                     </div>
                                                 </div>
 
                                                 {/* Paste JSON card */}
-                                                <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-5 flex items-start gap-4 h-full">
-                                                    <div className="mt-1 bg-blue-500/10 p-2 rounded-full hidden sm:block">
-                                                        <ClipboardPaste className="w-5 h-5 text-blue-400" />
+                                                <div className="group relative bg-[#0a0a0a] border border-white/5 hover:border-white/10 rounded-xl p-6 transition-all duration-300 flex flex-col h-full overflow-hidden shadow-sm">
+                                                    <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                                                    <div className="flex items-start gap-4 mb-5 relative z-10">
+                                                        <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-xl text-purple-400">
+                                                            <ClipboardPaste className="w-6 h-6" />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="text-base font-medium text-neutral-200 mb-1">Paste Content</h4>
+                                                            <p className="text-sm text-neutral-400 leading-relaxed">
+                                                                Directly paste your raw JSON setup if you copied it to the clipboard.
+                                                            </p>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex-1 space-y-2">
-                                                        <h4 className="text-sm font-medium text-neutral-200">Paste JSON Content</h4>
+
+                                                    <div className="flex flex-col gap-3 mt-auto relative z-10">
                                                         <Textarea
-                                                            placeholder="Paste your AIOMetadata JSON here..."
-                                                            className="min-h-[100px] text-xs bg-neutral-950 border-neutral-800 focus:border-blue-500/50 transition-colors custom-scrollbar"
+                                                            placeholder="Paste your JSON configuration here..."
+                                                            className="min-h-[100px] text-sm bg-white/5 border-white/10 focus:border-purple-500/50 text-neutral-200 resize-none font-mono placeholder:text-neutral-600 custom-scrollbar rounded-lg"
                                                             value={pastedJson}
                                                             onChange={(e) => setPastedJson(e.target.value)}
                                                         />
                                                         <Button
                                                             size="sm"
                                                             variant="secondary"
-                                                            className="w-full text-xs h-8 bg-blue-600 hover:bg-blue-500 text-white border-none"
+                                                            className="w-full text-sm h-10 bg-purple-600 hover:bg-purple-500 text-white border-none rounded-lg shadow-[0_0_15px_rgba(147,51,234,0.2)] transition-all duration-200"
                                                             onClick={handlePasteImport}
                                                             disabled={!pastedJson.trim()}
                                                         >
-                                                            <Check className="w-3.5 h-3.5 mr-2" />
-                                                            Import from Paste
+                                                            <Check className="w-4 h-4 mr-2" />
+                                                            Import Configuration
                                                         </Button>
                                                     </div>
                                                 </div>
@@ -400,6 +587,16 @@ export function MainEditor() {
                                             <div className="bg-blue-900/10 border border-blue-900/30 rounded p-4 text-sm text-blue-200/80">
                                                 <div className="text-red-400/80 font-medium">Only edit the patterns if you fully understand how they work.</div>
                                             </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                <Button
+                                                    onClick={() => setIsImportPatternsOpen(true)}
+                                                    className="bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 shadow-sm"
+                                                >
+                                                    <UploadCloud className="w-5 h-5 mr-2" />
+                                                    Import from Template
+                                                </Button>
+                                            </div>
+                                            <ImportPatternsModal isOpen={isImportPatternsOpen} onClose={() => setIsImportPatternsOpen(false)} />
                                             <UnifiedPatternEditor />
                                         </div>
                                     ) : section.id === "settings" ? (

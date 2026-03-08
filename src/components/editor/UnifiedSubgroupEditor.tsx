@@ -48,18 +48,56 @@ import { CreateGroupModal } from "./CreateGroupModal";
 import { AddToGroupModal } from "./AddToGroupModal";
 import { ImportSetupModal } from "./ImportSetupModal";
 import { TrashBin } from "./TrashBin";
-import { formatDisplayName, resolveCatalogName } from "@/lib/utils";
+import { formatDisplayName, resolveCatalogName, ensureCatalogPrefix } from "@/lib/utils";
+import { CATALOG_FALLBACKS } from "@/lib/catalog-fallbacks";
 
-import { Trash2, Plus, FolderPlus, UploadCloud } from "lucide-react";
+import { Trash2, Plus, FolderPlus, UploadCloud, Pencil } from "lucide-react";
+import { Label } from "@/components/ui/label";
 
 // ----------------------------------------------------------------------
 // 1. Sortable Catalog Node (Inside a Subgroup)
 // ----------------------------------------------------------------------
 function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => void }) {
-    const { currentValues, disabledCatalogs, toggleCatalog, updateValue } = useConfig();
-    const isEnabled = !disabledCatalogs.has(id);
-    const customNames = currentValues["custom_catalog_names"] || {};
-    const displayName = resolveCatalogName(id, customNames);
+    const { currentValues, updateValue } = useConfig();
+
+    // Construct effective custom names (Config Custom Names > AIOMetadata > Default)
+    const configCustomNames = currentValues["custom_catalog_names"] || {};
+    let aioFallbacks: Record<string, string> = {};
+    if (typeof window !== "undefined") {
+        try {
+            aioFallbacks = JSON.parse(localStorage.getItem("omni_custom_fallbacks") || "{}");
+        } catch (e) { }
+    }
+
+    // Some IDs have prefixes like 'movie:mdblist.12306', AIOMetadata uses 'mdblist.12306'
+    let baseId = id;
+    if (id.includes(":")) {
+        const parts = id.split(":");
+        if (parts.length === 2 && ["movie", "series", "anime"].includes(parts[0])) {
+            baseId = parts[1];
+        } else if (id.startsWith("movie:trakt-list") || id.startsWith("series:trakt-list")) {
+            // keep it if complex, or try to extract
+        } else {
+            // Fallback for generic prefix stripping if it matches common AIO formats
+            baseId = parts.slice(1).join(":");
+        }
+    }
+    // Specific match for AIO Trakt format if necessary (this is a best effort)
+    const strippedTraktId = id.replace(/^(movie|series|anime):/, "");
+
+    const customNameFromConfig = configCustomNames[id] || configCustomNames[baseId];
+    const customNameFromAIO = aioFallbacks[id] || aioFallbacks[baseId] || aioFallbacks[strippedTraktId];
+
+    let displayName = "";
+    if (customNameFromConfig && customNameFromConfig.trim() !== "" && customNameFromConfig !== id) {
+        displayName = formatDisplayName(customNameFromConfig);
+    } else if (customNameFromAIO && customNameFromAIO.trim() !== "" && customNameFromAIO !== id) {
+        displayName = formatDisplayName(customNameFromAIO);
+    } else {
+        // use standard resolveCatalogName mapped values or Fallbacks
+        displayName = resolveCatalogName(id, {});
+    }
+
 
     const {
         attributes,
@@ -80,35 +118,34 @@ function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => vo
         <div
             ref={setNodeRef}
             style={style}
-            className={`flex items-center gap-3 p-2 bg-neutral-900 border border-neutral-800 rounded-md mb-1.5 group/cat ${isDragging ? "opacity-50 border-blue-500 z-50 shadow-xl" : ""}`}
+            className={`flex items-center gap-3 p-2.5 bg-neutral-950/50 border border-neutral-800/60 rounded-lg mb-2 group/cat transition-all duration-200 hover:border-neutral-700/80 hover:bg-neutral-900/60 shadow-sm ${isDragging ? "opacity-50 border-blue-500 z-50 shadow-2xl scale-[1.02]" : ""}`}
         >
-            <button {...attributes} {...listeners} className="cursor-grab hover:text-white text-neutral-500 shrink-0">
-                <GripVertical className="h-3.5 w-3.5" />
+            <button {...attributes} {...listeners} className="cursor-grab text-neutral-600 hover:text-white shrink-0 p-1 rounded-md hover:bg-neutral-800 transition-colors">
+                <GripVertical className="h-4 w-4" />
             </button>
 
-            <div className="flex-1 min-w-0 pr-2">
-                <p className={`text-[11px] truncate font-medium flex items-center gap-2 ${!isEnabled ? "text-neutral-500 line-through" : "text-neutral-200"}`}>
+            <div className="flex-1 min-w-0 pr-2 flex items-center gap-2">
+                <p className="text-[12px] truncate font-semibold tracking-tight text-neutral-200">
                     {displayName}
-                    {displayName !== id && <span className="text-[9px] text-neutral-600 font-mono no-underline ml-auto opacity-0 group-hover/cat:opacity-100 transition-opacity whitespace-nowrap">{id}</span>}
                 </p>
+                {displayName !== id && (
+                    <span className="text-[9px] text-neutral-500 font-mono bg-neutral-900 px-1.5 py-0.5 rounded-sm border border-neutral-800 opacity-0 group-hover/cat:opacity-100 transition-opacity">
+                        {id}
+                    </span>
+                )}
             </div>
 
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1 shrink-0 opacity-80 hover:opacity-100 transition-opacity">
                 {onRemove && (
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={(e) => { e.stopPropagation(); onRemove(); }}
-                        className="h-6 w-6 text-neutral-500 hover:text-red-400 hover:bg-red-500/10"
+                        className="h-7 w-7 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-colors rounded-md border border-transparent hover:border-red-500/30"
                     >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                 )}
-                <Switch
-                    checked={isEnabled}
-                    onCheckedChange={(checked) => toggleCatalog(id, checked)}
-                    className="scale-[0.6] data-[state=checked]:bg-blue-600"
-                />
             </div>
         </div>
     );
@@ -117,8 +154,8 @@ function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => vo
 // ----------------------------------------------------------------------
 // 2. Sortable Subgroup Node containing Catalogs & URL
 // ----------------------------------------------------------------------
-function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign }: { subgroupName: string, parentUUID: string, onUnassign?: (name: string, parentId: string) => void }) {
-    const { originalConfig, currentValues, updateValue, renameCatalogGroup, removeCatalogGroup, unassignCatalogGroup } = useConfig();
+function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded: propIsExpanded, onToggle }: { subgroupName: string, parentUUID: string, onUnassign?: (name: string, parentId: string) => void, isExpanded?: boolean, onToggle?: () => void }) {
+    const { originalConfig, currentValues, updateValue, renameCatalogGroup, removeCatalogGroup, unassignCatalogGroup, catalogs, customFallbacks, addManifestCatalog } = useConfig();
 
     // Sortable Hook for the subgroup itself
     const {
@@ -137,21 +174,79 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign }: { subgro
     };
 
     // Subgroup state
-    const catalogs = currentValues.catalog_groups?.[subgroupName] || [];
+    const catalogsList = currentValues.catalog_groups?.[subgroupName] || [];
     const imageUrl = currentValues.catalog_group_image_urls?.[subgroupName] || "";
 
-    const [subgroupCatalogs, setSubgroupCatalogs] = useState<string[]>(catalogs);
+    const [subgroupCatalogs, setSubgroupCatalogs] = useState<string[]>(catalogsList);
     const [urlInput, setUrlInput] = useState(imageUrl);
     const [isRenaming, setIsRenaming] = useState(false);
-    const [isExpanded, setIsExpanded] = useState(false);
+    const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+    const [catalogSearch, setCatalogSearch] = useState("");
+
+    const customNames: Record<string, string> = React.useMemo(() => currentValues["custom_catalog_names"] || {}, [currentValues]);
+    const catalogOptions = React.useMemo(() => {
+        const options: { id: string, name: string }[] = [];
+
+        // 1. All existing catalogs not already in subgroupCatalogs
+        const existingBaseIds = new Set<string>();
+        for (const c of catalogs) {
+            existingBaseIds.add(c.id.replace(/^(movie:|series:)/, ''));
+            if (!subgroupCatalogs.includes(c.id)) {
+                options.push({
+                    id: c.id,
+                    name: resolveCatalogName(c.id, customNames) || c.name || c.id
+                });
+            }
+        }
+
+        // 2. Fallbacks not already in subgroupCatalogs
+        const allFallbacks = { ...CATALOG_FALLBACKS, ...customFallbacks };
+        Object.entries(allFallbacks).forEach(([id, name]) => {
+            if (!existingBaseIds.has(id.replace(/^(movie:|series:)/, ''))) {
+                const displayName = customNames[id] || name;
+                let finalId = id;
+                if (!id.includes(':')) {
+                    const lowerName = displayName.toLowerCase();
+                    let typePrefix = "movie:"; // default
+                    if (lowerName.includes("show") || lowerName.includes("series") || lowerName.includes("tv")) {
+                        typePrefix = "series:";
+                    }
+                    finalId = `${typePrefix}${id}`;
+                }
+                if (!subgroupCatalogs.includes(finalId)) {
+                    options.push({
+                        id: finalId,
+                        name: displayName
+                    });
+                }
+            }
+        });
+
+        // Sort options
+        return options.sort((a, b) => a.name.localeCompare(b.name));
+    }, [catalogs, customFallbacks, customNames, subgroupCatalogs]);
+
+    const filteredCatalogs = React.useMemo(() => {
+        if (!catalogSearch) return catalogOptions;
+        const q = catalogSearch.toLowerCase();
+        return catalogOptions.filter(c =>
+            c.name.toLowerCase().includes(q) || c.id.toLowerCase().includes(q)
+        );
+    }, [catalogOptions, catalogSearch]);
+
+
+    // Support controlled or uncontrolled expansion
+    const [localExpanded, setLocalExpanded] = useState(false);
+    const isExpanded = propIsExpanded !== undefined ? propIsExpanded : localExpanded;
+    const toggleExpanded = onToggle || (() => setLocalExpanded(!localExpanded));
 
     const parentName = currentValues.main_catalog_groups?.[parentUUID]?.name || "";
     const isLandscape = ["discover", "streaming services", "decades", "collection", "collections"].includes(parentName.toLowerCase());
 
     React.useEffect(() => {
-        setSubgroupCatalogs(catalogs);
+        setSubgroupCatalogs(catalogsList);
         setUrlInput(imageUrl);
-    }, [JSON.stringify(catalogs), imageUrl]);
+    }, [JSON.stringify(catalogsList), imageUrl]);
 
     const handleUrlBlur = () => {
         if (urlInput !== imageUrl) {
@@ -175,29 +270,42 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign }: { subgro
         }
     };
 
+    const handleAddCatalog = (e: any, catalogId: string) => {
+        e.preventDefault();
+        if (!catalogId.trim()) return;
+        const name = resolveCatalogName(catalogId.trim(), currentValues.custom_catalog_names || {});
+        const normalizedId = ensureCatalogPrefix(catalogId.trim(), name);
+
+        const updated = [...subgroupCatalogs, normalizedId];
+        setSubgroupCatalogs(updated);
+        updateValue(["catalog_groups", subgroupName], updated);
+    };
+
     return (
-        <div ref={setNodeRef} style={style} className={`border border-neutral-800 rounded-lg overflow-hidden mb-4 bg-neutral-950 ${isDragging ? "opacity-50 border-blue-500" : ""}`}>
+        <div ref={setNodeRef} style={style} className={`border border-neutral-800/80 shadow-sm rounded-xl overflow-hidden mb-4 bg-neutral-950/40 transition-all hover:border-neutral-700/80 group/subgroup ${isDragging ? "opacity-50 border-blue-500 scale-[1.01] shadow-2xl" : ""}`}>
             {/* Header: Drag Handle + Subgroup Name */}
-            <div className={`flex items-center gap-3 p-3 bg-neutral-900 border-neutral-800 ${isExpanded ? "border-b" : ""}`}>
-                <button {...attributes} {...listeners} className="cursor-grab hover:text-white text-neutral-500">
-                    <GripVertical className="h-5 w-5" />
+            <div className={`flex items-center gap-3 p-3 bg-neutral-900/40 backdrop-blur-sm border-neutral-800/50 ${isExpanded ? "border-b border-neutral-800/60" : ""}`}>
+                <button {...attributes} {...listeners} className="cursor-grab hover:text-white text-neutral-500 p-1 rounded-md hover:bg-neutral-800/80 transition-colors">
+                    <GripVertical className="h-4 w-4" />
                 </button>
                 <div
-                    className="flex-1 font-medium text-sm text-neutral-200 cursor-pointer flex items-center select-none"
-                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="flex-1 font-semibold text-sm text-neutral-200 cursor-pointer flex items-center select-none tracking-tight"
+                    onClick={toggleExpanded}
                 >
-                    {isExpanded ? <ChevronDown className="w-4 h-4 mr-2 text-neutral-500" /> : <ChevronRight className="w-4 h-4 mr-2 text-neutral-500" />}
+                    {isExpanded ? <ChevronDown className="w-4 h-4 mr-2 text-neutral-400 group-hover:text-white transition-colors" /> : <ChevronRight className="w-4 h-4 mr-2 text-neutral-500 group-hover:text-white transition-colors" />}
                     {formatDisplayName(subgroupName)}
                 </div>
-                <Button variant="outline" size="sm" onClick={() => setIsRenaming(true)} className="h-7 text-xs border-neutral-700">
-                    Rename
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => {
-                    unassignCatalogGroup(subgroupName);
-                    if (onUnassign) onUnassign(subgroupName, parentUUID);
-                }} className="h-7 text-xs text-amber-500 hover:text-amber-400 hover:bg-neutral-800">
-                    Unassign
-                </Button>
+                <div className="flex items-center gap-1 opacity-80 hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="icon" onClick={() => setIsRenaming(true)} className="h-7 w-7 text-neutral-500 hover:text-white hover:bg-neutral-800 transition-colors rounded-md border border-transparent hover:border-neutral-700/50">
+                        <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => {
+                        unassignCatalogGroup(subgroupName);
+                        if (onUnassign) onUnassign(subgroupName, parentUUID);
+                    }} className="h-7 w-7 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-colors rounded-md border border-transparent hover:border-red-500/30">
+                        <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                </div>
             </div>
 
             <RenameGroupModal
@@ -212,11 +320,11 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign }: { subgro
             />
 
             {isExpanded && (
-                <div className="p-4 space-y-4">
+                <div className="p-4 space-y-5">
                     {/* Image URL Input */}
-                    <div className="flex items-center gap-3 bg-neutral-900/50 p-2 rounded-md border border-neutral-800">
+                    <div className="flex items-center gap-3 bg-neutral-950/50 p-3 rounded-lg border border-neutral-800/60 shadow-inner">
                         {urlInput && urlInput.startsWith("http") ? (
-                            <div className={`${isLandscape ? "h-8 w-14" : "h-14 w-10"} rounded-md shrink-0 overflow-hidden bg-neutral-900 border border-neutral-700 flex items-center justify-center`}>
+                            <div className={`${isLandscape ? "h-10 w-16" : "h-14 w-10"} rounded-md shrink-0 overflow-hidden bg-neutral-900 border border-neutral-700 shadow-sm flex items-center justify-center`}>
                                 <img
                                     src={urlInput}
                                     alt="Thumb"
@@ -228,31 +336,137 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign }: { subgro
                                 />
                             </div>
                         ) : (
-                            <ImageIcon className="w-4 h-4 text-neutral-500 shrink-0" />
+                            <div className="h-10 w-10 rounded-md bg-neutral-900 border border-neutral-800 flex items-center justify-center shrink-0">
+                                <ImageIcon className="w-4 h-4 text-neutral-500" />
+                            </div>
                         )}
-                        <Input
-                            placeholder="https://... (e.g. postimg.cc)"
-                            value={urlInput}
-                            onChange={e => setUrlInput(e.target.value)}
-                            onBlur={handleUrlBlur}
-                            className="h-8 text-xs bg-neutral-950 border-neutral-700 flex-1"
-                        />
+                        <div className="flex-1 space-y-1">
+                            <Label className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">Poster Image URL</Label>
+                            <Input
+                                placeholder="https://..."
+                                value={urlInput}
+                                onChange={e => setUrlInput(e.target.value)}
+                                onBlur={handleUrlBlur}
+                                className="h-8 text-xs bg-neutral-950/80 border-neutral-700 focus-visible:ring-1 focus-visible:ring-blue-500 shadow-inner transition-colors font-mono"
+                            />
+                        </div>
                     </div>
 
                     {/* Inner Sortable Catalogs */}
                     <div>
-                        <h5 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Catalogs</h5>
+                        <div className="flex items-center justify-between mb-3">
+                            <h5 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Linked Catalogs</h5>
+                            <span className="text-[10px] font-medium text-neutral-600 bg-neutral-900 px-2 py-0.5 rounded-full border border-neutral-800">{subgroupCatalogs.length}</span>
+                        </div>
+
                         {subgroupCatalogs.length === 0 ? (
-                            <p className="text-xs text-neutral-600 italic">No catalogs in this subgroup.</p>
+                            <div className="text-center py-6 border border-dashed border-neutral-800/60 rounded-lg bg-neutral-950/30">
+                                <p className="text-xs text-neutral-500 font-medium">No catalogs in this subgroup yet.</p>
+                            </div>
                         ) : (
-                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleCatalogDragEnd}>
-                                <SortableContext items={subgroupCatalogs} strategy={verticalListSortingStrategy}>
-                                    {subgroupCatalogs.map(catId => (
-                                        <SortableCatalogNode key={catId} id={catId} />
-                                    ))}
-                                </SortableContext>
-                            </DndContext>
+                            <div className="space-y-0.5">
+                                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleCatalogDragEnd}>
+                                    <SortableContext items={subgroupCatalogs} strategy={verticalListSortingStrategy}>
+                                        {subgroupCatalogs.map(catId => (
+                                            <SortableCatalogNode
+                                                key={catId}
+                                                id={catId}
+                                                onRemove={() => {
+                                                    const updated = subgroupCatalogs.filter(id => id !== catId);
+                                                    setSubgroupCatalogs(updated);
+                                                    updateValue(["catalog_groups", subgroupName], updated);
+                                                }}
+                                            />
+                                        ))}
+                                    </SortableContext>
+                                </DndContext>
+                            </div>
                         )}
+
+                        {/* Add New Catalog Dropdown Menu */}
+                        <div className="mt-3">
+                            <DropdownMenu open={isAddMenuOpen} onOpenChange={open => {
+                                setIsAddMenuOpen(open);
+                                if (!open) setCatalogSearch("");
+                            }}>
+                                <DropdownMenuTrigger asChild>
+                                    <Button size="sm" variant="outline" className="w-full justify-start text-xs border border-dashed border-neutral-700/60 bg-neutral-950/30 text-neutral-400 hover:text-white hover:bg-neutral-800/80 hover:border-neutral-600 transition-colors">
+                                        <Plus className="w-3.5 h-3.5 mr-2" /> Add Catalog...
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-80 bg-neutral-900 border-neutral-800 text-neutral-200 shadow-2xl p-0">
+                                    <div className="p-3 border-b border-neutral-800 bg-neutral-950 space-y-2">
+                                        <h4 className="text-[10px] uppercase font-bold text-neutral-500 flex justify-between">
+                                            <span>Select Catalog</span>
+                                            <span className="text-neutral-600">{filteredCatalogs.length} available</span>
+                                        </h4>
+                                        <div className="relative">
+                                            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-neutral-500" />
+                                            <Input
+                                                placeholder="Search by name or ID..."
+                                                value={catalogSearch}
+                                                onChange={e => setCatalogSearch(e.target.value)}
+                                                className="h-7 text-[11px] pl-7 bg-neutral-900 border-neutral-800 focus-visible:ring-blue-600"
+                                                autoFocus
+                                                onKeyDown={e => e.stopPropagation()}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="max-h-[320px] overflow-y-auto p-1 pt-0 custom-scrollbar">
+                                        {filteredCatalogs.length === 0 ? (
+                                            <p className="text-[10px] text-neutral-600 p-4 text-center">No catalogs found.</p>
+                                        ) : (
+                                            (() => {
+                                                const groups: Record<string, typeof filteredCatalogs> = {
+                                                    "Other": []
+                                                };
+                                                filteredCatalogs.forEach(c => {
+                                                    const match = c.name.match(/^\[(.*?)\]\s*(.*)$/);
+                                                    if (match) {
+                                                        const category = match[1];
+                                                        const cleanName = match[2];
+                                                        if (!groups[category]) groups[category] = [];
+                                                        groups[category].push({ ...c, name: cleanName });
+                                                    } else {
+                                                        groups["Other"].push(c);
+                                                    }
+                                                });
+
+                                                const sortedCategories = Object.keys(groups)
+                                                    .filter(k => k !== "Other")
+                                                    .sort((a, b) => a.localeCompare(b));
+
+                                                if (groups["Other"].length > 0) {
+                                                    sortedCategories.push("Other");
+                                                }
+
+                                                return sortedCategories.map(category => (
+                                                    <div key={category} className="mb-2 last:mb-0">
+                                                        <div className="sticky top-0 bg-neutral-900 py-1.5 px-3 z-[60] border-b border-neutral-800/80 mb-1 -mx-1">
+                                                            <h5 className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">{category}</h5>
+                                                        </div>
+                                                        <div className="flex flex-col gap-0.5 px-1">
+                                                            {groups[category].map(c => (
+                                                                <DropdownMenuItem
+                                                                    key={c.id}
+                                                                    onSelect={(e) => handleAddCatalog(e, c.id)}
+                                                                    className="flex items-start gap-2 p-2 rounded cursor-pointer focus:bg-blue-500/10 focus:text-blue-400"
+                                                                >
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <p className="text-sm font-medium truncate">{c.name}</p>
+                                                                        <p className="text-[9px] text-neutral-500 font-mono truncate">{c.id}</p>
+                                                                    </div>
+                                                                </DropdownMenuItem>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ));
+                                            })()
+                                        )}
+                                    </div>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
                     </div>
                 </div>
             )}
@@ -263,7 +477,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign }: { subgro
 // ----------------------------------------------------------------------
 // 3. Main Group View (Outer)
 // ----------------------------------------------------------------------
-function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup }: { uuid: string, name: string, subgroupNames: string[], onUnassignSubgroup?: (name: string, parentId: string) => void }) {
+function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSubgroup }: { uuid: string, name: string, subgroupNames: string[], onUnassignSubgroup?: (name: string, parentId: string) => void, onAddSubgroup?: (uuid: string) => void }) {
     const { initialValues, currentValues, updateValue, renameMainCatalogGroup, removeMainCatalogGroup } = useConfig();
     const [isRenaming, setIsRenaming] = useState(false);
 
@@ -290,6 +504,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup }: { uuid
     // We maintain local subgroup ordering state
     const [subgroups, setSubgroups] = useState(subgroupNames);
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+    const [expandedSubgroup, setExpandedSubgroup] = useState<string | null>(null);
 
     React.useEffect(() => {
         setSubgroups(subgroupNames);
@@ -337,67 +552,52 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup }: { uuid
     };
 
     return (
-        <div ref={setNodeRef} style={style} className="relative group">
-            <AccordionItem value={uuid} className={`border-neutral-800 bg-neutral-900 rounded-lg overflow-hidden mb-4 border ${isDragging ? "opacity-50 border-blue-500" : ""}`}>
-                <div className="flex items-center bg-neutral-900 hover:bg-neutral-800/50">
-                    {/* Drag Handle for Main Group */}
-                    <button {...attributes} {...listeners} className="px-3 cursor-grab hover:text-white text-neutral-500 flex-shrink-0 focus:outline-none">
-                        <GripVertical className="h-5 w-5" />
-                    </button>
-                    {/* Accordion Trigger expanding remaining space */}
-                    <AccordionTrigger className="pr-4 py-3 flex-1 flex items-center justify-between hover:no-underline -ml-2 [&>svg]:hidden group/trigger">
-                        <div className="flex items-center gap-2">
-                            <ChevronRight className="w-4 h-4 text-neutral-500 transition-transform duration-200 group-data-[state=open]/trigger:rotate-90" />
-                            <span className="font-semibold text-neutral-200">{formatDisplayName(name)}</span>
+        <div ref={setNodeRef} style={style} className={`border border-neutral-800/80 rounded-xl overflow-hidden bg-neutral-950/40 shadow-sm transition-all hover:border-neutral-700/80 ${isDragging ? "opacity-50 border-blue-500 scale-[1.01] shadow-2xl" : ""}`}>
+            <AccordionItem value={uuid} className="border-none">
+                <AccordionTrigger className="w-full justify-between items-center p-4 hover:bg-neutral-900/40 hover:no-underline flex text-sm transition-colors group">
+                    <div className="flex flex-1 items-center gap-4 text-left">
+                        <div {...attributes} {...listeners} className="cursor-grab text-neutral-600 hover:text-white shrink-0 p-1.5 rounded-md hover:bg-neutral-800 transition-colors pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+                            <GripVertical className="h-5 w-5" />
                         </div>
-                    </AccordionTrigger>
-                </div>
-                <AccordionContent className="p-4 pt-2 border-t border-neutral-800 bg-neutral-950">
-                    <div className="flex flex-wrap items-center justify-between gap-2 mb-4 bg-neutral-900/30 p-2 rounded border border-neutral-800/50">
-                        <div className="flex items-center gap-1.5">
-                            <Button variant="ghost" size="sm" onClick={toggleSort} className="h-7 px-2 md:px-3 text-[10px] text-neutral-400 hover:text-white hover:bg-neutral-800 shrink-0">
-                                {sortDirection === 'asc' ? <ArrowDownAZ className="w-3.5 h-3.5 md:mr-1" /> : <ArrowUpZA className="w-3.5 h-3.5 md:mr-1" />}
-                                <span className="hidden md:inline">{sortDirection === 'asc' ? 'A-Z' : 'Z-A'}</span>
-                            </Button>
-                            <Button variant="ghost" size="sm" onClick={restoreOrder} className="h-7 px-2 md:px-3 text-[10px] text-neutral-400 hover:text-white hover:bg-neutral-800 shrink-0">
-                                <RotateCcw className="w-3.5 h-3.5 md:mr-1" />
-                                <span className="hidden md:inline">Restore</span>
-                            </Button>
+                        <div>
+                            <div className="font-bold text-base tracking-tight text-neutral-100 flex items-center gap-2">
+                                {formatDisplayName(name)}
+                                {posterSize !== "Default" && (
+                                    <Badge variant="outline" className="text-[9px] uppercase tracking-widest bg-blue-500/10 text-blue-400 border-blue-500/30">
+                                        {posterSize}
+                                    </Badge>
+                                )}
+                            </div>
+                            <div className="text-[11px] text-neutral-500 font-medium mt-0.5 flex items-center gap-2">
+                                <span>{subgroupNames.length} Subgroups</span>
+                            </div>
                         </div>
+                    </div>
+                    {/* Exclude from accordion Trigger's default chevron logic by wrapping in standard div layout */}
+                </AccordionTrigger>
 
-                        <div className="flex items-center gap-1.5 ml-auto">
-
+                <AccordionContent className="p-5 border-t border-neutral-800/50 bg-neutral-900/20">
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
+                        <div className="flex items-center gap-2 bg-neutral-950/50 border border-neutral-800 rounded-lg p-1">
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-7 px-2 md:px-3 text-[10px] text-neutral-400 hover:text-white hover:bg-neutral-800 shrink-0">
-                                        <Layout className="w-3.5 h-3.5 md:mr-1" />
-                                        <span className="hidden md:inline">Poster</span>
+                                    <Button variant="ghost" size="sm" className="h-8 text-xs text-neutral-300 hover:text-white hover:bg-neutral-800 font-medium tracking-tight">
+                                        Layout: <span className="text-white ml-1 font-bold">{posterType} / {posterSize}</span> <ChevronDown className="w-3.5 h-3.5 ml-1 opacity-50" />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent className="bg-neutral-900 border-neutral-800 text-neutral-200 min-w-[140px]">
-                                    <DropdownMenuLabel className="text-[10px] uppercase text-neutral-500 font-bold">Poster Type</DropdownMenuLabel>
-                                    <DropdownMenuItem
-                                        onClick={() => updateValue(["main_catalog_groups", uuid, "posterType"], "Poster")}
-                                        className={`text-xs ${posterType === "Poster" ? "bg-blue-500/20 text-blue-400" : ""}`}
-                                    >
+                                <DropdownMenuContent className="bg-neutral-900 border-neutral-800 text-neutral-200">
+                                    <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold">Poster Shape</DropdownMenuLabel>
+                                    <DropdownMenuItem onClick={() => updateValue(["main_catalog_groups", uuid, "posterType"], "Poster")} className={`text-xs ${posterType === "Poster" ? "bg-blue-500/20 text-blue-400" : ""}`}>
                                         Poster {posterType === "Poster" && "✓"}
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={() => updateValue(["main_catalog_groups", uuid, "posterType"], "Landscape")}
-                                        className={`text-xs ${posterType === "Landscape" ? "bg-blue-500/20 text-blue-400" : ""}`}
-                                    >
-                                        Landscape {posterType === "Landscape" && "✓"}
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={() => updateValue(["main_catalog_groups", uuid, "posterType"], "Square")}
-                                        className={`text-xs ${posterType === "Square" ? "bg-blue-500/20 text-blue-400" : ""}`}
-                                    >
+                                    <DropdownMenuItem onClick={() => updateValue(["main_catalog_groups", uuid, "posterType"], "Square")} className={`text-xs ${posterType === "Square" ? "bg-blue-500/20 text-blue-400" : ""}`}>
                                         Square {posterType === "Square" && "✓"}
                                     </DropdownMenuItem>
-
+                                    <DropdownMenuItem onClick={() => updateValue(["main_catalog_groups", uuid, "posterType"], "Landscape")} className={`text-xs ${posterType === "Landscape" ? "bg-blue-500/20 text-blue-400" : ""}`}>
+                                        Landscape {posterType === "Landscape" && "✓"}
+                                    </DropdownMenuItem>
                                     <DropdownMenuSeparator className="bg-neutral-800" />
-
-                                    <DropdownMenuLabel className="text-[10px] uppercase text-neutral-500 font-bold">Poster Size</DropdownMenuLabel>
+                                    <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold">Poster Size</DropdownMenuLabel>
                                     <DropdownMenuItem
                                         onClick={() => updateValue(["main_catalog_groups", uuid, "posterSize"], "Default")}
                                         className={`text-xs ${posterSize === "Default" ? "bg-blue-500/20 text-blue-400" : ""}`}
@@ -414,10 +614,10 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup }: { uuid
                             </DropdownMenu>
                             <div className="w-px h-4 bg-neutral-800 mx-1" />
                             <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="sm"
                                 onClick={() => setIsRenaming(true)}
-                                className="h-7 text-[10px] uppercase tracking-wider font-bold text-neutral-300 hover:text-white hover:bg-neutral-800 border-neutral-700"
+                                className="h-8 text-xs text-neutral-300 hover:text-white hover:bg-neutral-800 font-medium tracking-tight"
                             >
                                 Rename
                             </Button>
@@ -427,7 +627,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup }: { uuid
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="h-7 text-[10px] uppercase tracking-wider font-bold text-red-500 hover:text-red-400 hover:bg-neutral-800"
+                                        className="h-8 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 font-medium tracking-tight ml-auto sm:ml-0"
                                     >
                                         Disable
                                     </Button>
@@ -450,6 +650,17 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup }: { uuid
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
+
+                            <div className="w-px h-4 bg-neutral-800 mx-1" />
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => onAddSubgroup?.(uuid)}
+                                className="h-8 text-xs bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 border border-blue-500/20 hover:border-blue-500/40 transition-all flex items-center gap-1.5 px-3 rounded-lg font-semibold shadow-sm"
+                            >
+                                <Plus className="w-4 h-4" />
+                                New Subgroup
+                            </Button>
                         </div>
                     </div>
 
@@ -464,13 +675,30 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup }: { uuid
                         }}
                     />
 
-                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleSubgroupDragEnd}>
-                        <SortableContext items={subgroups} strategy={verticalListSortingStrategy}>
-                            {subgroups.map(sg => (
-                                <SortableSubgroupNode key={sg} subgroupName={sg} parentUUID={uuid} onUnassign={onUnassignSubgroup} />
-                            ))}
-                        </SortableContext>
-                    </DndContext>
+                    {subgroups.length === 0 ? (
+                        <div className="text-center py-8 border border-dashed border-neutral-800/80 rounded-xl bg-neutral-950/30 flex flex-col items-center justify-center gap-2">
+                            <FolderPlus className="w-8 h-8 text-neutral-700" />
+                            <p className="text-sm font-medium text-neutral-400">No subgroups exist here.</p>
+                            <p className="text-xs text-neutral-500">Add subgroups by clicking "Add to Group" at the top.</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-1">
+                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleSubgroupDragEnd}>
+                                <SortableContext items={subgroups} strategy={verticalListSortingStrategy}>
+                                    {subgroups.map(sg => (
+                                        <SortableSubgroupNode
+                                            key={sg}
+                                            subgroupName={sg}
+                                            parentUUID={uuid}
+                                            onUnassign={onUnassignSubgroup}
+                                            isExpanded={expandedSubgroup === sg}
+                                            onToggle={() => setExpandedSubgroup(expandedSubgroup === sg ? null : sg)}
+                                        />
+                                    ))}
+                                </SortableContext>
+                            </DndContext>
+                        </div>
+                    )}
                 </AccordionContent>
             </AccordionItem>
         </div>
@@ -483,7 +711,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup }: { uuid
 
 function UnassignedSubgroupRow({
     groupName,
-    catalogs,
+    catalogs: subgroupCatalogsProp,
     onRestore,
     restoreParentName
 }: {
@@ -492,29 +720,79 @@ function UnassignedSubgroupRow({
     onRestore?: () => void,
     restoreParentName?: string
 }) {
-    const { updateValue, currentValues, assignCatalogGroup, removeCatalogGroup } = useConfig();
+    const { updateValue, currentValues, assignCatalogGroup, addManifestCatalog, removeCatalogGroup, catalogs: fullCatalogs, customFallbacks } = useConfig();
     const mainCatalogGroups = currentValues["main_catalog_groups"] || {};
     const mainGroupOrder = currentValues["main_group_order"] || [];
     const [isExpanded, setIsExpanded] = useState(false);
-    const [newCatalogId, setNewCatalogId] = useState("");
 
-    const handleAddCatalog = () => {
-        if (!newCatalogId.trim()) return;
-        const updated = [...catalogs, newCatalogId.trim()];
-        const catalogGroups = { ...currentValues.catalog_groups, [groupName]: updated };
-        updateValue(["catalog_groups"], catalogGroups);
-        setNewCatalogId("");
+    const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+    const [catalogSearch, setCatalogSearch] = useState("");
+
+    const customNames: Record<string, string> = React.useMemo(() => currentValues["custom_catalog_names"] || {}, [currentValues]);
+    const catalogOptions = React.useMemo(() => {
+        const options: { id: string, name: string }[] = [];
+
+        const existingBaseIds = new Set<string>();
+        for (const c of fullCatalogs) {
+            existingBaseIds.add(c.id.replace(/^(movie:|series:)/, ''));
+            if (!subgroupCatalogsProp.includes(c.id)) {
+                options.push({
+                    id: c.id,
+                    name: resolveCatalogName(c.id, customNames) || c.name || c.id
+                });
+            }
+        }
+
+        const allFallbacks = { ...CATALOG_FALLBACKS, ...customFallbacks };
+        Object.entries(allFallbacks).forEach(([id, name]) => {
+            if (!existingBaseIds.has(id.replace(/^(movie:|series:)/, ''))) {
+                const displayName = customNames[id] || name;
+                let finalId = id;
+                if (!id.includes(':')) {
+                    const lowerName = displayName.toLowerCase();
+                    let typePrefix = "movie:"; // default
+                    if (lowerName.includes("show") || lowerName.includes("series") || lowerName.includes("tv")) {
+                        typePrefix = "series:";
+                    }
+                    finalId = `${typePrefix}${id}`;
+                }
+                if (!subgroupCatalogsProp.includes(finalId)) {
+                    options.push({
+                        id: finalId,
+                        name: displayName
+                    });
+                }
+            }
+        });
+
+        return options.sort((a, b) => a.name.localeCompare(b.name));
+    }, [fullCatalogs, customFallbacks, customNames, subgroupCatalogsProp]);
+
+    const filteredCatalogs = React.useMemo(() => {
+        if (!catalogSearch) return catalogOptions;
+        const q = catalogSearch.toLowerCase();
+        return catalogOptions.filter(c =>
+            c.name.toLowerCase().includes(q) || c.id.toLowerCase().includes(q)
+        );
+    }, [catalogOptions, catalogSearch]);
+
+    const handleAddCatalog = (e: Event, catalogId: string) => {
+        e.preventDefault();
+        if (!catalogId.trim()) return;
+        const name = resolveCatalogName(catalogId.trim(), currentValues.custom_catalog_names || {});
+        const normalizedId = ensureCatalogPrefix(catalogId.trim(), name);
+
+        const updated = [...subgroupCatalogsProp, normalizedId];
+        updateValue(["catalog_groups", groupName], updated);
     };
 
     const handleRemoveCatalog = (catalogId: string) => {
-        const updated = catalogs.filter(id => id !== catalogId);
-        const catalogGroups = { ...currentValues.catalog_groups, [groupName]: updated };
-        updateValue(["catalog_groups"], catalogGroups);
+        const updated = subgroupCatalogsProp.filter(id => id !== catalogId);
+        updateValue(["catalog_groups", groupName], updated);
     };
 
     const handleReorderCatalogs = (newOrder: string[]) => {
-        const catalogGroups = { ...currentValues.catalog_groups, [groupName]: newOrder };
-        updateValue(["catalog_groups"], catalogGroups);
+        updateValue(["catalog_groups", groupName], newOrder);
     };
 
     const catalogSensors = useSensors(
@@ -525,9 +803,9 @@ function UnassignedSubgroupRow({
     const handleInternalDragEnd = (event: any) => {
         const { active, over } = event;
         if (over && active.id !== over.id) {
-            const oldIndex = catalogs.indexOf(active.id as string);
-            const newIndex = catalogs.indexOf(over.id as string);
-            handleReorderCatalogs(arrayMove(catalogs, oldIndex, newIndex));
+            const oldIndex = subgroupCatalogsProp.indexOf(active.id as string);
+            const newIndex = subgroupCatalogsProp.indexOf(over.id as string);
+            handleReorderCatalogs(arrayMove(subgroupCatalogsProp, oldIndex, newIndex));
         }
     };
 
@@ -550,7 +828,7 @@ function UnassignedSubgroupRow({
                             <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-7 px-2 text-[10px] font-bold uppercase tracking-tighter text-blue-400 border-blue-500/30 hover:bg-blue-500/10 hover:text-blue-300 flex items-center gap-1"
+                                className="h-7 px-2 text-[10px] font-semibold uppercase tracking-tight text-neutral-400 border-neutral-700/50 hover:bg-neutral-800 hover:text-white flex items-center gap-1 transition-colors"
                             >
                                 Assign To... <ChevronDown className="w-3 h-3" />
                             </Button>
@@ -592,15 +870,15 @@ function UnassignedSubgroupRow({
                         variant="ghost"
                         size="sm"
                         onClick={() => setIsExpanded(!isExpanded)}
-                        className={`h-7 px-2 text-[10px] ${isExpanded ? 'bg-neutral-800 text-white' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'}`}
+                        className={`h-7 px-2 text-[10px] font-semibold uppercase tracking-tight flex items-center gap-1 rounded-md transition-colors ${isExpanded ? 'bg-neutral-800 text-white' : 'text-neutral-500 hover:text-white hover:bg-neutral-800'}`}
                     >
-                        <Layout className="w-3.5 h-3.5 md:mr-1" />
-                        <span className="hidden md:inline">Edit Catalogs</span>
+                        <Layout className="w-3.5 h-3.5" />
+                        <span className="hidden md:inline">Edit</span>
                     </Button>
 
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-500 hover:text-red-400 hover:bg-red-500/10">
+                            <Button variant="ghost" size="icon" className="h-7 w-7 p-0 flex items-center justify-center text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-colors rounded-md border border-transparent hover:border-red-500/30">
                                 <Trash2 className="w-3.5 h-3.5" />
                             </Button>
                         </AlertDialogTrigger>
@@ -629,8 +907,8 @@ function UnassignedSubgroupRow({
                 <div className="p-4 border-t border-neutral-800 bg-neutral-950">
                     <div className="space-y-1 mb-4">
                         <DndContext sensors={catalogSensors} collisionDetection={closestCenter} onDragEnd={handleInternalDragEnd}>
-                            <SortableContext items={catalogs} strategy={verticalListSortingStrategy}>
-                                {catalogs.map(catId => (
+                            <SortableContext items={subgroupCatalogsProp} strategy={verticalListSortingStrategy}>
+                                {subgroupCatalogsProp.map(catId => (
                                     <SortableCatalogNode
                                         key={catId}
                                         id={catId}
@@ -639,6 +917,91 @@ function UnassignedSubgroupRow({
                                 ))}
                             </SortableContext>
                         </DndContext>
+                    </div>
+
+                    {/* Add New Catalog Dropdown Menu */}
+                    <div className="mt-3">
+                        <DropdownMenu open={isAddMenuOpen} onOpenChange={open => {
+                            setIsAddMenuOpen(open);
+                            if (!open) setCatalogSearch("");
+                        }}>
+                            <DropdownMenuTrigger asChild>
+                                <Button size="sm" variant="outline" className="w-full justify-start text-xs border border-dashed border-neutral-700/60 bg-neutral-950/30 text-neutral-400 hover:text-white hover:bg-neutral-800/80 hover:border-neutral-600 transition-colors">
+                                    <Plus className="w-3.5 h-3.5 mr-2" /> Add Catalog...
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-80 bg-neutral-900 border-neutral-800 text-neutral-200 shadow-2xl p-0">
+                                <div className="p-3 border-b border-neutral-800 bg-neutral-950 space-y-2">
+                                    <h4 className="text-[10px] uppercase font-bold text-neutral-500 flex justify-between">
+                                        <span>Select Catalog</span>
+                                        <span className="text-neutral-600">{filteredCatalogs.length} available</span>
+                                    </h4>
+                                    <div className="relative">
+                                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-neutral-500" />
+                                        <Input
+                                            placeholder="Search by name or ID..."
+                                            value={catalogSearch}
+                                            onChange={e => setCatalogSearch(e.target.value)}
+                                            className="h-7 text-[11px] pl-7 bg-neutral-900 border-neutral-800 focus-visible:ring-blue-600"
+                                            autoFocus
+                                            onKeyDown={e => e.stopPropagation()}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="max-h-[320px] overflow-y-auto p-1 pt-0 custom-scrollbar">
+                                    {filteredCatalogs.length === 0 ? (
+                                        <p className="text-[10px] text-neutral-600 p-4 text-center">No catalogs found.</p>
+                                    ) : (
+                                        (() => {
+                                            const groups: Record<string, typeof filteredCatalogs> = {
+                                                "Other": []
+                                            };
+                                            filteredCatalogs.forEach(c => {
+                                                const match = c.name.match(/^\[(.*?)\]\s*(.*)$/);
+                                                if (match) {
+                                                    const category = match[1];
+                                                    const cleanName = match[2];
+                                                    if (!groups[category]) groups[category] = [];
+                                                    groups[category].push({ ...c, name: cleanName });
+                                                } else {
+                                                    groups["Other"].push(c);
+                                                }
+                                            });
+
+                                            const sortedCategories = Object.keys(groups)
+                                                .filter(k => k !== "Other")
+                                                .sort((a, b) => a.localeCompare(b));
+
+                                            if (groups["Other"].length > 0) {
+                                                sortedCategories.push("Other");
+                                            }
+
+                                            return sortedCategories.map(category => (
+                                                <div key={category} className="mb-2 last:mb-0">
+                                                    <div className="sticky top-0 bg-neutral-900 py-1.5 px-3 z-[60] border-b border-neutral-800/80 mb-1 -mx-1">
+                                                        <h5 className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">{category}</h5>
+                                                    </div>
+                                                    <div className="flex flex-col gap-0.5 px-1">
+                                                        {groups[category].map(c => (
+                                                            <DropdownMenuItem
+                                                                key={c.id}
+                                                                onSelect={(e) => handleAddCatalog(e, c.id)}
+                                                                className="flex items-start gap-2 p-2 rounded cursor-pointer focus:bg-blue-500/10 focus:text-blue-400"
+                                                            >
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="text-sm font-medium truncate">{c.name}</p>
+                                                                    <p className="text-[9px] text-neutral-500 font-mono truncate">{c.id}</p>
+                                                                </div>
+                                                            </DropdownMenuItem>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ));
+                                        })()
+                                    )}
+                                </div>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
 
                 </div>
@@ -651,14 +1014,14 @@ function UnassignedSubgroupRow({
 // Unified App Entry Point
 // ----------------------------------------------------------------------
 export function UnifiedSubgroupEditor() {
-    const { currentValues, updateValue, assignCatalogGroup } = useConfig();
+    const { currentValues, updateValue, assignCatalogGroup, catalogs: manifestCatalogs, addManifestCatalog } = useConfig();
     const subgroupOrder = currentValues["subgroup_order"] || {};
     const mainCatalogGroups = currentValues["main_catalog_groups"] || {};
     const mainGroupOrderFromConfig = currentValues["main_group_order"] || [];
-
-    // Local state for main group ordering
     const [mainGroupOrder, setMainGroupOrder] = useState<string[]>(mainGroupOrderFromConfig);
+
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [createParentUUID, setCreateParentUUID] = useState<string | undefined>();
     const [isAddToGroupModalOpen, setIsAddToGroupModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [recentUnassigns, setRecentUnassigns] = useState<Record<string, string>>({}); // subgroupName -> parentUuid
@@ -714,11 +1077,6 @@ export function UnifiedSubgroupEditor() {
         name => !assignedGroups.has(name) && !isPlaceholder(name)
     );
 
-
-    if (mainGroupOrder.length === 0 && unassignedGroups.length === 0) {
-        return <div className="p-4 text-sm text-neutral-400 italic">No Groups or Subgroups found in the configuration.</div>;
-    }
-
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center mb-6">
@@ -748,13 +1106,34 @@ export function UnifiedSubgroupEditor() {
             </div>
 
 
-            <CreateGroupModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
+            <CreateGroupModal
+                isOpen={isCreateModalOpen}
+                onClose={() => {
+                    setIsCreateModalOpen(false);
+                    setCreateParentUUID(undefined);
+                }}
+                initialParentUUID={createParentUUID}
+            />
             <AddToGroupModal isOpen={isAddToGroupModalOpen} onClose={() => setIsAddToGroupModalOpen(false)} />
             <ImportSetupModal isOpen={isImportModalOpen} onClose={() => setIsImportModalOpen(false)} />
 
+            {mainGroupOrder.length === 0 && (
+                <div className="text-center py-12 border border-dashed border-neutral-800/80 rounded-2xl bg-neutral-950/20 flex flex-col items-center justify-center gap-3">
+                    <div className="p-4 bg-blue-500/10 rounded-full border border-blue-500/20">
+                        <FolderPlus className="w-8 h-8 text-blue-500/60" />
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-sm font-bold text-neutral-300">No Main Groups Found</p>
+                        <p className="text-xs text-neutral-500 max-w-[280px] leading-relaxed mx-auto">
+                            Start by creating a new group or add existing subgroups from the library below.
+                        </p>
+                    </div>
+                </div>
+            )}
+
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleMainDragEnd}>
                 <SortableContext items={mainGroupOrder} strategy={verticalListSortingStrategy}>
-                    <Accordion type="multiple" className="w-full space-y-4">
+                    <Accordion type="single" collapsible className="w-full space-y-4">
                         {mainGroupOrder.map(uuid => {
                             const name = mainCatalogGroups[uuid]?.name || `Group ${uuid.slice(0, 4)}`;
                             const subgroupNames = subgroupOrder[uuid] || [];
@@ -765,6 +1144,10 @@ export function UnifiedSubgroupEditor() {
                                     name={name}
                                     subgroupNames={subgroupNames}
                                     onUnassignSubgroup={handleUnassignSubgroup}
+                                    onAddSubgroup={(id) => {
+                                        setCreateParentUUID(id);
+                                        setIsCreateModalOpen(true);
+                                    }}
                                 />
                             );
                         })}
