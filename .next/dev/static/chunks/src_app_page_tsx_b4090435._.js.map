@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///Users/marvin/.gemini/antigravity/scratch/omni-config-editor/src/app/page.tsx"],"sourcesContent":["\"use client\";\n\nimport { useConfig } from \"@/context/ConfigContext\";\nimport { ConfigLoader } from \"@/components/editor/ConfigLoader\";\nimport { MainEditor } from \"@/components/editor/MainEditor\";\n\nexport default function Home() {\n  const { isLoaded } = useConfig();\n\n  if (!isLoaded) {\n    return <ConfigLoader />;\n  }\n\n  return <MainEditor />;\n}\n"],"names":[],"mappings":";;;;;AAEA;AACA;AACA;;;AAJA;;;;AAMe,SAAS;;IACtB,MAAM,EAAE,QAAQ,EAAE,GAAG,IAAA,gJAAS;IAE9B,IAAI,CAAC,UAAU;QACb,qBAAO,6LAAC,+JAAY;;;;;IACtB;IAEA,qBAAO,6LAAC,2JAAU;;;;;AACpB;GARwB;;QACD,gJAAS;;;KADR"}}]
+}
