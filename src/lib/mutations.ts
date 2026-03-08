@@ -1,0 +1,585 @@
+/**
+ * Helper: counts how many places a string-keyed group name is referenced.
+ */
+export function countGroupReferences(name: string, state: Record<string, any>): number {
+    let count = 0;
+    if (state.catalog_groups && state.catalog_groups[name]) count++;
+    if (state.catalog_group_order && state.catalog_group_order.includes(name)) count++;
+    if (state.catalog_group_image_urls && state.catalog_group_image_urls[name] !== undefined) count++;
+
+    if (state.subgroup_order) {
+        Object.values(state.subgroup_order).forEach((arr: any) => {
+            if (Array.isArray(arr) && arr.includes(name)) count++;
+        });
+    }
+
+    if (state.main_catalog_groups) {
+        Object.values(state.main_catalog_groups).forEach((group: any) => {
+            if (group && Array.isArray(group.subgroupNames) && group.subgroupNames.includes(name)) count++;
+        });
+    }
+
+    return count;
+}
+
+/**
+ * Helper: counts if a main group UUID exists in order arrays
+ */
+export function countMainGroupReferences(uuid: string, state: Record<string, any>): number {
+    let count = 0;
+    if (state.main_catalog_groups && state.main_catalog_groups[uuid]) count++;
+    if (state.main_group_order && state.main_group_order.includes(uuid)) count++;
+    if (state.subgroup_order && state.subgroup_order[uuid]) count++;
+    return count;
+}
+
+export function renameGroup(oldName: string, newName: string, state: Record<string, any>): Record<string, any> {
+    if (oldName === newName) return state;
+
+    // We do NOT mutate the original state, make a deep copy or do immutable updates
+    const draft = JSON.parse(JSON.stringify(state));
+
+    const mergeArrays = (arr1: any[] = [], arr2: any[] = []) => {
+        return Array.from(new Set([...arr1, ...arr2])); // Quick unique merge
+    };
+
+    // 1. Rename the key in catalog_groups
+    if (draft.catalog_groups) {
+        if (draft.catalog_groups[oldName]) {
+            const oldItems = draft.catalog_groups[oldName] || [];
+
+            if (draft.catalog_groups[newName]) {
+                // Merge logic if newName exists
+                draft.catalog_groups[newName] = mergeArrays(draft.catalog_groups[newName], oldItems);
+            } else {
+                draft.catalog_groups[newName] = oldItems;
+            }
+            delete draft.catalog_groups[oldName];
+        }
+    }
+
+    // 2. Replace the old name in catalog_group_order
+    if (Array.isArray(draft.catalog_group_order)) {
+        const index = draft.catalog_group_order.indexOf(oldName);
+        if (index !== -1) {
+            // If the target name already exists, we just filter out the oldName to prevent dupes
+            if (draft.catalog_group_order.includes(newName)) {
+                draft.catalog_group_order = draft.catalog_group_order.filter((g: string) => g !== oldName);
+            } else {
+                draft.catalog_group_order[index] = newName;
+            }
+        }
+    }
+
+    // 3. Replace the old name in subgroup_order arrays
+    if (draft.subgroup_order) {
+        Object.keys(draft.subgroup_order).forEach(mainGroupUUID => {
+            const arr = draft.subgroup_order[mainGroupUUID];
+            if (Array.isArray(arr)) {
+                const index = arr.indexOf(oldName);
+                if (index !== -1) {
+                    if (arr.includes(newName)) {
+                        draft.subgroup_order[mainGroupUUID] = arr.filter((s: string) => s !== oldName);
+                    } else {
+                        arr[index] = newName;
+                    }
+                }
+            }
+        });
+    }
+
+    // 4. Replace within main_catalog_groups[*].subgroupNames
+    if (draft.main_catalog_groups) {
+        Object.keys(draft.main_catalog_groups).forEach(uuid => {
+            const group = draft.main_catalog_groups[uuid];
+            if (group && Array.isArray(group.subgroupNames)) {
+                const index = group.subgroupNames.indexOf(oldName);
+                if (index !== -1) {
+                    if (group.subgroupNames.includes(newName)) {
+                        group.subgroupNames = group.subgroupNames.filter((s: string) => s !== oldName);
+                    } else {
+                        group.subgroupNames[index] = newName;
+                    }
+                }
+            }
+        });
+    }
+
+    // 5. Rename the key in catalog_group_image_urls
+    if (draft.catalog_group_image_urls) {
+        if (draft.catalog_group_image_urls[oldName] !== undefined) {
+            // Always overwrite target image url, or keep existing target if preferable.
+            // Let's keep existing target if it exists, otherwise move old
+            if (draft.catalog_group_image_urls[newName] === undefined) {
+                draft.catalog_group_image_urls[newName] = draft.catalog_group_image_urls[oldName];
+            }
+            delete draft.catalog_group_image_urls[oldName];
+        }
+    }
+
+    return draft;
+}
+
+export function renameMainGroup(uuid: string, newName: string, state: Record<string, any>): Record<string, any> {
+    const draft = JSON.parse(JSON.stringify(state));
+
+    if (draft.main_catalog_groups && draft.main_catalog_groups[uuid]) {
+        draft.main_catalog_groups[uuid].name = newName;
+    }
+
+    return draft;
+}
+
+/**
+ * Removes a group entirely from all relational arrays and objects.
+ */
+/**
+ * Unassigns a subgroup from all main groups without deleting its data from catalog_groups.
+ */
+export function unassignSubgroup(name: string, state: Record<string, any>): Record<string, any> {
+    const draft = JSON.parse(JSON.stringify(state));
+
+    if (draft.subgroup_order) {
+        Object.keys(draft.subgroup_order).forEach(mainGroupUUID => {
+            const arr = draft.subgroup_order[mainGroupUUID];
+            if (Array.isArray(arr)) {
+                draft.subgroup_order[mainGroupUUID] = arr.filter((s: string) => s !== name);
+            }
+        });
+    }
+
+    if (draft.main_catalog_groups) {
+        Object.keys(draft.main_catalog_groups).forEach(uuid => {
+            const group = draft.main_catalog_groups[uuid];
+            if (group && Array.isArray(group.subgroupNames)) {
+                group.subgroupNames = group.subgroupNames.filter((s: string) => s !== name);
+            }
+        });
+    }
+
+    return draft;
+}
+
+/**
+ * Assigns a subgroup to a specific main group.
+ */
+export function assignSubgroup(name: string, targetMainGroupUuid: string, state: Record<string, any>): Record<string, any> {
+    const draft = JSON.parse(JSON.stringify(state));
+
+    // First unassign it from any existing main groups to ensure it only lives in one place
+    if (draft.subgroup_order) {
+        Object.keys(draft.subgroup_order).forEach(mainGroupUUID => {
+            const arr = draft.subgroup_order[mainGroupUUID];
+            if (Array.isArray(arr)) {
+                draft.subgroup_order[mainGroupUUID] = arr.filter((s: string) => s !== name);
+            }
+        });
+    }
+
+    if (draft.main_catalog_groups) {
+        Object.keys(draft.main_catalog_groups).forEach(uuid => {
+            const group = draft.main_catalog_groups[uuid];
+            if (group && Array.isArray(group.subgroupNames)) {
+                group.subgroupNames = group.subgroupNames.filter((s: string) => s !== name);
+            }
+        });
+    }
+
+    // Now assign to the new parent
+    if (!draft.main_catalog_groups[targetMainGroupUuid]) {
+        // If the main group doesn't theoretically exist, we probably shouldn't do this, but just in case
+        draft.main_catalog_groups[targetMainGroupUuid] = { name: "Unknown Group", subgroupNames: [] };
+    }
+
+    if (!Array.isArray(draft.main_catalog_groups[targetMainGroupUuid].subgroupNames)) {
+        draft.main_catalog_groups[targetMainGroupUuid].subgroupNames = [];
+    }
+
+    // Add to the end of the new parent's list
+    draft.main_catalog_groups[targetMainGroupUuid].subgroupNames.push(name);
+
+    return draft;
+}
+
+/**
+ * Creates a new Main Group.
+ */
+export function createMainGroup(name: string, assignedSubgroups: string[], state: Record<string, any>): Record<string, any> {
+    const draft = JSON.parse(JSON.stringify(state));
+    const newUuid = crypto.randomUUID();
+
+    if (!draft.main_catalog_groups) draft.main_catalog_groups = {};
+    if (!draft.main_group_order) draft.main_group_order = [];
+    if (!draft.subgroup_order) draft.subgroup_order = {};
+
+    draft.main_catalog_groups[newUuid] = {
+        name,
+        subgroupNames: [],
+        posterSize: "Default",
+        posterType: "Square"
+    };
+    draft.main_group_order.push(newUuid);
+
+    // Now securely assign the selected subgroups
+    let tempDraft = draft;
+    for (const sg of assignedSubgroups) {
+        tempDraft = assignSubgroup(sg, newUuid, tempDraft);
+    }
+
+    return tempDraft;
+}
+
+/**
+ * Creates a new Subgroup.
+ */
+export function createSubgroup(name: string, targetMainGroupUuid: string, imageUrl: string, initialCatalogs: string[] = [], state: Record<string, any>): Record<string, any> {
+    const draft = JSON.parse(JSON.stringify(state));
+
+    if (!draft.catalog_groups) draft.catalog_groups = {};
+    if (!draft.catalog_group_order) draft.catalog_group_order = [];
+    if (!draft.catalog_group_image_urls) draft.catalog_group_image_urls = {};
+
+    // Create the subgroup with the provided catalog list
+    draft.catalog_groups[name] = initialCatalogs;
+    draft.catalog_group_order.push(name);
+
+    if (imageUrl) {
+        draft.catalog_group_image_urls[name] = imageUrl;
+    }
+
+    // Now assign it to the selected main group
+    if (targetMainGroupUuid) {
+        return assignSubgroup(name, targetMainGroupUuid, draft);
+    }
+
+    return draft;
+}
+
+export function disableGroup(name: string, state: Record<string, any>): Record<string, any> {
+    const draft = JSON.parse(JSON.stringify(state));
+
+    if (draft.catalog_groups) {
+        delete draft.catalog_groups[name];
+    }
+
+    if (Array.isArray(draft.catalog_group_order)) {
+        draft.catalog_group_order = draft.catalog_group_order.filter((g: string) => g !== name);
+    }
+
+    if (draft.subgroup_order) {
+        Object.keys(draft.subgroup_order).forEach(mainGroupUUID => {
+            const arr = draft.subgroup_order[mainGroupUUID];
+            if (Array.isArray(arr)) {
+                draft.subgroup_order[mainGroupUUID] = arr.filter((s: string) => s !== name);
+            }
+            // If empty, we can optionally delete the uuid key from subgroup_order
+            if (draft.subgroup_order[mainGroupUUID].length === 0) {
+                delete draft.subgroup_order[mainGroupUUID];
+            }
+        });
+    }
+
+    if (draft.main_catalog_groups) {
+        Object.keys(draft.main_catalog_groups).forEach(uuid => {
+            const group = draft.main_catalog_groups[uuid];
+            if (group && Array.isArray(group.subgroupNames)) {
+                group.subgroupNames = group.subgroupNames.filter((s: string) => s !== name);
+            }
+        });
+    }
+
+    if (draft.catalog_group_image_urls) {
+        delete draft.catalog_group_image_urls[name];
+    }
+
+    return draft;
+}
+
+export function disableMainGroup(uuid: string, state: Record<string, any>): Record<string, any> {
+    const draft = JSON.parse(JSON.stringify(state));
+
+    // 1. Remove from main_group_order
+    if (Array.isArray(draft.main_group_order)) {
+        draft.main_group_order = draft.main_group_order.filter((id: any) => id !== uuid);
+    }
+
+    // 2. Cascade delete subgroups
+    const subgroupNames = (draft.main_catalog_groups?.[uuid]?.subgroupNames) || (draft.subgroup_order?.[uuid]) || [];
+    if (Array.isArray(subgroupNames)) {
+        subgroupNames.forEach((name: string) => {
+            if (draft.catalog_groups) delete draft.catalog_groups[name];
+            if (Array.isArray(draft.catalog_group_order)) {
+                draft.catalog_group_order = draft.catalog_group_order.filter((g: any) => g !== name);
+            }
+            if (draft.catalog_group_image_urls) delete draft.catalog_group_image_urls[name];
+        });
+    }
+
+    // 3. Remove main group entries
+    if (draft.main_catalog_groups) {
+        delete draft.main_catalog_groups[uuid];
+    }
+    if (draft.subgroup_order) {
+        delete draft.subgroup_order[uuid];
+    }
+
+    return draft;
+}
+
+
+/**
+ * Sweeps a catalog from every list in the config when disabled.
+ */
+export function disableCatalog(catalogId: string, state: Record<string, any>): Record<string, any> {
+    const draft = JSON.parse(JSON.stringify(state));
+
+    // Remove from catalog_groups lists
+    if (draft.catalog_groups) {
+        Object.keys(draft.catalog_groups).forEach(groupName => {
+            const arr = draft.catalog_groups[groupName];
+            if (Array.isArray(arr)) {
+                draft.catalog_groups[groupName] = arr.filter((c: string) => c !== catalogId);
+            }
+        });
+    }
+
+    // Remove from common flat catalog arrays
+    const commonLists = [
+        "selected_catalogs",
+        "pinned_catalogs",
+        "small_catalogs",
+        "top_row_catalogs",
+        "starred_catalogs",
+        "randomized_catalogs",
+        "small_toprow_catalogs",
+        "catalog_ordering"
+    ];
+
+    commonLists.forEach(listName => {
+        if (Array.isArray(draft[listName])) {
+            draft[listName] = draft[listName].filter((c: string) => c !== catalogId);
+        }
+    });
+
+    return draft;
+}
+
+/**
+ * Dedupe & Validation Pass
+ * Ensures arrays don't have dupes, and ordering arrays don't hold references to non-existent groups.
+ */
+export function validateAndFix(state: Record<string, any>): Record<string, any> {
+    const draft = JSON.parse(JSON.stringify(state));
+
+    const validGroupNames = new Set(Object.keys(draft.catalog_groups || {}));
+
+    // Ensure catalog_group_order exists and is cleaned
+    if (!Array.isArray(draft.catalog_group_order)) {
+        draft.catalog_group_order = [];
+    }
+
+    // Fix corruption where order might be ["_data"]
+    if (draft.catalog_group_order.length === 1 && draft.catalog_group_order[0] === "_data") {
+        draft.catalog_group_order = [];
+    }
+
+    // Dedupe & Clean
+    draft.catalog_group_order = Array.from(new Set(draft.catalog_group_order))
+        .filter((g: any) => typeof g === 'string' && validGroupNames.has(g));
+
+    // Ensure every existing group appears
+    validGroupNames.forEach(name => {
+        if (!draft.catalog_group_order.includes(name)) {
+            draft.catalog_group_order.push(name);
+        }
+    });
+
+    // CRITICAL: Reorder the keys in catalog_groups and related objects to match catalog_group_order
+    // This ensures that modern JSON stringifiers preserve the order requested by the user.
+    if (draft.catalog_groups) {
+        const orderedGroups: Record<string, any> = {};
+        draft.catalog_group_order.forEach((name: string) => {
+            if (draft.catalog_groups[name]) {
+                orderedGroups[name] = draft.catalog_groups[name];
+            }
+        });
+        draft.catalog_groups = orderedGroups;
+    }
+
+    if (draft.catalog_group_image_urls) {
+        const orderedUrls: Record<string, any> = {};
+        draft.catalog_group_order.forEach((name: string) => {
+            if (draft.catalog_group_image_urls[name] !== undefined) {
+                orderedUrls[name] = draft.catalog_group_image_urls[name];
+            }
+        });
+        draft.catalog_group_image_urls = orderedUrls;
+    }
+
+    // Dedupe & Clean subgroup_order
+    if (draft.subgroup_order) {
+        Object.keys(draft.subgroup_order).forEach(uuid => {
+            let arr = draft.subgroup_order[uuid];
+            if (Array.isArray(arr)) {
+                arr = Array.from(new Set(arr)).filter(g => typeof g === 'string' && validGroupNames.has(g));
+                draft.subgroup_order[uuid] = arr;
+
+                if (arr.length === 0) {
+                    delete draft.subgroup_order[uuid];
+                }
+            }
+        });
+    }
+
+    // Clean main_catalog_groups references
+    if (draft.main_catalog_groups) {
+        Object.keys(draft.main_catalog_groups).forEach(uuid => {
+            const group = draft.main_catalog_groups[uuid];
+            if (group && Array.isArray(group.subgroupNames)) {
+                group.subgroupNames = Array.from(new Set(group.subgroupNames))
+                    .filter((g: any) => typeof g === 'string' && validGroupNames.has(g));
+            }
+        });
+    }
+
+    // Dedupe catalog lists
+    const commonLists = [
+        "selected_catalogs",
+        "pinned_catalogs",
+        "small_catalogs",
+        "top_row_catalogs",
+        "starred_catalogs",
+        "randomized_catalogs",
+        "small_toprow_catalogs",
+        "catalog_ordering"
+    ];
+
+    commonLists.forEach(listName => {
+        if (Array.isArray(draft[listName])) {
+            draft[listName] = Array.from(new Set(draft[listName]));
+        }
+    });
+
+    return draft;
+}
+
+export function importGroups(
+    payload: {
+        mainGroups: Record<string, any>;
+        subgroups: Record<string, { catalogs: string[], imageUrl?: string }>;
+        standaloneAssignments: Record<string, string>;
+    },
+    state: Record<string, any>
+): Record<string, any> {
+    const draft = JSON.parse(JSON.stringify(state));
+
+    if (!draft.main_catalog_groups) draft.main_catalog_groups = {};
+    if (!draft.main_group_order) draft.main_group_order = [];
+    if (!draft.catalog_groups) draft.catalog_groups = {};
+    if (!draft.catalog_group_order) draft.catalog_group_order = [];
+    if (!draft.catalog_group_image_urls) draft.catalog_group_image_urls = {};
+    if (!draft.subgroup_order) draft.subgroup_order = {};
+
+    // 1. Import Main Groups
+    Object.keys(payload.mainGroups).forEach(uuid => {
+        let targetUuid = uuid;
+        if (draft.main_catalog_groups[targetUuid]) {
+            targetUuid = crypto.randomUUID();
+        }
+
+        const mg = payload.mainGroups[uuid];
+        draft.main_catalog_groups[targetUuid] = {
+            name: mg.name,
+            subgroupNames: [...(mg.subgroupNames || [])],
+            posterType: mg.posterType,
+            posterSize: mg.posterSize
+        };
+        draft.main_group_order.push(targetUuid);
+        draft.subgroup_order[targetUuid] = [...(mg.subgroupNames || [])];
+    });
+
+    // 2. Import Subgroups
+    Object.keys(payload.subgroups).forEach(name => {
+        const sg = payload.subgroups[name];
+
+        if (draft.catalog_groups[name]) {
+            // Override catalogs if group already exists
+            draft.catalog_groups[name] = [...(sg.catalogs || [])];
+        } else {
+            // New subgroup
+            draft.catalog_groups[name] = [...(sg.catalogs || [])];
+        }
+
+        if (!draft.catalog_group_order.includes(name)) {
+            draft.catalog_group_order.push(name);
+        }
+
+        if (sg.imageUrl) {
+            draft.catalog_group_image_urls[name] = sg.imageUrl;
+        }
+
+        const targetMainUuid = payload.standaloneAssignments[name];
+        if (targetMainUuid && draft.main_catalog_groups[targetMainUuid]) {
+            if (!draft.main_catalog_groups[targetMainUuid].subgroupNames) {
+                draft.main_catalog_groups[targetMainUuid].subgroupNames = [];
+            }
+            if (!draft.main_catalog_groups[targetMainUuid].subgroupNames.includes(name)) {
+                draft.main_catalog_groups[targetMainUuid].subgroupNames.push(name);
+            }
+
+            if (!draft.subgroup_order[targetMainUuid]) {
+                draft.subgroup_order[targetMainUuid] = [];
+            }
+            if (!draft.subgroup_order[targetMainUuid].includes(name)) {
+                draft.subgroup_order[targetMainUuid].push(name);
+            }
+        }
+    });
+
+    return validateAndFix(draft);
+}
+/**
+ * Finds all unique catalog IDs in the config from all known sources.
+ */
+export function getAllCatalogIds(state: Record<string, any>): Set<string> {
+    const ids = new Set<string>();
+
+    const addIds = (source: any) => {
+        if (!source) return;
+        if (Array.isArray(source)) {
+            source.forEach(id => { if (typeof id === 'string') ids.add(id); });
+        } else if (typeof source === 'object') {
+            Object.values(source).forEach(val => {
+                if (typeof val === 'string') ids.add(val);
+                else if (Array.isArray(val)) val.forEach(id => { if (typeof id === 'string') ids.add(id); });
+            });
+        }
+    };
+
+    // 1. Standard flat arrays
+    const commonLists = [
+        "selected_catalogs",
+        "pinned_catalogs",
+        "small_catalogs",
+        "top_row_catalogs",
+        "starred_catalogs",
+        "randomized_catalogs",
+        "small_toprow_catalogs"
+    ];
+    commonLists.forEach(list => addIds(state[list]));
+
+    // 2. Complex structures
+    addIds(state.catalog_ordering);
+    if (state.catalog_groups) {
+        Object.values(state.catalog_groups).forEach(arr => addIds(arr));
+    }
+
+    // 3. Known names (even if not in any list)
+    if (state.custom_catalog_names) {
+        Object.keys(state.custom_catalog_names).forEach(id => {
+            if (!id.startsWith("_")) ids.add(id);
+        });
+    }
+
+    return ids;
+}
