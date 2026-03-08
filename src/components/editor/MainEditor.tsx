@@ -242,7 +242,7 @@ export function MainEditor() {
                         <div>
                             <h1 className="text-base font-black flex items-center gap-3 text-white tracking-tight">
                                 <div className="w-16 h-16 flex items-center justify-center shrink-0 relative group">
-                                    <img src="/clown.png" alt="Logo" className="w-full h-full object-contain relative z-10 scale-125" />
+                                    <img src="/omni-snapshot-editor/clown.png" alt="Logo" className="w-full h-full object-contain relative z-10 scale-125" />
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="leading-none text-neutral-100">Omni Snapshot</span>
@@ -376,7 +376,7 @@ export function MainEditor() {
                 <header className="lg:hidden h-16 border-b border-neutral-800 bg-neutral-900/50 backdrop-blur-sm shadow-sm flex items-center justify-between px-4 sm:px-6 shrink-0 sticky top-0 z-30">
                     <div className="flex items-center gap-3">
                         <div className="w-12 h-12 flex items-center justify-center shrink-0 relative">
-                            <img src="/clown.png" alt="Logo" className="w-full h-full object-contain relative z-10 scale-125" />
+                            <img src="/omni-snapshot-editor/clown.png" alt="Logo" className="w-full h-full object-contain relative z-10 scale-125" />
                         </div>
                         <div className="flex flex-col">
                             <span className="leading-none text-neutral-100 font-bold text-sm">Omni Snapshot</span>

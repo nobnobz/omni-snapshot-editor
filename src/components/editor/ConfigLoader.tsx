@@ -193,7 +193,7 @@ export function ConfigLoader() {
             <div className="w-full max-w-5xl relative z-10">
                 <div className="text-center mb-8 sm:mb-12 space-y-3">
                     <div className="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center mb-2 mx-auto">
-                        <img src="/clown.png" alt="Logo" className="w-full h-full object-contain" />
+                        <img src="/omni-snapshot-editor/clown.png" alt="Logo" className="w-full h-full object-contain" />
                     </div>
                     <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
                         Omni Snapshot Manager
