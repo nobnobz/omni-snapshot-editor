@@ -52,6 +52,6 @@ Should you want to run the project locally:
 ---
 
 ## Linked Projects
-- **[Unified Media Experience (UME)](https://github.com/nobnobz/Omni-Template-Bot-Bid-Raiser)**: My Omni templates.
+- My Omni templates: **[Unified Media Experience (UME)](https://github.com/nobnobz/Omni-Template-Bot-Bid-Raiser)**
 
 ---
