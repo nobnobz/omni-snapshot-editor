@@ -180,18 +180,18 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
             <div className={`p-4 sm:p-5 rounded-xl bg-card/60 backdrop-blur-md border shadow-sm transition-all duration-300 ${displayChecked ? "border-white/[0.08] bg-card/90 shadow-[0_4px_20px_rgb(0,0,0,0.1)]" : "border-border/40"}`}>
                 <div className={`flex items-center justify-between ${hasVisibleChildren ? "mb-4 pb-4 border-b border-border/40" : ""}`}>
                     <div className={`flex flex-col gap-0.5 transition-opacity duration-300 ${isFaded ? "opacity-60" : "opacity-100"}`}>
-                        <span className="text-sm font-semibold tracking-tight text-foreground">
+                        <span className="text-[15px] font-semibold tracking-tight text-foreground">
                             {formatKeyToTitle(currentKey)}
                         </span>
                         {description && (
-                            <span className="text-[11px] text-foreground/70 leading-snug">
+                            <span className="text-[12px] text-foreground/70 leading-snug">
                                 {description}
                             </span>
                         )}
                     </div>
                     {!hideToggle && (
                         <div className="flex items-center gap-3 shrink-0">
-                            <Label htmlFor={`toggle-${pathString}`} className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground cursor-pointer select-none transition-colors hover:text-muted-foreground">
+                            <Label htmlFor={`toggle-${pathString}`} className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground cursor-pointer select-none transition-colors hover:text-muted-foreground">
                                 {displayChecked ? "On" : "Off"}
                             </Label>
                             <Switch
@@ -301,7 +301,7 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                                 <div key={id} className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-300 group ${isInUse ? 'border-blue-500/30 bg-blue-500/5' : 'border-border/60 bg-background/40 hover:bg-card/60 hover:border-border/60'}`}>
                                     <div className="flex flex-col min-w-0 pr-4">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-sm font-medium text-foreground truncate" title={name}>
+                                            <span className="text-[15px] font-medium text-foreground truncate" title={name}>
                                                 {name}
                                             </span>
                                             {isInUse && (
@@ -310,7 +310,7 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                                                 </span>
                                             )}
                                         </div>
-                                        <span className="text-[10px] font-mono text-muted-foreground truncate mt-1" title={id}>
+                                        <span className="text-[11px] font-mono text-muted-foreground truncate mt-1" title={id}>
                                             {id}
                                         </span>
                                     </div>
@@ -377,8 +377,8 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                                         className="pointer-events-none"
                                     />
                                     <div className="flex flex-col flex-1 pointer-events-none">
-                                        <Label htmlFor={`checkbox-${opt}`} className="text-sm font-medium text-foreground">{opt}</Label>
-                                        <span className="text-[10px] text-foreground/70 mt-0.5 leading-tight">Hide {opt.toLowerCase()}</span>
+                                        <Label htmlFor={`checkbox-${opt}`} className="text-[15px] font-medium text-foreground">{opt}</Label>
+                                        <span className="text-[11px] text-foreground/70 mt-1 leading-tight">Hide {opt.toLowerCase()}</span>
                                     </div>
                                 </div>
                             );
@@ -441,7 +441,7 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                 <div className="flex flex-row items-center justify-between rounded-xl border border-border/80 p-4 bg-background/40 shadow-inner">
                     <div className="space-y-1">
                         <Label className="text-sm font-medium text-foreground">Value</Label>
-                        <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+                        <p className="text-[12px] font-medium uppercase tracking-widest text-muted-foreground">
                             {data ? "True" : "False"}
                         </p>
                     </div>
@@ -472,7 +472,7 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                                             className="bg-background/50 border-border hover:border-border focus-visible:ring-1 focus-visible:ring-blue-500 text-sm h-10 w-full transition-colors shadow-inner"
                                         />
                                         {(typeof item === 'string' && currentValues.custom_catalog_names?.[item]) && (
-                                            <p className="text-[10px] text-blue-400 mt-1.5 ml-1 px-2 py-0.5 rounded-sm bg-blue-950/30 border-l-2 border-blue-500 inline-block">
+                                            <p className="text-[11px] text-blue-400 mt-1.5 ml-1 px-2 py-0.5 rounded-sm bg-blue-950/30 border-l-2 border-blue-500 inline-block">
                                                 Label: <span className="font-semibold">{resolveCatalogName(item, currentValues.custom_catalog_names)}</span>
                                             </p>
                                         )}

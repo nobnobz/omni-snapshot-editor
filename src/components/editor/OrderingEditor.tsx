@@ -106,8 +106,8 @@ function SortableItem({
                         onClick={() => setIsEditing(true)}
                         title="Click to rename"
                     >
-                        <p className={`text-sm truncate font-medium ${!isEnabled ? "text-foreground/70 line-through" : "text-foreground"}`}>{displayName}</p>
-                        {displayName === id && <p className="text-[10px] text-foreground/70 truncate font-mono">{id}</p>}
+                        <p className={`text-[15px] truncate font-medium ${!isEnabled ? "text-foreground/70 line-through" : "text-foreground"}`}>{displayName}</p>
+                        {displayName === id && <p className="text-[11px] text-foreground/70 truncate font-mono">{id}</p>}
                     </div>
                 )}
             </div>
@@ -202,8 +202,8 @@ function SortableList({
                     <ArrowUpZA className="w-4 h-4 mr-2" /> Z-A
                 </Button>
                 <div className="w-px h-5 bg-muted mx-2" />
-                <Button variant="ghost" size="sm" onClick={enableAll} className="h-8 text-xs text-blue-400 hover:text-blue-300">Enable All</Button>
-                <Button variant="ghost" size="sm" onClick={disableAll} className="h-8 text-xs text-foreground/70 hover:text-foreground/70">Disable All</Button>
+                <Button variant="ghost" size="sm" onClick={enableAll} className="h-8 text-[13px] text-blue-400 hover:text-blue-300">Enable All</Button>
+                <Button variant="ghost" size="sm" onClick={disableAll} className="h-8 text-[13px] text-foreground/70 hover:text-foreground/70">Disable All</Button>
             </div>
 
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -281,8 +281,8 @@ export function OrderingEditor({ configKey }: { configKey: string }) {
     // 1. If it's a direct array of strings
     if (Array.isArray(data)) {
         return (
-            <div className="border border-border rounded-lg p-4 bg-background/50 mb-6">
-                <h4 className="text-lg font-medium text-foreground mb-2">{configKey}</h4>
+            <div className="border border-border rounded-xl p-5 bg-background/50 mb-6 shadow-sm">
+                <h4 className="text-xl font-bold tracking-tight text-foreground mb-4">{configKey === 'catalog_ordering' ? 'Global Catalog Order' : configKey}</h4>
                 <SortableList
                     itemsList={data}
                     customNames={displayNames}
@@ -300,8 +300,8 @@ export function OrderingEditor({ configKey }: { configKey: string }) {
     // 2. If it's a Record<string, string[]> (like subgroup_order)
     if (typeof data === "object") {
         return (
-            <div className="border border-border rounded-lg p-4 bg-background/50 mb-6">
-                <h4 className="text-lg font-medium text-foreground mb-2">{configKey}</h4>
+            <div className="border border-border rounded-xl p-5 bg-background/50 mb-6 shadow-sm">
+                <h4 className="text-xl font-bold tracking-tight text-foreground mb-4">{configKey}</h4>
                 <Accordion type="multiple" className="w-full space-y-2 mt-4">
                     {Object.entries(data).map(([groupId, itemsList]: [string, any]) => {
                         if (!Array.isArray(itemsList)) return null;
@@ -310,9 +310,9 @@ export function OrderingEditor({ configKey }: { configKey: string }) {
                         return (
                             <AccordionItem key={groupId} value={groupId} className="border border-border rounded-md bg-background px-2">
                                 <AccordionTrigger className="hover:no-underline text-foreground">
-                                    <div className="flex flex-col items-start gap-1">
-                                        <span className="font-semibold">{groupName}</span>
-                                        <span className="text-xs text-foreground/70 font-mono font-normal">{itemsList.length} items</span>
+                                    <div className="flex flex-col items-start gap-1 py-1">
+                                        <span className="font-semibold text-base">{groupName}</span>
+                                        <span className="text-[11px] text-foreground/70 font-mono font-normal">{itemsList.length} items</span>
                                     </div>
                                 </AccordionTrigger>
                                 <AccordionContent className="border-t border-border pt-4">

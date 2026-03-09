@@ -27,31 +27,72 @@ import {
     UploadCloud,
     MousePointer2
 } from "lucide-react";
+import { useConfig } from "@/context/ConfigContext";
 
 export function TemplateGuide() {
+    const { manifest } = useConfig();
+
+    const handleDownload = async (url: string, defaultFilename: string) => {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("Failed to fetch file");
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = blobUrl;
+            a.download = defaultFilename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(blobUrl);
+        } catch (err) {
+            console.error("Download failed:", err);
+        }
+    };
+
+    const templates = [
+        {
+            name: "Omni Snapshot",
+            id: "ume-main",
+            filename: "omni-snapshot-ume.json",
+            url: manifest?.templates?.find(t => t.id === 'ume-main')?.url || "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/fusion-template-bot-bid-raiser-v1.6.2.json"
+        },
+        {
+            name: "AIOMetadata",
+            id: "aiometadata",
+            filename: "aiometadata-template.json",
+            url: manifest?.templates?.find(t => t.id === 'aiometadata')?.url || "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/aiometadata-patterns-v1.json"
+        },
+        {
+            name: "AIOStreams",
+            id: "aiostreams",
+            filename: "aiostreams-template.json",
+            url: manifest?.templates?.find(t => t.id === 'aiostreams')?.url || "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/aiostreams-patterns-v1.json"
+        }
+    ];
     return (
-        <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto bg-background border-border text-foreground scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-transparent">
+        <DialogContent className="sm:max-w-5xl max-h-[95vh] overflow-y-auto bg-background border-border text-foreground scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-transparent">
             {/* MATCHING HEADER FROM DOCUMENTATION.tsx */}
-            <DialogHeader className="border-b border-border pb-6 mb-6">
-                <DialogTitle className="text-3xl font-extrabold flex items-center gap-3 bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
-                    <UploadCloud className="w-8 h-8 text-blue-500" />
+            <DialogHeader className="border-b border-border pb-8 mb-8">
+                <DialogTitle className="text-3xl font-extrabold flex items-center gap-4 bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
+                    <UploadCloud className="w-10 h-10 text-blue-500" />
                     How to Install - Guide
                 </DialogTitle>
-                <p className="text-foreground/70 text-sm mt-2 uppercase tracking-[0.2em] font-bold">Unified Media Experience</p>
+                <p className="text-foreground/70 text-sm mt-3 uppercase tracking-[0.2em] font-bold">Unified Media Experience (UME)</p>
             </DialogHeader>
 
-            <div className="space-y-12 pb-10">
+            <div className="space-y-16 pb-12">
 
                 {/* 1. RECOMMENDED INSTANCES - Documentation Card Style */}
-                <section className="space-y-4">
-                    <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                        <Settings className="w-6 h-6 text-blue-500" />
+                <section className="space-y-6">
+                    <h2 className="text-xl font-bold text-foreground flex items-center gap-3">
+                        <Settings className="w-7 h-7 text-blue-500" />
                         1. Recommended Instances
                     </h2>
                     <p className="text-sm text-foreground/70 leading-relaxed">
                         This setup works best with these stable and experimental instances:
                     </p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {[
                             {
                                 name: "AIOStreams",
@@ -70,17 +111,17 @@ export function TemplateGuide() {
                                 ]
                             }
                         ].map((group, i) => (
-                            <div key={i} className="bg-card/50 p-5 rounded-xl border border-border hover:border-blue-500/30 transition-colors">
+                            <div key={i} className="bg-card/50 p-6 rounded-2xl border border-border hover:border-blue-500/30 transition-colors">
                                 <h4 className="font-bold text-blue-400 mb-3 flex items-center gap-2 text-sm uppercase tracking-tight">
                                     <group.icon className="w-4 h-4" />
                                     {group.name}
                                 </h4>
-                                <div className="space-y-2">
+                                <div className="space-y-2.5">
                                     {group.links.map((link, j) => (
                                         <a key={j} href={link.url} target="_blank" rel="noopener noreferrer"
-                                            className="flex items-center justify-between p-3 rounded-lg bg-background/40 hover:bg-blue-500/10 border border-border/50 text-[11px] font-bold text-foreground/80 hover:text-blue-400 transition-all group">
+                                            className="flex items-center justify-between p-3.5 rounded-xl bg-background/40 hover:bg-blue-500/10 border border-border/50 text-[13px] font-bold text-foreground/80 hover:text-blue-400 transition-all group">
                                             {link.text}
-                                            <ChevronRight className="w-3.5 h-3.5 opacity-20 group-hover:opacity-100" />
+                                            <ChevronRight className="w-4 h-4 opacity-20 group-hover:opacity-100" />
                                         </a>
                                     ))}
                                 </div>
@@ -90,72 +131,91 @@ export function TemplateGuide() {
                 </section>
 
                 {/* 2. DOWNLOAD TEMPLATES */}
-                <section className="space-y-4">
-                    <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                        <Download className="w-6 h-6 text-blue-500" />
+                <section className="space-y-6">
+                    <h2 className="text-xl font-bold text-foreground flex items-center gap-3">
+                        <Download className="w-7 h-7 text-blue-500" />
                         2. Download Templates
                     </h2>
-                    <div className="bg-blue-500/5 p-6 rounded-2xl border border-blue-500/20 space-y-4">
-                        <p className="text-sm text-foreground/70 leading-relaxed">
-                            Access the <strong>UME Templates</strong> menu in the navigation bar and download these core files:
+                    <div className="bg-blue-500/5 p-8 rounded-3xl border border-blue-500/20 space-y-4">
+                        <p className="text-sm text-foreground/70 leading-relaxed font-bold">
+                            Download the UME Templates:
                         </p>
-                        <div className="flex flex-wrap gap-2">
-                            {["AIOStreams", "AIOMetadata", "Omni Snapshot"].map((item, i) => (
-                                <div key={i} className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-background border border-border text-[10px] font-black text-foreground/60 uppercase tracking-tight">
-                                    <FileJson className="w-3 h-3 text-blue-400" /> {item}
-                                </div>
+                        <div className="flex flex-wrap gap-2.5">
+                            {templates.map((item, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => handleDownload(item.url, item.filename)}
+                                    className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-background border border-border text-[13px] font-black text-foreground/60 uppercase tracking-tight hover:bg-blue-500/10 hover:text-blue-400 hover:border-blue-500/30 transition-all cursor-pointer"
+                                >
+                                    <FileJson className="w-3.5 h-3.5 text-blue-400" /> {item.name}
+                                </button>
                             ))}
                         </div>
                     </div>
                 </section>
 
                 {/* 3. SETUP PROCESS */}
-                <section className="space-y-6">
-                    <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                        <MousePointer2 className="w-6 h-6 text-blue-500" />
+                <section className="space-y-8">
+                    <h2 className="text-xl font-bold text-foreground flex items-center gap-3">
+                        <MousePointer2 className="w-7 h-7 text-blue-500" />
                         3. Configuration Process
                     </h2>
 
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                         {/* AIOStreams Setup */}
-                        <div className="bg-card/40 p-5 rounded-2xl border border-border flex gap-4">
-                            <div className="h-10 w-10 shrink-0 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 text-blue-400">
-                                <Zap className="w-5 h-5" />
+                        <div className="bg-card/40 p-6 rounded-2xl border border-border flex gap-5">
+                            <div className="h-12 w-12 shrink-0 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 text-blue-400">
+                                <Zap className="w-6 h-6" />
                             </div>
-                            <div className="space-y-3 flex-1">
-                                <h4 className="font-extrabold text-foreground text-sm uppercase tracking-tight">AIOStreams Configuration</h4>
-                                <ul className="space-y-2 text-[11px] text-foreground/70 list-disc ml-4">
+                            <div className="space-y-4 flex-1">
+                                <h4 className="font-extrabold text-foreground text-base uppercase tracking-tight">AIOStreams Configuration</h4>
+                                <ul className="space-y-2.5 text-sm text-foreground/70 list-disc ml-4">
                                     <li>Open AIOStreams › <strong>Save & Install</strong>.</li>
                                     <li>Select <strong>Import</strong> › <strong>Import Template</strong>.</li>
                                     <li>Upload the AIOStreams template file.</li>
                                     <li>Add your services: <strong>Debrid, TMDB, TVDB API Keys</strong>.</li>
                                 </ul>
-                                <div className="p-3 bg-amber-500/5 border border-amber-500/20 rounded-xl flex gap-3 mt-2">
-                                    <Save className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                                    <p className="text-[11px] text-foreground/70 leading-relaxed italic">
-                                        Set a password, click <strong className="text-amber-500">CREATE</strong>, and save your <strong>UUID + Password</strong>.
-                                    </p>
+                                <div className="space-y-4">
+                                    <div className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-2xl flex gap-4">
+                                        <Save className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                                        <p className="text-sm text-foreground/70 leading-relaxed italic">
+                                            Set a password, click <strong className="text-amber-500">CREATE</strong>, and save your <strong>UUID + Password</strong>.
+                                        </p>
+                                    </div>
+                                    <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex gap-4">
+                                        <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                                        <p className="text-sm text-foreground/80 font-bold uppercase tracking-tight">
+                                            Final Step: Add AIOStreams Manifest URL to <span className="text-blue-400">Omni › Addons</span>.
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* AIOMetadata Setup */}
-                        <div className="bg-card/40 p-5 rounded-2xl border border-border flex gap-4">
-                            <div className="h-10 w-10 shrink-0 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 text-blue-400">
-                                <Search className="w-5 h-5" />
+                        <div className="bg-card/40 p-6 rounded-2xl border border-border flex gap-5">
+                            <div className="h-12 w-12 shrink-0 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 text-blue-400">
+                                <Search className="w-6 h-6" />
                             </div>
-                            <div className="space-y-3 flex-1">
-                                <h4 className="font-extrabold text-foreground text-sm uppercase tracking-tight">AIOMetadata Setup</h4>
-                                <ul className="space-y-2 text-[11px] text-foreground/70 list-disc ml-4">
+                            <div className="space-y-4 flex-1">
+                                <h4 className="font-extrabold text-foreground text-base uppercase tracking-tight">AIOMetadata Setup</h4>
+                                <ul className="space-y-2.5 text-sm text-foreground/70 list-disc ml-4">
                                     <li>Import the <strong>AIOMetadata Template</strong> in the app.</li>
-                                    <li>Add API keys (Click <strong>MDBList icon</strong> for your personal key).</li>
-                                    <li>Set password, save the UUID and click <strong>SAVE</strong>.</li>
+                                    <li>Add your API keys (also your MDBList key in catalogs section).</li>
                                 </ul>
-                                <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl flex gap-3">
-                                    <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-                                    <p className="text-[11px] text-foreground/80 font-bold uppercase tracking-tight">
-                                        Final Step: Add AIOStreams Manifest URL to <span className="text-blue-400">Omni › Addons</span>.
-                                    </p>
+                                <div className="space-y-4">
+                                    <div className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-2xl flex gap-4">
+                                        <Save className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                                        <p className="text-sm text-foreground/70 leading-relaxed italic">
+                                            Save configuration, set a password and save your UUID + password.
+                                        </p>
+                                    </div>
+                                    <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex gap-4">
+                                        <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                                        <p className="text-sm text-foreground/80 font-bold uppercase tracking-tight">
+                                            Final Step: Add AIOMetadata Manifest URL to <span className="text-blue-400">Omni › Addons</span>.
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -163,56 +223,65 @@ export function TemplateGuide() {
                 </section>
 
                 {/* 4. OMNI IMPORT */}
-                <section className="space-y-6">
-                    <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                        <Monitor className="w-6 h-6 text-blue-500" />
+                <section className="space-y-8">
+                    <h2 className="text-xl font-bold text-foreground flex items-center gap-3">
+                        <Monitor className="w-7 h-7 text-blue-500" />
                         4. Omni Snapshot Import
                     </h2>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         {/* iOS */}
-                        <div className="bg-card/40 p-5 rounded-2xl border border-border flex gap-4">
-                            <div className="h-10 w-10 shrink-0 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 text-blue-400">
-                                <Smartphone className="w-5 h-5" />
+                        <div className="bg-card/30 p-8 rounded-3xl border border-border flex flex-col gap-6 hover:bg-card/50 transition-colors">
+                            <div className="flex items-center gap-4">
+                                <div className="h-12 w-12 shrink-0 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 text-blue-400">
+                                    <Smartphone className="w-6 h-6" />
+                                </div>
+                                <h4 className="font-bold text-foreground text-lg tracking-tight">iOS Import</h4>
                             </div>
-                            <div className="space-y-3">
-                                <h4 className="font-bold text-foreground text-sm">iOS Import</h4>
-                                <div className="space-y-3 text-[11px] text-foreground/70">
-                                    <p>Move the JSON file to:</p>
-                                    <div className="bg-muted px-2 py-1.5 rounded-lg text-blue-400 font-mono text-[10px]">
+
+                            <div className="space-y-5">
+                                <div className="space-y-2">
+                                    <p className="text-sm text-foreground/70">Move the JSON file to:</p>
+                                    <div className="bg-background/80 px-4 py-3 rounded-2xl text-blue-400 font-mono text-[13px] border border-border/50 shadow-inner flex items-center gap-3">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500/50" />
                                         Files › On my iPhone › Omni › Backups
                                     </div>
-                                    <div className="p-3 bg-amber-500/5 border border-amber-500/20 rounded-xl flex items-start gap-2">
-                                        <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
-                                        <p className="text-[10px] italic">Force close Omni completely and restart for the snapshot to appear.</p>
-                                    </div>
+                                </div>
+
+                                <div className="p-5 bg-amber-500/5 border border-amber-500/10 rounded-2xl flex items-start gap-4 transition-all">
+                                    <AlertCircle className="w-5 h-5 text-amber-500/70 shrink-0 mt-0.5" />
+                                    <p className="text-[13px] leading-relaxed text-foreground/60 italic">
+                                        Force close Omni completely and restart for the snapshot to appear.
+                                    </p>
                                 </div>
                             </div>
                         </div>
 
                         {/* Apple TV */}
-                        <div className="bg-card/40 p-5 rounded-2xl border border-border flex gap-4">
-                            <div className="h-10 w-10 shrink-0 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 text-blue-400">
-                                <Cloud className="w-5 h-5" />
+                        <div className="bg-card/30 p-8 rounded-3xl border border-border flex flex-col gap-6 hover:bg-card/50 transition-colors">
+                            <div className="flex items-center gap-4">
+                                <div className="h-12 w-12 shrink-0 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 text-blue-400">
+                                    <Cloud className="w-6 h-6" />
+                                </div>
+                                <h4 className="font-bold text-foreground text-lg tracking-tight">Apple TV Sync</h4>
                             </div>
-                            <div className="space-y-3">
-                                <h4 className="font-bold text-foreground text-sm">Apple TV Sync</h4>
-                                <p className="text-[11px] text-foreground/70 leading-relaxed">
-                                    The easiest way: Enable <strong>iCloud Sync</strong> in Omni settings on your iPhone, then pull the setup on your Apple TV.
+                            <div className="space-y-4">
+                                <p className="text-sm text-foreground/70 leading-relaxed">
+                                    Enable <strong className="text-foreground">iCloud Sync</strong> in Omni settings on your iPhone, then pull the setup on your Apple TV.
                                 </p>
+                                <div className="p-5 bg-blue-500/5 border border-blue-500/10 rounded-2xl flex items-center gap-4">
+                                    <CheckCircle2 className="w-5 h-5 text-blue-400/70 shrink-0" />
+                                    <p className="text-[13px] text-foreground/60 italic">Automated cloud transfer</p>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                {/* FOOTER - Matching Documentation.tsx */}
-                <footer className="text-center pt-8 border-t border-border">
-                    <p className="text-[10px] text-foreground/70 font-bold uppercase tracking-widest bg-card inline-block px-4 py-1 rounded-full border border-border">
-                        Omni Snapshot Manager v0.2.0 • Unified Media Experience
-                    </p>
-                </footer>
+
             </div>
         </DialogContent>
+
     );
 }
 

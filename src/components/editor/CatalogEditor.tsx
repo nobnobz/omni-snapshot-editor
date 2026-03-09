@@ -149,7 +149,7 @@ function SortableCatalogItem({
                                 {catalog.showInHome && <Star className="w-3 h-3 text-amber-500 shrink-0" />}
                                 <Pencil className="w-3 h-3 text-blue-400 opacity-0 group-hover/name:opacity-100 transition-opacity shrink-0" />
                             </h4>
-                            <p className="text-[10px] text-foreground/70 truncate font-mono mt-0.5 w-fit">{catalog.id}</p>
+                            <p className="text-[11px] text-foreground/70 truncate font-mono mt-0.5 w-fit">{catalog.id}</p>
                         </div>
                     )}
                 </div>
@@ -157,30 +157,30 @@ function SortableCatalogItem({
                 {/* Badges */}
                 <div className="flex items-center gap-1 shrink-0 flex-wrap sm:justify-end">
                     {!catalog.enabled && (
-                        <Badge variant="outline" className="text-[9px] h-4 px-1 bg-background text-foreground/70 border-border">Hidden</Badge>
+                        <Badge variant="outline" className="text-[10px] h-4 px-1 bg-background text-foreground/70 border-border">Hidden</Badge>
                     )}
                     {!isActive && (
-                        <Badge variant="outline" className="text-[9px] h-4 px-1 bg-background text-foreground/70 border-border border-dashed">Disabled</Badge>
+                        <Badge variant="outline" className="text-[10px] h-4 px-1 bg-background text-foreground/70 border-border border-dashed">Disabled</Badge>
                     )}
                     {catalog.showInHome && (
-                        <Badge className={`text-[9px] h-4 px-1 border ${isSmallTopRow ? 'bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/20' : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'}`}>
+                        <Badge className={`text-[10px] h-4 px-1 border ${isSmallTopRow ? 'bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/20' : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'}`}>
                             {isSmallTopRow ? 'Top Row (small)' : 'Top Row'}
                         </Badge>
                     )}
                     {isLandscape && (
-                        <Badge className="text-[9px] h-4 px-1 bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20">Wide</Badge>
+                        <Badge className="text-[10px] h-4 px-1 bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20">Wide</Badge>
                     )}
                     {isSmall && (
-                        <Badge className="text-[9px] h-4 px-1 bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20">Small</Badge>
+                        <Badge className="text-[10px] h-4 px-1 bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20">Small</Badge>
                     )}
                     {isPinned && (
-                        <Badge className="text-[9px] h-4 px-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">Header</Badge>
+                        <Badge className="text-[10px] h-4 px-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">Header</Badge>
                     )}
                     {isRandom && (
-                        <Badge variant="secondary" className="text-[9px] h-4 px-1 bg-muted text-foreground/70 border-none">Rand</Badge>
+                        <Badge variant="secondary" className="text-[10px] h-4 px-1 bg-muted text-foreground/70 border-none">Rand</Badge>
                     )}
                     {itemCount && catalog.showInHome && (
-                        <Badge variant="secondary" className="text-[9px] h-4 px-1 bg-muted text-foreground/70 border-none">{itemCount}</Badge>
+                        <Badge variant="secondary" className="text-[10px] h-4 px-1 bg-muted text-foreground/70 border-none">{itemCount}</Badge>
                     )}
                 </div>
             </div>
@@ -575,7 +575,7 @@ export function CatalogEditor() {
             </div>
 
             {/* Stats */}
-            <div className="flex gap-3 text-[11px] text-foreground/70">
+            <div className="flex gap-4 text-[13px] text-foreground/70 px-1 py-2">
                 <span>
                     <span className="text-foreground font-medium">{enabledCatalogs.length}</span> shown
                 </span>
@@ -643,7 +643,7 @@ export function CatalogEditor() {
                                 <div key={cat.id} className="flex items-center gap-3 p-2.5 bg-card/50 border border-border border-dashed rounded-lg">
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm text-foreground/70 truncate">{cat.name || cat.id}</p>
-                                        <p className="text-[10px] text-foreground font-mono truncate">{cat.id}</p>
+                                        <p className="text-[11px] text-foreground font-mono truncate">{cat.id}</p>
                                     </div>
                                     <Button
                                         variant="outline" size="sm"

@@ -8,12 +8,15 @@ import { renameGroup, renameMainGroup, disableGroup, disableMainGroup, disableCa
 
 export interface TemplateManifest {
     version: string;
-    updated: string;
-    templates: {
-        omni: { url: string; label: string };
-        aiometadata: { url: string; label: string };
-        aiostreams: { url: string; label: string };
-    };
+    lastUpdated: string;
+    templates: Array<{
+        id: string;
+        name: string;
+        url: string;
+        version?: string;
+        description?: string;
+        isDefault?: boolean;
+    }>;
 }
 
 interface ConfigContextType {
@@ -93,11 +96,23 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
 
         setManifestStatus('loading');
         try {
-            const response = await fetch('https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/manifest.json');
+            // Add cache-busting to bypass GitHub Raw cache (5 min)
+            const cacheBuster = `?t=${Date.now()}`;
+            const url = 'https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/manifest.json' + cacheBuster;
+
+            const response = await fetch(url);
             if (!response.ok) throw new Error("Failed to fetch manifest");
-            const data = await response.json();
-            setManifest(data);
-            setManifestStatus('success');
+
+            // Fetch as text first to handle potential parsing issues more gracefully
+            const text = await response.text();
+            try {
+                const data = JSON.parse(text);
+                setManifest(data);
+                setManifestStatus('success');
+            } catch (parseErr) {
+                console.error("Manifest JSON parse failed:", parseErr, text);
+                throw new Error("Invalid JSON format in manifest.json");
+            }
         } catch (err) {
             console.error("Manifest fetch failed:", err);
             setManifestStatus('error');

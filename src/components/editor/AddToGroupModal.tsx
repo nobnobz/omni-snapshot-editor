@@ -121,7 +121,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                             />
                         </div>
 
-                        <div className="flex-1 overflow-y-auto rounded-md border border-border bg-background/50 p-4 min-h-[150px]">
+                        <div className="flex-1 overflow-y-auto rounded-md border border-border bg-transparent p-4 min-h-[150px]">
                             {allSubgroupNames.length === 0 ? (
                                 <p className="text-sm text-foreground/70 italic">No subgroups available.</p>
                             ) : (
@@ -189,7 +189,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                     for (const [cat, items] of categories.entries()) {
                                         if (items.length > 0) {
                                             unassignedElements.push(
-                                                <div key={`header-${cat}`} className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest mt-6 mb-2 pl-1 border-b border-border/30 pb-1.5">
+                                                <div key={`header-${cat}`} className="sticky top-0 bg-background text-[10px] font-bold text-foreground/50 uppercase tracking-widest mt-6 mb-2 pl-1 border-b border-border/30 pb-1.5 z-10">
                                                     {cat}
                                                 </div>
                                             );

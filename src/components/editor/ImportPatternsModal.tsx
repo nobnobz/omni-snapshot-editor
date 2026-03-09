@@ -64,14 +64,18 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
 
     const templates: { label: string; url: string }[] = [];
     if (manifest) {
-        if (manifest.templates.omni) templates.push(manifest.templates.omni);
-        if (manifest.templates.aiometadata) templates.push(manifest.templates.aiometadata);
-        if (manifest.templates.aiostreams) templates.push(manifest.templates.aiostreams);
+        const omni = manifest.templates.find(t => t.id === 'ume-main');
+        const aiometadata = manifest.templates.find(t => t.id === 'aiometadata');
+        const aiostreams = manifest.templates.find(t => t.id === 'aiostreams');
+
+        if (omni) templates.push({ label: omni.name, url: omni.url });
+        if (aiometadata) templates.push({ label: aiometadata.name, url: aiometadata.url });
+        if (aiostreams) templates.push({ label: aiostreams.name, url: aiostreams.url });
     }
 
     if (templates.length === 0) {
         templates.push({
-            label: "UME Template",
+            label: "UME Omni Template",
             url: "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/Older%20Versions/v1.7.1/omni-snapshot-unified-media-experience-v1.7.1-2026-03-02.json"
         });
     }

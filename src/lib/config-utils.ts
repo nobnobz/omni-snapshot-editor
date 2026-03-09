@@ -177,3 +177,30 @@ export const pruneDisabledKeys = (values: Record<string, any>, disabledKeys: Set
 
     return walkAndPrune(cloned, []);
 };
+/**
+ * Validates if the given object is a valid Omni Configuration structure.
+ */
+export const validateOmniConfig = (config: any): boolean => {
+    if (!config || typeof config !== 'object') return false;
+
+    // An Omni config must have either a 'values' or 'config' root object
+    const values = config.values || config.config;
+    if (!values || typeof values !== 'object') return false;
+
+    // Check for some common Omni keys to be reasonably sure it's the right format.
+    // We check for at least ONE of these known keys.
+    const commonKeys = [
+        "catalog_ordering",
+        "hide_spoilers",
+        "mdblist_enabled_ratings",
+        "preferred_audio_language",
+        "catalog_groups",
+        "main_catalog_groups",
+        "subtitle_color"
+    ];
+
+    const hasCommonKey = commonKeys.some(key => key in values);
+
+    // Also allow "clean" templates which might only have a few keys but are valid objects
+    return hasCommonKey || Object.keys(values).length > 0;
+};

@@ -154,7 +154,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                 />
                             </div>
 
-                            <ScrollArea className="h-[200px] rounded-md border border-border bg-muted/20 p-4">
+                            <ScrollArea className="h-[200px] rounded-md border border-border bg-transparent p-4">
                                 {allSubgroupNames.length === 0 ? (
                                     <p className="text-sm text-foreground/70 italic">No subgroups available.</p>
                                 ) : (
@@ -277,7 +277,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                     />
                                 </div>
 
-                                <ScrollArea className="h-[300px] md:h-[450px] rounded-md border border-border bg-muted/20 p-4">
+                                <ScrollArea className="h-[300px] md:h-[450px] rounded-md border border-border bg-transparent p-4">
                                     {filteredCatalogs.length === 0 ? (
                                         <p className="text-sm text-foreground/70 italic">No catalogs found.</p>
                                     ) : (

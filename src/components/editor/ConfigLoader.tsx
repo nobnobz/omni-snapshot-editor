@@ -1,5 +1,6 @@
 "use client";
 
+import { decodeConfig, encodeConfig, validateOmniConfig } from "@/lib/config-utils";
 import { useState, useEffect } from "react";
 import { useConfig } from "@/context/ConfigContext";
 import { Button } from "@/components/ui/button";
@@ -54,25 +55,24 @@ export function ConfigLoader() {
         fetchManifest();
     }, []);
 
-    const templates: { label: string; url: string }[] = manifest?.templates.omni ? [
-        {
-            label: manifest.templates.omni.label,
-            url: manifest.templates.omni.url
-        }
-    ] : [
-        {
-            label: "UME Template",
-            url: "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/Older%20Versions/v1.7.1/omni-snapshot-unified-media-experience-v1.7.1-2026-03-02.json"
-        },
-    ];
+    const templates: { label: string; url: string }[] = manifest?.templates?.length ?
+        manifest.templates
+            .filter(t => t.id.startsWith('ume-') && t.id !== 'ume-catalogs' && t.url)
+            .map(t => ({ label: t.name, url: t.url })) : [
+            {
+                label: "UME Omni Template",
+                url: "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/Older%20Versions/v1.7.1/omni-snapshot-unified-media-experience-v1.7.1-2026-03-02.json"
+            },
+        ];
 
     const [selectedVersion, setSelectedVersion] = useState(templates[0].label);
     const [url, setUrl] = useState(templates[0].url);
 
     useEffect(() => {
-        if (manifest?.templates.omni) {
-            setSelectedVersion(manifest.templates.omni.label);
-            setUrl(manifest.templates.omni.url);
+        const defaultTemplate = manifest?.templates?.find(t => t.id === 'ume-main' || t.isDefault);
+        if (defaultTemplate) {
+            setSelectedVersion(defaultTemplate.name);
+            setUrl(defaultTemplate.url);
         }
     }, [manifest]);
 
@@ -106,6 +106,12 @@ export function ConfigLoader() {
             const decoder = new TextDecoder("utf-8");
             const text = decoder.decode(buffer);
             const json = repairMojibakeInConfig(JSON.parse(text));
+
+            // Structural Validation
+            if (!validateOmniConfig(json)) {
+                throw new Error("The file is not a valid Omni configuration.");
+            }
+
             const fn = url.split("/").pop() || "omni-config.json";
             loadConfig(json, fn);
         } catch (err: any) {
@@ -138,12 +144,27 @@ export function ConfigLoader() {
         const file = e.target.files?.[0];
         if (!file) return;
 
+        // Size Limit: 5MB
+        const MAX_SIZE = 5 * 1024 * 1024; // 5MB in bytes
+        if (file.size > MAX_SIZE) {
+            setError("The file is too large. Maximum allowed size is 5MB.");
+            return;
+        }
+
         setLoading(true);
         setError(null);
         const reader = new FileReader();
         reader.onload = (event) => {
             try {
                 const json = repairMojibakeInConfig(JSON.parse(event.target?.result as string));
+
+                // Structural Validation
+                if (!validateOmniConfig(json)) {
+                    setError("The file is not a valid Omni configuration.");
+                    setLoading(false);
+                    return;
+                }
+
                 loadConfig(json, file.name);
             } catch (err) {
                 setError("Invalid JSON file.");
@@ -250,7 +271,7 @@ export function ConfigLoader() {
                     <div className="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center mb-2 mx-auto">
                         <img src="/omni-snapshot-editor/clown.png" alt="Logo" className="w-full h-full object-contain" />
                     </div>
-                    <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
+                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
                         Omni Snapshot Manager
                     </h1>
                     <p className="text-sm sm:text-base text-foreground/70 max-w-lg mx-auto leading-relaxed">
@@ -276,34 +297,116 @@ export function ConfigLoader() {
                                     <ChevronDown className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-opacity" />
                                 </button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-56 bg-card border-border shadow-2xl backdrop-blur-xl" align="center">
+                            <DropdownMenuContent className="w-64 bg-card border-border shadow-2xl backdrop-blur-xl pb-2" align="center">
                                 <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-foreground/50 font-bold px-3 py-2">
-                                    Project Resources
+                                    Direct Downloads
                                 </DropdownMenuLabel>
-                                <DropdownMenuItem asChild className="cursor-pointer focus:bg-blue-500/10 focus:text-blue-400">
-                                    <a
-                                        href="https://github.com/nobnobz/Omni-Template-Bot-Bid-Raiser"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-2 w-full px-2 py-1.5"
-                                    >
-                                        <Github className="w-4 h-4" />
-                                        <span className="text-xs font-semibold">UME Template</span>
-                                        <ExternalLink className="w-3 h-3 ml-auto opacity-40" />
-                                    </a>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem asChild className="cursor-pointer focus:bg-blue-500/10 focus:text-blue-400">
-                                    <a
-                                        href="https://github.com/nobnobz/omni-snapshot-editor"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-2 w-full px-2 py-1.5"
-                                    >
-                                        <Github className="w-4 h-4" />
-                                        <span className="text-xs font-semibold">Editor Source Code</span>
-                                        <ExternalLink className="w-3 h-3 ml-auto opacity-40" />
-                                    </a>
-                                </DropdownMenuItem>
+                                {(() => {
+                                    // Find the best UME template: isDefault first, otherwise first ume- entry, otherwise ume-main
+                                    const template = manifest?.templates?.find(t => t.url && t.isDefault && t.id.startsWith('ume-'))
+                                        || manifest?.templates?.find(t => t.url && t.id.startsWith('ume-'))
+                                        || manifest?.templates?.find(t => t.id === 'ume-main' && t.url);
+
+                                    // Only show if template is not in manifest OR has a URL
+                                    if (template && !template.url) return null;
+
+                                    const versionRegex = /v\d+(?:\.\d+)*/;
+                                    const version = template?.version || template?.name.match(versionRegex)?.[0];
+                                    const name = template?.name.replace(versionRegex, "").replace("UME Template", "UME Omni Template").trim() || "UME Omni Template";
+
+                                    return (
+                                        <DropdownMenuItem
+                                            className="cursor-pointer focus:bg-emerald-500/10 focus:text-emerald-400 flex items-center gap-2 px-3 py-1.5"
+                                            onClick={() => handleDownload(
+                                                template?.url || "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/fusion-template-bot-bid-raiser-v1.6.2.json",
+                                                "omni-snapshot-ume.json"
+                                            )}
+                                        >
+                                            <FileJson className="w-4 h-4" />
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-xs font-semibold leading-tight">{name}</span>
+                                                {version && <span className="text-[10px] opacity-50 font-medium leading-tight">{version}</span>}
+                                            </div>
+                                            <FileDown className="w-3 h-3 ml-auto opacity-40" />
+                                        </DropdownMenuItem>
+                                    );
+                                })()}
+
+                                {(() => {
+                                    const template = manifest?.templates?.find(t => t.id === 'aiometadata');
+                                    if (template && !template.url) return null;
+
+                                    const versionRegex = /v\d+(?:\.\d+)*/;
+                                    const version = template?.version || template?.name.match(versionRegex)?.[0];
+                                    const name = template?.name.replace(versionRegex, "").trim() || "AIOMetadata Template";
+
+                                    return (
+                                        <DropdownMenuItem
+                                            className="cursor-pointer focus:bg-emerald-500/10 focus:text-emerald-400 flex items-center gap-2 px-3 py-1.5"
+                                            onClick={() => {
+                                                const url = template?.url || "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/aiometadata-patterns-v1.json";
+                                                handleDownload(url, "aiometadata-template.json");
+                                            }}
+                                        >
+                                            <FileDown className="w-4 h-4" />
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-xs font-semibold leading-tight">{name}</span>
+                                                {version && <span className="text-[10px] opacity-50 font-medium leading-tight">{version}</span>}
+                                            </div>
+                                        </DropdownMenuItem>
+                                    );
+                                })()}
+
+                                {(() => {
+                                    const template = manifest?.templates?.find(t => t.id === 'ume-catalogs');
+                                    if (template && !template.url) return null;
+
+                                    const versionRegex = /v\d+(?:\.\d+)*/;
+                                    const version = template?.version || template?.name.match(versionRegex)?.[0];
+                                    const name = template?.name.replace(versionRegex, "").trim() || "AIOMetadata (Catalogs Only)";
+
+                                    return (
+                                        <DropdownMenuItem
+                                            className="cursor-pointer focus:bg-emerald-500/10 focus:text-emerald-400 flex items-center gap-2 px-3 py-1.5"
+                                            onClick={() => {
+                                                const url = template?.url || "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/catalogs-only-template.json";
+                                                handleDownload(url, "aiometadata-catalogs.json");
+                                            }}
+                                        >
+                                            <FileDown className="w-4 h-4" />
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-xs font-semibold leading-tight">{name}</span>
+                                                {version && <span className="text-[10px] opacity-50 font-medium leading-tight">{version}</span>}
+                                            </div>
+                                        </DropdownMenuItem>
+                                    );
+                                })()}
+
+                                {(() => {
+                                    const template = manifest?.templates?.find(t => t.id === 'aiostreams');
+                                    if (template && !template.url) return null;
+
+                                    const versionRegex = /v\d+(?:\.\d+)*/;
+                                    const version = template?.version || template?.name.match(versionRegex)?.[0];
+                                    const name = template?.name.replace(versionRegex, "").trim() || "AIOStreams Template";
+
+                                    return (
+                                        <DropdownMenuItem
+                                            className="cursor-pointer focus:bg-emerald-500/10 focus:text-emerald-400 flex items-center gap-2 px-3 py-1.5"
+                                            onClick={() => {
+                                                const url = template?.url || "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/aiostreams-patterns-v1.json";
+                                                handleDownload(url, "aiostreams-template.json");
+                                            }}
+                                        >
+                                            <FileDown className="w-4 h-4" />
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-xs font-semibold leading-tight">{name}</span>
+                                                {version && <span className="text-[10px] opacity-50 font-medium leading-tight">{version}</span>}
+                                            </div>
+                                        </DropdownMenuItem>
+                                    );
+                                })()}
+
                                 <DropdownMenuSeparator className="bg-border/40" />
                                 <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-foreground/50 font-bold px-3 py-2">
                                     Help & Guides
@@ -324,45 +427,32 @@ export function ConfigLoader() {
 
                                 <DropdownMenuSeparator className="bg-border/40" />
                                 <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-foreground/50 font-bold px-3 py-2">
-                                    Direct Downloads
+                                    Project Resources
                                 </DropdownMenuLabel>
-                                <DropdownMenuItem
-                                    className="cursor-pointer focus:bg-emerald-500/10 focus:text-emerald-400 flex items-center gap-2 px-3 py-1.5"
-                                    onClick={() => handleDownload(manifest?.templates.omni.url || "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/Older%20Versions/v1.7.1/omni-snapshot-unified-media-experience-v1.7.1-2026-03-02.json", "omni-snapshot-ume.json")}
-                                >
-                                    <FileJson className="w-4 h-4" />
-                                    <span className="text-xs font-semibold">Omni Snapshot (UME)</span>
-                                    <FileDown className="w-3 h-3 ml-auto opacity-40" />
+                                <DropdownMenuItem asChild className="cursor-pointer focus:bg-blue-500/10 focus:text-blue-400">
+                                    <a
+                                        href="https://github.com/nobnobz/Omni-Template-Bot-Bid-Raiser"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-2 w-full px-2 py-1.5"
+                                    >
+                                        <Github className="w-4 h-4" />
+                                        <span className="text-xs font-semibold">UME Templates</span>
+                                        <ExternalLink className="w-3 h-3 ml-auto opacity-40" />
+                                    </a>
                                 </DropdownMenuItem>
-
-                                <DropdownMenuItem
-                                    className={`flex items-center gap-2 px-3 py-1.5 ${!manifest?.templates.aiometadata ? 'cursor-not-allowed opacity-50' : 'cursor-pointer focus:bg-emerald-500/10 focus:text-emerald-400'}`}
-                                    onClick={() => {
-                                        if (manifest?.templates.aiometadata) {
-                                            handleDownload(manifest.templates.aiometadata.url, "aiometadata-template.json");
-                                        }
-                                    }}
-                                >
-                                    <FileDown className="w-4 h-4" />
-                                    <span className="text-xs font-semibold">AIOMetadata Template</span>
+                                <DropdownMenuItem asChild className="cursor-pointer focus:bg-blue-500/10 focus:text-blue-400">
+                                    <a
+                                        href="https://github.com/nobnobz/omni-snapshot-editor"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-2 w-full px-2 py-1.5"
+                                    >
+                                        <Github className="w-4 h-4" />
+                                        <span className="text-xs font-semibold">Manager Source Code</span>
+                                        <ExternalLink className="w-3 h-3 ml-auto opacity-40" />
+                                    </a>
                                 </DropdownMenuItem>
-
-                                <DropdownMenuItem
-                                    className={`flex items-center gap-2 px-3 py-1.5 ${!manifest?.templates.aiostreams ? 'cursor-not-allowed opacity-50' : 'cursor-pointer focus:bg-emerald-500/10 focus:text-emerald-400'}`}
-                                    onClick={() => {
-                                        if (manifest?.templates.aiostreams) {
-                                            handleDownload(manifest.templates.aiostreams.url, "aiostreams-template.json");
-                                        }
-                                    }}
-                                >
-                                    <FileDown className="w-4 h-4" />
-                                    <span className="text-xs font-semibold">AioStreams Template</span>
-                                </DropdownMenuItem>
-                                <div className="px-3 py-2">
-                                    <p className="text-[9px] text-foreground/40 leading-tight">
-                                        More templates available in the GitHub repository.
-                                    </p>
-                                </div>
                             </DropdownMenuContent>
                         </DropdownMenu>
                         <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 text-sm text-pink-500 hover:text-pink-400 hover:bg-pink-500/10 rounded-lg transition-colors font-medium border border-pink-500/20 hover:border-pink-500/40 backdrop-blur-sm group">
@@ -390,7 +480,7 @@ export function ConfigLoader() {
                                 Custom Import
                             </CardTitle>
                             <CardDescription className="text-xs text-foreground/70 leading-relaxed">
-                                Upload a local JSON configuration file.
+                                Upload a Omni JSON configuration file.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="flex-1 flex flex-col">

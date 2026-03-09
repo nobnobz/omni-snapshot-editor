@@ -81,14 +81,16 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
         }
     }, [isOpen]);
 
-    const templates: { label: string; url: string }[] = manifest?.templates.omni ? [
+    const omniTemplate = manifest?.templates.find(t => t.id === 'ume-main');
+
+    const templates: { label: string; url: string }[] = omniTemplate ? [
         {
-            label: manifest.templates.omni.label,
-            url: manifest.templates.omni.url
+            label: omniTemplate.name,
+            url: omniTemplate.url
         }
     ] : [
         {
-            label: "UME Template",
+            label: "UME Omni Template",
             url: "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/Older%20Versions/v1.7.1/omni-snapshot-unified-media-experience-v1.7.1-2026-03-02.json"
         },
     ];
@@ -96,8 +98,8 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
     const [selectedVersion, setSelectedVersion] = useState(templates[0].label);
 
     useEffect(() => {
-        if (manifest?.templates.omni) {
-            setSelectedVersion(manifest.templates.omni.label);
+        if (omniTemplate) {
+            setSelectedVersion(omniTemplate.name);
         }
     }, [manifest]);
 

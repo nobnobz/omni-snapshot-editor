@@ -417,7 +417,7 @@ export function MainEditor() {
             {/* Main Content */}
             <main className="flex-1 overflow-y-auto scroll-smooth">
                 {/* Desktop Static Header (Not Sticky) */}
-                <div className="hidden lg:flex items-center justify-between px-8 py-8 border-b border-border bg-gradient-to-b from-card to-transparent">
+                <div className="hidden lg:flex items-center justify-between px-8 py-10 border-b border-border bg-gradient-to-b from-card to-transparent">
                     <div>
                         <h2 className="text-3xl font-black text-foreground tracking-tight">Configuration Editor</h2>
                     </div>
@@ -495,7 +495,7 @@ export function MainEditor() {
                     </div>
                 </header>
 
-                <div className="max-w-4xl mx-auto p-8 space-y-12">
+                <div className="max-w-5xl mx-auto p-10 space-y-16">
 
 
 
@@ -517,8 +517,8 @@ export function MainEditor() {
 
                         return (
                             <section key={section.id} id={section.id} className="scroll-mt-8">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-xl font-medium text-foreground">{section.title}</h3>
+                                <div className="flex items-center justify-between mb-5">
+                                    <h3 className="text-xl font-bold text-foreground tracking-tight">{section.title}</h3>
                                     {["groups", "catalogs", "patterns"].includes(section.id) && (
                                         <Button
                                             variant="ghost"
@@ -536,11 +536,11 @@ export function MainEditor() {
                                     {section.id === "aiometadata" ? (
                                         <div className="space-y-4">
                                             <div className="flex flex-col gap-1.5 px-1">
-                                                <p className="text-[13px] text-foreground/70 leading-relaxed">
+                                                <p className="text-sm text-foreground/70 leading-relaxed">
                                                     Import your catalogs by uploading an AIOMetadata config file or pasting the JSON. To export your catalogs in AIOMetadata, go to Catalogs &gt; Share Setup.
                                                 </p>
-                                                <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3.5 text-[12px] text-blue-400 flex gap-3 items-start mt-2 shadow-sm">
-                                                    <Info className="w-4 h-4 shrink-0 mt-0.5 text-blue-400" />
+                                                <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 text-[13px] text-blue-400 flex gap-4 items-start mt-4 shadow-sm">
+                                                    <Info className="w-5 h-5 shrink-0 mt-0.5 text-blue-400" />
                                                     <p className="leading-relaxed">
                                                         <span className="font-bold">Note:</span> You can skip this step if you don’t want to import additional catalogs from your AIOMetadata setup.
                                                     </p>
@@ -639,7 +639,7 @@ export function MainEditor() {
                                     ) : section.id === "groups" ? (
                                         <div className="space-y-6">
                                             <div className="space-y-5">
-                                                <p className="text-[13px] text-foreground/70 px-1 leading-relaxed">
+                                                <p className="text-sm text-foreground/70 px-1 leading-relaxed">
                                                     Create and organize groups, assign catalogs, and reorder items. To update your setup, use <strong>Update from Template</strong>.
                                                 </p>
                                                 <UnifiedSubgroupEditor />
@@ -648,7 +648,7 @@ export function MainEditor() {
                                     ) : section.id === "catalogs" ? (
                                         <div className="space-y-6">
                                             <div className="space-y-5">
-                                                <p className="text-[13px] text-foreground/70 px-1 leading-relaxed">
+                                                <p className="text-sm text-foreground/70 px-1 leading-relaxed">
                                                     Manage global catalogs that appear below your groups. Enable/disable them, adjust appearance (e.g. landscape), and configure the ranked Top Row display.
                                                 </p>
                                                 <CatalogEditor />
@@ -712,9 +712,9 @@ export function MainEditor() {
                             </section>
                         );
                     })}
-
                 </div>
             </main>
+
             {/* Exit Confirmation Dialog */}
             <AlertDialog open={isExitConfirmOpen} onOpenChange={setIsExitConfirmOpen}>
                 <AlertDialogContent className="bg-card border-border text-foreground">
