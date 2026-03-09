@@ -251,7 +251,7 @@ export function ConfigLoader() {
                                         className="flex items-center gap-2 w-full px-2 py-1.5"
                                     >
                                         <Github className="w-4 h-4" />
-                                        <span className="text-xs font-semibold">UME Templates (GitHub)</span>
+                                        <span className="text-xs font-semibold">UME Template</span>
                                         <ExternalLink className="w-3 h-3 ml-auto opacity-40" />
                                     </a>
                                 </DropdownMenuItem>
