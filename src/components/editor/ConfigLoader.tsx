@@ -251,7 +251,19 @@ export function ConfigLoader() {
                                         className="flex items-center gap-2 w-full px-2 py-1.5"
                                     >
                                         <Github className="w-4 h-4" />
-                                        <span className="text-xs font-semibold">GitHub Repository</span>
+                                        <span className="text-xs font-semibold">UME Templates (GitHub)</span>
+                                        <ExternalLink className="w-3 h-3 ml-auto opacity-40" />
+                                    </a>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild className="cursor-pointer focus:bg-blue-500/10 focus:text-blue-400">
+                                    <a
+                                        href="https://github.com/nobnobz/omni-snapshot-editor"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-2 w-full px-2 py-1.5"
+                                    >
+                                        <Github className="w-4 h-4" />
+                                        <span className="text-xs font-semibold">Editor Source Code</span>
                                         <ExternalLink className="w-3 h-3 ml-auto opacity-40" />
                                     </a>
                                 </DropdownMenuItem>
