@@ -260,7 +260,7 @@ export function ConfigLoader() {
                     <div className="pt-4 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
                         <Dialog>
                             <DialogTrigger asChild>
-                                <button className="inline-flex items-center gap-2 px-4 py-2 text-sm text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-colors font-medium border border-blue-500/20 hover:border-blue-500/40 backdrop-blur-sm">
+                                <button className="inline-flex items-center gap-2 px-4 py-2 text-sm text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-colors font-medium border border-blue-500/30 hover:border-blue-500/50 backdrop-blur-sm">
                                     <BookOpen className="w-4 h-4" />
                                     <span className="hidden sm:inline">Documentation</span>
                                     <span className="sm:hidden">Docs</span>
@@ -270,7 +270,7 @@ export function ConfigLoader() {
                         </Dialog>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <button className="inline-flex items-center gap-2 px-4 py-2 text-sm text-foreground/70 hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors font-medium border border-white/20 hover:border-white/40 backdrop-blur-sm group">
+                                <button className="inline-flex items-center gap-2 px-4 py-2 text-sm text-foreground/70 hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors font-medium border border-white/10 hover:border-white/30 backdrop-blur-sm group">
                                     <Github className="w-4 h-4" />
                                     <span>UME Templates</span>
                                     <ChevronDown className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-opacity" />
@@ -365,7 +365,7 @@ export function ConfigLoader() {
                                 </div>
                             </DropdownMenuContent>
                         </DropdownMenu>
-                        <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 text-sm text-pink-500 hover:text-pink-400 hover:bg-pink-500/10 rounded-lg transition-colors font-medium border border-pink-500/20 hover:border-pink-500/40 backdrop-blur-sm group">
+                        <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 text-sm text-pink-500 hover:text-pink-400 hover:bg-pink-500/10 rounded-lg transition-colors font-medium border border-pink-500/30 hover:border-pink-500/50 backdrop-blur-sm group">
                             <Heart className="w-4 h-4 group-hover:fill-pink-500/20 transition-all" />
                             <span className="hidden sm:inline">Support my work</span>
                             <span className="sm:hidden">Support</span>
