@@ -22,236 +22,219 @@ import {
     Zap,
     Search,
     Cloud,
-    AlertCircle
+    AlertCircle,
+    Monitor,
+    UploadCloud,
+    MousePointer2
 } from "lucide-react";
 
 export function TemplateGuide() {
-    // --- UNIFIED DESIGN SYSTEM ---
-    // Strict typography and component tokens for absolute consistency
-    const UI = {
-        font: {
-            title: "text-[18px] font-black tracking-tight text-white uppercase",
-            subtitle: "text-[11px] font-bold text-blue-400/50 uppercase tracking-[0.2em]",
-            section_h: "text-[15px] font-black text-white tracking-tight uppercase mb-4 flex items-center gap-2",
-            step_h: "text-[16px] font-black text-white tracking-tight leading-tight",
-            body: "text-[13px] text-white/50 leading-relaxed",
-            label: "text-[10px] font-black text-white/30 uppercase tracking-[0.1em]",
-            code: "text-[11px] font-mono font-medium text-blue-400 bg-white/5 px-1.5 py-0.5 rounded border border-white/5",
-            bold: "text-white font-bold",
-            italic: "text-white/40 italic font-medium"
-        },
-        box: {
-            main: "bg-white/[0.02] border border-white/[0.08] rounded-2xl p-6",
-            inner: "bg-white/[0.02] border border-white/[0.05] rounded-xl p-4 transition-all duration-200",
-            step_icon: "w-8 h-8 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-[11px] font-black text-blue-400 shadow-sm shrink-0",
-            action: "flex items-center justify-between p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:bg-blue-500/10 hover:border-blue-500/20 transition-all group cursor-pointer"
-        }
-    };
-
     return (
-        <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col p-0 overflow-hidden bg-[#0a0a0a] border-white/5 shadow-2xl">
-            {/* Scrollable Flow */}
-            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+        <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto bg-background border-border text-foreground scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-transparent">
+            {/* MATCHING HEADER FROM DOCUMENTATION.tsx */}
+            <DialogHeader className="border-b border-border pb-6 mb-6">
+                <DialogTitle className="text-3xl font-extrabold flex items-center gap-3 bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
+                    <UploadCloud className="w-8 h-8 text-blue-500" />
+                    How to Install - Guide
+                </DialogTitle>
+                <p className="text-foreground/70 text-sm mt-2 uppercase tracking-[0.2em] font-bold">Unified Media Experience</p>
+            </DialogHeader>
 
-                {/* 1. Header (Part of scrolling flow to maximize space) */}
-                <div className="border-b border-white/5 bg-[#0d0d0d] relative overflow-hidden px-10 py-8">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-[80px] -mr-32 -mt-32 rounded-full" />
-                    <div className="relative flex items-center gap-6">
-                        <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                            <BookOpen className="w-6 h-6 text-white" />
-                        </div>
-                        <div>
-                            <DialogHeader className="p-0 text-left space-y-0">
-                                <DialogTitle className={UI.font.title}>Installation Guide</DialogTitle>
-                                <DialogDescription className={UI.font.subtitle}>Unified Media Experience</DialogDescription>
-                            </DialogHeader>
+            <div className="space-y-12 pb-10">
+
+                {/* 1. RECOMMENDED INSTANCES - Documentation Card Style */}
+                <section className="space-y-4">
+                    <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                        <Settings className="w-6 h-6 text-blue-500" />
+                        1. Recommended Instances
+                    </h2>
+                    <p className="text-sm text-foreground/70 leading-relaxed">
+                        This setup works best with these stable and experimental instances:
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {[
+                            {
+                                name: "AIOStreams",
+                                icon: Zap,
+                                links: [
+                                    { text: "Stable Instance", url: "https://aiostreamsfortheweebsstable.midnightignite.me/stremio/configure" },
+                                    { text: "Nightly Instance", url: "https://aiostreamsnightlyfortheweak.nhyira.dev/stremio/configure" }
+                                ]
+                            },
+                            {
+                                name: "AIOMetadata",
+                                icon: Search,
+                                links: [
+                                    { text: "Stable Instance", url: "https://aiometadatafortheweebs.midnightignite.me/configure/" },
+                                    { text: "Experimental", url: "https://aiometadatafortheweak.nhyira.dev/configure/" }
+                                ]
+                            }
+                        ].map((group, i) => (
+                            <div key={i} className="bg-card/50 p-5 rounded-xl border border-border hover:border-blue-500/30 transition-colors">
+                                <h4 className="font-bold text-blue-400 mb-3 flex items-center gap-2 text-sm uppercase tracking-tight">
+                                    <group.icon className="w-4 h-4" />
+                                    {group.name}
+                                </h4>
+                                <div className="space-y-2">
+                                    {group.links.map((link, j) => (
+                                        <a key={j} href={link.url} target="_blank" rel="noopener noreferrer"
+                                            className="flex items-center justify-between p-3 rounded-lg bg-background/40 hover:bg-blue-500/10 border border-border/50 text-[11px] font-bold text-foreground/80 hover:text-blue-400 transition-all group">
+                                            {link.text}
+                                            <ChevronRight className="w-3.5 h-3.5 opacity-20 group-hover:opacity-100" />
+                                        </a>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                {/* 2. DOWNLOAD TEMPLATES */}
+                <section className="space-y-4">
+                    <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                        <Download className="w-6 h-6 text-blue-500" />
+                        2. Download Templates
+                    </h2>
+                    <div className="bg-blue-500/5 p-6 rounded-2xl border border-blue-500/20 space-y-4">
+                        <p className="text-sm text-foreground/70 leading-relaxed">
+                            Access the <strong>UME Templates</strong> menu in the navigation bar and download these core files:
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                            {["AIOStreams", "AIOMetadata", "Omni Snapshot"].map((item, i) => (
+                                <div key={i} className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-background border border-border text-[10px] font-black text-foreground/60 uppercase tracking-tight">
+                                    <FileJson className="w-3 h-3 text-blue-400" /> {item}
+                                </div>
+                            ))}
                         </div>
                     </div>
-                </div>
+                </section>
 
-                {/* 2. Main Sections */}
-                <div className="px-10 py-12 space-y-16">
+                {/* 3. SETUP PROCESS */}
+                <section className="space-y-6">
+                    <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                        <MousePointer2 className="w-6 h-6 text-blue-500" />
+                        3. Configuration Process
+                    </h2>
 
-                    {/* RECOMMENDED INSTANCES */}
-                    <section>
-                        <h2 className={UI.font.section_h}>
-                            <Settings className="w-4 h-4 text-blue-400" />
-                            Recommended Instances
-                        </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {[
-                                {
-                                    name: "AIOStreams",
-                                    icon: Zap,
-                                    links: [
-                                        { text: "Stable Instance", url: "https://aiostreamsfortheweebsstable.midnightignite.me/stremio/configure" },
-                                        { text: "Nightly Instance", url: "https://aiostreamsnightlyfortheweak.nhyira.dev/stremio/configure" }
-                                    ]
-                                },
-                                {
-                                    name: "AIOMetadata",
-                                    icon: Search,
-                                    links: [
-                                        { text: "Stable Instance", url: "https://aiometadatafortheweebs.midnightignite.me/configure/" },
-                                        { text: "Experimental", url: "https://aiometadatafortheweak.nhyira.dev/configure/" }
-                                    ]
-                                }
-                            ].map((group, i) => (
-                                <div key={i} className={UI.box.main}>
-                                    <div className="flex items-center justify-between mb-4">
-                                        <span className={UI.font.label}>{group.name}</span>
-                                        <group.icon className="w-3.5 h-3.5 text-blue-400/20" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        {group.links.map((link, j) => (
-                                            <a key={j} href={link.url} target="_blank" rel="noopener noreferrer" className={UI.box.action}>
-                                                <span className="text-[12px] font-bold text-white/70 group-hover:text-blue-400 transition-colors uppercase tracking-tight">{link.text}</span>
-                                                <ChevronRight className="w-3.5 h-3.5 text-white/10 group-hover:text-blue-400 transition-colors" />
-                                            </a>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
-
-                    {/* STEP 1: DOWNLOAD */}
-                    <section className="space-y-6">
-                        <div className="flex items-center gap-4">
-                            <div className={UI.box.step_icon}>01</div>
-                            <h3 className={UI.font.step_h}>Download Templates</h3>
-                        </div>
-                        <div className="ml-12 space-y-5">
-                            <p className={UI.font.body}>
-                                Access the <span className={UI.font.bold}>UME Templates</span> menu and download the following core files:
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                                {["AIOStreams", "AIOMetadata", "Omni Snapshot"].map((item, i) => (
-                                    <div key={i} className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-white/[0.02] border border-white/5 text-[10px] font-black text-white/60 uppercase tracking-tight">
-                                        <Download className="w-3 h-3 text-blue-400/30" /> {item}
-                                    </div>
-                                ))}
+                    <div className="space-y-4">
+                        {/* AIOStreams Setup */}
+                        <div className="bg-card/40 p-5 rounded-2xl border border-border flex gap-4">
+                            <div className="h-10 w-10 shrink-0 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 text-blue-400">
+                                <Zap className="w-5 h-5" />
                             </div>
-                        </div>
-                    </section>
-
-                    {/* STEP 2: AIOSTREAMS */}
-                    <section className="space-y-6">
-                        <div className="flex items-center gap-4">
-                            <div className={UI.box.step_icon}>02</div>
-                            <h3 className={UI.font.step_h}>AIOStreams Configuration</h3>
-                        </div>
-                        <div className="ml-12 space-y-3">
-                            {[
-                                "Open AIOStreams › **Save & Install**",
-                                "Select **Import** › **Import Template**",
-                                "Upload the AIOStreams template file",
-                                "Add your **API Keys** (Debrid, TMDB, TVDB)",
-                            ].map((text, i) => (
-                                <div key={i} className={UI.box.inner + " flex items-center gap-4"}>
-                                    <CheckCircle2 className="w-4 h-4 text-blue-500/20 shrink-0" />
-                                    <span className={UI.font.body} dangerouslySetInnerHTML={{ __html: text.replace(/\*\*(.*?)\*\*/g, `<b class="${UI.font.bold}">$1</b>`) }} />
-                                </div>
-                            ))}
-                            <div className="p-5 bg-blue-500/[0.02] border border-blue-500/20 rounded-2xl flex gap-5 mt-4 group">
-                                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0 border border-blue-500/10 transition-transform group-hover:scale-110">
-                                    <Save className="w-5 h-5 text-blue-400" />
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Critical Step</p>
-                                    <p className={UI.font.body + " italic"}>
-                                        Set a password, click <span className={UI.font.bold}>CREATE</span>, and securely save your <span className={UI.font.bold}>UUID + Password</span>.
+                            <div className="space-y-3 flex-1">
+                                <h4 className="font-extrabold text-foreground text-sm uppercase tracking-tight">AIOStreams Configuration</h4>
+                                <ul className="space-y-2 text-[11px] text-foreground/70 list-disc ml-4">
+                                    <li>Open AIOStreams › <strong>Save & Install</strong>.</li>
+                                    <li>Select <strong>Import</strong> › <strong>Import Template</strong>.</li>
+                                    <li>Upload the AIOStreams template file.</li>
+                                    <li>Add your services: <strong>Debrid, TMDB, TVDB API Keys</strong>.</li>
+                                </ul>
+                                <div className="p-3 bg-amber-500/5 border border-amber-500/20 rounded-xl flex gap-3 mt-2">
+                                    <Save className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                                    <p className="text-[11px] text-foreground/70 leading-relaxed italic">
+                                        Set a password, click <strong className="text-amber-500">CREATE</strong>, and save your <strong>UUID + Password</strong>.
                                     </p>
                                 </div>
                             </div>
                         </div>
-                    </section>
 
-                    {/* STEP 3: AIOMetadata */}
-                    <section className="space-y-6">
-                        <div className="flex items-center gap-4">
-                            <div className={UI.box.step_icon}>03</div>
-                            <h3 className={UI.font.step_h}>AIOMetadata Setup</h3>
-                        </div>
-                        <div className="ml-12 space-y-3">
-                            {[
-                                "Import the **AIOMetadata Template** in-app",
-                                "Add API keys (Click **MDBList** icon for its key)",
-                                "Set password, save the UUID and click **SAVE**",
-                            ].map((text, i) => (
-                                <div key={i} className={UI.box.inner + " flex items-center gap-4"}>
-                                    <CheckCircle2 className="w-4 h-4 text-blue-500/20 shrink-0" />
-                                    <span className={UI.font.body} dangerouslySetInnerHTML={{ __html: text.replace(/\*\*(.*?)\*\*/g, `<b class="${UI.font.bold}">$1</b>`) }} />
-                                </div>
-                            ))}
-                            <div className="p-5 bg-white/[0.02] border border-white/[0.08] rounded-2xl flex items-center gap-5 mt-4">
-                                <Info className="w-5 h-5 text-blue-400/50 shrink-0" />
-                                <div className="space-y-0.5">
-                                    <p className="text-[11px] text-white/70 font-black uppercase tracking-tight">Final Step</p>
-                                    <p className={UI.font.body}>
-                                        Connect everything in <span className={UI.font.bold}>Omni → Addons</span> with your manifest URL.
+                        {/* AIOMetadata Setup */}
+                        <div className="bg-card/40 p-5 rounded-2xl border border-border flex gap-4">
+                            <div className="h-10 w-10 shrink-0 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 text-blue-400">
+                                <Search className="w-5 h-5" />
+                            </div>
+                            <div className="space-y-3 flex-1">
+                                <h4 className="font-extrabold text-foreground text-sm uppercase tracking-tight">AIOMetadata Setup</h4>
+                                <ul className="space-y-2 text-[11px] text-foreground/70 list-disc ml-4">
+                                    <li>Import the <strong>AIOMetadata Template</strong> in the app.</li>
+                                    <li>Add API keys (Click <strong>MDBList icon</strong> for your personal key).</li>
+                                    <li>Set password, save the UUID and click <strong>SAVE</strong>.</li>
+                                </ul>
+                                <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl flex gap-3">
+                                    <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                                    <p className="text-[11px] text-foreground/80 font-bold uppercase tracking-tight">
+                                        Final Step: Add AIOStreams Manifest URL to <span className="text-blue-400">Omni › Addons</span>.
                                     </p>
                                 </div>
                             </div>
                         </div>
-                    </section>
+                    </div>
+                </section>
 
-                    {/* STEP 4: OMNI */}
-                    <section className="space-y-10">
-                        <div className="flex items-center gap-4">
-                            <div className={UI.box.step_icon}>04</div>
-                            <h3 className={UI.font.step_h}>Omni Snapshot Import</h3>
-                        </div>
-                        <div className="ml-12 space-y-12">
-                            {/* iOS Workflow */}
-                            <div className="space-y-4">
-                                <span className={UI.font.label + " flex items-center gap-2"}><Smartphone className="w-4 h-4" /> iOS Device Workflow</span>
-                                <div className={UI.box.main + " space-y-6"}>
-                                    <div className="flex gap-5">
-                                        <span className="text-[10px] font-black text-blue-500/30 w-4">01</span>
-                                        <div className="space-y-2">
-                                            <p className={UI.font.body}>Move the JSON file to:</p>
-                                            <code className={UI.font.code}>Files › On my iPhone › Omni › Backups</code>
-                                        </div>
-                                    </div>
+                {/* 4. OMNI IMPORT */}
+                <section className="space-y-6">
+                    <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                        <Monitor className="w-6 h-6 text-blue-500" />
+                        4. Omni Snapshot Import
+                    </h2>
 
-                                    <div className="p-4 bg-white/[0.02] border border-white/[0.08] rounded-xl flex items-start gap-4">
-                                        <AlertCircle className="w-5 h-5 text-blue-400/40 shrink-0 mt-0.5" />
-                                        <div className="space-y-1">
-                                            <p className={UI.font.bold + " text-[13px]"}>Force close Omni and restart</p>
-                                            <p className={UI.font.body + " text-[12px]"}>This ensures the app refreshes and detects the new file.</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex gap-5">
-                                        <span className="text-[10px] font-black text-blue-500/30 w-4">02</span>
-                                        <p className={UI.font.italic + " text-[12px]"}>Folder missing? Create a manual Snapshot in the app first.</p>
-                                    </div>
-                                </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* iOS */}
+                        <div className="bg-card/40 p-5 rounded-2xl border border-border flex gap-4">
+                            <div className="h-10 w-10 shrink-0 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 text-blue-400">
+                                <Smartphone className="w-5 h-5" />
                             </div>
-
-                            {/* Apple TV Sync */}
-                            <div className="space-y-4">
-                                <span className={UI.font.label + " flex items-center gap-2"}><Tv className="w-4 h-4" /> Apple TV Synchronization</span>
-                                <div className={UI.box.main + " flex items-center gap-6"}>
-                                    <div className="w-12 h-12 rounded-xl bg-blue-500/5 flex items-center justify-center shrink-0 border border-blue-500/10">
-                                        <Cloud className="w-7 h-7 text-blue-400/40" />
+                            <div className="space-y-3">
+                                <h4 className="font-bold text-foreground text-sm">iOS Import</h4>
+                                <div className="space-y-3 text-[11px] text-foreground/70">
+                                    <p>Move the JSON file to:</p>
+                                    <div className="bg-muted px-2 py-1.5 rounded-lg text-blue-400 font-mono text-[10px]">
+                                        Files › On my iPhone › Omni › Backups
                                     </div>
-                                    <div className="space-y-1">
-                                        <p className={UI.font.bold + " text-[13px] uppercase tracking-tight"}>iCloud Sync</p>
-                                        <p className={UI.font.body}>
-                                            Push to <span className={UI.font.bold}>iCloud</span> on your phone settings, then pull on Apple TV.
-                                        </p>
+                                    <div className="p-3 bg-amber-500/5 border border-amber-500/20 rounded-xl flex items-start gap-2">
+                                        <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
+                                        <p className="text-[10px] italic">Force close Omni completely and restart for the snapshot to appear.</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </section>
-                </div>
 
-                {/* Footer Spacer */}
-                <div className="h-12" />
+                        {/* Apple TV */}
+                        <div className="bg-card/40 p-5 rounded-2xl border border-border flex gap-4">
+                            <div className="h-10 w-10 shrink-0 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 text-blue-400">
+                                <Cloud className="w-5 h-5" />
+                            </div>
+                            <div className="space-y-3">
+                                <h4 className="font-bold text-foreground text-sm">Apple TV Sync</h4>
+                                <p className="text-[11px] text-foreground/70 leading-relaxed">
+                                    The easiest way: Enable <strong>iCloud Sync</strong> in Omni settings on your iPhone, then pull the setup on your Apple TV.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* FOOTER - Matching Documentation.tsx */}
+                <footer className="text-center pt-8 border-t border-border">
+                    <p className="text-[10px] text-foreground/70 font-bold uppercase tracking-widest bg-card inline-block px-4 py-1 rounded-full border border-border">
+                        Omni Snapshot Manager v0.2.0 • Unified Media Experience
+                    </p>
+                </footer>
             </div>
         </DialogContent>
     );
+}
+
+// Internal icons not imported from lucide-react in the original list but needed for consistency
+function FileJson(props: any) {
+    return (
+        <svg
+            {...props}
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+            <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+            <path d="M10 12a1 1 0 0 0-1 1v1a1 1 0 0 1-1 1 1 1 0 0 1 1 1v1a1 1 0 0 0 1 1" />
+            <path d="M14 18a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1 1 1 0 0 1-1-1v-1a1 1 0 0 0-1-1" />
+        </svg>
+    )
 }
