@@ -1,62 +1,62 @@
 # Omni Snapshot Manager
 
 > [!NOTE]
-> Dieses Projekt wurde gemeinschaftlich mit **Antigravity** (Google DeepMind) entwickelt.
+> This project was developed in collaboration with **Antigravity** (Google DeepMind).
 
 [![Live Web App](https://img.shields.io/badge/Live_Version-GitHub_Pages-blue?style=flat-square&logo=github)](https://nobnobz.github.io/omni-snapshot-editor/)
 [![Support](https://img.shields.io/badge/Support_my_work-Ko--fi-pink?style=flat-square&logo=ko-fi)](https://ko-fi.com/botbidraiser)
 
 ---
 
-## Zweck der Anwendung
+## Purpose of the Application
 
-Der **Omni Snapshot Manager** ist ein Werkzeug zur Verwaltung und Bearbeitung von Omni-Konfigurationsdateien (Snapshots). Er dient als begleitendes Tool für das [**Unified Media Experience (UME)**](https://github.com/nobnobz/Omni-Template-Bot-Bid-Raiser) Projekt.
+The **Omni Snapshot Manager** is a tool for managing and editing Omni configuration files (Snapshots). It serves as a companion tool for the [**Unified Media Experience (UME)**](https://github.com/nobnobz/Omni-Template-Bot-Bid-Raiser) project.
 
-Die Anwendung ermöglicht es, komplexe JSON-Strukturen über eine grafische Oberfläche anzupassen, ohne die Datei manuell in einem Texteditor bearbeiten zu müssen. Ziel ist es, die Fehlerquote bei der Konfiguration zu senken und die Verwaltung von UME-Setups zu vereinfachen.
+The application allows for adjusting complex JSON structures via a graphical interface, eliminating the need to edit the file manually in a text editor. The goal is to reduce configuration errors and simplify the management of UME setups.
 
 ### 🌐 Live Version
-Die Anwendung steht als Web-App zur Verfügung und erfordert keine lokale Installation:
+The application is available as a web app and requires no local installation:
 👉 **[Omni Snapshot Manager (Live)](https://nobnobz.github.io/omni-snapshot-editor/)**
 
 ---
 
-## Funktionen im Überblick
+## Features at a Glance
 
-### 1. Konfigurations-Management
-- **Import/Export**: Laden von Dateien via GitHub Raw-URL oder lokalem Datei-Upload. Speichern als formatierte JSON-Datei.
-- **Referenzielle Integrität**: Beim Umbenennen von Gruppen werden alle zugehörigen Verweise (z. B. in Sortierlisten oder Bild-URLs) automatisch mit aktualisiert.
-- **Bereinigung**: Deaktivierte Kataloge oder Gruppen werden beim Export vollständig aus der Datei entfernt.
+### 1. Configuration Management
+- **Import/Export**: Load files via GitHub Raw-URL or local file upload. Save as a formatted JSON file.
+- **Referential Integrity**: When renaming groups, all associated references (e.g., in sorting lists or image URLs) are automatically updated.
+- **Cleanup**: Disabled catalogs or groups are completely removed from the file during export to keep the configuration lean.
 
-### 2. Katalog-Verwaltung
-- **Sortierung**: Visuelle Neuanordnung von Katalogen per Drag-and-Drop.
-- **AIOMetadata-Integration**: Unterstützung für AIOMetadata-Templates zur korrekten Zuordnung von MDBList-IDs und Namen.
-- **Pruning**: Automatisches Entfernen verwaister Einträge in den globalen Sortier-Arrays.
+### 2. Catalog Management
+- **Sorting**: Visual rearrangement of catalogs via drag-and-drop.
+- **AIOMetadata Integration**: Support for AIOMetadata templates to correctly map MDBList IDs and names.
+- **Pruning**: Automatic removal of orphaned entries in global sorting arrays.
 
-### 3. Muster & Tags (Regex)
-- **Automatisierung**: Definition von Regex-Mustern zur automatischen Kategorisierung von Inhalten.
-- **Visuelle Gestaltung**: Zuweisung von Layout-Eigenschaften (z. B. Deckkraft, Rahmenstärke, Farben) basierend auf Titeln oder Metadaten.
-
----
-
-## Installation und Nutzung
-
-### Nutzung im Browser (Empfohlen)
-Verwende einfach die **[Live-Version auf GitHub Pages](https://nobnobz.github.io/omni-snapshot-editor/)**, um deine Konfigurationen direkt im Browser zu bearbeiten.
-
-### Lokale Entwicklung
-Solltest du das Projekt lokal ausführen wollen:
-1. Repository klonen.
-2. Abhängigkeiten installieren: `npm install`.
-3. Server starten: `npm run dev`.
-4. Erreichbar unter `http://localhost:3000`.
+### 3. Patterns & Tags (Regex)
+- **Automation**: Define regex patterns for automatic content categorization.
+- **Visual Design**: Assign layout properties (e.g., opacity, border thickness, colors) based on titles or metadata.
 
 ---
 
-## Verknüpfte Projekte
-- **[Unified Media Experience (UME)](https://github.com/nobnobz/Omni-Template-Bot-Bid-Raiser)**: Das Hauptprojekt für optimierte Omni-Templates.
+## Installation and Usage
+
+### Usage in Browser (Recommended)
+Simply use the **[Live Version on GitHub Pages](https://nobnobz.github.io/omni-snapshot-editor/)** to edit your configurations directly in your browser.
+
+### Local Development
+Should you want to run the project locally:
+1. Clone the repository.
+2. Install dependencies: `npm install`.
+3. Start the server: `npm run dev`.
+4. Accessible at `http://localhost:3000`.
 
 ---
 
-## Unterstützung
-Wenn dir dieses Tool hilft, kannst du die weitere Entwicklung hier unterstützen:
+## Linked Projects
+- **[Unified Media Experience (UME)](https://github.com/nobnobz/Omni-Template-Bot-Bid-Raiser)**: The main project for optimized Omni templates.
+
+---
+
+## Support
+If this tool helps you, you can support further development here:
 [Ko-fi Support Link](https://ko-fi.com/botbidraiser)
