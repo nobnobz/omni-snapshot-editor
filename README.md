@@ -1,101 +1,50 @@
-# 🌌 Omni Snapshot Manager
+# Omni Snapshot Manager
 
-**The Ultimate Architect for your Unified Media Experience (UME).**
+> [!NOTE]
+> Dieses Projekt wurde gemeinschaftlich mit **Antigravity** (Google DeepMind) entwickelt.
 
-[![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-blue?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
-[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react)](https://react.dev/)
-[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg?style=for-the-badge)](https://github.com/nobnobz/omni-snapshot-editor/graphs/commit-activity)
+[![Support](https://img.shields.io/badge/Support_my_work-Ko--fi-pink?style=flat-square&logo=ko-fi)](https://ko-fi.com/botbidraiser)
 
 ---
 
-## 💡 The Vision: What is Omni Snapshot Manager?
+## Zweck der Anwendung
 
-Managing a complex **Omni** configuration manually by editing thousands of lines of JSON is prone to errors, broken references, and frustration. **Omni Snapshot Manager** is a premium, client-side web application designed to bridge the gap between technical complexity and creative freedom.
+Der **Omni Snapshot Manager** ist ein Werkzeug zur Verwaltung und Bearbeitung von Omni-Konfigurationsdateien (Snapshots). Die App ermöglicht es, komplexe JSON-Strukturen über eine grafische Oberfläche anzupassen, ohne die Datei manuell in einem Texteditor bearbeiten zu müssen. 
 
-It provides a visual, high-performance interface to build the **Unified Media Experience (UME)**—a philosophy that centers on a clean, consistent, and highly personalized media setup across all your devices.
+Ziel ist es, die Fehlerquote bei der Konfiguration zu senken und die Verwaltung von Medien-Setups (Unified Media Experience) zu vereinfachen.
 
-### 🎯 Sense and Purpose
-- **Eliminate JSON Errors**: No more missing commas or broken internal links.
-- **Visual Mastery**: See your groups, subgroups, and catalogs in a structured layout.
-- **Atomic Renames**: Change a group name once; the manager updates all references instantly.
-- **Portability**: Load from any GitHub repository or local file in seconds.
+## Funktionen im Überblick
 
----
+### 1. Konfigurations-Management
+- **Import/Export**: Laden von Dateien via GitHub Raw-URL oder lokalem Datei-Upload. Speichern als formatierte JSON-Datei.
+- **Referenzielle Integrität**: Beim Umbenennen von Gruppen werden alle zugehörigen Verweise (z. B. in Sortierlisten oder Bild-URLs) automatisch mit aktualisiert.
+- **Bereinigung**: Deaktivierte Kataloge oder Gruppen werden beim Export vollständig aus der Datei entfernt, um die Konfiguration schlank zu halten.
 
-## ✨ Core Features & Deep Dive
+### 2. Katalog-Verwaltung
+- **Sortierung**: Visuelle Neuanordnung von Katalogen per Drag-and-Drop.
+- **AIOMetadata-Integration**: Unterstützung für AIOMetadata-Templates zur korrekten Zuordnung von MDBList-IDs und Namen.
+- **Pruning**: Automatisches Entfernen verwaister Einträge in den globalen Sortier-Arrays.
 
-### 🏗️ Advanced Hierarchy Management
-The application understands the nested nature of Omni configurations:
-- **Main Groups**: The top-level architectural pillars of your setup.
-- **Subgroups**: Logical clusters for specific content types (e.g., "Trending Movies", "Sports").
-- **Catalogs**: The individual feeds of metadata provided by **AIOMetadata**.
+### 3. Muster & Tags (Regex)
+- **Automatisierung**: Definition von Regex-Mustern zur automatischen Kategorisierung von Inhalten.
+- **Visuelle Gestaltung**: Zuweisung von Layout-Eigenschaften (z. B. Deckkraft, Rahmenstärke, Farben) basierend auf Titeln oder Metadaten.
 
-### 🔗 AIOMetadata Referential Integrity
-Omni relies on **MDBList IDs** for catalogs. The Manager features a built-in fallback system:
-- **Fallback Mapping**: Even if identities are missing locally, the manager uses a pre-seeded UME database to ensure correct naming during editing.
-- **Custom Integration**: Easily upload your own AIOMetadata export to map custom catalogs instantly.
+## Installation und Nutzung
 
-### 🏷️ Regex Pattern & Tagging Engine
-The most powerful tool for content organization.
-- **Dynamic Tagging**: Define regex patterns to automatically categorize content based on metadata titles.
-- **Styling Controls**: Assign specific visual tags and layouts based on content patterns.
-- **Bulk Pruning**: Cleanly remove unused patterns or tags with one click.
+### Lokal ausführen
+1. Repository klonen.
+2. Abhängigkeiten installieren: `npm install`.
+3. Server starten: `npm run dev`.
+4. Die Anwendung ist unter `http://localhost:3000` erreichbar.
 
-### 🛡️ Smart Referential Integrity
-This is the "Safety Net" of the application. Unlike raw text editors, our mutations are **Atomic**:
-1. **Trace & Replace**: Renaming a group identifier triggers a cascade that updates occurrences in `catalog_groups`, `ordering_arrays`, and `image_urls`.
-2. **Merge Protection**: If you rename a group to a name that already exists, the manager offers a smart merge, combining catalog lists without duplicates.
-3. **Array Validation**: Every export runs a validation pass to remove "dangling" references (ordering entries for items that no longer exist).
+### Workflow
+1. Konfiguration laden (GitHub/Lokal).
+2. Änderungen in den Bereichen "Catalogs", "Groups" oder "Patterns" vornehmen.
+3. Die Integrität der Daten wird während der Bearbeitung im Hintergrund geprüft.
+4. Exportierte JSON-Datei in Omni importieren.
 
 ---
 
-## 📊 Manual JSON vs. Omni Snapshot Manager
-
-| Feature | Manual Editing | Omni Snapshot Manager |
-| :--- | :---: | :---: |
-| **Renaming Groups** | ❌ Risky (find/replace fails) | ✅ Atomic Cascade |
-| **Catalog Reordering** | ❌ Manual ID shuffling | ✅ Drag & Drop |
-| **Broken References** | ❌ Common | ✅ Automatically Pruned |
-| **Base64 Encoding** | ❌ Manual step | ✅ Seamless Round-trip |
-| **Structure Validation** | ❌ Manual | ✅ Auto-validated on Export |
-
----
-
-## 🚀 Installation & Getting Started
-
-### For Developers
-1. **Clone & Install**
-   ```bash
-   git clone https://github.com/nobnobz/omni-snapshot-editor.git
-   cd omni-snapshot-editor
-   npm install
-   ```
-2. **Launch Development Environment**
-   ```bash
-   npm run dev
-   ```
-3. **Access the Manager**
-   Open [http://localhost:3000](http://localhost:3000).
-
-### For End Users
-You can use the live deployment to manage your setups.
-1. **Load**: Paste your GitHub Raw URL or drop your `.json` backup.
-2. **Architect**: Use the sidebars to manage your Groups and Catalogs.
-3. **Export**: Click **Download JSON** for a clean, optimized backup ready for Omni.
-
----
-
-## 🎨 Design Philosophy
-Omni Snapshot Manager isn't just a tool; it's part of the experience. It utilizes:
-- **Glassmorphism**: A sleek, dark interface with subtle transparency.
-- **Inter font-family**: Premium typography for maximum readability.
-- **Micro-animations**: Smooth transitions and hover effects that make editing feel alive.
-
----
-
-## 📝 Credits & Acknowledgements
-- **Unified Media Experience (UME)**: Design and philosophy by [nobnobz](https://github.com/nobnobz).
-- **Core Engine**: Built with React, Next.js, and Lucide Icons.
-
-*Built with passion for the Omni community. 🚀*
+## Unterstützung
+Wenn dir dieses Tool hilft, kannst du die weitere Entwicklung hier unterstützen:
+[Ko-fi Support Link](https://ko-fi.com/botbidraiser)
