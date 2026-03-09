@@ -6,6 +6,16 @@ import { formatDisplayName, resolveCatalogName, ensureCatalogPrefix } from '@/li
 import { decodeConfig, encodeConfig, pruneDisabledCatalogs, pruneDisabledKeys } from "../lib/config-utils";
 import { renameGroup, renameMainGroup, disableGroup, disableMainGroup, disableCatalog, validateAndFix, countGroupReferences, countMainGroupReferences, unassignSubgroup, assignSubgroup, createMainGroup, createSubgroup, importGroups } from "../lib/mutations";
 
+export interface TemplateManifest {
+    version: string;
+    updated: string;
+    templates: {
+        omni: { url: string; label: string };
+        aiometadata: { url: string; label: string };
+        aiostreams: { url: string; label: string };
+    };
+}
+
 interface ConfigContextType {
     originalConfig: OmniConfig | null;
     initialValues: Record<string, any>;
@@ -50,6 +60,11 @@ interface ConfigContextType {
     customFallbacks: Record<string, string>;
     setCustomFallbacks: React.Dispatch<React.SetStateAction<Record<string, string>>>;
     clearPatterns: () => void;
+
+    // GitHub Manifest
+    manifest: TemplateManifest | null;
+    manifestStatus: 'idle' | 'loading' | 'success' | 'error';
+    fetchManifest: () => Promise<void>;
 }
 
 const ConfigContext = createContext<ConfigContextType | undefined>(undefined);
@@ -68,6 +83,26 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
 
     // Custom fallbacks from localStorage
     const [customFallbacks, setCustomFallbacks] = useState<Record<string, string>>({});
+
+    // GitHub Manifest State
+    const [manifest, setManifest] = useState<TemplateManifest | null>(null);
+    const [manifestStatus, setManifestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+
+    const fetchManifest = async () => {
+        if (manifestStatus === 'loading' || manifestStatus === 'success') return;
+
+        setManifestStatus('loading');
+        try {
+            const response = await fetch('https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/manifest.json');
+            if (!response.ok) throw new Error("Failed to fetch manifest");
+            const data = await response.json();
+            setManifest(data);
+            setManifestStatus('success');
+        } catch (err) {
+            console.error("Manifest fetch failed:", err);
+            setManifestStatus('error');
+        }
+    };
 
     React.useEffect(() => {
         if (typeof window !== "undefined") {
@@ -635,6 +670,9 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
             customFallbacks,
             setCustomFallbacks,
             clearPatterns,
+            manifest,
+            manifestStatus,
+            fetchManifest,
         }}>
             {children}
         </ConfigContext.Provider>

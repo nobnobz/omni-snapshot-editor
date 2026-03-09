@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
     Dialog,
     DialogContent,
@@ -53,17 +53,37 @@ interface ParsedPattern {
 }
 
 export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProps) {
-    const { currentValues, updateValue } = useConfig();
+    const { currentValues, updateValue, manifest, fetchManifest } = useConfig();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const templates = [
-        {
+    useEffect(() => {
+        if (isOpen) {
+            fetchManifest();
+        }
+    }, [isOpen]);
+
+    const templates: { label: string; url: string }[] = [];
+    if (manifest) {
+        if (manifest.templates.omni) templates.push(manifest.templates.omni);
+        if (manifest.templates.aiometadata) templates.push(manifest.templates.aiometadata);
+        if (manifest.templates.aiostreams) templates.push(manifest.templates.aiostreams);
+    }
+
+    if (templates.length === 0) {
+        templates.push({
             label: "UME Template",
             url: "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/Older%20Versions/v1.7.1/omni-snapshot-unified-media-experience-v1.7.1-2026-03-02.json"
-        },
-    ];
+        });
+    }
 
     const [selectedVersion, setSelectedVersion] = useState(templates[0].label);
+
+    useEffect(() => {
+        if (manifest && templates.length > 0) {
+            setSelectedVersion(templates[0].label);
+        }
+    }, [manifest]);
+
     const [templateLoading, setTemplateLoading] = useState(false);
 
     const [step, setStep] = useState<1 | 2>(1);

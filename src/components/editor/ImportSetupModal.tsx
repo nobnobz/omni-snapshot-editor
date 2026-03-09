@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
     Dialog,
     DialogContent,
@@ -72,10 +72,21 @@ const getSubgroupCategory = (name: string) => {
 };
 
 export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
-    const { currentValues, importGroups } = useConfig();
+    const { currentValues, importGroups, manifest, fetchManifest } = useConfig();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const templates = [
+    useEffect(() => {
+        if (isOpen) {
+            fetchManifest();
+        }
+    }, [isOpen]);
+
+    const templates: { label: string; url: string }[] = manifest?.templates.omni ? [
+        {
+            label: manifest.templates.omni.label,
+            url: manifest.templates.omni.url
+        }
+    ] : [
         {
             label: "UME Template",
             url: "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/Older%20Versions/v1.7.1/omni-snapshot-unified-media-experience-v1.7.1-2026-03-02.json"
@@ -83,6 +94,13 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
     ];
 
     const [selectedVersion, setSelectedVersion] = useState(templates[0].label);
+
+    useEffect(() => {
+        if (manifest?.templates.omni) {
+            setSelectedVersion(manifest.templates.omni.label);
+        }
+    }, [manifest]);
+
     const [templateLoading, setTemplateLoading] = useState(false);
 
     const [step, setStep] = useState<1 | 2>(1);

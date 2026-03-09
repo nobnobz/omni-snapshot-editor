@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useConfig } from "@/context/ConfigContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,9 +47,18 @@ function repairMojibakeInConfig(obj: any): any {
 }
 
 export function ConfigLoader() {
-    const { loadConfig } = useConfig();
+    const { loadConfig, manifest, manifestStatus, fetchManifest } = useConfig();
 
-    const templates = [
+    useEffect(() => {
+        fetchManifest();
+    }, []);
+
+    const templates: { label: string; url: string }[] = manifest?.templates.omni ? [
+        {
+            label: manifest.templates.omni.label,
+            url: manifest.templates.omni.url
+        }
+    ] : [
         {
             label: "UME Template",
             url: "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/Older%20Versions/v1.7.1/omni-snapshot-unified-media-experience-v1.7.1-2026-03-02.json"
@@ -58,6 +67,14 @@ export function ConfigLoader() {
 
     const [selectedVersion, setSelectedVersion] = useState(templates[0].label);
     const [url, setUrl] = useState(templates[0].url);
+
+    useEffect(() => {
+        if (manifest?.templates.omni) {
+            setSelectedVersion(manifest.templates.omni.label);
+            setUrl(manifest.templates.omni.url);
+        }
+    }, [manifest]);
+
     const [token, setToken] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -292,17 +309,33 @@ export function ConfigLoader() {
                                 </DropdownMenuLabel>
                                 <DropdownMenuItem
                                     className="cursor-pointer focus:bg-emerald-500/10 focus:text-emerald-400 flex items-center gap-2 px-3 py-1.5"
-                                    onClick={() => handleDownload("https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/Older%20Versions/v1.7.1/omni-snapshot-unified-media-experience-v1.7.1-2026-03-02.json", "omni-snapshot-ume.json")}
+                                    onClick={() => handleDownload(manifest?.templates.omni.url || "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/Older%20Versions/v1.7.1/omni-snapshot-unified-media-experience-v1.7.1-2026-03-02.json", "omni-snapshot-ume.json")}
                                 >
                                     <FileJson className="w-4 h-4" />
                                     <span className="text-xs font-semibold">Omni Snapshot (UME)</span>
                                     <FileDown className="w-3 h-3 ml-auto opacity-40" />
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="cursor-not-allowed opacity-50 flex items-center gap-2 px-3 py-1.5">
+
+                                <DropdownMenuItem
+                                    className={`flex items-center gap-2 px-3 py-1.5 ${!manifest?.templates.aiometadata ? 'cursor-not-allowed opacity-50' : 'cursor-pointer focus:bg-emerald-500/10 focus:text-emerald-400'}`}
+                                    onClick={() => {
+                                        if (manifest?.templates.aiometadata) {
+                                            handleDownload(manifest.templates.aiometadata.url, "aiometadata-template.json");
+                                        }
+                                    }}
+                                >
                                     <FileDown className="w-4 h-4" />
                                     <span className="text-xs font-semibold">AIOMetadata Template</span>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="cursor-not-allowed opacity-50 flex items-center gap-2 px-3 py-1.5">
+
+                                <DropdownMenuItem
+                                    className={`flex items-center gap-2 px-3 py-1.5 ${!manifest?.templates.aiostreams ? 'cursor-not-allowed opacity-50' : 'cursor-pointer focus:bg-emerald-500/10 focus:text-emerald-400'}`}
+                                    onClick={() => {
+                                        if (manifest?.templates.aiostreams) {
+                                            handleDownload(manifest.templates.aiostreams.url, "aiostreams-template.json");
+                                        }
+                                    }}
+                                >
                                     <FileDown className="w-4 h-4" />
                                     <span className="text-xs font-semibold">AioStreams Template</span>
                                 </DropdownMenuItem>
