@@ -6,10 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, Github, Upload, CheckCircle2, Sparkles, FileJson, BookOpen, Heart } from "lucide-react";
+import { AlertCircle, Github, Upload, CheckCircle2, Sparkles, FileJson, BookOpen, Heart, ChevronDown, FileDown, ExternalLink } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 import { Documentation } from "@/components/editor/Documentation";
 
 function fixMojibakeString(str: string): string {
@@ -223,10 +231,61 @@ export function ConfigLoader() {
                             </DialogTrigger>
                             <Documentation />
                         </Dialog>
-                        <a href="https://github.com/nobnobz/omni-snapshot-editor" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 text-sm text-foreground/70 hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors font-medium border border-border/40 hover:border-border/80 backdrop-blur-sm">
-                            <Github className="w-4 h-4" />
-                            GitHub
-                        </a>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <button className="inline-flex items-center gap-2 px-4 py-2 text-sm text-foreground/70 hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors font-medium border border-border/40 hover:border-border/80 backdrop-blur-sm group">
+                                    <Github className="w-4 h-4" />
+                                    <span>UME Templates</span>
+                                    <ChevronDown className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-opacity" />
+                                </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-56 bg-card border-border shadow-2xl backdrop-blur-xl" align="center">
+                                <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-foreground/50 font-bold px-3 py-2">
+                                    Project Resources
+                                </DropdownMenuLabel>
+                                <DropdownMenuItem asChild className="cursor-pointer focus:bg-blue-500/10 focus:text-blue-400">
+                                    <a
+                                        href="https://github.com/nobnobz/Omni-Template-Bot-Bid-Raiser"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-2 w-full px-2 py-1.5"
+                                    >
+                                        <Github className="w-4 h-4" />
+                                        <span className="text-xs font-semibold">GitHub Repository</span>
+                                        <ExternalLink className="w-3 h-3 ml-auto opacity-40" />
+                                    </a>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator className="bg-border/40" />
+                                <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-foreground/50 font-bold px-3 py-2">
+                                    Direct Downloads
+                                </DropdownMenuLabel>
+                                <DropdownMenuItem asChild className="cursor-pointer focus:bg-emerald-500/10 focus:text-emerald-400">
+                                    <a
+                                        href="https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/Older%20Versions/v1.7.1/omni-snapshot-unified-media-experience-v1.7.1-2026-03-02.json"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-2 w-full px-2 py-1.5"
+                                    >
+                                        <FileJson className="w-4 h-4" />
+                                        <span className="text-xs font-semibold">Omni Snapshot (UME)</span>
+                                        <FileDown className="w-3 h-3 ml-auto opacity-40" />
+                                    </a>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="cursor-not-allowed opacity-50 flex items-center gap-2 px-3 py-1.5">
+                                    <FileDown className="w-4 h-4" />
+                                    <span className="text-xs font-semibold">AIOMetadata Template</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="cursor-not-allowed opacity-50 flex items-center gap-2 px-3 py-1.5">
+                                    <FileDown className="w-4 h-4" />
+                                    <span className="text-xs font-semibold">AioStreams Template</span>
+                                </DropdownMenuItem>
+                                <div className="px-3 py-2">
+                                    <p className="text-[9px] text-foreground/40 leading-tight">
+                                        More templates available in the GitHub repository.
+                                    </p>
+                                </div>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                         <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 text-sm text-pink-500 hover:text-pink-400 hover:bg-pink-500/10 rounded-lg transition-colors font-medium border border-pink-500/20 hover:border-pink-500/40 backdrop-blur-sm group">
                             <Heart className="w-4 h-4 group-hover:fill-pink-500/20 transition-all" />
                             <span className="hidden sm:inline">Support my work</span>
