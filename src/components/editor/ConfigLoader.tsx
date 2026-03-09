@@ -19,6 +19,7 @@ import {
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { Documentation } from "@/components/editor/Documentation";
+import { TemplateGuide } from "@/components/editor/TemplateGuide";
 
 function fixMojibakeString(str: string): string {
     if ([...str].some(c => c.charCodeAt(0) > 255)) return str;
@@ -303,6 +304,24 @@ export function ConfigLoader() {
                                         <ExternalLink className="w-3 h-3 ml-auto opacity-40" />
                                     </a>
                                 </DropdownMenuItem>
+                                <DropdownMenuSeparator className="bg-border/40" />
+                                <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-foreground/50 font-bold px-3 py-2">
+                                    Help & Guides
+                                </DropdownMenuLabel>
+                                <Dialog>
+                                    <DialogTrigger asChild>
+                                        <DropdownMenuItem
+                                            onSelect={(e) => e.preventDefault()}
+                                            className="cursor-pointer focus:bg-blue-500/10 focus:text-blue-400 flex items-center gap-2 px-3 py-1.5"
+                                        >
+                                            <BookOpen className="w-4 h-4" />
+                                            <span className="text-xs font-semibold">How to Install</span>
+                                            <ExternalLink className="w-3 h-3 ml-auto opacity-40" />
+                                        </DropdownMenuItem>
+                                    </DialogTrigger>
+                                    <TemplateGuide />
+                                </Dialog>
+
                                 <DropdownMenuSeparator className="bg-border/40" />
                                 <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-foreground/50 font-bold px-3 py-2">
                                     Direct Downloads
