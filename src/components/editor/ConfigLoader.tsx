@@ -201,7 +201,7 @@ export function ConfigLoader() {
             </div>
 
             <div className="w-full max-w-5xl relative z-10">
-                <div className="text-center mb-8 sm:mb-12 space-y-3">
+                <div className="text-center mb-6 space-y-3">
                     <div className="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center mb-2 mx-auto">
                         <img src="/omni-snapshot-editor/clown.png" alt="Logo" className="w-full h-full object-contain" />
                     </div>
@@ -211,6 +211,28 @@ export function ConfigLoader() {
                     <p className="text-sm sm:text-base text-foreground/70 max-w-lg mx-auto leading-relaxed">
                         Import an Omni snapshot from GitHub or your local disk, or create a new setup from scratch.
                     </p>
+
+                    <div className="pt-4 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <button className="inline-flex items-center gap-2 px-4 py-2 text-sm text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-colors font-medium border border-blue-500/20 hover:border-blue-500/40 backdrop-blur-sm">
+                                    <BookOpen className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Documentation</span>
+                                    <span className="sm:hidden">Docs</span>
+                                </button>
+                            </DialogTrigger>
+                            <Documentation />
+                        </Dialog>
+                        <a href="https://github.com/nobnobz/omni-snapshot-editor" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 text-sm text-foreground/70 hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors font-medium border border-border/40 hover:border-border/80 backdrop-blur-sm">
+                            <Github className="w-4 h-4" />
+                            GitHub
+                        </a>
+                        <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 text-sm text-pink-500 hover:text-pink-400 hover:bg-pink-500/10 rounded-lg transition-colors font-medium border border-pink-500/20 hover:border-pink-500/40 backdrop-blur-sm group">
+                            <Heart className="w-4 h-4 group-hover:fill-pink-500/20 transition-all" />
+                            <span className="hidden sm:inline">Support my work</span>
+                            <span className="sm:hidden">Support</span>
+                        </a>
+                    </div>
                 </div>
 
                 {error && (
@@ -354,28 +376,7 @@ export function ConfigLoader() {
                     </Card>
                 </div>
 
-                <div className="mt-8 text-center space-y-4">
-                    <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
-                        <Dialog>
-                            <DialogTrigger asChild>
-                                <button className="inline-flex items-center gap-2 px-4 py-2 text-sm text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-colors font-medium border border-blue-500/20 hover:border-blue-500/40 backdrop-blur-sm">
-                                    <BookOpen className="w-4 h-4" />
-                                    <span className="hidden sm:inline">Documentation</span>
-                                    <span className="sm:hidden">Docs</span>
-                                </button>
-                            </DialogTrigger>
-                            <Documentation />
-                        </Dialog>
-                        <a href="https://github.com/nobnobz/omni-snapshot-editor" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 text-sm text-foreground/70 hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors font-medium border border-border/40 hover:border-border/80 backdrop-blur-sm">
-                            <Github className="w-4 h-4" />
-                            GitHub
-                        </a>
-                        <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 text-sm text-pink-500 hover:text-pink-400 hover:bg-pink-500/10 rounded-lg transition-colors font-medium border border-pink-500/20 hover:border-pink-500/40 backdrop-blur-sm group">
-                            <Heart className="w-4 h-4 group-hover:fill-pink-500/20 transition-all" />
-                            <span className="hidden sm:inline">Support my work</span>
-                            <span className="sm:hidden">Support</span>
-                        </a>
-                    </div>
+                <div className="mt-8 text-center">
                     <p className="text-[10px] text-foreground/70 font-bold uppercase tracking-widest leading-relaxed">
                         v0.2.0 • Built with Antigravity by Bot-Bid-Raiser
                     </p>
