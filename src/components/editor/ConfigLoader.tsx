@@ -6,8 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, Github, Upload, CheckCircle2, Sparkles, FileJson } from "lucide-react";
+import { AlertCircle, Github, Upload, CheckCircle2, Sparkles, FileJson, BookOpen, Heart } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { Documentation } from "@/components/editor/Documentation";
 
 function fixMojibakeString(str: string): string {
     if ([...str].some(c => c.charCodeAt(0) > 255)) return str;
@@ -40,7 +43,7 @@ export function ConfigLoader() {
 
     const templates = [
         {
-            label: "v1.7.1",
+            label: "v0.2.0 UME",
             url: "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/Older%20Versions/v1.7.1/omni-snapshot-unified-media-experience-v1.7.1-2026-03-02.json"
         },
     ];
@@ -205,8 +208,8 @@ export function ConfigLoader() {
                     <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
                         Omni Snapshot Manager
                     </h1>
-                    <p className="text-sm sm:text-base text-muted-foreground max-w-lg mx-auto leading-relaxed">
-                        Load an Omni configuration file from GitHub or your local disk, or start a new project from scratch.
+                    <p className="text-sm sm:text-base text-foreground/70 max-w-lg mx-auto leading-relaxed">
+                        Import an Omni snapshot from GitHub or your local disk, or create a new setup from scratch.
                     </p>
                 </div>
 
@@ -219,14 +222,14 @@ export function ConfigLoader() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
                     {/* 1. Local File Section */}
-                    <Card className="bg-card/60 border-border/60 backdrop-blur-xl shadow-2xl flex flex-col transition-all duration-300 hover:border-border/80 hover:bg-card/80 overflow-hidden group">
+                    <Card className="bg-card/90 dark:bg-card/60 border-border/80 dark:border-border/60 backdrop-blur-xl shadow-lg dark:shadow-2xl flex flex-col h-full transition-all duration-300 hover:border-foreground/20 dark:hover:border-border/80 hover:bg-card hover:shadow-xl dark:hover:bg-card/80 overflow-hidden group">
                         <div className="h-1 w-full bg-gradient-to-r from-emerald-500 to-teal-500"></div>
                         <CardHeader className="pb-4">
                             <CardTitle className="text-lg font-bold flex items-center gap-2">
-                                <Upload className="w-5 h-5 text-muted-foreground group-hover:text-emerald-400 transition-colors" />
+                                <Upload className="w-5 h-5 text-foreground/70 group-hover:text-emerald-400 transition-colors" />
                                 Custom Import
                             </CardTitle>
-                            <CardDescription className="text-xs text-muted-foreground leading-relaxed">
+                            <CardDescription className="text-xs text-foreground/70 leading-relaxed">
                                 Upload a local JSON configuration file.
                             </CardDescription>
                         </CardHeader>
@@ -261,44 +264,47 @@ export function ConfigLoader() {
                     </Card>
 
                     {/* 2. GitHub Section */}
-                    <Card className="bg-card/60 border-border/60 backdrop-blur-xl shadow-2xl flex flex-col transition-all duration-300 hover:border-border/80 hover:bg-card/80 overflow-hidden group">
+                    <Card className="bg-card/90 dark:bg-card/60 border-border/80 dark:border-border/60 backdrop-blur-xl shadow-lg dark:shadow-2xl flex flex-col h-full transition-all duration-300 hover:border-foreground/20 dark:hover:border-border/80 hover:bg-card hover:shadow-xl dark:hover:bg-card/80 overflow-hidden group">
                         <div className="h-1 w-full bg-gradient-to-r from-blue-500 to-indigo-500"></div>
                         <CardHeader className="pb-4">
                             <CardTitle className="text-lg font-bold flex items-center gap-2">
-                                <Github className="w-5 h-5 text-muted-foreground group-hover:text-blue-400 transition-colors" />
+                                <Github className="w-5 h-5 text-foreground/70 group-hover:text-blue-400 transition-colors" />
                                 From GitHub
                             </CardTitle>
-                            <CardDescription className="text-xs text-muted-foreground leading-relaxed">
-                                Load a template directly from a raw URL.
+                            <CardDescription className="text-xs text-foreground/70 leading-relaxed">
+                                Load a template directly from a raw URL or use my Unified Media Experience (UME) template.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="flex-1 flex flex-col">
                             <div className="flex-1 flex flex-col justify-center min-h-[180px] mb-4 space-y-4">
                                 <div className="space-y-2">
-                                    <Label className="text-xs font-semibold text-muted-foreground">Template</Label>
-                                    <select
-                                        value={selectedVersion}
-                                        onChange={(e) => handleVersionChange(e.target.value)}
-                                        className="w-full h-10 rounded-md border border-border bg-background/40 px-3 text-xs text-foreground font-mono transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                                    >
-                                        {templates.map(t => (
-                                            <option key={t.label} value={t.label}>{t.label}</option>
-                                        ))}
-                                    </select>
+                                    <Label className="text-xs font-semibold text-foreground/70">Template</Label>
+                                    <Select value={selectedVersion} onValueChange={handleVersionChange}>
+                                        <SelectTrigger className="w-full h-10 bg-background/40 border-border text-xs font-mono">
+                                            <SelectValue placeholder="Select version" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-popover border-border text-popover-foreground">
+                                            {templates.map(t => (
+                                                <SelectItem key={t.label} value={t.label} className="text-xs font-mono focus:bg-accent focus:text-accent-foreground">
+                                                    {t.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <div className="flex-1 h-px bg-muted"></div>
-                                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">or enter url</span>
+                                    <span className="text-[10px] text-foreground/70 uppercase font-bold tracking-wider">or enter url</span>
                                     <div className="flex-1 h-px bg-muted"></div>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="url" className="text-xs font-semibold text-muted-foreground lg:sr-only">URL</Label>
+                                    <Label htmlFor="url" className="text-xs font-semibold text-foreground/70 lg:sr-only">URL</Label>
                                     <Input
                                         id="url"
                                         value={url}
                                         onChange={(e) => setUrl(e.target.value)}
                                         placeholder="https://raw.githubusercontent.com/..."
-                                        className="bg-background/40 border-border text-foreground placeholder:text-muted-foreground font-mono text-[10px] sm:text-xs h-10 transition-colors focus-visible:ring-1 focus-visible:ring-blue-500"
+                                        className="bg-background/40 border-border text-foreground placeholder:text-foreground/70 font-mono text-[10px] sm:text-xs h-10 transition-colors focus-visible:ring-1 focus-visible:ring-blue-500"
                                     />
                                 </div>
                             </div>
@@ -315,14 +321,14 @@ export function ConfigLoader() {
                     </Card>
 
                     {/* 3. Clean Slate Section */}
-                    <Card className="bg-card/60 border-border/60 backdrop-blur-xl shadow-2xl flex flex-col transition-all duration-300 hover:border-border/80 hover:bg-card/80 overflow-hidden group">
+                    <Card className="bg-card/90 dark:bg-card/60 border-border/80 dark:border-border/60 backdrop-blur-xl shadow-lg dark:shadow-2xl flex flex-col h-full transition-all duration-300 hover:border-foreground/20 dark:hover:border-border/80 hover:bg-card hover:shadow-xl dark:hover:bg-card/80 overflow-hidden group">
                         <div className="h-1 w-full bg-gradient-to-r from-purple-500 to-pink-500"></div>
                         <CardHeader className="pb-4">
                             <CardTitle className="text-lg font-bold flex items-center gap-2">
-                                <Sparkles className="w-5 h-5 text-muted-foreground group-hover:text-purple-400 transition-colors" />
+                                <Sparkles className="w-5 h-5 text-foreground/70 group-hover:text-purple-400 transition-colors" />
                                 Start Fresh
                             </CardTitle>
-                            <CardDescription className="text-xs text-muted-foreground leading-relaxed">
+                            <CardDescription className="text-xs text-foreground/70 leading-relaxed">
                                 Create an empty configuration skeleton.
                             </CardDescription>
                         </CardHeader>
@@ -331,7 +337,7 @@ export function ConfigLoader() {
                                 <div className="p-4 bg-purple-500/10 rounded-full group-hover:scale-110 transition-transform duration-300 border border-purple-500/20 shadow-[0_0_15px_rgba(168,85,247,0.1)]">
                                     <Sparkles className="w-8 h-8 text-purple-400" />
                                 </div>
-                                <p className="text-xs text-center text-muted-foreground max-w-[180px]">
+                                <p className="text-xs text-center text-foreground/70 max-w-[180px]">
                                     Empty groups, catalogs, and patterns. Ready for your data.
                                 </p>
                             </div>
@@ -348,9 +354,30 @@ export function ConfigLoader() {
                     </Card>
                 </div>
 
-                <div className="mt-8 text-center">
-                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
-                        v0.1.0 • Built with Antigravity by Bot-Bid-Raiser
+                <div className="mt-8 text-center space-y-4">
+                    <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <button className="inline-flex items-center gap-2 px-4 py-2 text-sm text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-colors font-medium border border-blue-500/20 hover:border-blue-500/40 backdrop-blur-sm">
+                                    <BookOpen className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Documentation</span>
+                                    <span className="sm:hidden">Docs</span>
+                                </button>
+                            </DialogTrigger>
+                            <Documentation />
+                        </Dialog>
+                        <a href="https://github.com/nobnobz/omni-snapshot-editor" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 text-sm text-foreground/70 hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors font-medium border border-border/40 hover:border-border/80 backdrop-blur-sm">
+                            <Github className="w-4 h-4" />
+                            GitHub
+                        </a>
+                        <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 text-sm text-pink-500 hover:text-pink-400 hover:bg-pink-500/10 rounded-lg transition-colors font-medium border border-pink-500/20 hover:border-pink-500/40 backdrop-blur-sm group">
+                            <Heart className="w-4 h-4 group-hover:fill-pink-500/20 transition-all" />
+                            <span className="hidden sm:inline">Support my work</span>
+                            <span className="sm:hidden">Support</span>
+                        </a>
+                    </div>
+                    <p className="text-[10px] text-foreground/70 font-bold uppercase tracking-widest leading-relaxed">
+                        v0.2.0 • Built with Antigravity by Bot-Bid-Raiser
                     </p>
                 </div>
             </div>

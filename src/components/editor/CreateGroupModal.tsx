@@ -117,15 +117,15 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
             <DialogContent className="sm:max-w-[425px] md:max-w-3xl bg-background border-border text-foreground max-h-[95vh] overflow-y-auto w-[95vw] md:w-full flex-col">
                 <DialogHeader>
                     <DialogTitle>Create New Group</DialogTitle>
-                    <DialogDescription className="text-muted-foreground">
+                    <DialogDescription className="text-foreground/70">
                         Add a new group to your configuration.
                     </DialogDescription>
                 </DialogHeader>
 
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <TabsList className="grid w-full grid-cols-2 bg-muted p-1 rounded-md mb-4">
-                        <TabsTrigger value="sub" className="data-[state=active]:bg-background data-[state=active]:text-foreground text-muted-foreground">Subgroup</TabsTrigger>
-                        <TabsTrigger value="main" className="data-[state=active]:bg-background data-[state=active]:text-foreground text-muted-foreground">Main Group</TabsTrigger>
+                        <TabsTrigger value="sub" className="data-[state=active]:bg-background data-[state=active]:text-foreground text-foreground/70">Subgroup</TabsTrigger>
+                        <TabsTrigger value="main" className="data-[state=active]:bg-background data-[state=active]:text-foreground text-foreground/70">Main Group</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="main" className="space-y-4">
@@ -141,11 +141,11 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                         </div>
 
                         <div className="space-y-2">
-                            <Label className="text-foreground">Assign Existing Subgroups</Label>
-                            <p className="text-xs text-muted-foreground mb-2">Select subgroups to move into this new Main Group.</p>
+                            <Label className="text-foreground/80">Assign Existing Subgroups</Label>
+                            <p className="text-xs text-foreground/50 mb-2">Select subgroups to move into this new Main Group.</p>
 
                             <div className="relative">
-                                <Search className="absolute left-2 top-2 h-4 w-4 text-muted-foreground" />
+                                <Search className="absolute left-2 top-2 h-4 w-4 text-foreground/70" />
                                 <Input
                                     placeholder="Search subgroups..."
                                     value={searchQuery}
@@ -154,9 +154,9 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                 />
                             </div>
 
-                            <ScrollArea className="h-[200px] rounded-md border border-border bg-background/50 p-4">
+                            <ScrollArea className="h-[200px] rounded-md border border-border bg-muted/20 p-4">
                                 {allSubgroupNames.length === 0 ? (
-                                    <p className="text-sm text-muted-foreground italic">No subgroups available.</p>
+                                    <p className="text-sm text-foreground/70 italic">No subgroups available.</p>
                                 ) : (
                                     <div className="space-y-3 pr-3 pb-2 pt-1">
                                         {allSubgroupNames
@@ -215,10 +215,10 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                         </SelectTrigger>
                                         <SelectContent className="bg-popover border-border text-popover-foreground max-h-[200px]">
                                             {mainGroupOrder.length === 0 ? (
-                                                <SelectItem value="none" className="focus:bg-accent focus:text-accent-foreground italic text-muted-foreground">None (Unassigned)</SelectItem>
+                                                <SelectItem value="none" className="focus:bg-accent focus:text-accent-foreground italic text-foreground/70">None (Unassigned)</SelectItem>
                                             ) : (
                                                 <>
-                                                    <SelectItem value="none" className="focus:bg-accent focus:text-accent-foreground italic text-muted-foreground">
+                                                    <SelectItem value="none" className="focus:bg-accent focus:text-accent-foreground italic text-foreground/70">
                                                         None (Unassigned)
                                                     </SelectItem>
                                                     {mainGroupOrder.map((uuid: string) => (
@@ -243,13 +243,13 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                                     className="h-full w-full object-cover"
                                                     onError={(e) => {
                                                         (e.target as HTMLImageElement).style.display = 'none';
-                                                        (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="h-full w-full flex items-center justify-center text-muted-foreground"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></div>';
+                                                        (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="h-full w-full flex items-center justify-center text-foreground/70"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></div>';
                                                     }}
                                                 />
                                             </div>
                                         ) : (
                                             <div className="h-10 w-10 rounded bg-muted border border-border shrink-0 flex items-center justify-center">
-                                                <ImageIcon className="w-4 h-4 text-muted-foreground" />
+                                                <ImageIcon className="w-4 h-4 text-foreground/70" />
                                             </div>
                                         )}
                                         <Input
@@ -264,11 +264,11 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                             </div>
 
                             <div className="space-y-2 flex flex-col">
-                                <Label className="text-foreground">Assign Catalogs</Label>
-                                <p className="text-xs text-muted-foreground mb-2">Select catalogs to populate this group.</p>
+                                <Label className="text-foreground/80">Assign Catalogs</Label>
+                                <p className="text-xs text-foreground/50 mb-2">Select catalogs to populate this group.</p>
 
                                 <div className="relative">
-                                    <Search className="absolute left-2 top-2 h-4 w-4 text-muted-foreground" />
+                                    <Search className="absolute left-2 top-2 h-4 w-4 text-foreground/70" />
                                     <Input
                                         placeholder="Search catalogs by name or ID..."
                                         value={catalogSearch}
@@ -277,9 +277,9 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                     />
                                 </div>
 
-                                <ScrollArea className="h-[300px] md:h-[450px] rounded-md border border-border bg-background/50 p-4">
+                                <ScrollArea className="h-[300px] md:h-[450px] rounded-md border border-border bg-muted/20 p-4">
                                     {filteredCatalogs.length === 0 ? (
-                                        <p className="text-sm text-muted-foreground italic">No catalogs found.</p>
+                                        <p className="text-sm text-foreground/70 italic">No catalogs found.</p>
                                     ) : (
                                         <div className="space-y-4 pr-3 pb-2 pt-1">
                                             {(() => {
@@ -309,9 +309,9 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
 
                                                 return sortedCategories.map(category => (
                                                     <div key={category} className="space-y-2">
-                                                        <h5 className="text-xs font-semibold text-blue-400 uppercase tracking-wider sticky top-0 bg-background/90 py-1 backdrop-blur-sm z-10 border-b border-border/50">
-                                                            {category}
-                                                        </h5>
+                                                        <div className="sticky top-0 bg-background py-2.5 z-[60] mb-2 border-b border-border/40">
+                                                            <h5 className="text-[11px] font-bold text-blue-500 uppercase tracking-[0.2em]">{category}</h5>
+                                                        </div>
                                                         <div className="space-y-3 pt-1">
                                                             {groups[category].map(cat => (
                                                                 <div key={cat.id} className="flex items-start space-x-2 pl-1">
@@ -331,7 +331,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                                                         className="flex-1 text-sm font-medium leading-none text-foreground cursor-pointer select-none"
                                                                     >
                                                                         <div>{cat.name}</div>
-                                                                        <div className="text-[9px] text-muted-foreground font-mono mt-1 w-full max-w-[300px] break-all">{cat.id}</div>
+                                                                        <div className="text-[9px] text-foreground/70 font-mono mt-1 w-full max-w-[300px] break-all">{cat.id}</div>
                                                                     </label>
                                                                 </div>
                                                             ))}

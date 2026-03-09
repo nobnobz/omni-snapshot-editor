@@ -54,7 +54,7 @@ export function RenameGroupModal({ isOpen, onClose, oldName, isMainGroup = false
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4 pt-4">
                     <div>
-                        <label className="text-xs text-muted-foreground mb-1 block">Name</label>
+                        <label className="text-xs text-foreground/70 mb-1 block">Name</label>
                         <Input
                             value={newName}
                             onChange={e => setNewName(e.target.value)}
@@ -66,8 +66,8 @@ export function RenameGroupModal({ isOpen, onClose, oldName, isMainGroup = false
                     <div className="bg-muted/50 p-3 rounded-lg border border-border text-sm flex items-start gap-3">
                         <AlertCircle className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
                         <div>
-                            <p className="text-muted-foreground">This group is referenced in <strong className="text-foreground">{refCount}</strong> places.</p>
-                            <p className="text-muted-foreground text-xs mt-1">Renaming will automatically update all references to prevent orphans.</p>
+                            <p className="text-foreground/70">This group is referenced in <strong className="text-foreground">{refCount}</strong> places.</p>
+                            <p className="text-foreground/70 text-xs mt-1">Renaming will automatically update all references to prevent orphans.</p>
                         </div>
                     </div>
 

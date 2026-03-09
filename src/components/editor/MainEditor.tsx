@@ -25,7 +25,12 @@ import {
     BookOpen,
     Menu,
     FileJson,
-    Trash2
+    Trash2,
+    Heart,
+    Github,
+    LogOut,
+    Info,
+    AlertTriangle
 } from "lucide-react";
 import {
     Dialog,
@@ -35,6 +40,16 @@ import {
     DialogTrigger,
     DialogFooter
 } from "@/components/ui/dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export function MainEditor() {
     const { originalConfig, currentValues, fileName, exportConfig, exportPartialConfig, resetAll, cleanupOrphans, customFallbacks, setCustomFallbacks, unloadConfig } = useConfig();
@@ -45,9 +60,12 @@ export function MainEditor() {
     const [setupName, setSetupName] = useState("");
     const [isImportPatternsOpen, setIsImportPatternsOpen] = useState(false);
     const [pastedJson, setPastedJson] = useState("");
+    const [isExitConfirmOpen, setIsExitConfirmOpen] = useState(false);
+    const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
 
     // Sidebar State
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isCopied, setIsCopied] = useState(false);
 
     const ignoredKeys = new Set([
         "stream_button_elements_order",
@@ -138,6 +156,15 @@ export function MainEditor() {
         setIsExportModalOpen(false);
     };
 
+    const handleBackToStart = () => {
+        setIsExitConfirmOpen(true);
+    };
+
+    const confirmBackToStart = () => {
+        unloadConfig();
+        setIsExitConfirmOpen(false);
+    };
+
     const handleSectionExport = (sectionId: string, sectionTitle: string, keys: string[]) => {
         const config = exportPartialConfig(keys);
         if (!config) return;
@@ -165,7 +192,8 @@ export function MainEditor() {
         const config = exportConfig();
         if (!config) return;
         navigator.clipboard.writeText(JSON.stringify(config, null, 2));
-        alert("Copied to clipboard!");
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
     };
 
 
@@ -214,12 +242,15 @@ export function MainEditor() {
         processAIOMetadata(pastedJson);
     };
 
-    const handleResetAIOMetadata = () => {
-        if (confirm("Are you sure you want to reset all imported catalog names from AIOMetadata? This will clear your custom names and revert to defaults for any newly added catalogs. Existing catalogs in your setup will keep their names until re-synced.")) {
-            setCustomFallbacks({});
-            localStorage.removeItem("omni_custom_fallbacks");
-            alert("AIOMetadata imported names have been cleared.");
-        }
+    const handleResetCatalogNames = () => {
+        setIsResetConfirmOpen(true);
+    };
+
+    const confirmResetCatalogNames = () => {
+        setCustomFallbacks({});
+        localStorage.removeItem("omni_custom_fallbacks");
+        alert("AIOMetadata imported names have been cleared.");
+        setIsResetConfirmOpen(false);
     };
 
     return (
@@ -255,7 +286,7 @@ export function MainEditor() {
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="lg:hidden text-muted-foreground hover:text-white -mr-2"
+                            className="lg:hidden text-foreground/70 hover:text-white -mr-2"
                             onClick={() => setIsSidebarOpen(false)}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -268,37 +299,46 @@ export function MainEditor() {
                         <a
                             key={section.id}
                             href={`#${section.id}`}
-                            className="block px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                            className="block px-3 py-2 text-sm text-foreground/70 hover:text-foreground hover:bg-muted rounded-md transition-colors"
                         >
                             {section.title}
                         </a>
                     ))}
                     <div className="pt-4 mt-4 border-t border-border space-y-2">
-                        <div className="flex items-center justify-between px-3 py-1">
-                            <span className="text-sm text-muted-foreground font-medium">Appearance</span>
-                            <ThemeToggle />
-                        </div>
                         <Dialog>
                             <DialogTrigger asChild>
-                                <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-blue-400 hover:text-blue-300 hover:bg-blue-900/10 rounded-md transition-colors font-medium">
+                                <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-md transition-colors font-medium">
                                     <BookOpen className="w-4 h-4" />
                                     Documentation
                                 </button>
                             </DialogTrigger>
                             <Documentation />
                         </Dialog>
+                        <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer" className="w-full flex items-center gap-3 px-3 py-2 text-sm text-pink-500 hover:text-pink-400 hover:bg-pink-500/10 rounded-md transition-colors font-medium">
+                            <Heart className="w-4 h-4" />
+                            Support my work
+                        </a>
                     </div>
                 </nav>
 
                 <div className="p-4 border-t border-border bg-card flex flex-col gap-2">
-                    <div className="bg-background/40 rounded-lg p-2.5 border border-border/60 mb-1 lg:block hidden">
-                        <div className="flex justify-between items-center mb-1">
-                            <div className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
-                                <FileJson className="w-3 h-3 text-muted-foreground" />
+                    <div className="bg-background/40 rounded-lg p-2.5 border border-border/60 mb-1">
+                        <div className="flex justify-between items-center mb-1.5">
+                            <div className="text-[8px] font-bold uppercase tracking-widest text-foreground/70 flex items-center gap-1.5 leading-none">
+                                <FileJson className="w-3 h-3 text-foreground/70" />
                                 Selected File
                             </div>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5 text-foreground/70 hover:text-blue-500 hover:bg-blue-500/10 -mr-1 -mt-1 group/back"
+                                onClick={handleBackToStart}
+                                title="Back to Start"
+                            >
+                                <LogOut className="w-2.5 h-2.5 transition-transform group-hover/back:-translate-x-0.5" />
+                            </Button>
                         </div>
-                        <p className="text-[10px] text-muted-foreground font-mono truncate">{fileName}</p>
+                        <p className="text-[10px] text-foreground/70 font-mono truncate">{fileName}</p>
                     </div>
 
                     <div className="hidden lg:flex flex-col gap-2">
@@ -312,19 +352,32 @@ export function MainEditor() {
                         <Button
                             onClick={handleCopy}
                             variant="ghost"
-                            className="w-full text-muted-foreground hover:text-white h-10 bg-muted/40 border border-border/60 hover:bg-muted transition-all px-4"
+                            className="w-full text-foreground/70 hover:text-white h-10 bg-muted/40 border border-border/60 hover:bg-muted transition-all px-4"
                         >
                             <Copy className="w-4 h-4 mr-2.5" />
                             Copy to Clipboard
                         </Button>
                     </div>
 
-                    <div className="flex items-center justify-between mt-1 pt-2 border-t border-border/40">
-                        <div className="text-[9px] text-muted-foreground font-medium">
-                            Made by Bot-Bid-Raiser
-                        </div>
-                        <div className="text-[9px] text-muted-foreground font-medium text-right">
-                            v0.1.0
+                    <div className="mt-3">
+                        <div className="flex flex-col gap-2.5 pt-3 pb-2 border-t border-border/40">
+                            <div className="flex items-center justify-between">
+                                <a href="https://github.com/nobnobz/omni-snapshot-editor" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-[9px] text-foreground/70 hover:text-foreground transition-colors font-medium">
+                                    <Github className="w-3.5 h-3.5" />
+                                    GitHub
+                                </a>
+                                <div className="scale-[0.80] origin-right -my-1">
+                                    <ThemeToggle />
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <div className="text-[9px] text-foreground/70 font-medium">
+                                    Made by Bot-Bid-Raiser
+                                </div>
+                                <div className="text-[9px] text-foreground/70 font-medium">
+                                    v0.2.0
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -338,14 +391,14 @@ export function MainEditor() {
                     </DialogHeader>
                     <div className="space-y-4 pt-4">
                         <div className="space-y-2">
-                            <label className="text-sm text-muted-foreground">Setup Name</label>
+                            <label className="text-sm text-foreground/70">Setup Name</label>
                             <Input
                                 value={setupName}
                                 onChange={(e) => setSetupName(e.target.value)}
                                 placeholder="E.g., My Awesome Setup"
                                 className="bg-background border-border focus-visible:ring-blue-500"
                             />
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-foreground/70">
                                 The export will include a new timestamp automatically.
                             </p>
                         </div>
@@ -371,8 +424,8 @@ export function MainEditor() {
                     <div className="flex items-center gap-4">
                         <Button
                             variant="ghost"
-                            onClick={unloadConfig}
-                            className="text-muted-foreground hover:text-foreground hover:bg-accent transition-colors gap-2 px-4 h-10"
+                            onClick={handleBackToStart}
+                            className="text-foreground/70 hover:text-foreground hover:bg-accent transition-colors gap-2 px-4 h-10"
                         >
                             <RotateCcw className="w-4 h-4" />
                             Back to Start
@@ -380,9 +433,18 @@ export function MainEditor() {
                     </div>
                 </div>
 
-                <header className="lg:hidden h-16 border-b border-border bg-card/80 backdrop-blur-sm shadow-sm flex items-center justify-between px-4 sm:px-6 shrink-0 sticky top-0 z-30">
+                <header className="lg:hidden h-16 border-b border-border bg-card/80 backdrop-blur-sm shadow-sm flex items-center gap-3 px-4 sm:px-6 shrink-0 sticky top-0 z-30">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setIsSidebarOpen(true)}
+                        className="text-foreground/70 hover:text-white lg:hidden h-9 w-9 shrink-0"
+                    >
+                        <Menu className="w-5 h-5" />
+                    </Button>
+
                     <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 flex items-center justify-center shrink-0 relative">
+                        <div className="w-10 h-10 flex items-center justify-center shrink-0 relative">
                             <img src="/omni-snapshot-editor/clown.png" alt="Logo" className="w-full h-full object-contain relative z-10 scale-125" />
                         </div>
                         <div className="flex flex-col">
@@ -395,46 +457,40 @@ export function MainEditor() {
 
                     <div className="flex items-center gap-1.5 sm:gap-3">
                         <Button
-                            onClick={handleCopy}
-                            variant="ghost"
-                            size="sm"
-                            className="text-muted-foreground hover:text-foreground h-9 px-2 sm:px-3 bg-muted border border-border hover:bg-accent hover:border-border transition-all"
-                        >
-                            <Copy className="w-4 h-4 sm:mr-2" />
-                            <span className="hidden sm:inline-block md:hidden">Copy</span>
-                            <span className="hidden md:inline-block">Copy to Clipboard</span>
-                        </Button>
-
-                        <Button
                             onClick={handleDownloadClick}
                             size="sm"
                             className="bg-blue-600 hover:bg-blue-700 h-9 text-white shadow-lg shadow-blue-500/20 px-3 sm:px-4 flex items-center justify-center font-bold"
                         >
-                            <Download className="w-4 h-4 sm:mr-2" />
-                            <span className="hidden sm:inline-block md:hidden">Download</span>
-                            <span className="hidden md:inline-block">Download .json</span>
+                            <Download className="w-4 h-4 mr-2" />
+                            <span>Download</span>
                         </Button>
-
-                        <div className="w-px h-6 bg-muted mx-0.5 sm:mx-1" />
-
                         <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
-                            className="text-muted-foreground hover:text-white h-9 px-2 sm:px-3 hover:bg-muted transition-colors"
-                            onClick={unloadConfig}
+                            onClick={handleCopy}
+                            className={`h-9 w-[100px] flex items-center justify-center transition-all duration-300 border-border/60 hover:bg-muted ${isCopied ? 'border-emerald-500/50 text-emerald-500 bg-emerald-500/5' : 'text-foreground/80'}`}
+                            title="Copy to Clipboard"
                         >
-                            <RotateCcw className="w-4 h-4 sm:mr-2" />
-                            <span className="hidden sm:inline-block md:hidden">Back</span>
-                            <span className="hidden md:inline-block">Back to Start</span>
+                            {isCopied ? (
+                                <>
+                                    <Check className="w-4 h-4 mr-2" />
+                                    <span>Copied!</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Copy className="w-4 h-4 mr-2" />
+                                    <span>Copy</span>
+                                </>
+                            )}
                         </Button>
-
                         <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => setIsSidebarOpen(true)}
-                            className="text-muted-foreground hover:text-white lg:hidden h-9 w-9 shrink-0"
+                            onClick={handleBackToStart}
+                            className="h-9 w-9 text-foreground/70 hover:text-foreground hover:bg-muted"
+                            title="Back to Start"
                         >
-                            <Menu className="w-5 h-5" />
+                            <RotateCcw className="h-5 w-5" />
                         </Button>
                     </div>
                 </header>
@@ -467,7 +523,7 @@ export function MainEditor() {
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            className="text-muted-foreground hover:text-white h-8 px-3 text-xs hover:bg-muted transition-colors gap-1.5"
+                                            className="text-foreground/70 hover:text-white h-8 px-3 text-xs hover:bg-muted transition-colors gap-1.5"
                                             onClick={() => handleSectionExport(section.id, section.title, section.keys)}
                                         >
                                             <Download className="w-3.5 h-3.5" />
@@ -479,44 +535,54 @@ export function MainEditor() {
                                 <div className="space-y-4">
                                     {section.id === "aiometadata" ? (
                                         <div className="space-y-4">
-                                            <div className="space-y-3">
-                                                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-sm text-blue-700 dark:text-blue-300 leading-relaxed">
-                                                    <strong>Note:</strong> Import your catalogs by uploading an AIOMetadata configuration file. In AIOMetadata, go to Catalogs and share your setup by downloading the .json file or copying it to the clipboard.
+                                            <div className="flex flex-col gap-1.5 px-1">
+                                                <p className="text-[13px] text-foreground/70 leading-relaxed">
+                                                    Import your catalogs by uploading an AIOMetadata config file or pasting the JSON. To export your catalogs in AIOMetadata, go to Catalogs &gt; Share Setup.
+                                                </p>
+                                                <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3.5 text-[12px] text-blue-400 flex gap-3 items-start mt-2 shadow-sm">
+                                                    <Info className="w-4 h-4 shrink-0 mt-0.5 text-blue-400" />
+                                                    <p className="leading-relaxed">
+                                                        <span className="font-bold">Note:</span> You can skip this step if you don’t want to import additional catalogs from your AIOMetadata setup.
+                                                    </p>
                                                 </div>
-                                                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-sm leading-relaxed">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="text-red-600 dark:text-red-400 font-medium">You can skip this step if you only want to use my template and do not want to add any new catalogs.</div>
-                                                        {Object.keys(customFallbacks).length > 0 && (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={handleResetAIOMetadata}
-                                                                className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-500/10 h-8 px-3 text-xs"
-                                                            >
-                                                                <Trash2 className="w-3.5 h-3.5 mr-2" />
-                                                                Reset Imported Data
-                                                            </Button>
-                                                        )}
+                                                {Object.keys(customFallbacks).length > 0 && (
+                                                    <div className="mt-2 text-right">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={handleResetCatalogNames}
+                                                            className="text-red-500 hover:text-red-400 hover:bg-red-500/10 h-8 px-3 text-xs"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5 mr-2" />
+                                                            Reset Imported Data
+                                                        </Button>
                                                     </div>
-                                                </div>
+                                                )}
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 {/* File Upload card */}
-                                                <div className="group relative bg-card border border-border hover:border-border/80 rounded-xl p-6 transition-all duration-300 flex flex-col h-full overflow-hidden shadow-sm">
+                                                <div className="group relative bg-card border border-border hover:border-border/80 rounded-xl p-4 transition-all duration-300 flex flex-col h-full overflow-hidden shadow-sm">
                                                     <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                                                    <div className="flex items-start gap-4 mb-auto relative z-10">
-                                                        <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-blue-400">
-                                                            <UploadCloud className="w-6 h-6" />
+                                                    <div className="flex items-start gap-3 mb-auto relative z-10">
+                                                        <div className="p-2.5 bg-blue-500/10 border border-blue-500/20 rounded-xl text-blue-400">
+                                                            <UploadCloud className="w-5 h-5" />
                                                         </div>
                                                         <div>
-                                                            <h4 className="text-base font-medium text-foreground mb-1">Upload File</h4>
-                                                            <p className="text-sm text-muted-foreground leading-relaxed">
-                                                                Import from your <code className="text-[11px] bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-foreground">aiometadata-config.json</code>
+                                                            <h4 className="text-sm font-medium text-foreground mb-0.5">Upload File</h4>
+                                                            <p className="text-xs text-foreground/70 leading-relaxed">
+                                                                Import from your <code className="text-[10px] bg-white/5 border border-white/10 px-1 py-0.5 rounded text-foreground">aiometadata-config.json</code>
                                                             </p>
                                                         </div>
                                                     </div>
 
-                                                    <div className="mt-6 relative z-10">
+                                                    <div className="mt-4 flex-1 flex flex-col justify-end relative z-10">
+                                                        <label
+                                                            htmlFor="main-fallback-upload"
+                                                            className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-border/60 hover:border-blue-500/40 rounded-lg mb-3 bg-muted/5 transition-colors cursor-pointer group/drop min-h-[96px]"
+                                                        >
+                                                            <UploadCloud className="w-5 h-5 mb-1.5 opacity-40 group-hover/drop:opacity-70 group-hover/drop:text-blue-500 transition-all" />
+                                                            <span className="text-[11px] font-medium opacity-40 group-hover/drop:opacity-70 group-hover/drop:text-blue-500 transition-all">Select file to upload</span>
+                                                        </label>
                                                         <input
                                                             type="file"
                                                             id="main-fallback-upload"
@@ -526,7 +592,7 @@ export function MainEditor() {
                                                         />
                                                         <label
                                                             htmlFor="main-fallback-upload"
-                                                            className="w-full inline-flex cursor-pointer items-center justify-center rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white h-10 px-4 border border-transparent shadow-[0_0_15px_rgba(37,99,235,0.2)] transition-all duration-200"
+                                                            className="w-full inline-flex cursor-pointer items-center justify-center rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white h-9 px-4 border border-transparent shadow-[0_0_15px_rgba(37,99,235,0.2)] transition-all duration-200"
                                                         >
                                                             <UploadCloud className="w-4 h-4 mr-2" />
                                                             Select JSON File
@@ -535,31 +601,31 @@ export function MainEditor() {
                                                 </div>
 
                                                 {/* Paste JSON card */}
-                                                <div className="group relative bg-card border border-border hover:border-border/80 rounded-xl p-6 transition-all duration-300 flex flex-col h-full overflow-hidden shadow-sm">
-                                                    <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                                                    <div className="flex items-start gap-4 mb-5 relative z-10">
-                                                        <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-xl text-purple-400">
-                                                            <ClipboardPaste className="w-6 h-6" />
+                                                <div className="group relative bg-card border border-border hover:border-border/80 rounded-xl p-4 transition-all duration-300 flex flex-col h-full overflow-hidden shadow-sm">
+                                                    <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                                                    <div className="flex items-start gap-3 mb-3 relative z-10">
+                                                        <div className="p-2.5 bg-blue-500/10 border border-blue-500/20 rounded-xl text-blue-500">
+                                                            <ClipboardPaste className="w-5 h-5" />
                                                         </div>
                                                         <div>
-                                                            <h4 className="text-base font-medium text-foreground mb-1">Paste Content</h4>
-                                                            <p className="text-sm text-muted-foreground leading-relaxed">
+                                                            <h4 className="text-sm font-medium text-foreground mb-0.5">Paste Content</h4>
+                                                            <p className="text-xs text-foreground/70 leading-relaxed">
                                                                 Directly paste your raw JSON setup if you copied it to the clipboard.
                                                             </p>
                                                         </div>
                                                     </div>
 
-                                                    <div className="flex flex-col gap-3 mt-auto relative z-10">
+                                                    <div className="flex flex-col gap-2 mt-auto relative z-10">
                                                         <Textarea
                                                             placeholder="Paste your JSON configuration here..."
-                                                            className="min-h-[100px] text-sm bg-white/5 border-white/10 focus:border-purple-500/50 text-foreground resize-none font-mono placeholder:text-muted-foreground custom-scrollbar rounded-lg"
+                                                            className="min-h-[60px] text-xs bg-muted/30 border-input focus:border-blue-500/50 text-foreground resize-none font-mono placeholder:text-foreground/50 custom-scrollbar rounded-lg"
                                                             value={pastedJson}
                                                             onChange={(e) => setPastedJson(e.target.value)}
                                                         />
                                                         <Button
                                                             size="sm"
                                                             variant="secondary"
-                                                            className="w-full text-sm h-10 bg-purple-600 hover:bg-purple-500 text-white border-none rounded-lg shadow-[0_0_15px_rgba(147,51,234,0.2)] transition-all duration-200"
+                                                            className="w-full text-sm h-9 bg-blue-600 hover:bg-blue-500 text-white border-none rounded-lg shadow-[0_0_15px_rgba(37,99,235,0.2)] transition-all duration-200"
                                                             onClick={handlePasteImport}
                                                             disabled={!pastedJson.trim()}
                                                         >
@@ -572,32 +638,34 @@ export function MainEditor() {
                                         </div>
                                     ) : section.id === "groups" ? (
                                         <div className="space-y-6">
-                                            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-sm text-blue-700 dark:text-blue-300 leading-relaxed">
-                                                <strong>Note:</strong> Create and organize groups, assign catalogs, and reorder items. To update your existing setup with new catalogs or images from my template, use <strong>Update from Template</strong> and select my template.
+                                            <div className="space-y-5">
+                                                <p className="text-[13px] text-foreground/70 px-1 leading-relaxed">
+                                                    Create and organize groups, assign catalogs, and reorder items. To update your setup, use <strong>Update from Template</strong>.
+                                                </p>
+                                                <UnifiedSubgroupEditor />
                                             </div>
-                                            <UnifiedSubgroupEditor />
                                         </div>
                                     ) : section.id === "catalogs" ? (
                                         <div className="space-y-6">
-                                            <div className="space-y-3">
-                                                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-sm text-blue-700 dark:text-blue-300 leading-relaxed">
-                                                    <strong>Note:</strong> Manage your global catalogs here. Global catalogs appear below your groups on the home screen. You can enable or disable them, adjust their appearance, configure the top row, and change their order.
-                                                </div>
-                                                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-sm text-blue-700 dark:text-blue-300 leading-relaxed">
-                                                    <strong>Note:</strong> The Top Row displays a ranked catalog with numbered items below Continue Watching. You can hide the catalog after enabling the Top Row and the Top Row still appears.
-                                                </div>
+                                            <div className="space-y-5">
+                                                <p className="text-[13px] text-foreground/70 px-1 leading-relaxed">
+                                                    Manage global catalogs that appear below your groups. Enable/disable them, adjust appearance (e.g. landscape), and configure the ranked Top Row display.
+                                                </p>
+                                                <CatalogEditor />
                                             </div>
-                                            <CatalogEditor />
                                         </div>
                                     ) : section.id === "patterns" ? (
-                                        <div className="space-y-6">
-                                            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-sm">
-                                                <div className="text-red-600 dark:text-red-400 font-medium">Only edit the patterns if you fully understand how they work.</div>
+                                        <div className="space-y-5">
+                                            <div className="bg-amber-500/10 border border-amber-500/20 p-3.5 rounded-xl flex items-start gap-3 shadow-sm mt-2">
+                                                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                                                <p className="text-[12px] text-amber-600 dark:text-amber-500/90 leading-relaxed font-medium">
+                                                    Only edit the patterns if you fully understand how they work. Import from template to safely get the latest visual tags.
+                                                </p>
                                             </div>
-                                            <div className="flex flex-wrap gap-2">
+                                            <div className="flex flex-wrap gap-2 items-center">
                                                 <Button
                                                     onClick={() => setIsImportPatternsOpen(true)}
-                                                    className="bg-muted hover:bg-accent text-foreground border border-border shadow-sm"
+                                                    className="bg-muted hover:bg-accent text-foreground border border-border shadow-sm mt-3"
                                                 >
                                                     <UploadCloud className="w-5 h-5 mr-2" />
                                                     Import from Template
@@ -647,6 +715,51 @@ export function MainEditor() {
 
                 </div>
             </main>
+            {/* Exit Confirmation Dialog */}
+            <AlertDialog open={isExitConfirmOpen} onOpenChange={setIsExitConfirmOpen}>
+                <AlertDialogContent className="bg-card border-border text-foreground">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="text-xl font-bold">Unsaved Changes?</AlertDialogTitle>
+                        <AlertDialogDescription className="text-foreground/70">
+                            Are you sure you want to return to the start screen? Any unsaved modifications to your configuration will be lost.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="mt-4">
+                        <AlertDialogCancel className="bg-muted border-border text-foreground hover:bg-accent hover:text-foreground">
+                            Stay here
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={confirmBackToStart}
+                            className="bg-red-600 hover:bg-red-700 text-white border-none"
+                        >
+                            Yes, Discard Changes
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Reset Catalog Names Confirmation */}
+            <AlertDialog open={isResetConfirmOpen} onOpenChange={setIsResetConfirmOpen}>
+                <AlertDialogContent className="bg-card border-border text-foreground">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="text-xl font-bold">Reset Catalog Names?</AlertDialogTitle>
+                        <AlertDialogDescription className="text-foreground/70">
+                            Are you sure you want to reset all imported catalog names? This will clear your custom overrides and revert to AIOMetadata defaults.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="mt-4">
+                        <AlertDialogCancel className="bg-muted border-border text-foreground hover:bg-accent hover:text-foreground">
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={confirmResetCatalogNames}
+                            className="bg-red-600 hover:bg-red-700 text-white border-none"
+                        >
+                            Yes, Reset All
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

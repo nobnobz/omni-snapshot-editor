@@ -87,7 +87,7 @@ function SortableItem({
             style={style}
             className={`group flex items-center gap-3 p-3 bg-card border border-border rounded-lg mb-2 ${isDragging ? "opacity-50 border-blue-500" : ""}`}
         >
-            <button {...attributes} {...listeners} className="cursor-grab hover:text-white text-muted-foreground" aria-label="Drag handle">
+            <button {...attributes} {...listeners} className="cursor-grab hover:text-white text-foreground/70" aria-label="Drag handle">
                 <GripVertical className="h-4 w-4" />
             </button>
             <div className="flex-1 min-w-0">
@@ -106,8 +106,8 @@ function SortableItem({
                         onClick={() => setIsEditing(true)}
                         title="Click to rename"
                     >
-                        <p className={`text-sm truncate font-medium ${!isEnabled ? "text-muted-foreground line-through" : "text-foreground"}`}>{displayName}</p>
-                        {displayName === id && <p className="text-[10px] text-muted-foreground truncate font-mono">{id}</p>}
+                        <p className={`text-sm truncate font-medium ${!isEnabled ? "text-foreground/70 line-through" : "text-foreground"}`}>{displayName}</p>
+                        {displayName === id && <p className="text-[10px] text-foreground/70 truncate font-mono">{id}</p>}
                     </div>
                 )}
             </div>
@@ -203,7 +203,7 @@ function SortableList({
                 </Button>
                 <div className="w-px h-5 bg-muted mx-2" />
                 <Button variant="ghost" size="sm" onClick={enableAll} className="h-8 text-xs text-blue-400 hover:text-blue-300">Enable All</Button>
-                <Button variant="ghost" size="sm" onClick={disableAll} className="h-8 text-xs text-muted-foreground hover:text-muted-foreground">Disable All</Button>
+                <Button variant="ghost" size="sm" onClick={disableAll} className="h-8 text-xs text-foreground/70 hover:text-foreground/70">Disable All</Button>
             </div>
 
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -312,7 +312,7 @@ export function OrderingEditor({ configKey }: { configKey: string }) {
                                 <AccordionTrigger className="hover:no-underline text-foreground">
                                     <div className="flex flex-col items-start gap-1">
                                         <span className="font-semibold">{groupName}</span>
-                                        <span className="text-xs text-muted-foreground font-mono font-normal">{itemsList.length} items</span>
+                                        <span className="text-xs text-foreground/70 font-mono font-normal">{itemsList.length} items</span>
                                     </div>
                                 </AccordionTrigger>
                                 <AccordionContent className="border-t border-border pt-4">

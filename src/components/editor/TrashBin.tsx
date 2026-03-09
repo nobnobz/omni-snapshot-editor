@@ -31,14 +31,14 @@ export function TrashBin() {
                     </div>
                     <div>
                         <h3 className="text-lg font-bold text-foreground">Recycle Bin</h3>
-                        <p className="text-sm text-muted-foreground">Recently removed groups can be restored here.</p>
+                        <p className="text-foreground/70">Recently removed groups can be restored here.</p>
                     </div>
                 </div>
                 <Button
                     variant="ghost"
                     size="sm"
                     onClick={clearDeletedSubgroups}
-                    className="text-muted-foreground hover:text-red-400 hover:bg-red-500/10 text-xs gap-2"
+                    className="text-foreground/70 hover:text-red-400 hover:bg-red-500/10 text-xs gap-2"
                 >
                     <XCircle className="w-4 h-4" /> Clear Trash
                 </Button>
@@ -54,14 +54,14 @@ export function TrashBin() {
                         <div className="flex items-center justify-between px-4 py-3">
                             <div className="flex items-center gap-3">
                                 <AccordionTrigger className="p-0 hover:no-underline [&>svg]:hidden flex items-center gap-2">
-                                    <Badge variant="outline" className={`text-[10px] uppercase tracking-tighter bg-muted/50 border-border ${item.type === 'Main Group' ? 'text-blue-400 border-blue-900/50' : 'text-muted-foreground'}`}>
+                                    <Badge variant="outline" className={`text-[10px] uppercase tracking-tighter bg-muted/50 border-border ${item.type === 'Main Group' ? 'text-blue-400 border-blue-900/50' : 'text-foreground/70'}`}>
                                         {item.type}
                                     </Badge>
                                     <span className="font-semibold text-foreground">{item.name}</span>
                                 </AccordionTrigger>
                                 {item.type === 'Subgroup' && (
-                                    <span className="text-xs text-muted-foreground">
-                                        was in <span className="text-muted-foreground">{(item as any).parentName}</span>
+                                    <span className="text-xs text-foreground/70">
+                                        was in <span className="text-foreground/70">{(item as any).parentName}</span>
                                     </span>
                                 )}
                             </div>
@@ -76,25 +76,25 @@ export function TrashBin() {
                         <AccordionContent className="px-4 pb-4 pt-0">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                                 <div className="space-y-2">
-                                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
+                                    <div className="flex items-center gap-2 text-[10px] text-foreground/70 uppercase font-bold tracking-widest">
                                         <Info className="w-3 h-3" /> Details
                                     </div>
                                     <div className="bg-background/50 rounded p-3 border border-border/50 text-xs space-y-1">
                                         <div>
-                                            <span className="text-muted-foreground italic">{item.type === 'Main Group' ? 'Subgroups' : 'Catalogs'}:</span>{' '}
+                                            <span className="text-foreground/70 italic">{item.type === 'Main Group' ? 'Subgroups' : 'Catalogs'}:</span>{' '}
                                             {item.type === 'Main Group' ? (item as any).subgroupNames?.length : (item as any).catalogs?.length}
                                         </div>
                                         {(item as any).imageUrl && (
-                                            <div className="truncate"><span className="text-muted-foreground italic">Image:</span> {(item as any).imageUrl}</div>
+                                            <div className="truncate"><span className="text-foreground/70 italic">Image:</span> {(item as any).imageUrl}</div>
                                         )}
-                                        <div className="text-[10px] text-muted-foreground pt-1">
+                                        <div className="text-[10px] text-foreground/70 pt-1">
                                             Deleted at: {new Date(item.deletedAt).toLocaleString()}
                                         </div>
                                     </div>
                                 </div>
                                 {(item as any).imageUrl && (
                                     <div className="space-y-2">
-                                        <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Preview</div>
+                                        <div className="text-[10px] text-foreground/70 uppercase font-bold tracking-widest">Preview</div>
                                         <div className="relative aspect-video rounded border border-border overflow-hidden bg-background flex items-center justify-center">
                                             <img
                                                 src={(item as any).imageUrl}

@@ -20,12 +20,12 @@ import {
 } from "@/components/ui/dialog";
 
 const PATTERN_DICTS = [
-    { key: "pattern_tag_enabled_patterns", label: "Tag Enabled", type: "boolean", icon: <CheckCircle className="w-4 h-4 text-muted-foreground" /> },
-    { key: "regex_pattern_custom_names", label: "Custom Name", type: "string", icon: <Type className="w-4 h-4 text-muted-foreground" /> },
-    { key: "regex_pattern_image_urls", label: "Image URL", type: "string", icon: <ImageIcon className="w-4 h-4 text-muted-foreground" /> },
-    { key: "pattern_image_color_indices", label: "Image Color", type: "imageColor", icon: <Palette className="w-4 h-4 text-muted-foreground" /> },
-    { key: "pattern_border_radius_indices", label: "Corner Radius", type: "borderRadius", icon: <Maximize className="w-4 h-4 text-muted-foreground" /> },
-    { key: "pattern_color_hex_values", label: "Color Hex", type: "color", icon: <Hexagon className="w-4 h-4 text-muted-foreground" /> },
+    { key: "pattern_tag_enabled_patterns", label: "Tag Enabled", type: "boolean", icon: <CheckCircle className="w-4 h-4 text-foreground/70" /> },
+    { key: "regex_pattern_custom_names", label: "Custom Name", type: "string", icon: <Type className="w-4 h-4 text-foreground/70" /> },
+    { key: "regex_pattern_image_urls", label: "Image URL", type: "string", icon: <ImageIcon className="w-4 h-4 text-foreground/70" /> },
+    { key: "pattern_image_color_indices", label: "Image Color", type: "imageColor", icon: <Palette className="w-4 h-4 text-foreground/70" /> },
+    { key: "pattern_border_radius_indices", label: "Corner Radius", type: "borderRadius", icon: <Maximize className="w-4 h-4 text-foreground/70" /> },
+    { key: "pattern_color_hex_values", label: "Color Hex", type: "color", icon: <Hexagon className="w-4 h-4 text-foreground/70" /> },
 ];
 
 // Image color index → label mapping (Omni uses 1=Black, 2=White, 3=Color)
@@ -86,9 +86,9 @@ function PatternNode({ regex, onDelete, onRename }: { regex: string, onDelete: (
             <div className={`flex items-center transition-colors ${!isTagEnabled ? "bg-background/20" : "bg-card/40 hover:bg-card/60"} [&>h3]:flex-1`}>
                 <AccordionTrigger className="px-4 py-3 sm:px-5 sm:py-4 flex-1 hover:no-underline flex items-center justify-between [&>svg]:hidden">
                     <div className="flex items-center gap-3">
-                        <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]/item:rotate-90" />
-                        <span className={`font-bold text-sm tracking-tight transition-colors text-left ${!isTagEnabled ? "text-muted-foreground" : "text-foreground"}`}>
-                            {customName || <span className={`font-mono text-xs inline-block break-all bg-background/50 px-2 py-0.5 rounded border border-border ${!isTagEnabled ? "text-muted-foreground" : "text-blue-400"}`}>{regex}</span>}
+                        <ChevronRight className="w-4 h-4 shrink-0 text-foreground/70 transition-transform duration-200 group-data-[state=open]/item:rotate-90" />
+                        <span className={`font-bold text-sm tracking-tight transition-colors text-left ${!isTagEnabled ? "text-foreground/70" : "text-foreground"}`}>
+                            {customName || <span className={`font-mono text-xs inline-block break-all bg-background/50 px-2 py-0.5 rounded border border-border ${!isTagEnabled ? "text-foreground/70" : "text-blue-400"}`}>{regex}</span>}
                         </span>
                     </div>
                 </AccordionTrigger>
@@ -102,7 +102,7 @@ function PatternNode({ regex, onDelete, onRename }: { regex: string, onDelete: (
                         variant="ghost"
                         size="icon"
                         onClick={handleDeleteClick}
-                        className="h-8 w-8 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 rounded-md border border-transparent hover:border-red-500/30 transition-all opacity-80 hover:opacity-100 shrink-0"
+                        className="h-8 w-8 text-foreground/70 hover:text-red-400 hover:bg-red-500/10 rounded-md border border-transparent hover:border-red-500/30 transition-all opacity-80 hover:opacity-100 shrink-0"
                         title="Delete Pattern"
                     >
                         <Trash2 className="w-4 h-4" />
@@ -112,7 +112,7 @@ function PatternNode({ regex, onDelete, onRename }: { regex: string, onDelete: (
             <AccordionContent className="p-5 border-t border-border/50 bg-background/20">
                 {/* Regex Editor */}
                 <div className="mb-6">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Pattern Regex</Label>
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-foreground/70 mb-2 block">Pattern Regex</Label>
                     {editingRegex ? (
                         <div className="flex items-center gap-2">
                             <Input
@@ -128,14 +128,14 @@ function PatternNode({ regex, onDelete, onRename }: { regex: string, onDelete: (
                             <Button size="icon" variant="ghost" onClick={handleConfirmEdit} className="h-9 w-9 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-300 rounded-md transition-colors">
                                 <Check className="w-4 h-4" />
                             </Button>
-                            <Button size="icon" variant="ghost" onClick={handleCancelEdit} className="h-9 w-9 bg-muted/50 text-muted-foreground hover:bg-muted hover:text-white rounded-md transition-colors">
+                            <Button size="icon" variant="ghost" onClick={handleCancelEdit} className="h-9 w-9 bg-muted/50 text-foreground/70 hover:bg-muted hover:text-white rounded-md transition-colors">
                                 <X className="w-4 h-4" />
                             </Button>
                         </div>
                     ) : (
                         <div className="flex items-center gap-3 p-2.5 rounded-lg border border-border/80 bg-background/50 shadow-inner group/regex transition-colors hover:border-border/80">
                             <code className="text-[11px] sm:text-xs font-mono text-blue-400 flex-1 break-all tracking-tight">{regex}</code>
-                            <Button size="icon" variant="ghost" onClick={handleStartEdit} className="h-7 w-7 text-muted-foreground hover:text-blue-400 hover:bg-blue-500/10 rounded-md opacity-0 group-hover/regex:opacity-100 transition-all shrink-0">
+                            <Button size="icon" variant="ghost" onClick={handleStartEdit} className="h-7 w-7 text-foreground/70 hover:text-blue-400 hover:bg-blue-500/10 rounded-md opacity-0 group-hover/regex:opacity-100 transition-all shrink-0">
                                 <Pencil className="w-3.5 h-3.5" />
                             </Button>
                         </div>
@@ -191,7 +191,7 @@ function PatternNode({ regex, onDelete, onRename }: { regex: string, onDelete: (
                         return (
                             <div key={dictDef.key} className="flex flex-col justify-center gap-2.5 p-4 bg-background/40 border border-border/80 shadow-sm rounded-xl transition-colors hover:border-border/80 hover:bg-card/40">
                                 <Label className="flex items-center gap-2 text-xs font-semibold tracking-tight text-foreground">
-                                    <span className="p-1 rounded bg-card text-muted-foreground border border-border">
+                                    <span className="p-1 rounded bg-card text-foreground/70 border border-border">
                                         {dictDef.icon}
                                     </span>
                                     {dictDef.label}
@@ -279,10 +279,12 @@ function PatternNode({ regex, onDelete, onRename }: { regex: string, onDelete: (
 }
 
 export function UnifiedPatternEditor() {
-    const { currentValues, updateValue } = useConfig();
+    const { currentValues, updateValue, clearPatterns } = useConfig();
     const [newPattern, setNewPattern] = useState("");
     const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
     const [patternNameDraft, setPatternNameDraft] = useState("");
+    const [patternToDelete, setPatternToDelete] = useState<string | null>(null);
+    const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
 
     // Gather all unique regex strings from all dicts
     const allRegexSet = new Set<string>();
@@ -347,18 +349,23 @@ export function UnifiedPatternEditor() {
     };
 
     const handleDeletePattern = (regex: string) => {
-        if (confirm(`Are you sure you want to delete all settings for pattern "${regex}"?`)) {
-            PATTERN_DICTS.forEach(d => {
-                const dict = currentValues[d.key];
-                if (Array.isArray(dict)) {
-                    if (dict.includes(regex)) {
-                        updateValue([d.key], dict.filter((r: string) => r !== regex));
-                    }
-                } else if (dict && typeof dict === "object" && dict[regex] !== undefined) {
-                    updateValue([d.key, regex], undefined);
+        setPatternToDelete(regex);
+    };
+
+    const confirmDeletePattern = () => {
+        if (!patternToDelete) return;
+        const regex = patternToDelete;
+        PATTERN_DICTS.forEach(d => {
+            const dict = currentValues[d.key];
+            if (Array.isArray(dict)) {
+                if (dict.includes(regex)) {
+                    updateValue([d.key], dict.filter((r: string) => r !== regex));
                 }
-            });
-        }
+            } else if (dict && typeof dict === "object" && dict[regex] !== undefined) {
+                updateValue([d.key, regex], undefined);
+            }
+        });
+        setPatternToDelete(null);
     };
 
     const handleRenamePattern = (oldRegex: string, newRegex: string) => {
@@ -391,8 +398,8 @@ export function UnifiedPatternEditor() {
 
     return (
         <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="patterns-root" className="border-border/80 bg-background/40 rounded-xl overflow-hidden shadow-sm transition-all hover:border-border/80">
-                <AccordionTrigger className="px-5 py-4 hover:bg-card/40 hover:no-underline flex justify-between items-center group transition-colors">
+            <AccordionItem value="patterns-root" className="bg-card/60 backdrop-blur-md border border-white/[0.08] shadow-[0_4px_20px_rgb(0,0,0,0.1)] rounded-xl overflow-hidden transition-all hover:bg-card/80">
+                <AccordionTrigger className="px-5 py-4 hover:no-underline flex justify-between items-center group transition-colors">
                     <div className="flex items-center gap-3">
                         <WandSparkles className="w-5 h-5 text-purple-400 group-hover:text-purple-300 transition-colors" />
                         <span className="font-bold text-base tracking-tight text-foreground flex items-center gap-2">
@@ -403,19 +410,58 @@ export function UnifiedPatternEditor() {
                         </span>
                     </div>
                 </AccordionTrigger>
-                <AccordionContent className="p-5 pt-5 border-t border-border/50 bg-card/20">
+                <AccordionContent className="p-5 pt-5 border-t border-border/20 bg-card/10">
                     <div className="space-y-6">
-                        <div className="flex sm:flex-row flex-col gap-3 bg-background/60 p-4 rounded-xl border border-border/80 shadow-inner">
-                            <Input
-                                value={newPattern}
-                                onChange={e => setNewPattern(e.target.value)}
-                                onKeyDown={e => e.key === 'Enter' && handleAddPattern()}
-                                placeholder="Enter new Regex string (e.g. (?i)uhd|4k)"
-                                className="h-10 text-sm font-mono bg-card/80 border-border/80 focus-visible:ring-1 focus-visible:ring-purple-500 shadow-inner transition-colors flex-1"
-                            />
-                            <Button onClick={handleAddPattern} className="h-10 bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-900/20 transition-all font-semibold px-6 w-full sm:w-auto">
-                                <Plus className="w-4 h-4 mr-2" /> Add Pattern
-                            </Button>
+                        <div className="flex flex-col gap-3 bg-background/60 p-4 rounded-xl border border-border/80 shadow-inner">
+                            <div className="flex sm:flex-row flex-col gap-3">
+                                <Input
+                                    value={newPattern}
+                                    onChange={e => setNewPattern(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && handleAddPattern()}
+                                    placeholder="Enter new Regex string (e.g. (?i)uhd|4k)"
+                                    className="h-10 text-sm font-mono bg-background/40 border-border/40 focus-visible:ring-1 focus-visible:ring-purple-500 shadow-inner transition-colors flex-1"
+                                />
+                                <Button onClick={handleAddPattern} className="h-10 bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-900/20 transition-all font-semibold px-6 w-full sm:w-auto">
+                                    <Plus className="w-4 h-4 mr-2" /> Add Pattern
+                                </Button>
+                            </div>
+
+                            <div className="flex items-center justify-end pt-2 border-t border-border/20 mt-1">
+                                {confirmDeleteAll ? (
+                                    <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2">
+                                        <span className="text-[11px] font-medium text-red-500">Are you sure you want to delete all?</span>
+                                        <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            onClick={() => {
+                                                clearPatterns();
+                                                setConfirmDeleteAll(false);
+                                            }}
+                                            className="h-8 px-3 text-[11px]"
+                                        >
+                                            Yes, Delete All
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setConfirmDeleteAll(false)}
+                                            className="h-8 px-3 text-[11px]"
+                                        >
+                                            Cancel
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setConfirmDeleteAll(true)}
+                                        className="text-red-500 hover:text-red-400 hover:bg-red-500/10 h-8 px-3 border border-transparent text-[11px]"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5 mr-2" />
+                                        Delete All Patterns
+                                    </Button>
+                                )}
+                            </div>
                         </div>
 
                         <Accordion type="single" collapsible className="w-full">
@@ -430,8 +476,8 @@ export function UnifiedPatternEditor() {
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-sm font-bold text-foreground">No Patterns Found</p>
-                                    <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed mx-auto">
-                                        Regex patterns are used for powerful dynamic content filtering and automated play settings.
+                                    <p className="text-xs text-foreground/70 max-w-[280px] leading-relaxed mx-auto">
+                                        No patterns defined for this snapshot. Import from template or add one.
                                     </p>
                                 </div>
                             </div>
@@ -447,13 +493,13 @@ export function UnifiedPatternEditor() {
                             <CheckCircle className="w-5 h-5 text-purple-400" />
                             Pattern Name
                         </DialogTitle>
-                        <DialogDescription className="text-muted-foreground text-sm">
+                        <DialogDescription className="text-foreground/70 text-sm">
                             Give your new regex pattern a descriptive name for better organization.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="py-6 space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="pattern-name" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+                            <Label htmlFor="pattern-name" className="text-[10px] font-bold uppercase tracking-widest text-foreground/70 ml-1">
                                 Display Name
                             </Label>
                             <Input
@@ -471,7 +517,7 @@ export function UnifiedPatternEditor() {
                         <Button
                             variant="ghost"
                             onClick={() => setIsNameDialogOpen(false)}
-                            className="text-muted-foreground hover:text-foreground hover:bg-muted"
+                            className="text-foreground/70 hover:text-foreground hover:bg-muted"
                         >
                             Cancel
                         </Button>
@@ -480,6 +526,39 @@ export function UnifiedPatternEditor() {
                             className="bg-purple-600 hover:bg-purple-500 text-white font-bold px-8 shadow-lg shadow-purple-900/20 transition-all"
                         >
                             Save Pattern
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={!!patternToDelete} onOpenChange={(open) => !open && setPatternToDelete(null)}>
+                <DialogContent className="bg-card border-border text-foreground sm:max-w-[425px] shadow-2xl backdrop-blur-xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                            <Trash2 className="w-5 h-5 text-red-500" />
+                            Delete Pattern
+                        </DialogTitle>
+                        <DialogDescription className="text-foreground/70 text-sm leading-relaxed mt-2 pt-2">
+                            Are you sure you want to delete all settings for the pattern{" "}
+                            <span className="font-mono text-xs inline-block break-all bg-background/50 px-2 py-0.5 rounded border border-border text-foreground">
+                                {patternToDelete}
+                            </span>
+                            ? This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-2 sm:gap-0 mt-4">
+                        <Button
+                            variant="ghost"
+                            onClick={() => setPatternToDelete(null)}
+                            className="text-foreground/70 hover:text-foreground hover:bg-muted"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={confirmDeletePattern}
+                            className="bg-red-600 hover:bg-red-500 text-white font-bold px-8 shadow-lg shadow-red-900/20 transition-all"
+                        >
+                            Delete
                         </Button>
                     </DialogFooter>
                 </DialogContent>

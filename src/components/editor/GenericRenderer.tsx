@@ -45,6 +45,20 @@ const formatKeyToTitle = (key: string): string => {
         .join(" ");
 };
 
+// Inline descriptions for settings — shown as subtle text under the title
+const SETTING_DESCRIPTIONS: Record<string, string> = {
+    "hide_external_playback_prompt": "Disable only if you use the internal player or Trakt tracking.",
+    "hide_spoilers": "Blurs thumbnails and descriptions for new episodes of series.",
+    "small_continue_watching_shelf": "Makes the continue watching shelf smaller on the home screen.",
+    "mdblist_enabled_ratings": "Requires an MDBList API key set in Omni.",
+    "oled_mode_enabled": "Enables true black backgrounds for OLED displays.",
+    "hide_addon_info_in_catalog_names": "Removes the addon suffix from home screen catalogs.",
+    "hidden_stream_button_elements": "Choose which elements are visible on the stream selection screen.",
+    "preferred_audio_language": "Sets the default audio language for your library.",
+    "preferred_subtitle_language": "Sets the default subtitle language for your library.",
+    "custom_catalog_names": "Maps catalog IDs to human-readable display names.",
+};
+
 interface GenericRendererProps {
     data: any;
     path: string[];
@@ -153,19 +167,27 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
     }
 
     // Header/Wrapper for the field
-    const Wrapper = ({ children, isPrimitive = false, info, hideToggle = false }: { children?: React.ReactNode, isPrimitive?: boolean, info?: React.ReactNode, hideToggle?: boolean }) => {
+    const Wrapper = ({ children, isPrimitive = false, hideToggle = false }: { children?: React.ReactNode, isPrimitive?: boolean, hideToggle?: boolean }) => {
         if (!currentKey) return <>{children}</>; // Root level bypass
 
         const displayChecked = customChecked !== undefined ? customChecked : !isDisabled;
         const isFaded = !hideToggle && !displayChecked;
+        const description = SETTING_DESCRIPTIONS[currentKey];
+
+        const hasVisibleChildren = !isFaded && children;
 
         return (
-            <div className={`p-4 sm:p-5 rounded-xl bg-card/60 backdrop-blur-md border border-border/80 shadow-sm transition-all duration-300 ${isFaded ? "opacity-50 grayscale-[0.3]" : "opacity-100 hover:bg-card/80 hover:border-border/80 hover:shadow-md"}`}>
-                <div className="flex items-center justify-between mb-3">
-                    <div className="flex flex-col">
+            <div className={`p-4 sm:p-5 rounded-xl bg-card/60 backdrop-blur-md border shadow-sm transition-all duration-300 ${displayChecked ? "border-white/[0.08] bg-card/90 shadow-[0_4px_20px_rgb(0,0,0,0.1)]" : "border-border/40"}`}>
+                <div className={`flex items-center justify-between ${hasVisibleChildren ? "mb-4 pb-4 border-b border-border/40" : ""}`}>
+                    <div className={`flex flex-col gap-0.5 transition-opacity duration-300 ${isFaded ? "opacity-60" : "opacity-100"}`}>
                         <span className="text-sm font-semibold tracking-tight text-foreground">
                             {formatKeyToTitle(currentKey)}
                         </span>
+                        {description && (
+                            <span className="text-[11px] text-foreground/70 leading-snug">
+                                {description}
+                            </span>
+                        )}
                     </div>
                     {!hideToggle && (
                         <div className="flex items-center gap-3 shrink-0">
@@ -182,15 +204,9 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                     )}
                 </div>
 
-                {!isFaded && children && (
-                    <div className={`transition-all duration-300 animate-in fade-in slide-in-from-top-2 ${isPrimitive ? "" : "mt-4 pt-4 border-t border-border/50"}`}>
+                {hasVisibleChildren && (
+                    <div className={`${isPrimitive ? "" : ""}`}>
                         {children}
-                    </div>
-                )}
-
-                {info && (
-                    <div className={`mt-3 ${isFaded ? "opacity-100" : ""}`}>
-                        {info}
                     </div>
                 )}
             </div>
@@ -331,47 +347,6 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
 
     // Specialized rendering for simple boolean or array-requirement toggles (merged & simplified)
     if (UNIFIED_KEYS.includes(currentKey)) {
-        const info = (
-            <div className="space-y-2">
-                {currentKey === "hide_external_playback_prompt" && (
-                    <div className="flex items-start gap-2 p-3 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[11px] leading-relaxed shadow-sm">
-                        <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                        <p>Disable only if you use the internal player or Trakt tracking.</p>
-                    </div>
-                )}
-                {currentKey === "hide_spoilers" && (
-                    <div className="flex items-start gap-2 p-3 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[11px] leading-relaxed shadow-sm">
-                        <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                        <p>This blurs thumbnails and descriptions for new episodes of series.</p>
-                    </div>
-                )}
-                {currentKey === "small_continue_watching_shelf" && (
-                    <div className="flex items-start gap-2 p-3 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[11px] leading-relaxed shadow-sm">
-                        <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                        <p>Makes the continue watching shelf smaller on the home screen.</p>
-                    </div>
-                )}
-                {currentKey === "mdblist_enabled_ratings" && (
-                    <div className="flex items-start gap-2 p-3 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[11px] leading-relaxed">
-                        <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                        <p>This requires an MDBList API key to be set in Omni.</p>
-                    </div>
-                )}
-                {currentKey === "hide_addon_info_in_catalog_names" && (
-                    <div className="flex items-start gap-2 p-3 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[11px] leading-relaxed shadow-sm">
-                        <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                        <p>Removes the addon suffix from home screen catalogs.</p>
-                    </div>
-                )}
-                {currentKey === "hidden_stream_button_elements" && (
-                    <div className="flex items-start gap-2 p-3 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[11px] leading-relaxed shadow-sm">
-                        <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                        <p>Choose which elements are displayed on the stream selection screen. If you use my template it is recommended to hide metadata tags and addon names.</p>
-                    </div>
-                )}
-            </div>
-        );
-
         if (currentKey === "hidden_stream_button_elements") {
             const options = ["Title", "Metadata Tags", "Pattern Tags", "Addon Name"];
             const currentSelection = (data as string[]) || [];
@@ -385,16 +360,25 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
             };
 
             return (
-                <Wrapper info={info} hideToggle={true}>
+                <Wrapper hideToggle={true}>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
                         {options.map((opt) => {
                             const isChecked = currentSelection.includes(opt);
                             return (
-                                <div key={opt} className={"flex items-center space-x-3 p-3 h-[60px] rounded-lg border transition-colors cursor-pointer select-none shadow-sm " + (isChecked ? "border-blue-500/50 bg-blue-500/10 hover:bg-blue-500/20" : "border-border/80 bg-card/50 hover:border-border/80 hover:bg-card")} onClick={() => handleCheckboxChange(opt, !isChecked)}>
-                                    <Checkbox id={`checkbox-${opt}`} checked={isChecked} onCheckedChange={(val: boolean | string) => handleCheckboxChange(opt, !!val)} className="pointer-events-none" />
+                                <div
+                                    key={opt}
+                                    className={`flex items-center space-x-3 p-3 h-[60px] rounded-lg border transition-[border-color,background-color] cursor-pointer select-none shadow-sm ${isChecked ? "border-blue-500/50 bg-blue-500/10 hover:bg-blue-500/20" : "border-border/80 bg-card/50 hover:border-border/80 hover:bg-card"}`}
+                                    onClick={() => handleCheckboxChange(opt, !isChecked)}
+                                >
+                                    <Checkbox
+                                        id={`checkbox-${opt}`}
+                                        checked={isChecked}
+                                        onCheckedChange={(val: boolean | string) => handleCheckboxChange(opt, !!val)}
+                                        className="pointer-events-none"
+                                    />
                                     <div className="flex flex-col flex-1 pointer-events-none">
                                         <Label htmlFor={`checkbox-${opt}`} className="text-sm font-medium text-foreground">{opt}</Label>
-                                        <span className="text-[10px] text-muted-foreground mt-0.5 leading-tight">Hide {opt.toLowerCase()}</span>
+                                        <span className="text-[10px] text-foreground/70 mt-0.5 leading-tight">Hide {opt.toLowerCase()}</span>
                                     </div>
                                 </div>
                             );
@@ -404,7 +388,7 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
             );
         }
 
-        return <Wrapper isPrimitive info={info} />;
+        return <Wrapper isPrimitive />;
     }
 
     if (typeof data === "string") {

@@ -47,9 +47,9 @@ interface ConfigContextType {
     exportConfig: () => OmniConfig | null;
     exportPartialConfig: (sectionKeys: string[]) => OmniConfig | null;
 
-    // Custom fallbacks state
     customFallbacks: Record<string, string>;
     setCustomFallbacks: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+    clearPatterns: () => void;
 }
 
 const ConfigContext = createContext<ConfigContextType | undefined>(undefined);
@@ -398,6 +398,8 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
     const removeManifestCatalog = (id: string) => {
         // Soft delete: set enabled=false and showInHome=false
         setCatalogs(prev => prev.map(c => c.id === id ? { ...c, enabled: false, showInHome: false } : c));
+        // Also sweep from all side arrays (including starred_catalogs) so it properly moves to DisabledCatalogs
+        setCurrentValues(prev => disableCatalog(id, prev));
     };
 
     const reorderManifestCatalogs = (newCatalogs: any[]) => {
@@ -442,9 +444,10 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         clonedValues = pruneDisabledKeys(clonedValues, disabledKeys);
 
         // 3. Prune disabled catalogs (remove from arrays and entries)
-        // Only prune if it's completely inactive (both shelf and top row disabled)
+        // Only prune if it's completely inactive (shelf, top row, and Header all disabled)
+        const starred = new Set(clonedValues.starred_catalogs || []);
         const deadCatalogs = new Set(
-            catalogs.filter(c => c.enabled === false && c.showInHome !== true).map(c => c.id)
+            catalogs.filter(c => c.enabled === false && c.showInHome !== true && !starred.has(c.id)).map(c => c.id)
         );
         clonedValues = pruneDisabledCatalogs(clonedValues, deadCatalogs);
 
@@ -462,7 +465,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
 
             // Also merge any side-array changes from currentValues (e.g. landscape_catalogs added by editor)
             // These live in currentValues but aren't catalog objects
-            const sideArrayKeys = ['landscape_catalogs', 'small_catalogs', 'small_top_row_catalogs', 'pinned_catalogs', 'custom_catalog_names', 'top_row_item_limits'];
+            const sideArrayKeys = ['landscape_catalogs', 'small_catalogs', 'small_top_row_catalogs', 'pinned_catalogs', 'starred_catalogs', 'custom_catalog_names', 'top_row_item_limits'];
             const mergedConfig: any = { ...(originalConfig.config || {}) };
             for (const key of sideArrayKeys) {
                 if (currentValues[key] !== undefined) {
@@ -476,7 +479,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
 
         // 5b. State format (or synthetic): encode values with updated state arrays
         // Sync the synthetic catalog state back to currentValues arrays before encoding
-        let valuesToExport = { ...validatedValues };
+        const valuesToExport = { ...validatedValues };
         if (isSynthetic) {
             const activeIds = catalogs.map(c => c.id);
             const enabledIds = catalogs.filter(c => c.enabled !== false).map(c => c.id);
@@ -558,6 +561,37 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         return finalResult;
     };
 
+    const clearPatterns = () => {
+        const patternKeys = [
+            "pattern_tag_enabled_patterns",
+            "regex_pattern_custom_names",
+            "regex_pattern_image_urls",
+            "pattern_default_filter_enabled_patterns",
+            "pattern_image_color_indices",
+            "pattern_border_radius_indices",
+            "pattern_background_opacities",
+            "pattern_border_thickness_indices",
+            "pattern_color_indices",
+            "pattern_color_hex_values",
+            "auto_play_enabled_patterns",
+            "auto_play_patterns"
+        ];
+
+        setCurrentValues(prev => {
+            const draft = { ...prev };
+            patternKeys.forEach(key => {
+                if (Array.isArray(prev[key])) {
+                    draft[key] = [];
+                } else if (typeof prev[key] === "object" && prev[key] !== null) {
+                    draft[key] = {};
+                } else {
+                    delete draft[key];
+                }
+            });
+            return draft;
+        });
+    };
+
     return (
         <ConfigContext.Provider value={{
             originalConfig,
@@ -600,6 +634,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
             exportPartialConfig,
             customFallbacks,
             setCustomFallbacks,
+            clearPatterns,
         }}>
             {children}
         </ConfigContext.Provider>

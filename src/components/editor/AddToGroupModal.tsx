@@ -82,7 +82,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
             <DialogContent className="sm:max-w-[425px] bg-background border-border text-foreground flex flex-col max-h-[90vh]">
                 <DialogHeader>
                     <DialogTitle>Add to Existing Group</DialogTitle>
-                    <DialogDescription className="text-muted-foreground">
+                    <DialogDescription className="text-foreground/60">
                         Select multiple subgroups and assign them to a main group.
                     </DialogDescription>
                 </DialogHeader>
@@ -112,7 +112,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                         <Label className="text-foreground shrink-0">Select Subgroups to Add</Label>
 
                         <div className="relative shrink-0">
-                            <Search className="absolute left-2 top-2 h-4 w-4 text-muted-foreground" />
+                            <Search className="absolute left-2 top-2 h-4 w-4 text-foreground/70" />
                             <Input
                                 placeholder="Search subgroups..."
                                 value={searchQuery}
@@ -123,7 +123,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
 
                         <div className="flex-1 overflow-y-auto rounded-md border border-border bg-background/50 p-4 min-h-[150px]">
                             {allSubgroupNames.length === 0 ? (
-                                <p className="text-sm text-muted-foreground italic">No subgroups available.</p>
+                                <p className="text-sm text-foreground/70 italic">No subgroups available.</p>
                             ) : (
                                 (() => {
                                     const query = searchQuery.toLowerCase();
@@ -189,7 +189,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                     for (const [cat, items] of categories.entries()) {
                                         if (items.length > 0) {
                                             unassignedElements.push(
-                                                <div key={`header-${cat}`} className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-5 mb-2 pl-1 border-b border-border/60 pb-1">
+                                                <div key={`header-${cat}`} className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest mt-6 mb-2 pl-1 border-b border-border/30 pb-1.5">
                                                     {cat}
                                                 </div>
                                             );
@@ -221,7 +221,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                     }
 
                                     if (assignedNodes.length === 0 && unassignedElements.length === 0) {
-                                        return <p className="text-sm text-muted-foreground italic p-4">No subgroups found matching search.</p>;
+                                        return <p className="text-sm text-foreground/70 italic p-4">No subgroups found matching search.</p>;
                                     }
 
                                     return (
@@ -234,7 +234,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                             )}
                                             {unassignedElements.length > 0 && (
                                                 <div className="space-y-1">
-                                                    {assignedNodes.length > 0 && <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 border-b border-border pb-1 mt-6">Unassigned</div>}
+                                                    {assignedNodes.length > 0 && <div className="text-xs font-semibold text-foreground/70 uppercase tracking-wider mb-2 border-b border-border pb-1 mt-6">Unassigned</div>}
                                                     {unassignedElements}
                                                 </div>
                                             )}
@@ -247,7 +247,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                 </div>
 
                 <DialogFooter className="mt-6 shrink-0 flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-foreground/70">
                         {selectedSubgroups.size} subgroup(s) checked
                     </p>
                     <div className="flex gap-2">
