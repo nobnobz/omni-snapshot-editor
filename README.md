@@ -57,6 +57,10 @@ Should you want to run the project locally:
 
 ---
 
-## Support
-If this tool helps you, you can support further development here:
-[Ko-fi Support Link](https://ko-fi.com/botbidraiser)
+## 💖 Support the Project
+
+If this tool makes your Omni management easier, consider supporting the continued development and hosting.
+
+[<img src="https://storage.ko-fi.com/cdn/kofi2.png?v=3" width="220" alt="Support my work at Ko-fi">](https://ko-fi.com/botbidraiser)
+
+*Every contribution helps keep this tool free and open for the community!*
