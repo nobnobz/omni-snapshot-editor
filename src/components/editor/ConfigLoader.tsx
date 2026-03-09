@@ -97,6 +97,25 @@ export function ConfigLoader() {
         }
     };
 
+    const handleDownload = async (url: string, defaultFilename: string) => {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("Failed to fetch file");
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = blobUrl;
+            a.download = defaultFilename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(blobUrl);
+        } catch (err) {
+            console.error("Download failed:", err);
+            setError("Failed to download file. Please try right-clicking and 'Save Link As'.");
+        }
+    };
+
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -271,17 +290,13 @@ export function ConfigLoader() {
                                 <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-foreground/50 font-bold px-3 py-2">
                                     Direct Downloads
                                 </DropdownMenuLabel>
-                                <DropdownMenuItem asChild className="cursor-pointer focus:bg-emerald-500/10 focus:text-emerald-400">
-                                    <a
-                                        href="https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/Older%20Versions/v1.7.1/omni-snapshot-unified-media-experience-v1.7.1-2026-03-02.json"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-2 w-full px-2 py-1.5"
-                                    >
-                                        <FileJson className="w-4 h-4" />
-                                        <span className="text-xs font-semibold">Omni Snapshot (UME)</span>
-                                        <FileDown className="w-3 h-3 ml-auto opacity-40" />
-                                    </a>
+                                <DropdownMenuItem
+                                    className="cursor-pointer focus:bg-emerald-500/10 focus:text-emerald-400 flex items-center gap-2 px-3 py-1.5"
+                                    onClick={() => handleDownload("https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/Older%20Versions/v1.7.1/omni-snapshot-unified-media-experience-v1.7.1-2026-03-02.json", "omni-snapshot-ume.json")}
+                                >
+                                    <FileJson className="w-4 h-4" />
+                                    <span className="text-xs font-semibold">Omni Snapshot (UME)</span>
+                                    <FileDown className="w-3 h-3 ml-auto opacity-40" />
                                 </DropdownMenuItem>
                                 <DropdownMenuItem className="cursor-not-allowed opacity-50 flex items-center gap-2 px-3 py-1.5">
                                     <FileDown className="w-4 h-4" />
