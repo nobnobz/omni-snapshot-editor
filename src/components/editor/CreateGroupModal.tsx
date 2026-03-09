@@ -114,49 +114,49 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <DialogContent className="sm:max-w-[425px] md:max-w-3xl bg-neutral-900 border-neutral-800 text-neutral-100 max-h-[95vh] overflow-y-auto w-[95vw] md:w-full flex-col">
+            <DialogContent className="sm:max-w-[425px] md:max-w-3xl bg-background border-border text-foreground max-h-[95vh] overflow-y-auto w-[95vw] md:w-full flex-col">
                 <DialogHeader>
                     <DialogTitle>Create New Group</DialogTitle>
-                    <DialogDescription className="text-neutral-400">
-                        Add a new structural group to your configuration.
+                    <DialogDescription className="text-muted-foreground">
+                        Add a new group to your configuration.
                     </DialogDescription>
                 </DialogHeader>
 
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 bg-neutral-950 p-1 rounded-md mb-4">
-                        <TabsTrigger value="sub" className="data-[state=active]:bg-neutral-800 data-[state=active]:text-white text-neutral-400">Subgroup</TabsTrigger>
-                        <TabsTrigger value="main" className="data-[state=active]:bg-neutral-800 data-[state=active]:text-white text-neutral-400">Main Group</TabsTrigger>
+                    <TabsList className="grid w-full grid-cols-2 bg-muted p-1 rounded-md mb-4">
+                        <TabsTrigger value="sub" className="data-[state=active]:bg-background data-[state=active]:text-foreground text-muted-foreground">Subgroup</TabsTrigger>
+                        <TabsTrigger value="main" className="data-[state=active]:bg-background data-[state=active]:text-foreground text-muted-foreground">Main Group</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="main" className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="main-name" className="text-neutral-300">Name</Label>
+                            <Label htmlFor="main-name" className="text-foreground">Name</Label>
                             <Input
                                 id="main-name"
                                 value={mainName}
                                 onChange={(e) => setMainName(e.target.value)}
                                 placeholder="e.g. User Collections"
-                                className="bg-neutral-950 border-neutral-700 focus-visible:ring-blue-500"
+                                className="bg-background border-input focus-visible:ring-blue-500"
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <Label className="text-neutral-300">Assign Existing Subgroups</Label>
-                            <p className="text-xs text-neutral-500 mb-2">Select subgroups to immediately move into this new Main Group.</p>
+                            <Label className="text-foreground">Assign Existing Subgroups</Label>
+                            <p className="text-xs text-muted-foreground mb-2">Select subgroups to move into this new Main Group.</p>
 
                             <div className="relative">
-                                <Search className="absolute left-2 top-2 h-4 w-4 text-neutral-500" />
+                                <Search className="absolute left-2 top-2 h-4 w-4 text-muted-foreground" />
                                 <Input
                                     placeholder="Search subgroups..."
                                     value={searchQuery}
                                     onChange={e => setSearchQuery(e.target.value)}
-                                    className="pl-8 h-8 text-xs bg-neutral-950 border-neutral-700 focus-visible:ring-blue-500 mb-2"
+                                    className="pl-8 h-8 text-xs bg-background border-input focus-visible:ring-blue-500 mb-2"
                                 />
                             </div>
 
-                            <ScrollArea className="h-[200px] rounded-md border border-neutral-800 bg-neutral-950/50 p-4">
+                            <ScrollArea className="h-[200px] rounded-md border border-border bg-background/50 p-4">
                                 {allSubgroupNames.length === 0 ? (
-                                    <p className="text-sm text-neutral-500 italic">No subgroups available.</p>
+                                    <p className="text-sm text-muted-foreground italic">No subgroups available.</p>
                                 ) : (
                                     <div className="space-y-3 pr-3 pb-2 pt-1">
                                         {allSubgroupNames
@@ -172,11 +172,11 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                                             else next.delete(name);
                                                             setSelectedSubgroups(next);
                                                         }}
-                                                        className="border-neutral-600 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                                        className="border-primary data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                                                     />
                                                     <label
                                                         htmlFor={`sg-${name}`}
-                                                        className="flex-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-neutral-300 cursor-pointer select-none"
+                                                        className="flex-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-foreground cursor-pointer select-none"
                                                     >
                                                         {formatDisplayName(name)}
                                                     </label>
@@ -188,7 +188,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                         </div>
 
                         <DialogFooter className="mt-6">
-                            <Button variant="outline" onClick={handleClose} className="bg-neutral-800 border-neutral-700 text-neutral-300 hover:bg-neutral-700 hover:text-white">Cancel</Button>
+                            <Button variant="outline" onClick={handleClose} className="bg-muted border-border text-foreground hover:bg-muted/80">Cancel</Button>
                             <Button onClick={handleCreateMain} disabled={!mainName.trim()} className="bg-blue-600 text-white hover:bg-blue-700">Create Main Group</Button>
                         </DialogFooter>
                     </TabsContent>
@@ -197,32 +197,32 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="sub-name" className="text-neutral-300">Name</Label>
+                                    <Label htmlFor="sub-name" className="text-foreground">Name</Label>
                                     <Input
                                         id="sub-name"
                                         value={subName}
                                         onChange={(e) => setSubName(e.target.value)}
                                         placeholder="e.g. Action Movies"
-                                        className="bg-neutral-950 border-neutral-700 focus-visible:ring-blue-500"
+                                        className="bg-background border-input focus-visible:ring-blue-500"
                                     />
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="target-main" className="text-neutral-300">Parent Main Group</Label>
+                                    <Label htmlFor="target-main" className="text-foreground">Main Group</Label>
                                     <Select value={targetMainGroup} onValueChange={setTargetMainGroup}>
-                                        <SelectTrigger className="w-full bg-neutral-950 border-neutral-700 text-neutral-200">
+                                        <SelectTrigger className="w-full bg-background border-input text-foreground">
                                             <SelectValue placeholder="Select a Main Group" />
                                         </SelectTrigger>
-                                        <SelectContent className="bg-neutral-900 border-neutral-800 text-neutral-200 max-h-[200px]">
+                                        <SelectContent className="bg-popover border-border text-popover-foreground max-h-[200px]">
                                             {mainGroupOrder.length === 0 ? (
-                                                <SelectItem value="none" className="focus:bg-neutral-800 focus:text-white italic text-neutral-400">None (Unassigned)</SelectItem>
+                                                <SelectItem value="none" className="focus:bg-accent focus:text-accent-foreground italic text-muted-foreground">None (Unassigned)</SelectItem>
                                             ) : (
                                                 <>
-                                                    <SelectItem value="none" className="focus:bg-neutral-800 focus:text-white italic text-neutral-400">
+                                                    <SelectItem value="none" className="focus:bg-accent focus:text-accent-foreground italic text-muted-foreground">
                                                         None (Unassigned)
                                                     </SelectItem>
                                                     {mainGroupOrder.map((uuid: string) => (
-                                                        <SelectItem key={uuid} value={uuid} className="focus:bg-neutral-800 focus:text-white">
+                                                        <SelectItem key={uuid} value={uuid} className="focus:bg-accent focus:text-accent-foreground">
                                                             {formatDisplayName(mainCatalogGroups[uuid]?.name || "Unnamed")}
                                                         </SelectItem>
                                                     ))}
@@ -233,23 +233,23 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="sub-image" className="text-neutral-300">Thumbnail Image URL (Optional)</Label>
-                                    <div className="flex items-center gap-3 bg-neutral-950 border border-neutral-700 p-2 rounded-md">
+                                    <Label htmlFor="sub-image" className="text-foreground">Thumbnail Image URL (Optional)</Label>
+                                    <div className="flex items-center gap-3 bg-background border border-input p-2 rounded-md">
                                         {subImageUrl && subImageUrl.startsWith("http") ? (
-                                            <div className="h-10 w-10 rounded shadow-sm overflow-hidden bg-neutral-900 border border-neutral-800 shrink-0">
+                                            <div className="h-10 w-10 rounded shadow-sm overflow-hidden bg-muted border border-border shrink-0">
                                                 <img
                                                     src={subImageUrl}
                                                     alt="Preview"
                                                     className="h-full w-full object-cover"
                                                     onError={(e) => {
                                                         (e.target as HTMLImageElement).style.display = 'none';
-                                                        (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="h-full w-full flex items-center justify-center text-neutral-600"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></div>';
+                                                        (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="h-full w-full flex items-center justify-center text-muted-foreground"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></div>';
                                                     }}
                                                 />
                                             </div>
                                         ) : (
-                                            <div className="h-10 w-10 rounded bg-neutral-900 border border-neutral-800 shrink-0 flex items-center justify-center">
-                                                <ImageIcon className="w-4 h-4 text-neutral-600" />
+                                            <div className="h-10 w-10 rounded bg-muted border border-border shrink-0 flex items-center justify-center">
+                                                <ImageIcon className="w-4 h-4 text-muted-foreground" />
                                             </div>
                                         )}
                                         <Input
@@ -264,22 +264,22 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                             </div>
 
                             <div className="space-y-2 flex flex-col">
-                                <Label className="text-neutral-300">Assign Initial Catalogs</Label>
-                                <p className="text-xs text-neutral-500 mb-2">Select catalogs to populate this group initially.</p>
+                                <Label className="text-foreground">Assign Catalogs</Label>
+                                <p className="text-xs text-muted-foreground mb-2">Select catalogs to populate this group.</p>
 
                                 <div className="relative">
-                                    <Search className="absolute left-2 top-2 h-4 w-4 text-neutral-500" />
+                                    <Search className="absolute left-2 top-2 h-4 w-4 text-muted-foreground" />
                                     <Input
                                         placeholder="Search catalogs by name or ID..."
                                         value={catalogSearch}
                                         onChange={e => setCatalogSearch(e.target.value)}
-                                        className="pl-8 h-8 text-xs bg-neutral-950 border-neutral-700 focus-visible:ring-blue-500 mb-2"
+                                        className="pl-8 h-8 text-xs bg-background border-input focus-visible:ring-blue-500 mb-2"
                                     />
                                 </div>
 
-                                <ScrollArea className="h-[300px] md:h-[450px] rounded-md border border-neutral-800 bg-neutral-950/50 p-4">
+                                <ScrollArea className="h-[300px] md:h-[450px] rounded-md border border-border bg-background/50 p-4">
                                     {filteredCatalogs.length === 0 ? (
-                                        <p className="text-sm text-neutral-500 italic">No catalogs found.</p>
+                                        <p className="text-sm text-muted-foreground italic">No catalogs found.</p>
                                     ) : (
                                         <div className="space-y-4 pr-3 pb-2 pt-1">
                                             {(() => {
@@ -309,7 +309,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
 
                                                 return sortedCategories.map(category => (
                                                     <div key={category} className="space-y-2">
-                                                        <h5 className="text-xs font-semibold text-blue-400 uppercase tracking-wider sticky top-0 bg-neutral-950/90 py-1 backdrop-blur-sm z-10 border-b border-neutral-800/50">
+                                                        <h5 className="text-xs font-semibold text-blue-400 uppercase tracking-wider sticky top-0 bg-background/90 py-1 backdrop-blur-sm z-10 border-b border-border/50">
                                                             {category}
                                                         </h5>
                                                         <div className="space-y-3 pt-1">
@@ -324,14 +324,14 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                                                             else next.delete(cat.id);
                                                                             setSelectedCatalogs(next);
                                                                         }}
-                                                                        className="mt-0.5 border-neutral-600 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                                                        className="mt-0.5 border-primary data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                                                                     />
                                                                     <label
                                                                         htmlFor={`cat-${cat.id}`}
-                                                                        className="flex-1 text-sm font-medium leading-none text-neutral-300 cursor-pointer select-none"
+                                                                        className="flex-1 text-sm font-medium leading-none text-foreground cursor-pointer select-none"
                                                                     >
                                                                         <div>{cat.name}</div>
-                                                                        <div className="text-[9px] text-neutral-500 font-mono mt-1 w-full max-w-[300px] break-all">{cat.id}</div>
+                                                                        <div className="text-[9px] text-muted-foreground font-mono mt-1 w-full max-w-[300px] break-all">{cat.id}</div>
                                                                     </label>
                                                                 </div>
                                                             ))}
@@ -346,7 +346,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                         </div>
 
                         <DialogFooter className="mt-6">
-                            <Button variant="outline" onClick={handleClose} className="bg-neutral-800 border-neutral-700 text-neutral-300 hover:bg-neutral-700 hover:text-white">Cancel</Button>
+                            <Button variant="outline" onClick={handleClose} className="bg-muted border-border text-foreground hover:bg-muted/80">Cancel</Button>
                             <Button onClick={handleCreateSub} disabled={!subName.trim()} className="bg-blue-600 text-white hover:bg-blue-700">Create Subgroup</Button>
                         </DialogFooter>
                     </TabsContent>

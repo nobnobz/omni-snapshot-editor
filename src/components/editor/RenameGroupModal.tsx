@@ -48,26 +48,26 @@ export function RenameGroupModal({ isOpen, onClose, oldName, isMainGroup = false
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="bg-neutral-900 border-neutral-800 text-neutral-200">
+            <DialogContent className="bg-background border-border text-foreground">
                 <DialogHeader>
                     <DialogTitle>Rename {isMainGroup ? "Main Group" : "Group"}</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4 pt-4">
                     <div>
-                        <label className="text-xs text-neutral-400 mb-1 block">Name</label>
+                        <label className="text-xs text-muted-foreground mb-1 block">Name</label>
                         <Input
                             value={newName}
                             onChange={e => setNewName(e.target.value)}
-                            className="bg-neutral-950 border-neutral-700 focus-visible:ring-blue-500"
+                            className="bg-background border-input focus-visible:ring-blue-500"
                             autoFocus
                         />
                     </div>
 
-                    <div className="bg-neutral-950 p-3 rounded-lg border border-neutral-800 text-sm flex items-start gap-3">
+                    <div className="bg-muted/50 p-3 rounded-lg border border-border text-sm flex items-start gap-3">
                         <AlertCircle className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
                         <div>
-                            <p className="text-neutral-300">This group is referenced in <strong className="text-white">{refCount}</strong> places.</p>
-                            <p className="text-neutral-500 text-xs mt-1">Renaming will automatically update all references to prevent orphans.</p>
+                            <p className="text-muted-foreground">This group is referenced in <strong className="text-foreground">{refCount}</strong> places.</p>
+                            <p className="text-muted-foreground text-xs mt-1">Renaming will automatically update all references to prevent orphans.</p>
                         </div>
                     </div>
 
@@ -82,7 +82,7 @@ export function RenameGroupModal({ isOpen, onClose, oldName, isMainGroup = false
                     )}
 
                     <DialogFooter className="mt-6">
-                        <Button type="button" variant="ghost" onClick={onClose} className="hover:bg-neutral-800 hover:text-white border border-transparent">Cancel</Button>
+                        <Button type="button" variant="ghost" onClick={onClose} className="hover:bg-muted text-foreground border border-transparent">Cancel</Button>
                         <Button type="submit" className={newNameExists ? "bg-yellow-600 hover:bg-yellow-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}>
                             {newNameExists ? "Merge Groups" : "Rename"}
                         </Button>

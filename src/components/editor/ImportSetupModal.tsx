@@ -479,24 +479,24 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <DialogContent className="sm:max-w-2xl bg-neutral-950 border-neutral-800 text-neutral-200">
+            <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="sm:max-w-2xl bg-background border-border text-foreground">
                 <DialogHeader>
                     <DialogTitle>Add From Existing Setup</DialogTitle>
-                    <DialogDescription className="text-neutral-400">
-                        {step === 1 ? "Upload a valid .json configuration to extract groups." : `Review and select groups from ${fileName}`}
+                    <DialogDescription className="text-muted-foreground">
+                        {step === 1 ? "Upload a Omni .json configuration to extract groups." : `Review and select groups from ${fileName}`}
                     </DialogDescription>
                 </DialogHeader>
 
                 {step === 1 && (
                     <div className="space-y-4">
                         {/* Template Loader */}
-                        <div className="p-5 border border-neutral-800 rounded-lg bg-neutral-900/50">
-                            <h3 className="font-semibold text-sm text-neutral-200 mb-3">Load Unified Media Experience Template</h3>
+                        <div className="p-5 border border-border rounded-lg bg-muted/50">
+                            <h3 className="font-semibold text-sm text-foreground mb-3">Load Unified Media Experience Template</h3>
                             <div className="flex items-center gap-3">
                                 <select
                                     value={selectedVersion}
                                     onChange={(e) => setSelectedVersion(e.target.value)}
-                                    className="flex-1 h-10 rounded-md border border-neutral-800 bg-neutral-950/50 px-3 text-xs text-neutral-100 font-mono transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                                    className="flex-1 h-10 rounded-md border border-border bg-background/50 px-3 text-xs text-foreground font-mono transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
                                 >
                                     {templates.map(t => (
                                         <option key={t.label} value={t.label}>{t.label}</option>
@@ -530,19 +530,19 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                         </div>
 
                         <div className="flex items-center gap-3">
-                            <div className="flex-1 h-px bg-neutral-800"></div>
-                            <span className="text-[10px] text-neutral-600 uppercase font-bold tracking-wider">or upload file</span>
-                            <div className="flex-1 h-px bg-neutral-800"></div>
+                            <div className="flex-1 h-px bg-border"></div>
+                            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">or upload file</span>
+                            <div className="flex-1 h-px bg-border"></div>
                         </div>
 
                         {/* File Upload */}
-                        <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-neutral-800 rounded-lg hover:border-blue-500/50 hover:bg-blue-500/5 transition-all text-center">
-                            <UploadCloud className="w-10 h-10 text-neutral-500 mb-3" />
-                            <h3 className="font-medium text-sm text-neutral-300 mb-1">Upload configuration file</h3>
-                            <p className="text-xs text-neutral-500 mb-4 max-w-sm">
+                        <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-border rounded-lg hover:border-blue-500/50 hover:bg-blue-500/5 transition-all text-center">
+                            <UploadCloud className="w-10 h-10 text-muted-foreground mb-3" />
+                            <h3 className="font-medium text-sm text-foreground mb-1">Upload configuration file</h3>
+                            <p className="text-xs text-muted-foreground mb-4 max-w-sm">
                                 Select an <code>omni-config.json</code> file to import Main Groups and Subgroups.
                             </p>
-                            <Button onClick={() => fileInputRef.current?.click()} variant="outline" className="bg-neutral-900 border-neutral-700 hover:bg-neutral-800 text-neutral-200 text-xs font-semibold">
+                            <Button onClick={() => fileInputRef.current?.click()} variant="outline" className="bg-muted border-border hover:bg-muted/80 text-foreground text-xs font-semibold">
                                 Select File
                             </Button>
                             <input
@@ -565,32 +565,32 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
 
                 {step === 2 && (
                     <Tabs defaultValue="subgroups" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 bg-neutral-900 border border-neutral-800">
-                            <TabsTrigger value="subgroups" className="data-[state=active]:bg-neutral-800 data-[state=active]:text-white text-xs">
+                        <TabsList className="grid w-full grid-cols-2 bg-muted border border-border">
+                            <TabsTrigger value="subgroups" className="data-[state=active]:bg-background data-[state=active]:text-foreground text-xs">
                                 Subgroups ({parsedSubgroups.length})
                             </TabsTrigger>
-                            <TabsTrigger value="main" className="data-[state=active]:bg-neutral-800 data-[state=active]:text-white text-xs">
+                            <TabsTrigger value="main" className="data-[state=active]:bg-background data-[state=active]:text-foreground text-xs">
                                 Main Groups ({parsedMainGroups.length})
                             </TabsTrigger>
                         </TabsList>
 
-                        <div className="mt-4 border border-neutral-800 rounded-md bg-neutral-950">
+                        <div className="mt-4 border border-border rounded-md bg-background">
                             <ScrollArea className="h-[40vh]">
                                 <TabsContent value="main" className="p-0 m-0">
                                     {parsedMainGroups.length === 0 ? (
-                                        <div className="p-8 text-center text-neutral-500 italic">No Main Groups found in this file.</div>
+                                        <div className="p-8 text-center text-muted-foreground italic">No Main Groups found in this file.</div>
                                     ) : (
-                                        <div className="flex flex-col divide-y divide-neutral-800/50">
-                                            <div className="p-2 bg-neutral-900/50 border-b border-neutral-800 flex gap-2">
-                                                <Button variant="secondary" size="sm" onClick={selectAllMain} className="h-7 text-xs bg-neutral-800 hover:bg-neutral-700 text-neutral-200">Select All New</Button>
-                                                <Button variant="ghost" size="sm" onClick={deselectAllMain} className="h-7 text-xs text-neutral-400 hover:text-white">Deselect All</Button>
+                                        <div className="flex flex-col divide-y divide-border/50">
+                                            <div className="p-2 bg-muted/50 border-b border-border flex gap-2">
+                                                <Button variant="secondary" size="sm" onClick={selectAllMain} className="h-7 text-xs bg-muted hover:bg-muted/80 text-foreground">Select All New</Button>
+                                                <Button variant="ghost" size="sm" onClick={deselectAllMain} className="h-7 text-xs text-muted-foreground hover:text-foreground">Deselect All</Button>
                                             </div>
                                             {parsedMainGroups.map(mg => {
                                                 const isFullyImported = mg.isDuplicate && !mg.hasChanges;
                                                 return (
                                                     <div
                                                         key={mg.originalUuid}
-                                                        className={`flex items-start p-4 transition-colors ${isFullyImported ? 'opacity-50 bg-neutral-900/40 cursor-not-allowed' : 'hover:bg-neutral-900/50 cursor-pointer'}`}
+                                                        className={`flex items-start p-4 transition-colors ${isFullyImported ? 'opacity-50 bg-muted/40 cursor-not-allowed' : 'hover:bg-muted/50 cursor-pointer'}`}
                                                         onClick={() => !isFullyImported && toggleMainGroup(mg.originalUuid)}
                                                     >
                                                         <Checkbox
@@ -604,21 +604,21 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                                             <label htmlFor={`mg-${mg.originalUuid}`} className={`font-semibold block ${isFullyImported ? '' : 'cursor-pointer'}`}>
                                                                 {formatDisplayName(mg.name)}
                                                                 {isFullyImported ? (
-                                                                    <Badge variant="outline" className="ml-2 bg-neutral-900 border-neutral-700 text-neutral-500 text-[9px] uppercase">Imported</Badge>
+                                                                    <Badge variant="outline" className="ml-2 bg-muted border-border text-muted-foreground text-[9px] uppercase">Imported</Badge>
                                                                 ) : mg.isDuplicate ? (
                                                                     <Badge variant="outline" className="ml-2 bg-amber-500/10 border-amber-500/30 text-amber-400 text-[9px] uppercase">Update Links</Badge>
                                                                 ) : null}
                                                             </label>
 
                                                             {mg.subgroupNames.length > 0 && (
-                                                                <div className="mt-2 pl-3 border-l-2 border-neutral-800 space-y-1">
+                                                                <div className="mt-2 pl-3 border-l-2 border-border space-y-1">
                                                                     {mg.subgroupNames.map(sg => {
                                                                         const parsedSg = parsedSubgroups.find(p => p.name === sg);
                                                                         const isSgDup = parsedSg?.isDuplicate;
                                                                         return (
-                                                                            <div key={sg} className="flex items-center text-xs text-neutral-400">
+                                                                            <div key={sg} className="flex items-center text-xs text-muted-foreground">
                                                                                 <span className={`truncate ${isSgDup ? 'line-through opacity-70' : ''}`}>{formatDisplayName(sg)}</span>
-                                                                                {isSgDup && <span className="ml-2 text-[10px] text-neutral-600">(Will use existing)</span>}
+                                                                                {isSgDup && <span className="ml-2 text-[10px] text-muted-foreground/70">(Will use existing)</span>}
                                                                             </div>
                                                                         );
                                                                     })}
@@ -634,17 +634,17 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
 
                                 <TabsContent value="subgroups" className="p-0 m-0">
                                     {parsedSubgroups.length === 0 ? (
-                                        <div className="p-8 text-center text-neutral-500 italic">No Subgroups found in this file.</div>
+                                        <div className="p-8 text-center text-muted-foreground italic">No Subgroups found in this file.</div>
                                     ) : (
-                                        <div className="flex flex-col divide-y divide-neutral-800/50">
-                                            <div className="p-3 bg-blue-900/10 border-b border-neutral-800 text-xs text-blue-300 px-4">
+                                        <div className="flex flex-col divide-y divide-border/50">
+                                            <div className="p-3 bg-blue-900/10 border-b border-border text-xs text-blue-300 px-4">
                                                 Select subgroups you want to import independent of Main Groups. You can assign them to your <strong>existing</strong> main groups below.
                                             </div>
-                                            <div className="p-2 bg-neutral-900/50 border-b border-neutral-800 flex flex-wrap gap-2">
-                                                <Button variant="secondary" size="sm" onClick={selectAllSubgroups} className="h-7 text-xs bg-neutral-800 hover:bg-neutral-700 text-neutral-200">Select All</Button>
+                                            <div className="p-2 bg-muted/50 border-b border-border flex flex-wrap gap-2">
+                                                <Button variant="secondary" size="sm" onClick={selectAllSubgroups} className="h-7 text-xs bg-muted hover:bg-muted/80 text-foreground">Select All</Button>
                                                 <Button variant="secondary" size="sm" onClick={selectCatalogUpdates} className="h-7 text-xs bg-amber-600/20 text-amber-500 hover:bg-amber-600/30 border border-amber-500/30">Update Catalogs</Button>
                                                 <Button variant="secondary" size="sm" onClick={selectImageUpdates} className="h-7 text-xs bg-purple-600/20 text-purple-400 hover:bg-purple-600/30 border border-purple-500/30">Update Images</Button>
-                                                <Button variant="ghost" size="sm" onClick={deselectAllSubgroups} className="h-7 text-xs text-neutral-400 hover:text-white mb-1">Deselect All</Button>
+                                                <Button variant="ghost" size="sm" onClick={deselectAllSubgroups} className="h-7 text-xs text-muted-foreground hover:text-foreground mb-1">Deselect All</Button>
                                             </div>
                                             {(() => {
                                                 const newSgs = parsedSubgroups.filter(sg => !sg.isDuplicate);
@@ -660,7 +660,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                                     return (
                                                         <div
                                                             key={sg.name}
-                                                            className={`flex items-center p-4 transition-colors ${isDisabled ? 'opacity-50 bg-neutral-900/40' : 'hover:bg-neutral-900/50'}`}
+                                                            className={`flex items-center p-4 transition-colors ${isDisabled ? 'opacity-50 bg-muted/40' : 'hover:bg-muted/50'}`}
                                                         >
                                                             <Checkbox
                                                                 id={`sg-${sg.name}`}
@@ -672,31 +672,31 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                                                 <label htmlFor={`sg-${sg.name}`} className={`font-semibold text-sm block truncate ${isDisabled ? '' : 'cursor-pointer'}`}>
                                                                     {formatDisplayName(sg.name)}
                                                                     {sg.isDuplicate && sg.hasNewCatalogs && <Badge variant="default" className="ml-2 bg-amber-600/20 text-amber-500 border border-amber-500/30 text-[9px] uppercase hover:bg-amber-600/30">Replace Catalogs</Badge>}
-                                                                    {sg.isDuplicate && !sg.hasNewCatalogs && !sg.hasNewImage && <Badge variant="outline" className="ml-2 bg-neutral-900 border-neutral-700 text-neutral-500 text-[9px] uppercase">Existing</Badge>}
+                                                                    {sg.isDuplicate && !sg.hasNewCatalogs && !sg.hasNewImage && <Badge variant="outline" className="ml-2 bg-muted border-border text-muted-foreground text-[9px] uppercase">Existing</Badge>}
                                                                     {sg.hasNewImage && <Badge variant="default" className="ml-2 bg-purple-600/20 text-purple-400 border border-purple-500/30 text-[9px] uppercase hover:bg-purple-600/30">Update Image</Badge>}
                                                                     {includedInMain && !sg.isDuplicate && <Badge className="ml-2 bg-blue-900/40 text-blue-400 border-blue-900 text-[9px] uppercase">Included w/ Main</Badge>}
                                                                 </label>
-                                                                <div className="text-[10px] text-neutral-500 mt-0.5">{sg.catalogs.length} {sg.catalogs.length === 1 ? 'Catalog' : 'Catalogs'}</div>
+                                                                <div className="text-[10px] text-muted-foreground mt-0.5">{sg.catalogs.length} {sg.catalogs.length === 1 ? 'Catalog' : 'Catalogs'}</div>
                                                             </div>
 
                                                             {isSelected && !isDisabled && !sg.isDuplicate && (
                                                                 <DropdownMenu>
                                                                     <DropdownMenuTrigger asChild>
-                                                                        <Button variant="outline" size="sm" className="h-7 text-xs bg-neutral-900 border-neutral-700 shrink-0 min-w-[140px] justify-between">
+                                                                        <Button variant="outline" size="sm" className="h-7 text-xs bg-muted border-border shrink-0 min-w-[140px] justify-between">
                                                                             <span className="truncate max-w-[100px]">
                                                                                 {standaloneAssignments[sg.name] ? formatDisplayName(currentMainGroups[standaloneAssignments[sg.name]]?.name || "Unassigned") : "Unassigned"}
                                                                             </span>
                                                                             <ChevronDown className="w-3 h-3 ml-2 opacity-50" />
                                                                         </Button>
                                                                     </DropdownMenuTrigger>
-                                                                    <DropdownMenuContent className="bg-neutral-900 border-neutral-800 text-neutral-200">
+                                                                    <DropdownMenuContent className="bg-popover border-border text-popover-foreground">
                                                                         <DropdownMenuItem
                                                                             onClick={() => setStandaloneAssignments(prev => { const n = { ...prev }; delete n[sg.name]; return n; })}
                                                                             className="text-xs focus:bg-amber-500/20 focus:text-amber-400 font-semibold"
                                                                         >
                                                                             None (Unassigned)
                                                                         </DropdownMenuItem>
-                                                                        <DropdownMenuLabel className="text-[10px] uppercase text-neutral-500 font-bold mt-2">Assign to Current Match</DropdownMenuLabel>
+                                                                        <DropdownMenuLabel className="text-[10px] uppercase text-muted-foreground font-bold mt-2">Assign to Current Match</DropdownMenuLabel>
                                                                         {currentMainGroupOrder.map((uuid: string) => (
                                                                             <DropdownMenuItem
                                                                                 key={uuid}
@@ -717,7 +717,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                                     <div className="flex flex-col">
                                                         {mergeSgs.length > 0 && (
                                                             <>
-                                                                <div className="p-2 bg-neutral-900 font-semibold text-xs text-neutral-400 uppercase tracking-wider sticky top-0 z-10 border-b border-y-neutral-800">
+                                                                <div className="p-2 bg-muted font-semibold text-xs text-muted-foreground uppercase tracking-wider sticky top-0 z-10 border-y border-y-border">
                                                                     Updates ({mergeSgs.length})
                                                                 </div>
                                                                 {mergeSgs.map(renderSubgroupRow)}
@@ -725,7 +725,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                                         )}
                                                         {newSgs.length > 0 && (
                                                             <>
-                                                                <div className="p-2 bg-neutral-900 font-semibold text-xs text-neutral-400 uppercase tracking-wider sticky top-0 z-10 border-y border-y-neutral-800">
+                                                                <div className="p-2 bg-muted font-semibold text-xs text-muted-foreground uppercase tracking-wider sticky top-0 z-10 border-y border-y-border">
                                                                     New Subgroups ({newSgs.length})
                                                                 </div>
                                                                 {(() => {
@@ -748,7 +748,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                                                         if (catSgs.length === 0) return null;
                                                                         return (
                                                                             <React.Fragment key={cat}>
-                                                                                <div className="px-4 py-1.5 bg-neutral-950/80 text-[10px] font-bold text-neutral-500 uppercase tracking-widest border-b border-neutral-900 flex items-center gap-2">
+                                                                                <div className="px-4 py-1.5 bg-background/80 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border flex items-center gap-2">
                                                                                     <div className="w-1 h-3 bg-blue-500/50 rounded-full" />
                                                                                     {cat}
                                                                                 </div>
@@ -761,7 +761,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                                         )}
                                                         {existingSgs.length > 0 && (
                                                             <>
-                                                                <div className="p-2 bg-neutral-900 font-semibold text-xs text-neutral-400 uppercase tracking-wider sticky top-0 z-10 border-y border-y-neutral-800">
+                                                                <div className="p-2 bg-muted font-semibold text-xs text-muted-foreground uppercase tracking-wider sticky top-0 z-10 border-y border-y-border">
                                                                     Existing ({existingSgs.length})
                                                                 </div>
                                                                 {existingSgs.map(renderSubgroupRow)}
@@ -780,7 +780,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                 )}
 
                 <DialogFooter className="mt-4">
-                    <Button variant="ghost" onClick={handleClose} className="text-neutral-400 hover:text-white">
+                    <Button variant="ghost" onClick={handleClose} className="text-muted-foreground hover:text-foreground">
                         Cancel
                     </Button>
                     {step === 2 && (

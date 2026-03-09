@@ -307,9 +307,9 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
         return (
             <div
                 key={p.regex}
-                className={`flex items-start gap-3 p-3 px-4 transition-colors border-b border-neutral-800/30 cursor-pointer w-full overflow-hidden ${isDisabled ? 'opacity-40 !cursor-not-allowed bg-neutral-900/30' :
-                    isSelected ? (p.existsInCurrent ? 'bg-amber-950/20' : 'bg-blue-950/20') :
-                        'hover:bg-neutral-900/50'
+                className={`flex items-start gap-3 p-3 px-4 transition-colors border-b border-border/50 cursor-pointer w-full overflow-hidden ${isDisabled ? 'opacity-40 !cursor-not-allowed bg-muted/40' :
+                    isSelected ? (p.existsInCurrent ? 'bg-amber-500/10' : 'bg-blue-500/10') :
+                        'hover:bg-muted/50'
                     }`}
                 onClick={isDisabled ? undefined : () => togglePattern(p.regex)}
             >
@@ -324,7 +324,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                         {p.customName}
                     </p>
                     {showRegex && (
-                        <p className="text-[10px] text-neutral-600 mt-1 font-mono line-clamp-1 break-all w-full leading-tight" title={p.regex}>
+                        <p className="text-[10px] text-muted-foreground mt-1 font-mono line-clamp-1 break-all w-full leading-tight" title={p.regex}>
                             {p.regex}
                         </p>
                     )}
@@ -336,9 +336,9 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                             <Badge variant="outline" className="bg-amber-600/10 text-amber-500 border-amber-500/30 text-[9px] uppercase shrink-0">Updated</Badge>
                         )}
                         {isDisabled && (
-                            <Badge variant="outline" className="bg-neutral-800 text-neutral-600 border-neutral-700 text-[9px] uppercase shrink-0">No Changes</Badge>
+                            <Badge variant="outline" className="bg-muted text-muted-foreground border-border text-[9px] uppercase shrink-0">No Changes</Badge>
                         )}
-                        <span className="text-[10px] text-neutral-600 shrink-0">{p.presentInKeys.length} settings</span>
+                        <span className="text-[10px] text-muted-foreground shrink-0">{p.presentInKeys.length} settings</span>
                     </div>
                 </div>
             </div>
@@ -347,10 +347,10 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <DialogContent className="sm:max-w-lg bg-neutral-950 border-neutral-800 text-neutral-200 overflow-hidden">
+            <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="sm:max-w-lg bg-background border-border text-foreground overflow-hidden">
                 <DialogHeader>
                     <DialogTitle>Import Patterns & Regex</DialogTitle>
-                    <DialogDescription className="text-neutral-400">
+                    <DialogDescription className="text-muted-foreground">
                         {step === 1 ? "Load a template or upload a config to import patterns." : `Select patterns to import from ${fileName}`}
                     </DialogDescription>
                 </DialogHeader>
@@ -358,13 +358,13 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                 {step === 1 && (
                     <div className="space-y-4">
                         {/* Template Loader */}
-                        <div className="p-5 border border-neutral-800 rounded-lg bg-neutral-900/50">
-                            <h3 className="font-semibold text-sm text-neutral-200 mb-3">Load from Template</h3>
+                        <div className="p-5 border border-border rounded-lg bg-muted/50">
+                            <h3 className="font-semibold text-sm text-foreground mb-3">Load from Template</h3>
                             <div className="flex items-center gap-3">
                                 <select
                                     value={selectedVersion}
                                     onChange={(e) => setSelectedVersion(e.target.value)}
-                                    className="flex-1 h-10 rounded-md border border-neutral-800 bg-neutral-950/50 px-3 text-xs text-neutral-100 font-mono transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                                    className="flex-1 h-10 rounded-md border border-border bg-background/50 px-3 text-xs text-foreground font-mono transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
                                 >
                                     {templates.map(t => (
                                         <option key={t.label} value={t.label}>{t.label}</option>
@@ -398,19 +398,19 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                         </div>
 
                         <div className="flex items-center gap-3">
-                            <div className="flex-1 h-px bg-neutral-800"></div>
-                            <span className="text-[10px] text-neutral-600 uppercase font-bold tracking-wider">or upload file</span>
-                            <div className="flex-1 h-px bg-neutral-800"></div>
+                            <div className="flex-1 h-px bg-border"></div>
+                            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">or upload file</span>
+                            <div className="flex-1 h-px bg-border"></div>
                         </div>
 
                         {/* File Upload */}
-                        <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-neutral-800 rounded-lg hover:border-blue-500/50 hover:bg-blue-500/5 transition-all text-center">
-                            <UploadCloud className="w-10 h-10 text-neutral-500 mb-3" />
-                            <h3 className="font-medium text-sm text-neutral-300 mb-1">Upload configuration file</h3>
-                            <p className="text-xs text-neutral-500 mb-4 max-w-sm">
+                        <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-border rounded-lg hover:border-blue-500/50 hover:bg-blue-500/5 transition-all text-center">
+                            <UploadCloud className="w-10 h-10 text-muted-foreground mb-3" />
+                            <h3 className="font-medium text-sm text-foreground mb-1">Upload configuration file</h3>
+                            <p className="text-xs text-muted-foreground mb-4 max-w-sm">
                                 Select an <code>omni-config.json</code> to extract pattern data.
                             </p>
-                            <Button onClick={() => fileInputRef.current?.click()} variant="outline" className="bg-neutral-900 border-neutral-700 hover:bg-neutral-800 text-neutral-200 text-xs font-semibold">
+                            <Button onClick={() => fileInputRef.current?.click()} variant="outline" className="bg-muted border-border hover:bg-muted/80 text-foreground text-xs font-semibold">
                                 Select File
                             </Button>
                             <input
@@ -438,27 +438,27 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                         </div>
 
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <Input
                                 value={searchFilter}
                                 onChange={(e) => setSearchFilter(e.target.value)}
                                 placeholder="Search patterns..."
-                                className="pl-9 h-9 bg-neutral-950/50 border-neutral-800 text-xs"
+                                className="pl-9 h-9 bg-background/50 border-border text-xs"
                             />
                         </div>
 
-                        <div className="border border-neutral-800 rounded-md bg-neutral-950 overflow-hidden">
-                            <div className="p-2 bg-neutral-900/50 border-b border-neutral-800 flex flex-wrap gap-2">
-                                <Button variant="secondary" size="sm" onClick={selectAllChanged} className="h-7 text-xs bg-neutral-800 hover:bg-neutral-700 text-neutral-200">Select All</Button>
+                        <div className="border border-border rounded-md bg-background overflow-hidden">
+                            <div className="p-2 bg-muted/50 border-b border-border flex flex-wrap gap-2">
+                                <Button variant="secondary" size="sm" onClick={selectAllChanged} className="h-7 text-xs bg-muted hover:bg-muted/80 text-foreground">Select All</Button>
                                 <Button variant="secondary" size="sm" onClick={selectAllNew} className="h-7 text-xs bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/30">New Only</Button>
-                                <Button variant="ghost" size="sm" onClick={deselectAll} className="h-7 text-xs text-neutral-400 hover:text-white">Deselect All</Button>
+                                <Button variant="ghost" size="sm" onClick={deselectAll} className="h-7 text-xs text-muted-foreground hover:text-foreground">Deselect All</Button>
                             </div>
 
                             <ScrollArea className="h-[35vh]">
                                 <div className="flex flex-col w-full overflow-hidden">
                                     {newPatterns.length > 0 && (
                                         <>
-                                            <div className="p-2 bg-neutral-900 font-semibold text-xs text-neutral-400 uppercase tracking-wider sticky top-0 z-10 border-b border-neutral-800">
+                                            <div className="p-2 bg-muted font-semibold text-xs text-muted-foreground uppercase tracking-wider sticky top-0 z-10 border-b border-border">
                                                 New ({newPatterns.length})
                                             </div>
                                             {newPatterns.map(renderPatternRow)}
@@ -467,7 +467,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
 
                                     {updatedPatterns.length > 0 && (
                                         <>
-                                            <div className="p-2 bg-neutral-900 font-semibold text-xs text-neutral-400 uppercase tracking-wider sticky top-0 z-10 border-y border-neutral-800">
+                                            <div className="p-2 bg-muted font-semibold text-xs text-muted-foreground uppercase tracking-wider sticky top-0 z-10 border-y border-border">
                                                 Updates Available ({updatedPatterns.length})
                                             </div>
                                             {updatedPatterns.map(renderPatternRow)}
@@ -476,7 +476,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
 
                                     {unchangedPatterns.length > 0 && (
                                         <>
-                                            <div className="p-2 bg-neutral-900 font-semibold text-xs text-neutral-400 uppercase tracking-wider sticky top-0 z-10 border-y border-neutral-800">
+                                            <div className="p-2 bg-muted font-semibold text-xs text-muted-foreground uppercase tracking-wider sticky top-0 z-10 border-y border-border">
                                                 No Changes ({unchangedPatterns.length})
                                             </div>
                                             {unchangedPatterns.map(renderPatternRow)}
@@ -484,7 +484,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                                     )}
 
                                     {filteredPatterns.length === 0 && (
-                                        <div className="p-8 text-center text-neutral-500 text-sm italic">
+                                        <div className="p-8 text-center text-muted-foreground text-sm italic">
                                             {searchFilter ? "No patterns match your search." : "No patterns found."}
                                         </div>
                                     )}
@@ -495,7 +495,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                 )}
 
                 <DialogFooter className="mt-4">
-                    <Button variant="ghost" onClick={handleClose} className="text-neutral-400 hover:text-white">
+                    <Button variant="ghost" onClick={handleClose} className="text-muted-foreground hover:text-foreground">
                         Cancel
                     </Button>
                     {step === 2 && (

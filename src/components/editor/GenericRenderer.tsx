@@ -160,30 +160,30 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
         const isFaded = !hideToggle && !displayChecked;
 
         return (
-            <div className={`p-4 sm:p-5 rounded-xl bg-neutral-900/60 backdrop-blur-md border border-neutral-800/80 shadow-sm transition-all duration-300 ${isFaded ? "opacity-50 grayscale-[0.3]" : "opacity-100 hover:bg-neutral-900/80 hover:border-neutral-700/80 hover:shadow-md"}`}>
+            <div className={`p-4 sm:p-5 rounded-xl bg-card/60 backdrop-blur-md border border-border/80 shadow-sm transition-all duration-300 ${isFaded ? "opacity-50 grayscale-[0.3]" : "opacity-100 hover:bg-card/80 hover:border-border/80 hover:shadow-md"}`}>
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex flex-col">
-                        <span className="text-sm font-semibold tracking-tight text-neutral-100">
+                        <span className="text-sm font-semibold tracking-tight text-foreground">
                             {formatKeyToTitle(currentKey)}
                         </span>
                     </div>
                     {!hideToggle && (
                         <div className="flex items-center gap-3 shrink-0">
-                            <Label htmlFor={`toggle-${pathString}`} className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 cursor-pointer select-none transition-colors hover:text-neutral-400">
+                            <Label htmlFor={`toggle-${pathString}`} className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground cursor-pointer select-none transition-colors hover:text-muted-foreground">
                                 {displayChecked ? "On" : "Off"}
                             </Label>
                             <Switch
                                 id={`toggle-${pathString}`}
                                 checked={displayChecked}
                                 onCheckedChange={handleToggle}
-                                className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-neutral-700 scale-90 sm:scale-100 transition-all origin-right"
+                                className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-accent scale-90 sm:scale-100 transition-all origin-right"
                             />
                         </div>
                     )}
                 </div>
 
                 {!isFaded && children && (
-                    <div className={`transition-all duration-300 animate-in fade-in slide-in-from-top-2 ${isPrimitive ? "" : "mt-4 pt-4 border-t border-neutral-800/50"}`}>
+                    <div className={`transition-all duration-300 animate-in fade-in slide-in-from-top-2 ${isPrimitive ? "" : "mt-4 pt-4 border-t border-border/50"}`}>
                         {children}
                     </div>
                 )}
@@ -203,10 +203,10 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
             <Wrapper isPrimitive hideToggle={true}>
                 <div className="space-y-1">
                     <Select value={data} onValueChange={(val) => updateValue(path, val)}>
-                        <SelectTrigger className="bg-neutral-950/50 border-neutral-800 text-neutral-200 h-10 hover:border-neutral-700 transition-colors shadow-inner focus:ring-1 focus:ring-blue-500">
+                        <SelectTrigger className="bg-background/50 border-border text-foreground h-10 hover:border-border transition-colors shadow-inner focus:ring-1 focus:ring-blue-500">
                             <SelectValue placeholder="Select Language" />
                         </SelectTrigger>
-                        <SelectContent className="bg-neutral-900 border-neutral-800 text-neutral-200 max-h-[300px] shadow-xl backdrop-blur-xl">
+                        <SelectContent className="bg-card border-border text-foreground max-h-[300px] shadow-xl backdrop-blur-xl">
                             {Object.entries(ISO_639_2_LANGUAGES)
                                 .sort((a, b) => a[1].localeCompare(b[1]))
                                 .map(([code, name]) => (
@@ -273,19 +273,19 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                             placeholder="Search names or IDs..."
                             value={catSearch}
                             onChange={(e) => setCatSearch(e.target.value)}
-                            className="h-10 bg-neutral-950/50 border-neutral-800 text-sm pl-9 placeholder:text-neutral-500 focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors shadow-inner"
+                            className="h-10 bg-background/50 border-border text-sm pl-9 placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors shadow-inner"
                         />
-                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
+                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     </div>
 
                     <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                         {filteredEntries.map(([id, name]) => {
                             const isInUse = usedCatalogIds.has(id);
                             return (
-                                <div key={id} className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-300 group ${isInUse ? 'border-blue-500/30 bg-blue-500/5' : 'border-neutral-800/60 bg-neutral-950/40 hover:bg-neutral-900/60 hover:border-neutral-700/60'}`}>
+                                <div key={id} className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-300 group ${isInUse ? 'border-blue-500/30 bg-blue-500/5' : 'border-border/60 bg-background/40 hover:bg-card/60 hover:border-border/60'}`}>
                                     <div className="flex flex-col min-w-0 pr-4">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-sm font-medium text-neutral-200 truncate" title={name}>
+                                            <span className="text-sm font-medium text-foreground truncate" title={name}>
                                                 {name}
                                             </span>
                                             {isInUse && (
@@ -294,7 +294,7 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                                                 </span>
                                             )}
                                         </div>
-                                        <span className="text-[10px] font-mono text-neutral-500 truncate mt-1" title={id}>
+                                        <span className="text-[10px] font-mono text-muted-foreground truncate mt-1" title={id}>
                                             {id}
                                         </span>
                                     </div>
@@ -302,7 +302,7 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                                         variant="ghost"
                                         size="icon"
                                         onClick={() => updateValue([...path, id], undefined)}
-                                        className={`h-8 w-8 shrink-0 transition-all rounded-md ${isInUse ? 'text-neutral-600 opacity-20 hover:opacity-100 hover:text-red-400 hover:bg-red-500/10' : 'text-neutral-500 opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-red-500/10'}`}
+                                        className={`h-8 w-8 shrink-0 transition-all rounded-md ${isInUse ? 'text-muted-foreground opacity-20 hover:opacity-100 hover:text-red-400 hover:bg-red-500/10' : 'text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-red-500/10'}`}
                                         title={isInUse ? "This name is currently in use in a subgroup!" : "Delete custom name"}
                                     >
                                         <Trash2 className="w-4 h-4" />
@@ -312,15 +312,15 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                         })}
 
                         {entries.length === 0 && (
-                            <div className="text-center py-8 border border-dashed border-neutral-700/50 rounded-xl bg-neutral-950/20 flex flex-col items-center justify-center gap-2">
-                                <Search className="w-6 h-6 text-neutral-600" />
-                                <p className="text-xs text-neutral-400 font-medium">No custom catalog names defined</p>
+                            <div className="text-center py-8 border border-dashed border-border/50 rounded-xl bg-background/20 flex flex-col items-center justify-center gap-2">
+                                <Search className="w-6 h-6 text-muted-foreground" />
+                                <p className="text-xs text-muted-foreground font-medium">No custom catalog names defined</p>
                             </div>
                         )}
                         {entries.length > 0 && filteredEntries.length === 0 && (
-                            <div className="text-center py-8 border border-dashed border-neutral-700/50 rounded-xl bg-neutral-950/20 flex flex-col items-center justify-center gap-2">
-                                <Search className="w-6 h-6 text-neutral-600" />
-                                <p className="text-xs text-neutral-400 font-medium">No matches found for "{catSearch}"</p>
+                            <div className="text-center py-8 border border-dashed border-border/50 rounded-xl bg-background/20 flex flex-col items-center justify-center gap-2">
+                                <Search className="w-6 h-6 text-muted-foreground" />
+                                <p className="text-xs text-muted-foreground font-medium">No matches found for "{catSearch}"</p>
                             </div>
                         )}
                     </div>
@@ -390,11 +390,11 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                         {options.map((opt) => {
                             const isChecked = currentSelection.includes(opt);
                             return (
-                                <div key={opt} className={"flex items-center space-x-3 p-3 h-[60px] rounded-lg border transition-colors cursor-pointer select-none shadow-sm " + (isChecked ? "border-blue-500/50 bg-blue-500/10 hover:bg-blue-500/20" : "border-neutral-800/80 bg-neutral-900/50 hover:border-neutral-700/80 hover:bg-neutral-900")} onClick={() => handleCheckboxChange(opt, !isChecked)}>
+                                <div key={opt} className={"flex items-center space-x-3 p-3 h-[60px] rounded-lg border transition-colors cursor-pointer select-none shadow-sm " + (isChecked ? "border-blue-500/50 bg-blue-500/10 hover:bg-blue-500/20" : "border-border/80 bg-card/50 hover:border-border/80 hover:bg-card")} onClick={() => handleCheckboxChange(opt, !isChecked)}>
                                     <Checkbox id={`checkbox-${opt}`} checked={isChecked} onCheckedChange={(val: boolean | string) => handleCheckboxChange(opt, !!val)} className="pointer-events-none" />
                                     <div className="flex flex-col flex-1 pointer-events-none">
-                                        <Label htmlFor={`checkbox-${opt}`} className="text-sm font-medium text-neutral-200">{opt}</Label>
-                                        <span className="text-[10px] text-neutral-500 mt-0.5 leading-tight">Hide {opt.toLowerCase()}</span>
+                                        <Label htmlFor={`checkbox-${opt}`} className="text-sm font-medium text-foreground">{opt}</Label>
+                                        <span className="text-[10px] text-muted-foreground mt-0.5 leading-tight">Hide {opt.toLowerCase()}</span>
                                     </div>
                                 </div>
                             );
@@ -414,14 +414,14 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                 {data.startsWith("#") && data.length === 7 ? (
                     <div className="flex items-center gap-3">
                         <div
-                            className="w-10 h-10 rounded-lg border border-neutral-700/50 shrink-0 shadow-inner ring-1 ring-black/20"
+                            className="w-10 h-10 rounded-lg border border-border/50 shrink-0 shadow-inner ring-1 ring-black/20"
                             style={{ backgroundColor: data }}
                         />
                         <Input
                             type="text"
                             value={data}
                             onChange={handleStringChange}
-                            className="bg-neutral-950/50 border-neutral-800 hover:border-neutral-700 focus-visible:ring-1 focus-visible:ring-blue-500 font-mono text-neutral-200 transition-colors shadow-inner"
+                            className="bg-background/50 border-border hover:border-border focus-visible:ring-1 focus-visible:ring-blue-500 font-mono text-foreground transition-colors shadow-inner"
                         />
                     </div>
                 ) : (
@@ -429,7 +429,7 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                         type="text"
                         value={data}
                         onChange={handleStringChange}
-                        className="bg-neutral-950/50 border-neutral-800 hover:border-neutral-700 focus-visible:ring-1 focus-visible:ring-blue-500 text-neutral-200 transition-colors shadow-inner w-full"
+                        className="bg-background/50 border-border hover:border-border focus-visible:ring-1 focus-visible:ring-blue-500 text-foreground transition-colors shadow-inner w-full"
                     />
                 )}
             </Wrapper>
@@ -444,7 +444,7 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                     type="number"
                     value={data}
                     onChange={handleNumberChange}
-                    className="bg-neutral-950/50 border-neutral-800 hover:border-neutral-700 focus-visible:ring-1 focus-visible:ring-blue-500 font-mono text-neutral-200 w-full max-w-[200px] transition-colors shadow-inner"
+                    className="bg-background/50 border-border hover:border-border focus-visible:ring-1 focus-visible:ring-blue-500 font-mono text-foreground w-full max-w-[200px] transition-colors shadow-inner"
                 />
             </Wrapper>
         );
@@ -454,17 +454,17 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
     if (typeof data === "boolean" && !UNIFIED_KEYS.includes(currentKey)) {
         return (
             <Wrapper isPrimitive>
-                <div className="flex flex-row items-center justify-between rounded-xl border border-neutral-800/80 p-4 bg-neutral-950/40 shadow-inner">
+                <div className="flex flex-row items-center justify-between rounded-xl border border-border/80 p-4 bg-background/40 shadow-inner">
                     <div className="space-y-1">
-                        <Label className="text-sm font-medium text-neutral-200">Value</Label>
-                        <p className="text-[11px] font-medium uppercase tracking-widest text-neutral-500">
+                        <Label className="text-sm font-medium text-foreground">Value</Label>
+                        <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
                             {data ? "True" : "False"}
                         </p>
                     </div>
                     <Switch
                         checked={data}
                         onCheckedChange={handleBooleanChange}
-                        className="data-[state=checked]:bg-emerald-500 data-[state=unchecked]:bg-neutral-700 transition-colors shadow-sm"
+                        className="data-[state=checked]:bg-emerald-500 data-[state=unchecked]:bg-accent transition-colors shadow-sm"
                     />
                 </div>
             </Wrapper>
@@ -485,7 +485,7 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                                         <Input
                                             value={item}
                                             onChange={(e) => handleArrayStringChange(idx, e.target.value)}
-                                            className="bg-neutral-950/50 border-neutral-800 hover:border-neutral-700 focus-visible:ring-1 focus-visible:ring-blue-500 text-sm h-10 w-full transition-colors shadow-inner"
+                                            className="bg-background/50 border-border hover:border-border focus-visible:ring-1 focus-visible:ring-blue-500 text-sm h-10 w-full transition-colors shadow-inner"
                                         />
                                         {(typeof item === 'string' && currentValues.custom_catalog_names?.[item]) && (
                                             <p className="text-[10px] text-blue-400 mt-1.5 ml-1 px-2 py-0.5 rounded-sm bg-blue-950/30 border-l-2 border-blue-500 inline-block">
@@ -493,25 +493,25 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                                             </p>
                                         )}
                                     </div>
-                                    <Button variant="ghost" size="icon" onClick={() => removeArrayItem(idx)} className="h-10 w-10 rounded-lg text-neutral-600 hover:text-red-400 hover:bg-red-500/10 shrink-0 transition-colors opacity-0 group-hover:opacity-100">
+                                    <Button variant="ghost" size="icon" onClick={() => removeArrayItem(idx)} className="h-10 w-10 rounded-lg text-muted-foreground hover:text-red-400 hover:bg-red-500/10 shrink-0 transition-colors opacity-0 group-hover:opacity-100">
                                         <Trash2 className="w-4 h-4" />
                                     </Button>
                                 </div>
                             );
                         } else {
                             return (
-                                <div key={idx} className="border border-neutral-800/80 rounded-xl p-4 bg-neutral-950/40 relative group shadow-sm transition-all hover:border-neutral-700/80">
-                                    <Button variant="ghost" size="icon" onClick={() => removeArrayItem(idx)} className="absolute top-3 right-3 h-8 w-8 rounded-md text-neutral-500 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all">
+                                <div key={idx} className="border border-border/80 rounded-xl p-4 bg-background/40 relative group shadow-sm transition-all hover:border-border/80">
+                                    <Button variant="ghost" size="icon" onClick={() => removeArrayItem(idx)} className="absolute top-3 right-3 h-8 w-8 rounded-md text-muted-foreground hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all">
                                         <Trash2 className="w-4 h-4" />
                                     </Button>
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-3 block">Item <span className="text-neutral-300">{idx}</span></span>
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3 block">Item <span className="text-foreground">{idx}</span></span>
                                     <GenericRenderer data={item} path={[...path, String(idx)]} searchQuery={searchQuery} />
                                 </div>
                             );
                         }
                     })}
 
-                    <Button variant="outline" size="sm" onClick={addArrayItem} className="w-full border-neutral-800 border-dashed bg-neutral-950/30 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-900 hover:border-neutral-700 mt-3 h-10 transition-all rounded-lg">
+                    <Button variant="outline" size="sm" onClick={addArrayItem} className="w-full border-border border-dashed bg-background/30 text-muted-foreground hover:text-foreground hover:bg-card hover:border-border mt-3 h-10 transition-all rounded-lg">
                         <Plus className="w-4 h-4 mr-2" />
                         Add Item
                     </Button>
@@ -535,17 +535,17 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
 
         return (
             <Wrapper>
-                <Accordion type="single" collapsible className="w-full overflow-hidden border border-neutral-800/80 rounded-xl bg-neutral-950/40 shadow-sm transition-all hover:border-neutral-700/80">
+                <Accordion type="single" collapsible className="w-full overflow-hidden border border-border/80 rounded-xl bg-background/40 shadow-sm transition-all hover:border-border/80">
                     <AccordionItem value="item-1" className="border-b-0">
-                        <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-neutral-900/50 text-sm font-medium text-neutral-200 transition-colors">
+                        <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-card/50 text-sm font-medium text-foreground transition-colors">
                             <span className="flex items-center gap-3">
                                 View Object Details
-                                <span className="flex items-center justify-center px-2 py-0.5 rounded-full bg-neutral-800 text-[10px] font-bold text-neutral-400">
+                                <span className="flex items-center justify-center px-2 py-0.5 rounded-full bg-muted text-[10px] font-bold text-muted-foreground">
                                     {Object.keys(data).length} keys
                                 </span>
                             </span>
                         </AccordionTrigger>
-                        <AccordionContent className="p-5 border-t border-neutral-800/50 space-y-5 bg-neutral-950/20">
+                        <AccordionContent className="p-5 border-t border-border/50 space-y-5 bg-background/20">
                             {Object.entries(data).map(([key, val]) => (
                                 <GenericRenderer key={key} data={val} path={[...path, key]} searchQuery={searchQuery} />
                             ))}

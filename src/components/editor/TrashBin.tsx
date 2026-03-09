@@ -23,22 +23,22 @@ export function TrashBin() {
     ].sort((a, b) => new Date(b.deletedAt).getTime() - new Date(a.deletedAt).getTime());
 
     return (
-        <div className="mt-12 border-t border-neutral-800 pt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="mt-12 border-t border-border pt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
                     <div className="bg-red-500/10 p-2 rounded-lg">
                         <Trash2 className="w-5 h-5 text-red-500" />
                     </div>
                     <div>
-                        <h3 className="text-lg font-bold text-neutral-200">Recycle Bin</h3>
-                        <p className="text-sm text-neutral-500">Recently removed groups can be restored here.</p>
+                        <h3 className="text-lg font-bold text-foreground">Recycle Bin</h3>
+                        <p className="text-sm text-muted-foreground">Recently removed groups can be restored here.</p>
                     </div>
                 </div>
                 <Button
                     variant="ghost"
                     size="sm"
                     onClick={clearDeletedSubgroups}
-                    className="text-neutral-500 hover:text-red-400 hover:bg-red-500/10 text-xs gap-2"
+                    className="text-muted-foreground hover:text-red-400 hover:bg-red-500/10 text-xs gap-2"
                 >
                     <XCircle className="w-4 h-4" /> Clear Trash
                 </Button>
@@ -49,19 +49,19 @@ export function TrashBin() {
                     <AccordionItem
                         key={`${item.name}-${item.deletedAt}`}
                         value={`deleted-${idx}`}
-                        className="border border-neutral-800 bg-neutral-900/40 rounded-lg overflow-hidden"
+                        className="border border-border bg-card/40 rounded-lg overflow-hidden"
                     >
                         <div className="flex items-center justify-between px-4 py-3">
                             <div className="flex items-center gap-3">
                                 <AccordionTrigger className="p-0 hover:no-underline [&>svg]:hidden flex items-center gap-2">
-                                    <Badge variant="outline" className={`text-[10px] uppercase tracking-tighter bg-neutral-800/50 border-neutral-700 ${item.type === 'Main Group' ? 'text-blue-400 border-blue-900/50' : 'text-neutral-400'}`}>
+                                    <Badge variant="outline" className={`text-[10px] uppercase tracking-tighter bg-muted/50 border-border ${item.type === 'Main Group' ? 'text-blue-400 border-blue-900/50' : 'text-muted-foreground'}`}>
                                         {item.type}
                                     </Badge>
-                                    <span className="font-semibold text-neutral-300">{item.name}</span>
+                                    <span className="font-semibold text-foreground">{item.name}</span>
                                 </AccordionTrigger>
                                 {item.type === 'Subgroup' && (
-                                    <span className="text-xs text-neutral-600">
-                                        was in <span className="text-neutral-400">{(item as any).parentName}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                        was in <span className="text-muted-foreground">{(item as any).parentName}</span>
                                     </span>
                                 )}
                             </div>
@@ -76,26 +76,26 @@ export function TrashBin() {
                         <AccordionContent className="px-4 pb-4 pt-0">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                                 <div className="space-y-2">
-                                    <div className="flex items-center gap-2 text-[10px] text-neutral-500 uppercase font-bold tracking-widest">
+                                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
                                         <Info className="w-3 h-3" /> Details
                                     </div>
-                                    <div className="bg-neutral-950/50 rounded p-3 border border-neutral-800/50 text-xs space-y-1">
+                                    <div className="bg-background/50 rounded p-3 border border-border/50 text-xs space-y-1">
                                         <div>
-                                            <span className="text-neutral-500 italic">{item.type === 'Main Group' ? 'Subgroups' : 'Catalogs'}:</span>{' '}
+                                            <span className="text-muted-foreground italic">{item.type === 'Main Group' ? 'Subgroups' : 'Catalogs'}:</span>{' '}
                                             {item.type === 'Main Group' ? (item as any).subgroupNames?.length : (item as any).catalogs?.length}
                                         </div>
                                         {(item as any).imageUrl && (
-                                            <div className="truncate"><span className="text-neutral-500 italic">Image:</span> {(item as any).imageUrl}</div>
+                                            <div className="truncate"><span className="text-muted-foreground italic">Image:</span> {(item as any).imageUrl}</div>
                                         )}
-                                        <div className="text-[10px] text-neutral-600 pt-1">
+                                        <div className="text-[10px] text-muted-foreground pt-1">
                                             Deleted at: {new Date(item.deletedAt).toLocaleString()}
                                         </div>
                                     </div>
                                 </div>
                                 {(item as any).imageUrl && (
                                     <div className="space-y-2">
-                                        <div className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest">Preview</div>
-                                        <div className="relative aspect-video rounded border border-neutral-800 overflow-hidden bg-neutral-950 flex items-center justify-center">
+                                        <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Preview</div>
+                                        <div className="relative aspect-video rounded border border-border overflow-hidden bg-background flex items-center justify-center">
                                             <img
                                                 src={(item as any).imageUrl}
                                                 alt={item.name}

@@ -20,12 +20,12 @@ import {
 } from "@/components/ui/dialog";
 
 const PATTERN_DICTS = [
-    { key: "pattern_tag_enabled_patterns", label: "Tag Enabled", type: "boolean", icon: <CheckCircle className="w-4 h-4 text-neutral-500" /> },
-    { key: "regex_pattern_custom_names", label: "Custom Name", type: "string", icon: <Type className="w-4 h-4 text-neutral-500" /> },
-    { key: "regex_pattern_image_urls", label: "Image URL", type: "string", icon: <ImageIcon className="w-4 h-4 text-neutral-500" /> },
-    { key: "pattern_image_color_indices", label: "Image Color", type: "imageColor", icon: <Palette className="w-4 h-4 text-neutral-500" /> },
-    { key: "pattern_border_radius_indices", label: "Corner Radius", type: "borderRadius", icon: <Maximize className="w-4 h-4 text-neutral-500" /> },
-    { key: "pattern_color_hex_values", label: "Color Hex", type: "color", icon: <Hexagon className="w-4 h-4 text-neutral-500" /> },
+    { key: "pattern_tag_enabled_patterns", label: "Tag Enabled", type: "boolean", icon: <CheckCircle className="w-4 h-4 text-muted-foreground" /> },
+    { key: "regex_pattern_custom_names", label: "Custom Name", type: "string", icon: <Type className="w-4 h-4 text-muted-foreground" /> },
+    { key: "regex_pattern_image_urls", label: "Image URL", type: "string", icon: <ImageIcon className="w-4 h-4 text-muted-foreground" /> },
+    { key: "pattern_image_color_indices", label: "Image Color", type: "imageColor", icon: <Palette className="w-4 h-4 text-muted-foreground" /> },
+    { key: "pattern_border_radius_indices", label: "Corner Radius", type: "borderRadius", icon: <Maximize className="w-4 h-4 text-muted-foreground" /> },
+    { key: "pattern_color_hex_values", label: "Color Hex", type: "color", icon: <Hexagon className="w-4 h-4 text-muted-foreground" /> },
 ];
 
 // Image color index → label mapping (Omni uses 1=Black, 2=White, 3=Color)
@@ -37,7 +37,7 @@ const IMAGE_COLOR_OPTIONS = [
 
 // Corner radius: Omni stores an index, displayed px = index × 2
 // Observed: index 3 = 6px, 4 = 8px, 6 = 12px → all fit index * 2
-const BORDER_RADIUS_OPTIONS = Array.from({ length: 13 }, (_, i) => ({ index: i, px: i * 2 }));
+const BORDER_RADIUS_OPTIONS = Array.from({ length: 8 }, (_, i) => ({ index: i, px: i * 2 }));
 
 function PatternNode({ regex, onDelete, onRename }: { regex: string, onDelete: (r: string) => void, onRename: (oldRegex: string, newRegex: string) => void }) {
     const { currentValues, updateValue, originalConfig } = useConfig();
@@ -80,21 +80,21 @@ function PatternNode({ regex, onDelete, onRename }: { regex: string, onDelete: (
     return (
         <AccordionItem
             value={regex}
-            className={`border border-neutral-800/80 rounded-xl overflow-hidden bg-neutral-950/40 shadow-sm transition-all hover:border-neutral-700/80 mb-3 group/item
+            className={`border border-border/80 rounded-xl overflow-hidden bg-background/40 shadow-sm transition-all hover:border-border/80 mb-3 group/item
                 ${!isTagEnabled ? "opacity-60 grayscale-[0.3]" : ""}`}
         >
-            <div className={`flex items-center transition-colors ${!isTagEnabled ? "bg-neutral-950/20" : "bg-neutral-900/40 hover:bg-neutral-900/60"} [&>h3]:flex-1`}>
+            <div className={`flex items-center transition-colors ${!isTagEnabled ? "bg-background/20" : "bg-card/40 hover:bg-card/60"} [&>h3]:flex-1`}>
                 <AccordionTrigger className="px-4 py-3 sm:px-5 sm:py-4 flex-1 hover:no-underline flex items-center justify-between [&>svg]:hidden">
                     <div className="flex items-center gap-3">
-                        <ChevronRight className="w-4 h-4 shrink-0 text-neutral-500 transition-transform duration-200 group-data-[state=open]/item:rotate-90" />
-                        <span className={`font-bold text-sm tracking-tight transition-colors text-left ${!isTagEnabled ? "text-neutral-500" : "text-neutral-100"}`}>
-                            {customName || <span className={`font-mono text-xs inline-block break-all bg-neutral-950/50 px-2 py-0.5 rounded border border-neutral-800 ${!isTagEnabled ? "text-neutral-600" : "text-blue-400"}`}>{regex}</span>}
+                        <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]/item:rotate-90" />
+                        <span className={`font-bold text-sm tracking-tight transition-colors text-left ${!isTagEnabled ? "text-muted-foreground" : "text-foreground"}`}>
+                            {customName || <span className={`font-mono text-xs inline-block break-all bg-background/50 px-2 py-0.5 rounded border border-border ${!isTagEnabled ? "text-muted-foreground" : "text-blue-400"}`}>{regex}</span>}
                         </span>
                     </div>
                 </AccordionTrigger>
                 <div className="pr-4 sm:pr-5 flex items-center gap-4">
                     {imageUrl && (
-                        <div className={`h-8 w-auto max-w-24 shrink-0 overflow-hidden rounded-md border border-neutral-700/50 bg-neutral-900/50 flex items-center justify-center shadow-inner transition-opacity ${!isTagEnabled ? "opacity-30" : ""}`}>
+                        <div className={`h-8 w-auto max-w-24 shrink-0 overflow-hidden rounded-md border border-border/50 bg-neutral-900 flex items-center justify-center shadow-inner transition-opacity ${!isTagEnabled ? "opacity-30" : ""}`}>
                             <img src={imageUrl} alt={customName || regex} className="h-full w-auto object-contain" />
                         </div>
                     )}
@@ -102,17 +102,17 @@ function PatternNode({ regex, onDelete, onRename }: { regex: string, onDelete: (
                         variant="ghost"
                         size="icon"
                         onClick={handleDeleteClick}
-                        className="h-8 w-8 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-md border border-transparent hover:border-red-500/30 transition-all opacity-80 hover:opacity-100 shrink-0"
+                        className="h-8 w-8 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 rounded-md border border-transparent hover:border-red-500/30 transition-all opacity-80 hover:opacity-100 shrink-0"
                         title="Delete Pattern"
                     >
                         <Trash2 className="w-4 h-4" />
                     </Button>
                 </div>
             </div>
-            <AccordionContent className="p-5 border-t border-neutral-800/50 bg-neutral-950/20">
+            <AccordionContent className="p-5 border-t border-border/50 bg-background/20">
                 {/* Regex Editor */}
                 <div className="mb-6">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-2 block">Pattern Regex</Label>
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Pattern Regex</Label>
                     {editingRegex ? (
                         <div className="flex items-center gap-2">
                             <Input
@@ -123,19 +123,19 @@ function PatternNode({ regex, onDelete, onRename }: { regex: string, onDelete: (
                                     if (e.key === 'Escape') handleCancelEdit(e as any);
                                 }}
                                 autoFocus
-                                className="h-9 text-xs font-mono bg-neutral-950/80 border-blue-500/50 focus-visible:ring-1 focus-visible:ring-blue-500 text-blue-300 flex-1 shadow-inner"
+                                className="h-9 text-xs font-mono bg-background/80 border-blue-500/50 focus-visible:ring-1 focus-visible:ring-blue-500 text-blue-300 flex-1 shadow-inner"
                             />
                             <Button size="icon" variant="ghost" onClick={handleConfirmEdit} className="h-9 w-9 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-300 rounded-md transition-colors">
                                 <Check className="w-4 h-4" />
                             </Button>
-                            <Button size="icon" variant="ghost" onClick={handleCancelEdit} className="h-9 w-9 bg-neutral-800/50 text-neutral-400 hover:bg-neutral-800 hover:text-white rounded-md transition-colors">
+                            <Button size="icon" variant="ghost" onClick={handleCancelEdit} className="h-9 w-9 bg-muted/50 text-muted-foreground hover:bg-muted hover:text-white rounded-md transition-colors">
                                 <X className="w-4 h-4" />
                             </Button>
                         </div>
                     ) : (
-                        <div className="flex items-center gap-3 p-2.5 rounded-lg border border-neutral-800/80 bg-neutral-950/50 shadow-inner group/regex transition-colors hover:border-neutral-700/80">
+                        <div className="flex items-center gap-3 p-2.5 rounded-lg border border-border/80 bg-background/50 shadow-inner group/regex transition-colors hover:border-border/80">
                             <code className="text-[11px] sm:text-xs font-mono text-blue-400 flex-1 break-all tracking-tight">{regex}</code>
-                            <Button size="icon" variant="ghost" onClick={handleStartEdit} className="h-7 w-7 text-neutral-500 hover:text-blue-400 hover:bg-blue-500/10 rounded-md opacity-0 group-hover/regex:opacity-100 transition-all shrink-0">
+                            <Button size="icon" variant="ghost" onClick={handleStartEdit} className="h-7 w-7 text-muted-foreground hover:text-blue-400 hover:bg-blue-500/10 rounded-md opacity-0 group-hover/regex:opacity-100 transition-all shrink-0">
                                 <Pencil className="w-3.5 h-3.5" />
                             </Button>
                         </div>
@@ -189,9 +189,9 @@ function PatternNode({ regex, onDelete, onRename }: { regex: string, onDelete: (
                         };
 
                         return (
-                            <div key={dictDef.key} className="flex flex-col justify-center gap-2.5 p-4 bg-neutral-950/40 border border-neutral-800/80 shadow-sm rounded-xl transition-colors hover:border-neutral-700/80 hover:bg-neutral-900/40">
-                                <Label className="flex items-center gap-2 text-xs font-semibold tracking-tight text-neutral-300">
-                                    <span className="p-1 rounded bg-neutral-900 text-neutral-400 border border-neutral-800">
+                            <div key={dictDef.key} className="flex flex-col justify-center gap-2.5 p-4 bg-background/40 border border-border/80 shadow-sm rounded-xl transition-colors hover:border-border/80 hover:bg-card/40">
+                                <Label className="flex items-center gap-2 text-xs font-semibold tracking-tight text-foreground">
+                                    <span className="p-1 rounded bg-card text-muted-foreground border border-border">
                                         {dictDef.icon}
                                     </span>
                                     {dictDef.label}
@@ -208,10 +208,10 @@ function PatternNode({ regex, onDelete, onRename }: { regex: string, onDelete: (
                                         value={displayVal !== "" ? String(displayVal) : ""}
                                         onValueChange={(v) => handleChange(Number(v))}
                                     >
-                                        <SelectTrigger className="h-9 text-xs bg-neutral-950/80 border-neutral-700 w-full hover:border-neutral-600 focus:ring-1 focus:ring-blue-500 transition-colors shadow-inner">
+                                        <SelectTrigger className="h-9 text-xs bg-background/80 border-border w-full hover:border-border focus:ring-1 focus:ring-blue-500 transition-colors shadow-inner">
                                             <SelectValue placeholder="Select color..." />
                                         </SelectTrigger>
-                                        <SelectContent className="bg-neutral-900/95 backdrop-blur-xl border-neutral-800 text-neutral-200 shadow-xl">
+                                        <SelectContent className="bg-card/95 backdrop-blur-xl border-border text-foreground shadow-xl">
                                             {IMAGE_COLOR_OPTIONS.map(opt => (
                                                 <SelectItem key={opt.value} value={String(opt.value)} className="text-xs focus:bg-blue-600 focus:text-white cursor-pointer transition-colors">
                                                     {opt.label}
@@ -224,10 +224,10 @@ function PatternNode({ regex, onDelete, onRename }: { regex: string, onDelete: (
                                         value={displayVal !== "" ? String(displayVal) : ""}
                                         onValueChange={(v) => handleChange(Number(v))}
                                     >
-                                        <SelectTrigger className="h-9 text-xs bg-neutral-950/80 border-neutral-700 w-full hover:border-neutral-600 focus:ring-1 focus:ring-blue-500 transition-colors shadow-inner">
+                                        <SelectTrigger className="h-9 text-xs bg-background/80 border-border w-full hover:border-border focus:ring-1 focus:ring-blue-500 transition-colors shadow-inner">
                                             <SelectValue placeholder="Select radius..." />
                                         </SelectTrigger>
-                                        <SelectContent className="bg-neutral-900/95 backdrop-blur-xl border-neutral-800 text-neutral-200 shadow-xl max-h-[250px]">
+                                        <SelectContent className="bg-card/95 backdrop-blur-xl border-border text-foreground shadow-xl max-h-[250px]">
                                             {BORDER_RADIUS_OPTIONS.map(r => (
                                                 <SelectItem key={r.index} value={String(r.index)} className="text-xs focus:bg-blue-600 focus:text-white cursor-pointer transition-colors">
                                                     {r.px}px
@@ -240,11 +240,11 @@ function PatternNode({ regex, onDelete, onRename }: { regex: string, onDelete: (
                                         type="number"
                                         value={displayVal}
                                         onChange={(e) => handleChange(e.target.value === "" ? "" : Number(e.target.value))}
-                                        className="h-9 text-xs bg-neutral-950/80 border-neutral-700 hover:border-neutral-600 focus-visible:ring-1 focus-visible:ring-blue-500 shadow-inner font-mono transition-colors w-full"
+                                        className="h-9 text-xs bg-background/80 border-border hover:border-border focus-visible:ring-1 focus-visible:ring-blue-500 shadow-inner font-mono transition-colors w-full"
                                     />
                                 ) : inferredType === "color" ? (
                                     <div className="flex gap-2">
-                                        <div className="relative w-9 h-9 rounded-md shrink-0 overflow-hidden border border-neutral-700/80 bg-neutral-950 shadow-inner ring-1 ring-black/20">
+                                        <div className="relative w-9 h-9 rounded-md shrink-0 overflow-hidden border border-border/80 bg-background shadow-inner ring-1 ring-black/20">
                                             <input
                                                 type="color"
                                                 value={displayVal || "#000000"}
@@ -257,7 +257,7 @@ function PatternNode({ regex, onDelete, onRename }: { regex: string, onDelete: (
                                             value={displayVal}
                                             onChange={(e) => handleChange(e.target.value)}
                                             placeholder="#FFFFFF"
-                                            className="h-9 text-xs font-mono bg-neutral-950/80 border-neutral-700 uppercase focus-visible:ring-1 focus-visible:ring-blue-500 shadow-inner transition-colors"
+                                            className="h-9 text-xs font-mono bg-background/80 border-border uppercase focus-visible:ring-1 focus-visible:ring-blue-500 shadow-inner transition-colors"
                                         />
                                     </div>
                                 ) : (
@@ -266,7 +266,7 @@ function PatternNode({ regex, onDelete, onRename }: { regex: string, onDelete: (
                                         value={displayVal}
                                         onChange={(e) => handleChange(e.target.value)}
                                         placeholder={`Enter ${dictDef.label}...`}
-                                        className="h-9 text-xs bg-neutral-950/80 border-neutral-700 hover:border-neutral-600 focus-visible:ring-1 focus-visible:ring-blue-500 shadow-inner transition-colors"
+                                        className="h-9 text-xs bg-background/80 border-border hover:border-border focus-visible:ring-1 focus-visible:ring-blue-500 shadow-inner transition-colors"
                                     />
                                 )}
                             </div>
@@ -391,11 +391,11 @@ export function UnifiedPatternEditor() {
 
     return (
         <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="patterns-root" className="border-neutral-800/80 bg-neutral-950/40 rounded-xl overflow-hidden shadow-sm transition-all hover:border-neutral-700/80">
-                <AccordionTrigger className="px-5 py-4 hover:bg-neutral-900/40 hover:no-underline flex justify-between items-center group transition-colors">
+            <AccordionItem value="patterns-root" className="border-border/80 bg-background/40 rounded-xl overflow-hidden shadow-sm transition-all hover:border-border/80">
+                <AccordionTrigger className="px-5 py-4 hover:bg-card/40 hover:no-underline flex justify-between items-center group transition-colors">
                     <div className="flex items-center gap-3">
                         <WandSparkles className="w-5 h-5 text-purple-400 group-hover:text-purple-300 transition-colors" />
-                        <span className="font-bold text-base tracking-tight text-neutral-100 flex items-center gap-2">
+                        <span className="font-bold text-base tracking-tight text-foreground flex items-center gap-2">
                             Pattern & Regex Settings
                             <Badge variant="outline" className="text-[10px] uppercase tracking-widest bg-purple-500/10 text-purple-400 border-purple-500/30 font-bold ml-2">
                                 {orderedKeys.length} Patterns
@@ -403,15 +403,15 @@ export function UnifiedPatternEditor() {
                         </span>
                     </div>
                 </AccordionTrigger>
-                <AccordionContent className="p-5 pt-5 border-t border-neutral-800/50 bg-neutral-900/20">
+                <AccordionContent className="p-5 pt-5 border-t border-border/50 bg-card/20">
                     <div className="space-y-6">
-                        <div className="flex sm:flex-row flex-col gap-3 bg-neutral-950/60 p-4 rounded-xl border border-neutral-800/80 shadow-inner">
+                        <div className="flex sm:flex-row flex-col gap-3 bg-background/60 p-4 rounded-xl border border-border/80 shadow-inner">
                             <Input
                                 value={newPattern}
                                 onChange={e => setNewPattern(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && handleAddPattern()}
                                 placeholder="Enter new Regex string (e.g. (?i)uhd|4k)"
-                                className="h-10 text-sm font-mono bg-neutral-900/80 border-neutral-700/80 focus-visible:ring-1 focus-visible:ring-purple-500 shadow-inner transition-colors flex-1"
+                                className="h-10 text-sm font-mono bg-card/80 border-border/80 focus-visible:ring-1 focus-visible:ring-purple-500 shadow-inner transition-colors flex-1"
                             />
                             <Button onClick={handleAddPattern} className="h-10 bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-900/20 transition-all font-semibold px-6 w-full sm:w-auto">
                                 <Plus className="w-4 h-4 mr-2" /> Add Pattern
@@ -424,13 +424,13 @@ export function UnifiedPatternEditor() {
                             ))}
                         </Accordion>
                         {orderedKeys.length === 0 && (
-                            <div className="text-center py-12 border border-dashed border-neutral-800/80 rounded-xl bg-neutral-950/20 flex flex-col items-center justify-center gap-3">
+                            <div className="text-center py-12 border border-dashed border-border/80 rounded-xl bg-background/20 flex flex-col items-center justify-center gap-3">
                                 <div className="p-4 bg-purple-500/10 rounded-full border border-purple-500/20">
                                     <WandSparkles className="w-8 h-8 text-purple-500/60" />
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-sm font-bold text-neutral-300">No Patterns Found</p>
-                                    <p className="text-xs text-neutral-500 max-w-[280px] leading-relaxed mx-auto">
+                                    <p className="text-sm font-bold text-foreground">No Patterns Found</p>
+                                    <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed mx-auto">
                                         Regex patterns are used for powerful dynamic content filtering and automated play settings.
                                     </p>
                                 </div>
@@ -441,19 +441,19 @@ export function UnifiedPatternEditor() {
             </AccordionItem>
 
             <Dialog open={isNameDialogOpen} onOpenChange={setIsNameDialogOpen}>
-                <DialogContent className="bg-neutral-900 border-neutral-800 text-neutral-100 sm:max-w-[425px] shadow-2xl backdrop-blur-xl">
+                <DialogContent className="bg-card border-border text-foreground sm:max-w-[425px] shadow-2xl backdrop-blur-xl">
                     <DialogHeader>
-                        <DialogTitle className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                        <DialogTitle className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
                             <CheckCircle className="w-5 h-5 text-purple-400" />
                             Pattern Name
                         </DialogTitle>
-                        <DialogDescription className="text-neutral-400 text-sm">
+                        <DialogDescription className="text-muted-foreground text-sm">
                             Give your new regex pattern a descriptive name for better organization.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="py-6 space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="pattern-name" className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 ml-1">
+                            <Label htmlFor="pattern-name" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
                                 Display Name
                             </Label>
                             <Input
@@ -462,7 +462,7 @@ export function UnifiedPatternEditor() {
                                 onChange={(e) => setPatternNameDraft(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleConfirmAddPattern()}
                                 placeholder="e.g. 4K Movies, TrueHD, etc."
-                                className="h-11 bg-neutral-950/50 border-neutral-800 focus:ring-purple-500 focus:border-purple-500 text-white"
+                                className="h-11 bg-background/50 border-border focus:ring-purple-500 focus:border-purple-500 text-foreground"
                                 autoFocus
                             />
                         </div>
@@ -471,7 +471,7 @@ export function UnifiedPatternEditor() {
                         <Button
                             variant="ghost"
                             onClick={() => setIsNameDialogOpen(false)}
-                            className="text-neutral-400 hover:text-white hover:bg-neutral-800"
+                            className="text-muted-foreground hover:text-foreground hover:bg-muted"
                         >
                             Cancel
                         </Button>

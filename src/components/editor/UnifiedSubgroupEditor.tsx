@@ -118,18 +118,18 @@ function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => vo
         <div
             ref={setNodeRef}
             style={style}
-            className={`flex items-center gap-3 p-2.5 bg-neutral-950/50 border border-neutral-800/60 rounded-lg mb-2 group/cat transition-all duration-200 hover:border-neutral-700/80 hover:bg-neutral-900/60 shadow-sm ${isDragging ? "opacity-50 border-blue-500 z-50 shadow-2xl scale-[1.02]" : ""}`}
+            className={`flex items-center gap-3 p-2.5 bg-background border border-border/60 rounded-lg mb-2 group/cat transition-all duration-200 hover:border-border hover:bg-muted shadow-sm ${isDragging ? "opacity-50 border-blue-500 z-50 shadow-2xl scale-[1.02]" : ""}`}
         >
-            <button {...attributes} {...listeners} className="cursor-grab text-neutral-600 hover:text-white shrink-0 p-1 rounded-md hover:bg-neutral-800 transition-colors">
+            <button {...attributes} {...listeners} className="cursor-grab text-muted-foreground hover:text-foreground shrink-0 p-1 rounded-md hover:bg-muted/80 transition-colors">
                 <GripVertical className="h-4 w-4" />
             </button>
 
             <div className="flex-1 min-w-0 pr-2 flex items-center gap-2">
-                <p className="text-[12px] truncate font-semibold tracking-tight text-neutral-200">
+                <p className="text-[12px] truncate font-semibold tracking-tight text-foreground">
                     {displayName}
                 </p>
                 {displayName !== id && (
-                    <span className="text-[9px] text-neutral-500 font-mono bg-neutral-900 px-1.5 py-0.5 rounded-sm border border-neutral-800 opacity-0 group-hover/cat:opacity-100 transition-opacity">
+                    <span className="hidden sm:inline-block text-[9px] text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded-sm border border-border opacity-0 group-hover/cat:opacity-100 transition-opacity truncate max-w-[120px]">
                         {id}
                     </span>
                 )}
@@ -141,7 +141,7 @@ function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => vo
                         variant="ghost"
                         size="icon"
                         onClick={(e) => { e.stopPropagation(); onRemove(); }}
-                        className="h-7 w-7 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-colors rounded-md border border-transparent hover:border-red-500/30"
+                        className="h-7 w-7 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors rounded-md border border-transparent hover:border-red-500/30"
                     >
                         <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -282,27 +282,27 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
     };
 
     return (
-        <div ref={setNodeRef} style={style} className={`border border-neutral-800/80 shadow-sm rounded-xl overflow-hidden mb-4 bg-neutral-950/40 transition-all hover:border-neutral-700/80 group/subgroup ${isDragging ? "opacity-50 border-blue-500 scale-[1.01] shadow-2xl" : ""}`}>
+        <div ref={setNodeRef} style={style} className={`border border-border shadow-sm hover:shadow-md rounded-xl overflow-hidden mb-3 bg-card/40 backdrop-blur-sm transition-all hover:border-blue-500/30 group/subgroup ${isDragging ? "opacity-50 border-blue-500 scale-[1.01] shadow-2xl" : ""}`}>
             {/* Header: Drag Handle + Subgroup Name */}
-            <div className={`flex items-center gap-3 p-3 bg-neutral-900/40 backdrop-blur-sm border-neutral-800/50 ${isExpanded ? "border-b border-neutral-800/60" : ""}`}>
-                <button {...attributes} {...listeners} className="cursor-grab hover:text-white text-neutral-500 p-1 rounded-md hover:bg-neutral-800/80 transition-colors">
+            <div className={`flex items-center gap-3 p-3 bg-muted/40 backdrop-blur-sm border-border/40 ${isExpanded ? "border-b border-border/50" : ""}`}>
+                <button {...attributes} {...listeners} className="cursor-grab hover:text-foreground text-muted-foreground p-1 rounded-md hover:bg-muted transition-colors">
                     <GripVertical className="h-4 w-4" />
                 </button>
                 <div
-                    className="flex-1 font-semibold text-sm text-neutral-200 cursor-pointer flex items-center select-none tracking-tight"
+                    className="flex-1 font-semibold text-sm text-foreground cursor-pointer flex items-center select-none tracking-tight"
                     onClick={toggleExpanded}
                 >
-                    {isExpanded ? <ChevronDown className="w-4 h-4 mr-2 text-neutral-400 group-hover:text-white transition-colors" /> : <ChevronRight className="w-4 h-4 mr-2 text-neutral-500 group-hover:text-white transition-colors" />}
+                    {isExpanded ? <ChevronDown className="w-4 h-4 mr-2 text-muted-foreground group-hover:text-foreground transition-colors" /> : <ChevronRight className="w-4 h-4 mr-2 text-muted-foreground group-hover:text-foreground transition-colors" />}
                     {formatDisplayName(subgroupName)}
                 </div>
                 <div className="flex items-center gap-1 opacity-80 hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" onClick={() => setIsRenaming(true)} className="h-7 w-7 text-neutral-500 hover:text-white hover:bg-neutral-800 transition-colors rounded-md border border-transparent hover:border-neutral-700/50">
+                    <Button variant="ghost" size="icon" onClick={() => setIsRenaming(true)} className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors rounded-md border border-transparent hover:border-border/50">
                         <Pencil className="h-3.5 w-3.5" />
                     </Button>
                     <Button variant="ghost" size="icon" onClick={() => {
                         unassignCatalogGroup(subgroupName);
                         if (onUnassign) onUnassign(subgroupName, parentUUID);
-                    }} className="h-7 w-7 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-colors rounded-md border border-transparent hover:border-red-500/30">
+                    }} className="h-7 w-7 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors rounded-md border border-transparent hover:border-red-500/30">
                         <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                 </div>
@@ -322,32 +322,32 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
             {isExpanded && (
                 <div className="p-4 space-y-5">
                     {/* Image URL Input */}
-                    <div className="flex items-center gap-3 bg-neutral-950/50 p-3 rounded-lg border border-neutral-800/60 shadow-inner">
+                    <div className="flex items-center gap-3 bg-background/50 p-3 rounded-lg border border-border/60 shadow-inner">
                         {urlInput && urlInput.startsWith("http") ? (
-                            <div className={`${isLandscape ? "h-10 w-16" : "h-14 w-10"} rounded-md shrink-0 overflow-hidden bg-neutral-900 border border-neutral-700 shadow-sm flex items-center justify-center`}>
+                            <div className={`${isLandscape ? "h-10 w-16" : "h-14 w-10"} rounded-md shrink-0 overflow-hidden bg-muted border border-border/50 shadow-sm flex items-center justify-center`}>
                                 <img
                                     src={urlInput}
                                     alt="Thumb"
                                     className="h-full w-full object-cover"
                                     onError={(e) => {
                                         (e.target as HTMLImageElement).style.display = 'none';
-                                        (e.target as HTMLImageElement).parentElement!.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-neutral-500"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
+                                        (e.target as HTMLImageElement).parentElement!.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
                                     }}
                                 />
                             </div>
                         ) : (
-                            <div className="h-10 w-10 rounded-md bg-neutral-900 border border-neutral-800 flex items-center justify-center shrink-0">
-                                <ImageIcon className="w-4 h-4 text-neutral-500" />
+                            <div className="h-10 w-10 rounded-md bg-muted border border-border flex items-center justify-center shrink-0">
+                                <ImageIcon className="w-4 h-4 text-muted-foreground" />
                             </div>
                         )}
                         <div className="flex-1 space-y-1">
-                            <Label className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">Poster Image URL</Label>
+                            <Label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Poster Image URL</Label>
                             <Input
                                 placeholder="https://..."
                                 value={urlInput}
                                 onChange={e => setUrlInput(e.target.value)}
                                 onBlur={handleUrlBlur}
-                                className="h-8 text-xs bg-neutral-950/80 border-neutral-700 focus-visible:ring-1 focus-visible:ring-blue-500 shadow-inner transition-colors font-mono"
+                                className="h-8 text-xs bg-background border-border focus-visible:ring-1 focus-visible:ring-blue-500 shadow-inner transition-colors font-mono"
                             />
                         </div>
                     </div>
@@ -355,13 +355,13 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                     {/* Inner Sortable Catalogs */}
                     <div>
                         <div className="flex items-center justify-between mb-3">
-                            <h5 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Linked Catalogs</h5>
-                            <span className="text-[10px] font-medium text-neutral-600 bg-neutral-900 px-2 py-0.5 rounded-full border border-neutral-800">{subgroupCatalogs.length}</span>
+                            <h5 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Linked Catalogs</h5>
+                            <span className="text-[10px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full border border-border">{subgroupCatalogs.length}</span>
                         </div>
 
                         {subgroupCatalogs.length === 0 ? (
-                            <div className="text-center py-6 border border-dashed border-neutral-800/60 rounded-lg bg-neutral-950/30">
-                                <p className="text-xs text-neutral-500 font-medium">No catalogs in this subgroup yet.</p>
+                            <div className="text-center py-6 border border-dashed border-border/60 rounded-lg bg-background/30">
+                                <p className="text-xs text-muted-foreground font-medium">No catalogs in this subgroup yet.</p>
                             </div>
                         ) : (
                             <div className="space-y-0.5">
@@ -390,23 +390,23 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                 if (!open) setCatalogSearch("");
                             }}>
                                 <DropdownMenuTrigger asChild>
-                                    <Button size="sm" variant="outline" className="w-full justify-start text-xs border border-dashed border-neutral-700/60 bg-neutral-950/30 text-neutral-400 hover:text-white hover:bg-neutral-800/80 hover:border-neutral-600 transition-colors">
+                                    <Button size="sm" variant="outline" className="w-full justify-start text-xs border border-dashed border-border/60 bg-background/30 text-muted-foreground hover:text-foreground hover:bg-muted/80 hover:border-border transition-colors">
                                         <Plus className="w-3.5 h-3.5 mr-2" /> Add Catalog...
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-80 bg-neutral-900 border-neutral-800 text-neutral-200 shadow-2xl p-0">
-                                    <div className="p-3 border-b border-neutral-800 bg-neutral-950 space-y-2">
-                                        <h4 className="text-[10px] uppercase font-bold text-neutral-500 flex justify-between">
+                                <DropdownMenuContent className="w-80 bg-popover border-border text-popover-foreground shadow-2xl p-0">
+                                    <div className="p-3 border-b border-border bg-card space-y-2">
+                                        <h4 className="text-[10px] uppercase font-bold text-muted-foreground flex justify-between">
                                             <span>Select Catalog</span>
-                                            <span className="text-neutral-600">{filteredCatalogs.length} available</span>
+                                            <span className="text-muted-foreground">{filteredCatalogs.length} available</span>
                                         </h4>
                                         <div className="relative">
-                                            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-neutral-500" />
+                                            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
                                             <Input
                                                 placeholder="Search by name or ID..."
                                                 value={catalogSearch}
                                                 onChange={e => setCatalogSearch(e.target.value)}
-                                                className="h-7 text-[11px] pl-7 bg-neutral-900 border-neutral-800 focus-visible:ring-blue-600"
+                                                className="h-7 text-[11px] pl-7 bg-card border-border focus-visible:ring-blue-600"
                                                 autoFocus
                                                 onKeyDown={e => e.stopPropagation()}
                                             />
@@ -414,7 +414,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                     </div>
                                     <div className="max-h-[320px] overflow-y-auto p-1 pt-0 custom-scrollbar">
                                         {filteredCatalogs.length === 0 ? (
-                                            <p className="text-[10px] text-neutral-600 p-4 text-center">No catalogs found.</p>
+                                            <p className="text-[10px] text-muted-foreground p-4 text-center">No catalogs found.</p>
                                         ) : (
                                             (() => {
                                                 const groups: Record<string, typeof filteredCatalogs> = {
@@ -442,7 +442,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
 
                                                 return sortedCategories.map(category => (
                                                     <div key={category} className="mb-2 last:mb-0">
-                                                        <div className="sticky top-0 bg-neutral-900 py-1.5 px-3 z-[60] border-b border-neutral-800/80 mb-1 -mx-1">
+                                                        <div className="sticky top-0 bg-card py-1.5 px-3 z-[60] border-b border-border/80 mb-1 -mx-1">
                                                             <h5 className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">{category}</h5>
                                                         </div>
                                                         <div className="flex flex-col gap-0.5 px-1">
@@ -454,7 +454,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                                                 >
                                                                     <div className="flex-1 min-w-0">
                                                                         <p className="text-sm font-medium truncate">{c.name}</p>
-                                                                        <p className="text-[9px] text-neutral-500 font-mono truncate">{c.id}</p>
+                                                                        <p className="text-[9px] text-muted-foreground font-mono truncate">{c.id}</p>
                                                                     </div>
                                                                 </DropdownMenuItem>
                                                             ))}
@@ -552,23 +552,23 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
     };
 
     return (
-        <div ref={setNodeRef} style={style} className={`border border-neutral-800/80 rounded-xl overflow-hidden bg-neutral-950/40 shadow-sm transition-all hover:border-neutral-700/80 ${isDragging ? "opacity-50 border-blue-500 scale-[1.01] shadow-2xl" : ""}`}>
+        <div ref={setNodeRef} style={style} className={`border border-border/60 rounded-xl overflow-hidden bg-card/80 shadow-sm transition-all hover:border-border hover:shadow-md group/main ${isDragging ? "opacity-50 border-blue-500 scale-[1.01] shadow-2xl" : ""}`}>
             <AccordionItem value={uuid} className="border-none">
-                <AccordionTrigger className="w-full justify-between items-center p-4 hover:bg-neutral-900/40 hover:no-underline flex text-sm transition-colors group">
+                <AccordionTrigger className="w-full justify-between items-center p-4 hover:bg-muted/40 hover:no-underline flex text-sm transition-colors group">
                     <div className="flex flex-1 items-center gap-4 text-left">
-                        <div {...attributes} {...listeners} className="cursor-grab text-neutral-600 hover:text-white shrink-0 p-1.5 rounded-md hover:bg-neutral-800 transition-colors pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+                        <div {...attributes} {...listeners} className="cursor-grab text-muted-foreground hover:text-foreground shrink-0 p-1.5 rounded-md hover:bg-muted transition-colors pointer-events-auto" onClick={(e) => e.stopPropagation()}>
                             <GripVertical className="h-5 w-5" />
                         </div>
                         <div>
-                            <div className="font-bold text-base tracking-tight text-neutral-100 flex items-center gap-2">
+                            <div className="font-bold text-base tracking-tight text-foreground flex items-center gap-2">
                                 {formatDisplayName(name)}
                                 {posterSize !== "Default" && (
-                                    <Badge variant="outline" className="text-[9px] uppercase tracking-widest bg-blue-500/10 text-blue-400 border-blue-500/30">
+                                    <Badge variant="outline" className="text-[9px] uppercase tracking-widest bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30">
                                         {posterSize}
                                     </Badge>
                                 )}
                             </div>
-                            <div className="text-[11px] text-neutral-500 font-medium mt-0.5 flex items-center gap-2">
+                            <div className="text-[11px] text-muted-foreground font-medium mt-0.5 flex items-center gap-2">
                                 <span>{subgroupNames.length} Subgroups</span>
                             </div>
                         </div>
@@ -576,17 +576,17 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                     {/* Exclude from accordion Trigger's default chevron logic by wrapping in standard div layout */}
                 </AccordionTrigger>
 
-                <AccordionContent className="p-5 border-t border-neutral-800/50 bg-neutral-900/20">
+                <AccordionContent className="p-5 border-t border-border/50 bg-muted/20">
                     <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
-                        <div className="flex items-center gap-2 bg-neutral-950/50 border border-neutral-800 rounded-lg p-1">
+                        <div className="flex flex-wrap items-center gap-2 bg-background/50 border border-border rounded-lg p-1">
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-8 text-xs text-neutral-300 hover:text-white hover:bg-neutral-800 font-medium tracking-tight">
-                                        Layout: <span className="text-white ml-1 font-bold">{posterType} / {posterSize}</span> <ChevronDown className="w-3.5 h-3.5 ml-1 opacity-50" />
+                                    <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground hover:text-foreground hover:bg-muted font-medium tracking-tight">
+                                        Layout: <span className="text-foreground ml-1 font-bold">{posterType} / {posterSize}</span> <ChevronDown className="w-3.5 h-3.5 ml-1 opacity-50" />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent className="bg-neutral-900 border-neutral-800 text-neutral-200">
-                                    <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold">Poster Shape</DropdownMenuLabel>
+                                <DropdownMenuContent className="bg-popover border-border text-popover-foreground">
+                                    <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Poster Shape</DropdownMenuLabel>
                                     <DropdownMenuItem onClick={() => updateValue(["main_catalog_groups", uuid, "posterType"], "Poster")} className={`text-xs ${posterType === "Poster" ? "bg-blue-500/20 text-blue-400" : ""}`}>
                                         Poster {posterType === "Poster" && "✓"}
                                     </DropdownMenuItem>
@@ -596,8 +596,8 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                     <DropdownMenuItem onClick={() => updateValue(["main_catalog_groups", uuid, "posterType"], "Landscape")} className={`text-xs ${posterType === "Landscape" ? "bg-blue-500/20 text-blue-400" : ""}`}>
                                         Landscape {posterType === "Landscape" && "✓"}
                                     </DropdownMenuItem>
-                                    <DropdownMenuSeparator className="bg-neutral-800" />
-                                    <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold">Poster Size</DropdownMenuLabel>
+                                    <DropdownMenuSeparator className="bg-border" />
+                                    <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Poster Size</DropdownMenuLabel>
                                     <DropdownMenuItem
                                         onClick={() => updateValue(["main_catalog_groups", uuid, "posterSize"], "Default")}
                                         className={`text-xs ${posterSize === "Default" ? "bg-blue-500/20 text-blue-400" : ""}`}
@@ -612,12 +612,12 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
-                            <div className="w-px h-4 bg-neutral-800 mx-1" />
+                            <div className="w-px h-4 bg-border mx-1" />
                             <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => setIsRenaming(true)}
-                                className="h-8 text-xs text-neutral-300 hover:text-white hover:bg-neutral-800 font-medium tracking-tight"
+                                className="h-8 text-xs text-muted-foreground hover:text-foreground hover:bg-muted font-medium tracking-tight"
                             >
                                 Rename
                             </Button>
@@ -632,15 +632,15 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                         Disable
                                     </Button>
                                 </AlertDialogTrigger>
-                                <AlertDialogContent className="bg-neutral-900 border-neutral-800 text-neutral-100">
+                                <AlertDialogContent className="bg-popover border-border text-popover-foreground">
                                     <AlertDialogHeader>
                                         <AlertDialogTitle>Disable Main Group?</AlertDialogTitle>
-                                        <AlertDialogDescription className="text-neutral-400">
-                                            This will hide the group <span className="text-white font-bold">"{formatDisplayName(name)}"</span> and all its subgroups. You can restore them anytime from the Recycle Bin at the bottom.
+                                        <AlertDialogDescription className="text-muted-foreground">
+                                            This will hide the group <span className="text-foreground font-bold">"{formatDisplayName(name)}"</span> and all its subgroups. You can restore them anytime from the Recycle Bin at the bottom.
                                         </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
-                                        <AlertDialogCancel className="bg-neutral-800 border-neutral-700 text-neutral-300 hover:bg-neutral-700 hover:text-white">Cancel</AlertDialogCancel>
+                                        <AlertDialogCancel className="bg-muted border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground">Cancel</AlertDialogCancel>
                                         <AlertDialogAction
                                             onClick={() => removeMainCatalogGroup(uuid)}
                                             className="bg-red-600 text-white hover:bg-red-700 font-bold"
@@ -651,7 +651,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                 </AlertDialogContent>
                             </AlertDialog>
 
-                            <div className="w-px h-4 bg-neutral-800 mx-1" />
+                            <div className="w-px h-4 bg-border mx-1" />
                             <Button
                                 variant="secondary"
                                 size="sm"
@@ -676,10 +676,10 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                     />
 
                     {subgroups.length === 0 ? (
-                        <div className="text-center py-8 border border-dashed border-neutral-800/80 rounded-xl bg-neutral-950/30 flex flex-col items-center justify-center gap-2">
-                            <FolderPlus className="w-8 h-8 text-neutral-700" />
-                            <p className="text-sm font-medium text-neutral-400">No subgroups exist here.</p>
-                            <p className="text-xs text-neutral-500">Add subgroups by clicking "Add to Group" at the top.</p>
+                        <div className="text-center py-8 border border-dashed border-border/80 rounded-xl bg-background/30 flex flex-col items-center justify-center gap-2">
+                            <FolderPlus className="w-8 h-8 text-muted-foreground/50" />
+                            <p className="text-sm font-medium text-muted-foreground">No subgroups exist here.</p>
+                            <p className="text-xs text-muted-foreground/80">Add subgroups by clicking "Add to Group" at the top.</p>
                         </div>
                     ) : (
                         <div className="space-y-1">
@@ -810,11 +810,11 @@ function UnassignedSubgroupRow({
     };
 
     return (
-        <div className="flex flex-col bg-neutral-900 border border-neutral-800 rounded-lg overflow-hidden transition-all hover:border-neutral-700 w-full mb-3">
+        <div className="flex flex-col bg-muted/40 border border-border rounded-lg overflow-hidden transition-all hover:border-border/80 w-full mb-3">
             <div className="flex items-center justify-between p-3 gap-4">
                 {/* Left: Name */}
                 <div className="flex-1 min-w-0 pr-2">
-                    <span className="font-medium text-neutral-200 text-sm truncate block" title={formatDisplayName(groupName)}>
+                    <span className="font-medium text-foreground text-sm truncate block" title={formatDisplayName(groupName)}>
                         {formatDisplayName(groupName)}
                     </span>
                 </div>
@@ -828,12 +828,12 @@ function UnassignedSubgroupRow({
                             <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-7 px-2 text-[10px] font-semibold uppercase tracking-tight text-neutral-400 border-neutral-700/50 hover:bg-neutral-800 hover:text-white flex items-center gap-1 transition-colors"
+                                className="h-7 px-2 text-[10px] font-semibold uppercase tracking-tight text-muted-foreground border-border/50 hover:bg-muted hover:text-foreground flex items-center gap-1 transition-colors"
                             >
                                 Assign To... <ChevronDown className="w-3 h-3" />
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="bg-neutral-900 border-neutral-800 text-neutral-200 min-w-[200px]">
+                        <DropdownMenuContent className="bg-popover border-border text-popover-foreground min-w-[200px]">
                             {onRestore && restoreParentName && (
                                 <>
                                     <DropdownMenuItem
@@ -843,12 +843,12 @@ function UnassignedSubgroupRow({
                                         <RotateCcw className="w-3.5 h-3.5 mr-2" />
                                         Restore to {formatDisplayName(restoreParentName)}
                                     </DropdownMenuItem>
-                                    <DropdownMenuSeparator className="bg-neutral-800" />
+                                    <DropdownMenuSeparator className="bg-border" />
                                 </>
                             )}
-                            <DropdownMenuLabel className="text-[10px] uppercase text-neutral-500 font-bold">Select Main Group</DropdownMenuLabel>
+                            <DropdownMenuLabel className="text-[10px] uppercase text-muted-foreground font-bold">Select Main Group</DropdownMenuLabel>
                             {mainGroupOrder.length === 0 ? (
-                                <DropdownMenuItem disabled className="text-xs text-neutral-600">No Main Groups</DropdownMenuItem>
+                                <DropdownMenuItem disabled className="text-xs text-muted-foreground/50">No Main Groups</DropdownMenuItem>
                             ) : (
                                 mainGroupOrder.map((uuid: string) => {
                                     const name = mainCatalogGroups[uuid]?.name || "Unnamed Group";
@@ -870,7 +870,7 @@ function UnassignedSubgroupRow({
                         variant="ghost"
                         size="sm"
                         onClick={() => setIsExpanded(!isExpanded)}
-                        className={`h-7 px-2 text-[10px] font-semibold uppercase tracking-tight flex items-center gap-1 rounded-md transition-colors ${isExpanded ? 'bg-neutral-800 text-white' : 'text-neutral-500 hover:text-white hover:bg-neutral-800'}`}
+                        className={`h-7 px-2 text-[10px] font-semibold uppercase tracking-tight flex items-center gap-1 rounded-md transition-colors ${isExpanded ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
                     >
                         <Layout className="w-3.5 h-3.5" />
                         <span className="hidden md:inline">Edit</span>
@@ -878,19 +878,19 @@ function UnassignedSubgroupRow({
 
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 p-0 flex items-center justify-center text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-colors rounded-md border border-transparent hover:border-red-500/30">
+                            <Button variant="ghost" size="icon" className="h-7 w-7 p-0 flex items-center justify-center text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors rounded-md border border-transparent hover:border-red-500/30">
                                 <Trash2 className="w-3.5 h-3.5" />
                             </Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent className="bg-neutral-900 border-neutral-800 text-neutral-100">
+                        <AlertDialogContent className="bg-popover border-border text-popover-foreground">
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Delete Subgroup?</AlertDialogTitle>
-                                <AlertDialogDescription className="text-neutral-400">
-                                    This will completely delete <span className="text-white font-bold">"{groupName}"</span> from the configuration. This action cannot be undone.
+                                <AlertDialogDescription className="text-muted-foreground">
+                                    This will completely delete <span className="text-foreground font-bold">"{groupName}"</span> from the configuration. This action cannot be undone.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                                <AlertDialogCancel className="bg-neutral-800 border-neutral-700 text-neutral-300 hover:bg-neutral-700 hover:text-white">Cancel</AlertDialogCancel>
+                                <AlertDialogCancel className="bg-muted border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground">Cancel</AlertDialogCancel>
                                 <AlertDialogAction
                                     onClick={() => removeCatalogGroup(groupName)}
                                     className="bg-red-600 text-white hover:bg-red-700 font-bold"
@@ -904,7 +904,7 @@ function UnassignedSubgroupRow({
             </div>
 
             {isExpanded && (
-                <div className="p-4 border-t border-neutral-800 bg-neutral-950">
+                <div className="p-4 border-t border-border bg-background">
                     <div className="space-y-1 mb-4">
                         <DndContext sensors={catalogSensors} collisionDetection={closestCenter} onDragEnd={handleInternalDragEnd}>
                             <SortableContext items={subgroupCatalogsProp} strategy={verticalListSortingStrategy}>
@@ -926,23 +926,23 @@ function UnassignedSubgroupRow({
                             if (!open) setCatalogSearch("");
                         }}>
                             <DropdownMenuTrigger asChild>
-                                <Button size="sm" variant="outline" className="w-full justify-start text-xs border border-dashed border-neutral-700/60 bg-neutral-950/30 text-neutral-400 hover:text-white hover:bg-neutral-800/80 hover:border-neutral-600 transition-colors">
+                                <Button size="sm" variant="outline" className="w-full justify-start text-xs border border-dashed border-border/60 bg-background/30 text-muted-foreground hover:text-foreground hover:bg-muted/80 hover:border-border transition-colors">
                                     <Plus className="w-3.5 h-3.5 mr-2" /> Add Catalog...
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-80 bg-neutral-900 border-neutral-800 text-neutral-200 shadow-2xl p-0">
-                                <div className="p-3 border-b border-neutral-800 bg-neutral-950 space-y-2">
-                                    <h4 className="text-[10px] uppercase font-bold text-neutral-500 flex justify-between">
+                            <DropdownMenuContent className="w-80 bg-popover border-border text-popover-foreground shadow-2xl p-0">
+                                <div className="p-3 border-b border-border bg-card space-y-2">
+                                    <h4 className="text-[10px] uppercase font-bold text-muted-foreground flex justify-between">
                                         <span>Select Catalog</span>
-                                        <span className="text-neutral-600">{filteredCatalogs.length} available</span>
+                                        <span className="text-muted-foreground/80">{filteredCatalogs.length} available</span>
                                     </h4>
                                     <div className="relative">
-                                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-neutral-500" />
+                                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
                                         <Input
                                             placeholder="Search by name or ID..."
                                             value={catalogSearch}
                                             onChange={e => setCatalogSearch(e.target.value)}
-                                            className="h-7 text-[11px] pl-7 bg-neutral-900 border-neutral-800 focus-visible:ring-blue-600"
+                                            className="h-7 text-[11px] pl-7 bg-background border-border focus-visible:ring-blue-600"
                                             autoFocus
                                             onKeyDown={e => e.stopPropagation()}
                                         />
@@ -950,7 +950,7 @@ function UnassignedSubgroupRow({
                                 </div>
                                 <div className="max-h-[320px] overflow-y-auto p-1 pt-0 custom-scrollbar">
                                     {filteredCatalogs.length === 0 ? (
-                                        <p className="text-[10px] text-neutral-600 p-4 text-center">No catalogs found.</p>
+                                        <p className="text-[10px] text-muted-foreground p-4 text-center">No catalogs found.</p>
                                     ) : (
                                         (() => {
                                             const groups: Record<string, typeof filteredCatalogs> = {
@@ -978,8 +978,8 @@ function UnassignedSubgroupRow({
 
                                             return sortedCategories.map(category => (
                                                 <div key={category} className="mb-2 last:mb-0">
-                                                    <div className="sticky top-0 bg-neutral-900 py-1.5 px-3 z-[60] border-b border-neutral-800/80 mb-1 -mx-1">
-                                                        <h5 className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">{category}</h5>
+                                                    <div className="sticky top-0 bg-popover py-1.5 px-3 z-[60] border-b border-border/80 mb-1 -mx-1">
+                                                        <h5 className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">{category}</h5>
                                                     </div>
                                                     <div className="flex flex-col gap-0.5 px-1">
                                                         {groups[category].map(c => (
@@ -990,7 +990,7 @@ function UnassignedSubgroupRow({
                                                             >
                                                                 <div className="flex-1 min-w-0">
                                                                     <p className="text-sm font-medium truncate">{c.name}</p>
-                                                                    <p className="text-[9px] text-neutral-500 font-mono truncate">{c.id}</p>
+                                                                    <p className="text-[9px] text-muted-foreground font-mono truncate">{c.id}</p>
                                                                 </div>
                                                             </DropdownMenuItem>
                                                         ))}
@@ -1090,14 +1090,14 @@ export function UnifiedSubgroupEditor() {
                     </Button>
                     <Button
                         onClick={() => setIsAddToGroupModalOpen(true)}
-                        className="bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 shadow-sm"
+                        className="bg-muted hover:bg-muted/80 text-foreground border border-border shadow-sm"
                     >
                         <FolderPlus className="w-5 h-5 mr-2" />
                         Add to Group
                     </Button>
                     <Button
                         onClick={() => setIsImportModalOpen(true)}
-                        className="bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 shadow-sm"
+                        className="bg-muted hover:bg-muted/80 text-foreground border border-border shadow-sm"
                     >
                         <UploadCloud className="w-5 h-5 mr-2" />
                         Update from Template
@@ -1118,13 +1118,13 @@ export function UnifiedSubgroupEditor() {
             <ImportSetupModal isOpen={isImportModalOpen} onClose={() => setIsImportModalOpen(false)} />
 
             {mainGroupOrder.length === 0 && (
-                <div className="text-center py-12 border border-dashed border-neutral-800/80 rounded-2xl bg-neutral-950/20 flex flex-col items-center justify-center gap-3">
+                <div className="text-center py-12 border border-dashed border-border/80 rounded-2xl bg-background/20 flex flex-col items-center justify-center gap-3">
                     <div className="p-4 bg-blue-500/10 rounded-full border border-blue-500/20">
                         <FolderPlus className="w-8 h-8 text-blue-500/60" />
                     </div>
                     <div className="space-y-1">
-                        <p className="text-sm font-bold text-neutral-300">No Main Groups Found</p>
-                        <p className="text-xs text-neutral-500 max-w-[280px] leading-relaxed mx-auto">
+                        <p className="text-sm font-bold text-foreground">No Main Groups Found</p>
+                        <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed mx-auto">
                             Start by creating a new group or add existing subgroups from the library below.
                         </p>
                     </div>
@@ -1156,10 +1156,10 @@ export function UnifiedSubgroupEditor() {
             </DndContext>
 
             {unassignedGroups.length > 0 && (
-                <div className="mt-12 border-t border-neutral-800 pt-8 pb-4">
+                <div className="mt-12 border-t border-border pt-8 pb-4">
                     <div className="mb-6">
                         <h3 className="text-lg font-bold text-amber-500">Unassigned Subgroups</h3>
-                        <p className="text-sm text-neutral-500">Subgroups that are defined but not yet linked to any main group.</p>
+                        <p className="text-sm text-muted-foreground">Subgroups that are defined but not yet linked to any main group.</p>
                     </div>
                     <div className="flex flex-col">
                         {unassignedGroups.map(name => {

@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/select";
 import { CATALOG_FALLBACKS } from "@/lib/catalog-fallbacks";
 import { resolveCatalogName } from "@/lib/utils";
-import { GripVertical, Eye, EyeOff, Trash2, ArrowDownAZ, ArrowUpZA, Search, Settings2, Image, Monitor, Shuffle, LayoutGrid, Star, ChevronDown, ChevronUp, Plus, Maximize } from "lucide-react";
+import { GripVertical, Eye, EyeOff, Trash2, ArrowDownAZ, ArrowUpZA, Search, Settings2, Image, Monitor, Shuffle, LayoutGrid, Star, ChevronDown, ChevronUp, Plus, Maximize, Pencil } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 interface ManifestCatalog {
@@ -108,79 +108,86 @@ function SortableCatalogItem({
         <div
             ref={setNodeRef}
             style={style}
-            className={`group flex items-center gap-3 p-3 bg-neutral-900 border rounded-lg mb-2 transition-colors
-                ${isDragging ? "opacity-50 border-blue-500 shadow-xl" : "border-neutral-800 hover:border-neutral-700"}
-                ${!isActive ? "opacity-60 border-dashed border-neutral-700 bg-neutral-900/40" : ""}
+            className={`group flex items-center gap-3 p-3 bg-card border rounded-lg mb-2 transition-colors
+                ${isDragging ? "opacity-50 border-blue-500 shadow-xl" : "border-border hover:border-border/80"}
+                ${!isActive ? "opacity-60 border-dashed border-border/50 bg-card/60" : ""}
             `}
         >
             {/* Drag Handle */}
             <button
                 {...attributes}
                 {...listeners}
-                className={`cursor-grab shrink-0 ${isActive ? "text-neutral-500 hover:text-white" : "text-neutral-700 pointer-events-none"}`}
+                className={`cursor-grab shrink-0 ${isActive ? "text-muted-foreground hover:text-white" : "text-foreground pointer-events-none"}`}
             >
                 <GripVertical className="h-4 w-4" />
             </button>
 
-            {/* Name + ID */}
-            <div className="flex-1 min-w-0">
-                {isEditingName ? (
-                    <Input
-                        value={editName}
-                        onChange={e => setEditName(e.target.value)}
-                        onBlur={submitName}
-                        onKeyDown={e => e.key === 'Enter' && submitName()}
-                        autoFocus
-                        className="h-8 text-sm bg-neutral-950 border-blue-500"
-                    />
-                ) : (
-                    <div className="flex flex-col cursor-pointer min-w-0" onClick={() => setIsEditingName(true)}>
-                        <h4 className={`text-sm font-bold flex items-center gap-1.5 ${isActive ? "text-neutral-200" : "text-neutral-500"}`}>
-                            <span className="truncate">{catalog.name || catalog.id}</span>
-                            {catalog.showInHome && <Star className="w-3 h-3 text-amber-400 shrink-0" />}
-                        </h4>
-                        <p className="text-[10px] text-neutral-500 truncate font-mono mt-0.5">{catalog.id}</p>
-                    </div>
-                )}
-            </div>
+            {/* Name + ID and Badges wrapper */}
+            <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                {/* Name + ID */}
+                <div className="flex-1 min-w-0">
+                    {isEditingName ? (
+                        <Input
+                            value={editName}
+                            onChange={e => setEditName(e.target.value)}
+                            onBlur={submitName}
+                            onKeyDown={e => e.key === 'Enter' && submitName()}
+                            autoFocus
+                            className="h-8 text-sm bg-background border-blue-500"
+                        />
+                    ) : (
+                        <div className="flex flex-col min-w-0">
+                            <h4
+                                className={`text-sm font-bold flex items-center gap-1.5 cursor-pointer hover:underline underline-offset-4 decoration-blue-500/40 w-fit max-w-full group/name ${isActive ? "text-foreground" : "text-muted-foreground"}`}
+                                onClick={() => setIsEditingName(true)}
+                            >
+                                <span className="truncate">{catalog.name || catalog.id}</span>
+                                {catalog.showInHome && <Star className="w-3 h-3 text-amber-500 shrink-0" />}
+                                <Pencil className="w-3 h-3 text-blue-400 opacity-0 group-hover/name:opacity-100 transition-opacity shrink-0" />
+                            </h4>
+                            <p className="text-[10px] text-muted-foreground truncate font-mono mt-0.5 w-fit">{catalog.id}</p>
+                        </div>
+                    )}
+                </div>
 
-            {/* Badges */}
-            <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
-                {!catalog.enabled && (
-                    <Badge variant="outline" className="text-[9px] h-4 px-1 bg-neutral-950 text-neutral-500 border-neutral-800">Hidden</Badge>
-                )}
-                {!isActive && (
-                    <Badge variant="outline" className="text-[9px] h-4 px-1 bg-neutral-950 text-neutral-600 border-neutral-800 border-dashed">Disabled</Badge>
-                )}
-                {catalog.showInHome && (
-                    <Badge className={`text-[9px] h-4 px-1 border ${isSmallTopRow ? 'bg-amber-900/20 text-amber-300 border-amber-900/30' : 'bg-amber-900/30 text-amber-400 border-amber-900/50'}`}>
-                        {isSmallTopRow ? 'Top Row (small)' : 'Top Row'}
-                    </Badge>
-                )}
-                {isLandscape && (
-                    <Badge className="text-[9px] h-4 px-1 bg-blue-900/30 text-blue-400 border border-blue-900/50">Wide</Badge>
-                )}
-                {isSmall && (
-                    <Badge className="text-[9px] h-4 px-1 bg-purple-900/30 text-purple-400 border border-purple-900/50">Small</Badge>
-                )}
-                {isRandom && (
-                    <Badge variant="secondary" className="text-[9px] h-4 px-1 bg-neutral-800 text-neutral-400 border-none">Rand</Badge>
-                )}
-                {itemCount && catalog.showInHome && (
-                    <Badge variant="secondary" className="text-[9px] h-4 px-1 bg-neutral-800 text-neutral-400 border-none">{itemCount}</Badge>
-                )}
+                {/* Badges */}
+                <div className="flex items-center gap-1 shrink-0 flex-wrap sm:justify-end">
+                    {!catalog.enabled && (
+                        <Badge variant="outline" className="text-[9px] h-4 px-1 bg-background text-muted-foreground border-border">Hidden</Badge>
+                    )}
+                    {!isActive && (
+                        <Badge variant="outline" className="text-[9px] h-4 px-1 bg-background text-muted-foreground border-border border-dashed">Disabled</Badge>
+                    )}
+                    {catalog.showInHome && (
+                        <Badge className={`text-[9px] h-4 px-1 border ${isSmallTopRow ? 'bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/20' : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'}`}>
+                            {isSmallTopRow ? 'Top Row (small)' : 'Top Row'}
+                        </Badge>
+                    )}
+                    {isLandscape && (
+                        <Badge className="text-[9px] h-4 px-1 bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20">Wide</Badge>
+                    )}
+                    {isSmall && (
+                        <Badge className="text-[9px] h-4 px-1 bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20">Small</Badge>
+                    )}
+                    {isRandom && (
+                        <Badge variant="secondary" className="text-[9px] h-4 px-1 bg-muted text-muted-foreground border-none">Rand</Badge>
+                    )}
+                    {itemCount && catalog.showInHome && (
+                        <Badge variant="secondary" className="text-[9px] h-4 px-1 bg-muted text-muted-foreground border-none">{itemCount}</Badge>
+                    )}
+                </div>
             </div>
 
             {/* Settings */}
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-neutral-500 hover:text-white hover:bg-neutral-800 shrink-0">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted shrink-0">
                         <Settings2 className="w-4 h-4" />
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-64 bg-neutral-900 border-neutral-800 text-neutral-200 shadow-2xl">
+                <DropdownMenuContent className="w-64 bg-popover border-border text-popover-foreground shadow-2xl">
 
-                    <DropdownMenuLabel className="text-[10px] uppercase text-neutral-500 font-bold">Visibility</DropdownMenuLabel>
+                    <DropdownMenuLabel className="text-[10px] uppercase text-muted-foreground font-bold">Visibility</DropdownMenuLabel>
 
                     <DropdownMenuCheckboxItem
                         checked={catalog.enabled}
@@ -188,7 +195,7 @@ function SortableCatalogItem({
                         onSelect={(e) => e.preventDefault()}
                         className="text-xs"
                     >
-                        {catalog.enabled ? <Eye className="w-3.5 h-3.5 mr-2 text-blue-400" /> : <EyeOff className="w-3.5 h-3.5 mr-2 text-neutral-500" />}
+                        {catalog.enabled ? <Eye className="w-3.5 h-3.5 mr-2 text-blue-400" /> : <EyeOff className="w-3.5 h-3.5 mr-2 text-muted-foreground" />}
                         {catalog.enabled ? "Shown in Shelf" : "Hidden in Shelf"}
                     </DropdownMenuCheckboxItem>
 
@@ -208,8 +215,8 @@ function SortableCatalogItem({
                         Show in Top Row
                     </DropdownMenuCheckboxItem>
 
-                    <DropdownMenuSeparator className="bg-neutral-800" />
-                    <DropdownMenuLabel className="text-[10px] uppercase text-neutral-500 font-bold">Layout</DropdownMenuLabel>
+                    <DropdownMenuSeparator className="bg-muted" />
+                    <DropdownMenuLabel className="text-[10px] uppercase text-muted-foreground font-bold">Layout</DropdownMenuLabel>
 
                     <DropdownMenuCheckboxItem
                         checked={isLandscape}
@@ -217,7 +224,7 @@ function SortableCatalogItem({
                         onSelect={(e) => e.preventDefault()}
                         className="text-xs"
                     >
-                        <Maximize className="w-3.5 h-3.5 mr-2 text-neutral-500" />
+                        <Maximize className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
                         Landscape
                     </DropdownMenuCheckboxItem>
 
@@ -227,7 +234,7 @@ function SortableCatalogItem({
                         onSelect={(e) => e.preventDefault()}
                         className="text-xs"
                     >
-                        <LayoutGrid className="w-3.5 h-3.5 mr-2 text-neutral-500" />
+                        <LayoutGrid className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
                         Small Posters
                     </DropdownMenuCheckboxItem>
 
@@ -237,14 +244,14 @@ function SortableCatalogItem({
                         onSelect={(e) => e.preventDefault()}
                         className="text-xs"
                     >
-                        <Shuffle className="w-3.5 h-3.5 mr-2 text-neutral-500" />
+                        <Shuffle className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
                         Randomize Order
                     </DropdownMenuCheckboxItem>
 
                     {catalog.showInHome && (
                         <>
-                            <DropdownMenuSeparator className="bg-neutral-800" />
-                            <DropdownMenuLabel className="text-[10px] uppercase text-neutral-500 font-bold">Top Row Options</DropdownMenuLabel>
+                            <DropdownMenuSeparator className="bg-muted" />
+                            <DropdownMenuLabel className="text-[10px] uppercase text-muted-foreground font-bold">Top Row Options</DropdownMenuLabel>
                             <DropdownMenuCheckboxItem
                                 checked={isSmallTopRow}
                                 onCheckedChange={onUpdateSmallTopRow}
@@ -255,19 +262,19 @@ function SortableCatalogItem({
                                 Small Top Row
                             </DropdownMenuCheckboxItem>
                             <div className="px-2 py-1.5 flex items-center justify-between">
-                                <span className="text-[10px] text-neutral-500 font-medium flex items-center gap-1">
+                                <span className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
                                     <Star className="w-3 h-3 text-amber-400" /> Top Row Limit
                                 </span>
                                 <Select
                                     value={itemCount ? String(itemCount) : ""}
                                     onValueChange={val => onUpdateField({ metadata: { ...(catalog.metadata || {}), itemCount: parseInt(val, 10) } })}
                                 >
-                                    <SelectTrigger className="h-6 w-16 text-[10px] bg-neutral-950 border-neutral-800 focus:ring-0 px-1">
+                                    <SelectTrigger className="h-6 w-16 text-[10px] bg-background border-border focus:ring-0 px-1">
                                         <SelectValue placeholder="–" />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-neutral-900 border-neutral-800 text-neutral-200">
+                                    <SelectContent className="bg-popover border-border text-popover-foreground">
                                         {[10, 20, 30, 50].map(opt => (
-                                            <SelectItem key={opt} value={String(opt)} className="text-[10px] focus:bg-neutral-800">{opt}</SelectItem>
+                                            <SelectItem key={opt} value={String(opt)} className="text-[10px] focus:bg-accent">{opt}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
@@ -281,7 +288,7 @@ function SortableCatalogItem({
             <Button
                 variant="ghost" size="icon"
                 onClick={onRemove}
-                className="h-8 w-8 text-neutral-600 hover:text-red-500 hover:bg-red-500/10 shrink-0"
+                className="h-8 w-8 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 shrink-0"
                 title="Disable catalog"
             >
                 <Trash2 className="w-4 h-4" />
@@ -445,15 +452,15 @@ export function CatalogEditor() {
     return (
         <div className="space-y-4">
             {/* Toolbar */}
-            <div className="flex flex-wrap items-center gap-2 bg-neutral-900/50 p-2 rounded-lg border border-neutral-800">
+            <div className="flex flex-wrap items-center gap-2 bg-muted/50 p-2 rounded-lg border border-border">
                 <div className="flex-1" />
-                <Button variant="outline" size="sm" onClick={handleSortAZ} className="h-8 text-xs border-neutral-700 hover:bg-neutral-800">
+                <Button variant="outline" size="sm" onClick={handleSortAZ} className="h-8 text-xs border-border hover:bg-muted text-muted-foreground hover:text-foreground">
                     <ArrowDownAZ className="w-4 h-4 mr-1" /> A-Z
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleSortZA} className="h-8 text-xs border-neutral-700 hover:bg-neutral-800">
+                <Button variant="outline" size="sm" onClick={handleSortZA} className="h-8 text-xs border-border hover:bg-muted text-muted-foreground hover:text-foreground">
                     <ArrowUpZA className="w-4 h-4 mr-1" /> Z-A
                 </Button>
-                <div className="w-px h-5 bg-neutral-800" />
+                <div className="w-px h-5 bg-border" />
 
                 {/* Add Catalog */}
                 <DropdownMenu open={isAddMenuOpen} onOpenChange={open => {
@@ -465,19 +472,19 @@ export function CatalogEditor() {
                             <Plus className="w-4 h-4 mr-1" /> Add Catalog
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-80 bg-neutral-900 border-neutral-800 text-neutral-200 shadow-2xl p-0">
-                        <div className="p-3 border-b border-neutral-800 bg-neutral-950 space-y-2">
-                            <h4 className="text-[10px] uppercase font-bold text-neutral-500 flex justify-between">
+                    <DropdownMenuContent className="w-80 bg-popover border-border text-popover-foreground shadow-2xl p-0">
+                        <div className="p-3 border-b border-border bg-card space-y-2">
+                            <h4 className="text-[10px] uppercase font-bold text-muted-foreground flex justify-between">
                                 <span>Add Catalog</span>
-                                <span className="text-neutral-600">{filteredAddCandidates.length} available</span>
+                                <span className="text-muted-foreground/80">{filteredAddCandidates.length} available</span>
                             </h4>
                             <div className="relative">
-                                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-neutral-500" />
+                                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
                                 <Input
                                     placeholder="Search by name or ID..."
                                     value={addSearch}
                                     onChange={e => setAddSearch(e.target.value)}
-                                    className="h-7 text-[11px] pl-7 bg-neutral-900 border-neutral-800 focus-visible:ring-blue-600"
+                                    className="h-7 text-[11px] pl-7 bg-background border-border focus-visible:ring-blue-600"
                                     autoFocus
                                     onKeyDown={e => e.stopPropagation()}
                                 />
@@ -485,7 +492,7 @@ export function CatalogEditor() {
                         </div>
                         <div className="max-h-[320px] overflow-y-auto p-1 pt-0 custom-scrollbar">
                             {filteredAddCandidates.length === 0 ? (
-                                <p className="text-[10px] text-neutral-600 p-4 text-center">No catalogs found.</p>
+                                <p className="text-[10px] text-muted-foreground p-4 text-center">No catalogs found.</p>
                             ) : (
                                 (() => {
                                     const groups: Record<string, typeof filteredAddCandidates> = {
@@ -514,8 +521,8 @@ export function CatalogEditor() {
 
                                     return sortedCategories.map(category => (
                                         <div key={category} className="mb-2 last:mb-0">
-                                            <div className="sticky top-0 bg-neutral-900 py-1.5 px-3 z-[60] border-b border-neutral-800/80 mb-1 -mx-1">
-                                                <h5 className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">{category}</h5>
+                                            <div className="sticky top-0 bg-popover py-1.5 px-3 z-[60] border-b border-border/80 mb-1 -mx-1">
+                                                <h5 className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">{category}</h5>
                                             </div>
                                             <div className="flex flex-col gap-0.5 px-1">
                                                 {groups[category].map(c => (
@@ -526,10 +533,10 @@ export function CatalogEditor() {
                                                     >
                                                         <div className="flex-1 min-w-0">
                                                             <p className="text-sm font-medium truncate">{c.name}</p>
-                                                            <p className="text-[9px] text-neutral-500 font-mono truncate">{c.id}</p>
+                                                            <p className="text-[9px] text-muted-foreground font-mono truncate">{c.id}</p>
                                                         </div>
                                                         {c.action === 'reenable' && (
-                                                            <Badge variant="outline" className="text-[8px] h-4 px-1 border-neutral-700 text-neutral-500 shrink-0 self-center">disabled</Badge>
+                                                            <Badge variant="outline" className="text-[8px] h-4 px-1 border-border text-muted-foreground shrink-0 self-center">disabled</Badge>
                                                         )}
                                                     </DropdownMenuItem>
                                                 ))}
@@ -544,14 +551,14 @@ export function CatalogEditor() {
             </div>
 
             {/* Stats */}
-            <div className="flex gap-3 text-[11px] text-neutral-500">
+            <div className="flex gap-3 text-[11px] text-muted-foreground">
                 <span>
-                    <span className="text-neutral-400 font-medium">{enabledCatalogs.length}</span> shown
+                    <span className="text-foreground font-medium">{enabledCatalogs.length}</span> shown
                 </span>
                 <span>·</span>
-                <span><span className="text-neutral-400 font-medium">{enabledCatalogs.filter(c => c.showInHome).length}</span> in Top Row</span>
+                <span><span className="text-foreground font-medium">{enabledCatalogs.filter(c => c.showInHome).length}</span> in Top Row</span>
                 <span>·</span>
-                <span><span className="text-neutral-500">{landscapeList.length}</span> landscape</span>
+                <span><span className="text-foreground">{landscapeList.length}</span> landscape</span>
                 <span>·</span>
                 <span>{disabledCatalogs.length} disabled</span>
             </div>
@@ -561,7 +568,7 @@ export function CatalogEditor() {
                 <SortableContext items={enabledIds} strategy={verticalListSortingStrategy}>
                     <div className="space-y-0.5 max-h-[700px] overflow-y-auto pr-1 custom-scrollbar">
                         {enabledCatalogs.length === 0 ? (
-                            <p className="text-xs text-neutral-600 py-8 text-center">No enabled catalogs.</p>
+                            <p className="text-xs text-muted-foreground py-8 text-center">No enabled catalogs.</p>
                         ) : (
                             enabledCatalogs.map(cat => (
                                 <SortableCatalogItem
@@ -586,9 +593,9 @@ export function CatalogEditor() {
 
             {/* Disabled section */}
             {disabledCatalogs.length > 0 && (
-                <div className="border border-neutral-800 rounded-lg overflow-hidden">
+                <div className="border border-border rounded-lg overflow-hidden">
                     <button
-                        className="w-full flex items-center justify-between px-4 py-2.5 text-xs text-neutral-500 hover:bg-neutral-800/50 transition-colors"
+                        className="w-full flex items-center justify-between px-4 py-2.5 text-xs text-muted-foreground hover:bg-muted/50 transition-colors"
                         onClick={() => setShowDisabled(p => !p)}
                     >
                         <span className="font-semibold uppercase tracking-wider">Disabled Catalogs ({disabledCatalogs.length})</span>
@@ -597,21 +604,21 @@ export function CatalogEditor() {
                     {showDisabled && (
                         <div className="p-3 space-y-1 max-h-[400px] overflow-y-auto custom-scrollbar">
                             {disabledCatalogs.map(cat => (
-                                <div key={cat.id} className="flex items-center gap-3 p-2.5 bg-neutral-900/50 border border-neutral-800 border-dashed rounded-lg">
+                                <div key={cat.id} className="flex items-center gap-3 p-2.5 bg-card/50 border border-border border-dashed rounded-lg">
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm text-neutral-500 truncate">{cat.name || cat.id}</p>
-                                        <p className="text-[10px] text-neutral-700 font-mono truncate">{cat.id}</p>
+                                        <p className="text-sm text-muted-foreground truncate">{cat.name || cat.id}</p>
+                                        <p className="text-[10px] text-foreground font-mono truncate">{cat.id}</p>
                                     </div>
                                     <Button
                                         variant="outline" size="sm"
-                                        className="h-7 text-xs border-neutral-700 text-neutral-400 hover:bg-neutral-800 shrink-0"
+                                        className="h-7 text-xs border-border text-muted-foreground hover:bg-muted shrink-0"
                                         onClick={() => updateCatalogField(cat.id, { enabled: true })}
                                     >
                                         Enable
                                     </Button>
                                     <Button
                                         variant="ghost" size="icon"
-                                        className="h-7 w-7 text-neutral-600 hover:text-red-500 hover:bg-red-500/10 shrink-0"
+                                        className="h-7 w-7 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 shrink-0"
                                         title="Remove permanently from config"
                                         onClick={() => reorderManifestCatalogs(catalogs.filter(c => c.id !== cat.id))}
                                     >

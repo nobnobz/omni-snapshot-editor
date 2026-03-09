@@ -6,7 +6,7 @@ import { Label } from "../ui/label";
 import { Input } from "../ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { ScrollArea } from "../ui/scroll-area";
+
 import { Checkbox } from "../ui/checkbox";
 import { Search } from 'lucide-react';
 
@@ -79,27 +79,27 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <DialogContent className="sm:max-w-[425px] bg-neutral-900 border-neutral-800 text-neutral-100 flex flex-col max-h-[90vh]">
+            <DialogContent className="sm:max-w-[425px] bg-background border-border text-foreground flex flex-col max-h-[90vh]">
                 <DialogHeader>
                     <DialogTitle>Add to Existing Group</DialogTitle>
-                    <DialogDescription className="text-neutral-400">
+                    <DialogDescription className="text-muted-foreground">
                         Select multiple subgroups and assign them to a main group.
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-4 flex-1 flex flex-col min-h-0 mt-4">
-                    <div className="space-y-2 shrink-0">
-                        <Label htmlFor="target-main" className="text-neutral-300">Target Main Group</Label>
+                <div className="flex-1 flex flex-col min-h-0 mt-4 gap-4">
+                    <div className="flex flex-col shrink-0 gap-2">
+                        <Label htmlFor="target-main" className="text-foreground">Target Main Group</Label>
                         <Select value={targetMainGroupUuid} onValueChange={setTargetMainGroupUuid}>
-                            <SelectTrigger className="w-full bg-neutral-950 border-neutral-700 text-neutral-200">
+                            <SelectTrigger className="w-full bg-background border-input text-foreground">
                                 <SelectValue placeholder="Select a Main Group" />
                             </SelectTrigger>
-                            <SelectContent className="bg-neutral-900 border-neutral-800 text-neutral-200 max-h-[200px]">
+                            <SelectContent className="bg-popover border-border text-popover-foreground max-h-[200px]">
                                 {mainGroupOrder.length === 0 ? (
                                     <SelectItem value="none" disabled>No Main Groups available</SelectItem>
                                 ) : (
                                     mainGroupOrder.map((uuid: string) => (
-                                        <SelectItem key={uuid} value={uuid} className="focus:bg-neutral-800 focus:text-white">
+                                        <SelectItem key={uuid} value={uuid} className="focus:bg-accent focus:text-accent-foreground">
                                             {formatDisplayName(mainCatalogGroups[uuid]?.name || "Unnamed")}
                                         </SelectItem>
                                     ))
@@ -108,22 +108,22 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                         </Select>
                     </div>
 
-                    <div className="space-y-2 flex-1 flex flex-col min-h-0">
-                        <Label className="text-neutral-300">Select Subgroups to Add</Label>
+                    <div className="flex-1 flex flex-col min-h-0 gap-2">
+                        <Label className="text-foreground shrink-0">Select Subgroups to Add</Label>
 
                         <div className="relative shrink-0">
-                            <Search className="absolute left-2 top-2 h-4 w-4 text-neutral-500" />
+                            <Search className="absolute left-2 top-2 h-4 w-4 text-muted-foreground" />
                             <Input
                                 placeholder="Search subgroups..."
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
-                                className="pl-8 h-8 text-xs bg-neutral-950 border-neutral-700 focus-visible:ring-blue-500 mb-2"
+                                className="pl-8 h-8 text-xs bg-background border-input focus-visible:ring-blue-500 mb-2"
                             />
                         </div>
 
-                        <ScrollArea className="h-[350px] rounded-md border border-neutral-800 bg-neutral-950/50 p-4 shrink-0">
+                        <div className="flex-1 overflow-y-auto rounded-md border border-border bg-background/50 p-4 min-h-[150px]">
                             {allSubgroupNames.length === 0 ? (
-                                <p className="text-sm text-neutral-500 italic">No subgroups available.</p>
+                                <p className="text-sm text-muted-foreground italic">No subgroups available.</p>
                             ) : (
                                 (() => {
                                     const query = searchQuery.toLowerCase();
@@ -162,7 +162,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                     const assignedNodes: React.ReactNode[] = [];
                                     for (const name of assignedNames) {
                                         assignedNodes.push(
-                                            <div key={`assigned-${name}`} className="flex items-center space-x-2 pl-2 py-1.5 hover:bg-neutral-800/50 rounded-sm group/sg">
+                                            <div key={`assigned-${name}`} className="flex items-center space-x-2 pl-2 py-1.5 hover:bg-muted/50 rounded-sm group/sg">
                                                 <Checkbox
                                                     id={`add-assigned-${name}`}
                                                     checked={selectedSubgroups.has(name)}
@@ -172,7 +172,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                                         else next.delete(name);
                                                         setSelectedSubgroups(next);
                                                     }}
-                                                    className="border-neutral-600 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 h-4 w-4"
+                                                    className="border-border data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 h-4 w-4 shrink-0"
                                                 />
                                                 <label
                                                     htmlFor={`add-assigned-${name}`}
@@ -189,14 +189,14 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                     for (const [cat, items] of categories.entries()) {
                                         if (items.length > 0) {
                                             unassignedElements.push(
-                                                <div key={`header-${cat}`} className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mt-5 mb-2 pl-1 border-b border-neutral-800/60 pb-1">
+                                                <div key={`header-${cat}`} className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-5 mb-2 pl-1 border-b border-border/60 pb-1">
                                                     {cat}
                                                 </div>
                                             );
 
                                             for (const name of items) {
                                                 unassignedElements.push(
-                                                    <div key={`unassigned-${name}`} className="flex items-center space-x-2 pl-2 py-1.5 hover:bg-neutral-800/50 rounded-sm group/sg">
+                                                    <div key={`unassigned-${name}`} className="flex items-center space-x-2 pl-2 py-1.5 hover:bg-muted/50 rounded-sm group/sg">
                                                         <Checkbox
                                                             id={`add-unassigned-${name}`}
                                                             checked={selectedSubgroups.has(name)}
@@ -206,11 +206,11 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                                                 else next.delete(name);
                                                                 setSelectedSubgroups(next);
                                                             }}
-                                                            className="border-neutral-600 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 h-4 w-4"
+                                                            className="border-border data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 h-4 w-4 shrink-0"
                                                         />
                                                         <label
                                                             htmlFor={`add-unassigned-${name}`}
-                                                            className="flex-1 text-sm font-medium leading-none cursor-pointer select-none transition-colors text-neutral-300 group-hover/sg:text-neutral-200"
+                                                            className="flex-1 text-sm font-medium leading-none cursor-pointer select-none transition-colors text-foreground group-hover/sg:text-foreground"
                                                         >
                                                             {formatDisplayName(name)}
                                                         </label>
@@ -221,20 +221,20 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                     }
 
                                     if (assignedNodes.length === 0 && unassignedElements.length === 0) {
-                                        return <p className="text-sm text-neutral-500 italic p-4">No subgroups found matching search.</p>;
+                                        return <p className="text-sm text-muted-foreground italic p-4">No subgroups found matching search.</p>;
                                     }
 
                                     return (
                                         <div className="space-y-1 pr-3 pb-2 pt-1">
                                             {assignedNodes.length > 0 && (
                                                 <div className="mb-6 space-y-1">
-                                                    <div className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-2 border-b border-neutral-800 pb-1">Assigned</div>
+                                                    <div className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-2 border-b border-border pb-1">Assigned</div>
                                                     {assignedNodes}
                                                 </div>
                                             )}
                                             {unassignedElements.length > 0 && (
                                                 <div className="space-y-1">
-                                                    {assignedNodes.length > 0 && <div className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2 border-b border-neutral-800 pb-1 mt-6">Unassigned</div>}
+                                                    {assignedNodes.length > 0 && <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 border-b border-border pb-1 mt-6">Unassigned</div>}
                                                     {unassignedElements}
                                                 </div>
                                             )}
@@ -242,16 +242,16 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                     );
                                 })()
                             )}
-                        </ScrollArea>
+                        </div>
                     </div>
                 </div>
 
                 <DialogFooter className="mt-6 shrink-0 flex items-center justify-between">
-                    <p className="text-xs text-neutral-500">
+                    <p className="text-xs text-muted-foreground">
                         {selectedSubgroups.size} subgroup(s) checked
                     </p>
                     <div className="flex gap-2">
-                        <Button variant="outline" onClick={handleClose} className="bg-neutral-800 border-neutral-700 text-neutral-300 hover:bg-neutral-700 hover:text-white">Cancel</Button>
+                        <Button variant="outline" onClick={handleClose} className="bg-muted border-border text-foreground hover:bg-accent hover:text-white">Cancel</Button>
                         <Button onClick={handleAssign} disabled={!targetMainGroupUuid} className="bg-blue-600 text-white hover:bg-blue-700">Save Changes</Button>
                     </div>
                 </DialogFooter>

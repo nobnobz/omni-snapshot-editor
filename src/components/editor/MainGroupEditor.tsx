@@ -82,25 +82,25 @@ function SortableSubgroupItem({
         <div
             ref={setNodeRef}
             style={style}
-            className={`group flex items-center gap-3 p-3 bg-neutral-900 border border-neutral-800 rounded-lg mb-2 ${isDragging ? "opacity-50 border-blue-500" : ""}`}
+            className={`group flex items-center gap-3 p-3 bg-card border border-border rounded-lg mb-2 ${isDragging ? "opacity-50 border-blue-500" : ""}`}
         >
-            <button {...attributes} {...listeners} className="cursor-grab hover:text-white text-neutral-500" aria-label="Drag handle">
+            <button {...attributes} {...listeners} className="cursor-grab hover:text-white text-muted-foreground" aria-label="Drag handle">
                 <GripVertical className="h-4 w-4" />
             </button>
             <div className="flex-1 min-w-0">
                 {isEditing ? (
                     <div className="flex items-center h-8">
                         {/* We render nothing here natively since Modal takes over, but to keep height: */}
-                        <p className={`text-sm truncate font-medium text-neutral-500`}>{displayName}</p>
+                        <p className={`text-sm truncate font-medium text-muted-foreground`}>{displayName}</p>
                     </div>
                 ) : (
                     <div
-                        className="flex-1 min-w-0 cursor-pointer p-1.5 -ml-1.5 rounded hover:bg-neutral-800/80 transition-colors border border-transparent hover:border-neutral-700"
+                        className="flex-1 min-w-0 cursor-pointer p-1.5 -ml-1.5 rounded hover:bg-muted/80 transition-colors border border-transparent hover:border-border"
                         onClick={() => setIsEditing(true)}
                         title="Click to rename"
                     >
-                        <p className={`text-sm truncate font-medium ${!isEnabled ? "text-neutral-500 line-through" : "text-neutral-200"}`}>{displayName}</p>
-                        {displayName !== id && <p className="text-[10px] text-neutral-500 truncate font-mono">{id}</p>}
+                        <p className={`text-sm truncate font-medium ${!isEnabled ? "text-muted-foreground line-through" : "text-foreground"}`}>{displayName}</p>
+                        {displayName !== id && <p className="text-[10px] text-muted-foreground truncate font-mono">{id}</p>}
                     </div>
                 )}
             </div>
@@ -187,16 +187,16 @@ function SingleMainGroupEditor({
 
     return (
         <div className="space-y-4 py-2">
-            <div className="flex flex-wrap items-center gap-2 mb-4 bg-neutral-900/50 p-2 rounded-lg border border-neutral-800">
-                <Button variant="outline" size="sm" onClick={sortAZ} className="h-8 text-xs border-neutral-700 hover:bg-neutral-800">
+            <div className="flex flex-wrap items-center gap-2 mb-4 bg-card/50 p-2 rounded-lg border border-border">
+                <Button variant="outline" size="sm" onClick={sortAZ} className="h-8 text-xs border-border hover:bg-muted">
                     <ArrowDownAZ className="w-4 h-4 mr-2" /> A-Z
                 </Button>
-                <Button variant="outline" size="sm" onClick={sortZA} className="h-8 text-xs border-neutral-700 hover:bg-neutral-800">
+                <Button variant="outline" size="sm" onClick={sortZA} className="h-8 text-xs border-border hover:bg-muted">
                     <ArrowUpZA className="w-4 h-4 mr-2" /> Z-A
                 </Button>
-                <div className="w-px h-5 bg-neutral-800 mx-2" />
+                <div className="w-px h-5 bg-muted mx-2" />
                 <Button variant="ghost" size="sm" onClick={enableAll} className="h-8 text-xs text-blue-400 hover:text-blue-300">Enable All</Button>
-                <Button variant="ghost" size="sm" onClick={disableAll} className="h-8 text-xs text-neutral-500 hover:text-neutral-400">Disable All</Button>
+                <Button variant="ghost" size="sm" onClick={disableAll} className="h-8 text-xs text-muted-foreground hover:text-muted-foreground">Disable All</Button>
             </div>
 
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -248,20 +248,20 @@ export function MainGroupEditor() {
 
     return (
         <div className="space-y-4">
-            <p className="text-sm text-neutral-400 mb-4">
+            <p className="text-sm text-muted-foreground mb-4">
                 Manage catalogs embedded within specific Main Groups.
             </p>
 
             <Accordion type="multiple" className="w-full space-y-2">
                 {Object.entries(mainGroups).map(([groupId, groupData]: [string, any]) => (
-                    <AccordionItem key={groupId} value={groupId} className="border border-neutral-800 rounded-md bg-neutral-950 px-2">
-                        <AccordionTrigger className="hover:no-underline text-neutral-200">
+                    <AccordionItem key={groupId} value={groupId} className="border border-border rounded-md bg-background px-2">
+                        <AccordionTrigger className="hover:no-underline text-foreground">
                             <div className="flex flex-col items-start gap-1">
                                 <span className="font-semibold">{groupData.name || "Unnamed Group"}</span>
-                                <span className="text-xs text-neutral-500 font-mono font-normal">{(groupData.subgroupNames || []).length} catalogs</span>
+                                <span className="text-xs text-muted-foreground font-mono font-normal">{(groupData.subgroupNames || []).length} catalogs</span>
                             </div>
                         </AccordionTrigger>
-                        <AccordionContent className="border-t border-neutral-800 pt-4">
+                        <AccordionContent className="border-t border-border pt-4">
                             <SingleMainGroupEditor
                                 groupId={groupId}
                                 groupData={groupData}
