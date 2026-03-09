@@ -1,23 +1,21 @@
 # Omni Snapshot Manager
 
-> [!NOTE]
-> This project was developed in collaboration with **Antigravity** (Google DeepMind).
+## Summary
 
-[<img src="https://cdn.prod.website-files.com/5c14e387dab576fe667689cf/670f5a02fcf48af59c591185_support_me_on_kofi_dark.png" width="230" alt="Support my work at Ko-fi">](https://ko-fi.com/botbidraiser)
+The **Omni Snapshot Manager** is a tool for managing and editing Omni configuration files (Snapshots). It serves as a companion tool for the [**Unified Media Experience (UME)**](https://github.com/nobnobz/Omni-Template-Bot-Bid-Raiser) project but you can also build your complete own setup with it.
 
-[![Live Web App](https://img.shields.io/badge/Live_Version-GitHub_Pages-blue?style=flat-square&logo=github)](https://nobnobz.github.io/omni-snapshot-editor/)
+The application allows for adjusting the JSON structures of the Omni Snapshosts via a graphical interface, eliminating the need to edit the file in Omni or manually in a text editor. The goal is to reduce configuration errors and simplify the management of Omni setups.
+
+### Website
+The application is available as a web app and requires no local installation:
+👉 **[Omni Snapshot Manager (Live)](https://nobnobz.github.io/omni-snapshot-editor/)**
 
 ---
 
-## Purpose of the Application
+## 💖 Support the Project
+If this tool makes your Omni management easier, please consider supporting the continued development.
 
-The **Omni Snapshot Manager** is a tool for managing and editing Omni configuration files (Snapshots). It serves as a companion tool for the [**Unified Media Experience (UME)**](https://github.com/nobnobz/Omni-Template-Bot-Bid-Raiser) project.
-
-The application allows for adjusting complex JSON structures via a graphical interface, eliminating the need to edit the file manually in a text editor. The goal is to reduce configuration errors and simplify the management of UME setups.
-
-### 🌐 Live Version
-The application is available as a web app and requires no local installation:
-👉 **[Omni Snapshot Manager (Live)](https://nobnobz.github.io/omni-snapshot-editor/)**
+[<img src="https://cdn.prod.website-files.com/5c14e387dab576fe667689cf/670f5a02fcf48af59c591185_support_me_on_kofi_dark.png" width="230" alt="Support my work at Ko-fi">](https://ko-fi.com/botbidraiser)
 
 ---
 
@@ -54,12 +52,6 @@ Should you want to run the project locally:
 ---
 
 ## Linked Projects
-- **[Unified Media Experience (UME)](https://github.com/nobnobz/Omni-Template-Bot-Bid-Raiser)**: The main project for optimized Omni templates.
+- **[Unified Media Experience (UME)](https://github.com/nobnobz/Omni-Template-Bot-Bid-Raiser)**: My Omni templates.
 
 ---
-
-## 💖 Support the Project
-
-If this tool makes your Omni management easier, consider supporting the continued development and hosting.
-
-*Every contribution helps keep this tool free and open for the community!*
