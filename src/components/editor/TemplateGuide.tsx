@@ -7,7 +7,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -40,7 +39,7 @@ export function TemplateGuide() {
                 </div>
             </DialogHeader>
 
-            <ScrollArea className="flex-1 p-6 pt-2">
+            <div className="flex-1 overflow-y-auto p-6 pt-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
                 <div className="space-y-8 py-4">
                     {/* Requirements Section */}
                     <section className="space-y-4">
@@ -221,7 +220,7 @@ export function TemplateGuide() {
                         </div>
                     </section>
                 </div>
-            </ScrollArea>
+            </div>
 
             <div className="p-6 border-t border-border/10 flex justify-between items-center bg-muted/5">
                 <p className="text-[10px] text-foreground/40 italic">
