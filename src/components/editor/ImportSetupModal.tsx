@@ -77,7 +77,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
 
     const templates = [
         {
-            label: "v0.2.0 UME",
+            label: "v1.7.1 UME",
             url: "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/Older%20Versions/v1.7.1/omni-snapshot-unified-media-experience-v1.7.1-2026-03-02.json"
         },
     ];
