@@ -3,8 +3,9 @@
 > [!NOTE]
 > This project was developed in collaboration with **Antigravity** (Google DeepMind).
 
+[<img src="https://cdn.prod.website-files.com/5c14e387dab576fe667689cf/670f5a02fcf48af59c591185_support_me_on_kofi_dark.png" width="230" alt="Support my work at Ko-fi">](https://ko-fi.com/botbidraiser)
+
 [![Live Web App](https://img.shields.io/badge/Live_Version-GitHub_Pages-blue?style=flat-square&logo=github)](https://nobnobz.github.io/omni-snapshot-editor/)
-[![Support](https://img.shields.io/badge/Support_my_work-Ko--fi-pink?style=flat-square&logo=ko-fi)](https://ko-fi.com/botbidraiser)
 
 ---
 
@@ -60,7 +61,5 @@ Should you want to run the project locally:
 ## 💖 Support the Project
 
 If this tool makes your Omni management easier, consider supporting the continued development and hosting.
-
-[<img src="https://storage.ko-fi.com/cdn/kofi2.png?v=3" width="220" alt="Support my work at Ko-fi">](https://ko-fi.com/botbidraiser)
 
 *Every contribution helps keep this tool free and open for the community!*
