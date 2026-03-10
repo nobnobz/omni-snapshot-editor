@@ -121,11 +121,11 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                             />
                         </div>
 
-                        <div className="flex-1 overflow-y-auto rounded-md border border-border bg-transparent p-4 min-h-[150px]">
+                        <div className="flex-1 overflow-y-auto rounded-md border border-border bg-transparent px-4 pb-4 min-h-[150px]">
                             {allSubgroupNames.length === 0 ? (
                                 <p className="text-sm text-foreground/70 italic">No subgroups available.</p>
                             ) : (
-                                (() => {
+                                (()=>{
                                     const query = searchQuery.toLowerCase();
 
                                     // Map each subgroup to its "Home" category (the name of the first Main Group it belongs to)
@@ -225,7 +225,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                     }
 
                                     return (
-                                        <div className="space-y-1 pr-3 pb-2 pt-1">
+                                        <div className="space-y-1 pr-3 pb-2 pt-4">
                                             {assignedNodes.length > 0 && (
                                                 <div className="mb-6 space-y-1">
                                                     <div className="sticky top-0 bg-background py-2.5 z-20 mb-2 border-b border-border/40">

@@ -154,11 +154,11 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                 />
                             </div>
 
-                            <ScrollArea className="h-[200px] rounded-md border border-border bg-transparent p-4">
+                            <ScrollArea className="h-[200px] rounded-md border border-border bg-transparent px-4 pb-4">
                                 {allSubgroupNames.length === 0 ? (
                                     <p className="text-sm text-foreground/70 italic">No subgroups available.</p>
                                 ) : (
-                                    <div className="space-y-3 pr-3 pb-2 pt-1">
+                                    <div className="space-y-3 pr-3 pb-2 pt-4">
                                         {allSubgroupNames
                                             .filter(name => name.toLowerCase().includes(searchQuery.toLowerCase()))
                                             .map(name => (
@@ -277,11 +277,11 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                     />
                                 </div>
 
-                                <ScrollArea className="h-[300px] md:h-[450px] rounded-md border border-border bg-transparent p-4">
+                                <ScrollArea className="h-[300px] md:h-[450px] rounded-md border border-border bg-transparent px-4 pb-4">
                                     {filteredCatalogs.length === 0 ? (
                                         <p className="text-sm text-foreground/70 italic">No catalogs found.</p>
                                     ) : (
-                                        <div className="space-y-4 pr-3 pb-2 pt-1">
+                                        <div className="space-y-4 pr-3 pb-2 pt-4">
                                             {(() => {
                                                 const groups: Record<string, typeof filteredCatalogs> = {
                                                     "Other": []
