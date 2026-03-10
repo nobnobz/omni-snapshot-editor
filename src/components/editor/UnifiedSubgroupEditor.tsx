@@ -15,6 +15,7 @@ import {
     closestCenter,
     KeyboardSensor,
     PointerSensor,
+    TouchSensor,
     useSensor,
     useSensors,
 } from '@dnd-kit/core';
@@ -120,7 +121,7 @@ function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => vo
             style={style}
             className={`flex items-center gap-3 p-2.5 bg-muted/50 border border-border rounded-lg mb-2 group/cat transition-all duration-200 hover:border-border/80 hover:bg-muted/80 shadow-sm ${isDragging ? "opacity-50 border-blue-500 z-50 shadow-2xl scale-[1.02]" : ""}`}
         >
-            <button {...attributes} {...listeners} className="cursor-grab text-foreground/70 hover:text-foreground shrink-0 p-1 rounded-md hover:bg-muted/80 transition-colors">
+            <button {...attributes} {...listeners} className="cursor-grab text-foreground/70 hover:text-foreground shrink-0 p-1 rounded-md hover:bg-muted/80 transition-colors touch-action-none select-none">
                 <GripVertical className="h-4 w-4" />
             </button>
 
@@ -256,6 +257,12 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
 
     const sensors = useSensors(
         useSensor(PointerSensor),
+        useSensor(TouchSensor, {
+            activationConstraint: {
+                delay: 150,
+                tolerance: 5,
+            },
+        }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
@@ -285,7 +292,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
         <div ref={setNodeRef} style={style} className={`border border-border shadow-sm hover:shadow-md rounded-xl overflow-hidden mb-3 bg-card/40 backdrop-blur-sm transition-all hover:border-border/60 group/subgroup ${isDragging ? "opacity-50 border-blue-500 scale-[1.01] shadow-2xl" : ""}`}>
             {/* Header: Drag Handle + Subgroup Name */}
             <div className={`flex items-center gap-3 p-4 bg-muted/40 backdrop-blur-sm border-border/40 ${isExpanded ? "border-b border-border/50" : ""}`}>
-                <button {...attributes} {...listeners} className="cursor-grab hover:text-foreground text-foreground/70 p-1 rounded-md hover:bg-muted transition-colors">
+                <button {...attributes} {...listeners} className="cursor-grab hover:text-foreground text-foreground/70 p-1 rounded-md hover:bg-muted transition-colors touch-action-none select-none">
                     <GripVertical className="h-4 w-4" />
                 </button>
                 <div
@@ -512,6 +519,12 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
 
     const sensors = useSensors(
         useSensor(PointerSensor),
+        useSensor(TouchSensor, {
+            activationConstraint: {
+                delay: 150,
+                tolerance: 5,
+            },
+        }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
@@ -556,7 +569,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
             <AccordionItem value={uuid} className="border-none">
                 <AccordionTrigger className="w-full justify-between items-center p-4 hover:bg-muted/40 hover:no-underline flex text-sm transition-colors group">
                     <div className="flex flex-1 items-center gap-4 text-left">
-                        <div {...attributes} {...listeners} className="cursor-grab text-foreground/70 hover:text-foreground shrink-0 p-1.5 rounded-md hover:bg-muted transition-colors pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+                        <div {...attributes} {...listeners} className="cursor-grab text-foreground/70 hover:text-foreground shrink-0 p-1.5 rounded-md hover:bg-muted transition-colors pointer-events-auto touch-action-none select-none" onClick={(e) => e.stopPropagation()}>
                             <GripVertical className="h-5 w-5" />
                         </div>
                         <div>
@@ -578,10 +591,10 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
 
                 <AccordionContent className="p-5 border-t border-border/50 bg-muted/20">
                     <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
-                        <div className="flex flex-wrap items-center gap-2 bg-background/50 border border-border rounded-lg p-1">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 bg-background/50 border border-border rounded-lg p-1.5 sm:p-1 w-full sm:w-auto">
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-8 text-xs text-foreground/70 hover:text-foreground hover:bg-muted font-medium tracking-tight">
+                                    <Button variant="ghost" size="sm" className="h-8 text-[11px] sm:text-xs text-foreground/70 hover:text-foreground hover:bg-muted font-medium tracking-tight px-2">
                                         Layout: <span className="text-foreground ml-1 font-bold">{posterType} / {posterSize}</span> <ChevronDown className="w-3.5 h-3.5 ml-1 opacity-50" />
                                     </Button>
                                 </DropdownMenuTrigger>
@@ -612,12 +625,14 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
-                            <div className="w-px h-4 bg-border mx-1" />
+
+                            <div className="hidden sm:block w-px h-4 bg-border mx-1" />
+
                             <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => setIsRenaming(true)}
-                                className="h-8 text-xs text-foreground/70 hover:text-foreground hover:bg-muted font-medium tracking-tight"
+                                className="h-8 text-[11px] sm:text-xs text-foreground/70 hover:text-foreground hover:bg-muted font-medium tracking-tight px-2"
                             >
                                 Rename
                             </Button>
@@ -627,7 +642,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="h-8 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 font-medium tracking-tight ml-auto sm:ml-0"
+                                        className="h-8 text-[11px] sm:text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 font-medium tracking-tight px-2 ml-auto sm:ml-0"
                                     >
                                         Disable
                                     </Button>
@@ -651,14 +666,15 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                 </AlertDialogContent>
                             </AlertDialog>
 
-                            <div className="w-px h-4 bg-border mx-1" />
+                            <div className="hidden sm:block w-px h-4 bg-border mx-1" />
+
                             <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => onAddSubgroup?.(uuid)}
-                                className="h-8 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition-all flex items-center gap-1.5 px-3 rounded-lg font-bold"
+                                className="h-8 text-[11px] sm:text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition-all flex items-center gap-1.5 px-3 rounded-lg font-bold w-full sm:w-auto mt-2 sm:mt-0 border border-blue-500/20 sm:border-transparent bg-blue-500/5 sm:bg-transparent"
                             >
-                                <Plus className="w-4 h-4" />
+                                <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                 New Subgroup
                             </Button>
                         </div>
@@ -1036,6 +1052,12 @@ export function UnifiedSubgroupEditor() {
 
     const sensors = useSensors(
         useSensor(PointerSensor),
+        useSensor(TouchSensor, {
+            activationConstraint: {
+                delay: 150,
+                tolerance: 5,
+            },
+        }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 

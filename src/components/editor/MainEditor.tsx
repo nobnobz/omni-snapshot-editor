@@ -375,7 +375,7 @@ export function MainEditor() {
                                     Made by Bot-Bid-Raiser
                                 </div>
                                 <div className="text-[9px] text-foreground/70 font-medium">
-                                    v0.2.0
+                                    v0.2.1
                                 </div>
                             </div>
                         </div>
@@ -433,53 +433,53 @@ export function MainEditor() {
                     </div>
                 </div>
 
-                <header className="lg:hidden h-16 border-b border-border bg-card/80 backdrop-blur-sm shadow-sm flex items-center gap-3 px-4 sm:px-6 shrink-0 sticky top-0 z-30">
+                <header className="lg:hidden h-14 border-b border-border bg-card/80 backdrop-blur-sm shadow-sm flex items-center gap-2 px-3 sm:px-6 shrink-0 sticky top-0 z-30">
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => setIsSidebarOpen(true)}
-                        className="text-foreground/70 hover:text-white lg:hidden h-9 w-9 shrink-0"
+                        className="text-foreground/70 hover:text-white lg:hidden h-8 w-8 shrink-0"
                     >
                         <Menu className="w-5 h-5" />
                     </Button>
 
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 flex items-center justify-center shrink-0 relative">
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 flex items-center justify-center shrink-0 relative">
                             <img src="/omni-snapshot-editor/clown.png" alt="Logo" className="w-full h-full object-contain relative z-10 scale-125" />
                         </div>
                         <div className="flex flex-col">
-                            <span className="leading-none text-foreground font-bold text-sm">Omni Snapshot</span>
-                            <span className="text-[9px] text-blue-400 font-bold uppercase tracking-widest mt-0.5">Manager</span>
+                            <span className="leading-none text-foreground font-bold text-[13px] sm:text-sm">Omni Snapshot</span>
+                            <span className="text-[8px] sm:text-[9px] text-blue-400 font-bold uppercase tracking-widest mt-0.5">Manager</span>
                         </div>
                     </div>
 
                     <div className="flex-1" />
 
-                    <div className="flex items-center gap-1.5 sm:gap-3">
+                    <div className="flex items-center gap-1 sm:gap-3">
                         <Button
                             onClick={handleDownloadClick}
                             size="sm"
-                            className="bg-blue-600 hover:bg-blue-700 h-9 text-white shadow-lg shadow-blue-500/20 px-3 sm:px-4 flex items-center justify-center font-bold"
+                            className="bg-blue-600 hover:bg-blue-700 h-8 text-white shadow-lg shadow-blue-500/20 px-2.5 sm:px-4 flex items-center justify-center font-bold"
                         >
-                            <Download className="w-4 h-4 mr-2" />
-                            <span>Download</span>
+                            <Download className="w-4 h-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Download</span>
                         </Button>
                         <Button
                             variant="outline"
                             size="sm"
                             onClick={handleCopy}
-                            className={`h-9 w-[100px] flex items-center justify-center transition-all duration-300 border-border/60 hover:bg-muted ${isCopied ? 'border-emerald-500/50 text-emerald-500 bg-emerald-500/5' : 'text-foreground/80'}`}
+                            className={`h-8 min-w-[32px] sm:w-[100px] flex items-center justify-center transition-all duration-300 border-border/60 hover:bg-muted px-2.5 sm:px-3 ${isCopied ? 'border-emerald-500/50 text-emerald-500 bg-emerald-500/5' : 'text-foreground/80'}`}
                             title="Copy to Clipboard"
                         >
                             {isCopied ? (
                                 <>
-                                    <Check className="w-4 h-4 mr-2" />
-                                    <span>Copied!</span>
+                                    <Check className="w-4 h-4 sm:mr-2" />
+                                    <span className="hidden sm:inline">Copied!</span>
                                 </>
                             ) : (
                                 <>
-                                    <Copy className="w-4 h-4 mr-2" />
-                                    <span>Copy</span>
+                                    <Copy className="w-4 h-4 sm:mr-2" />
+                                    <span className="hidden sm:inline">Copy</span>
                                 </>
                             )}
                         </Button>
@@ -487,10 +487,10 @@ export function MainEditor() {
                             variant="ghost"
                             size="icon"
                             onClick={handleBackToStart}
-                            className="h-9 w-9 text-foreground/70 hover:text-foreground hover:bg-muted"
+                            className="h-8 w-8 text-foreground/70 hover:text-foreground hover:bg-muted"
                             title="Back to Start"
                         >
-                            <RotateCcw className="h-5 w-5" />
+                            <RotateCcw className="h-4 w-4" />
                         </Button>
                     </div>
                 </header>
