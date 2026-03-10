@@ -177,8 +177,14 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                 });
 
                 const customName = extracted["regex_pattern_custom_names"]?.[regex] || regex;
-                const exists = !!(currentValues["regex_pattern_custom_names"]?.[regex] !== undefined ||
-                    (Array.isArray(currentValues["pattern_tag_enabled_patterns"]) && currentValues["pattern_tag_enabled_patterns"].includes(regex)));
+                const exists = ALL_PATTERN_KEYS.some(k => {
+                    const currentVal = currentValues[k];
+                    if (DICT_KEYS.includes(k)) {
+                        return currentVal && typeof currentVal === 'object' && currentVal[regex] !== undefined;
+                    } else {
+                        return Array.isArray(currentVal) && currentVal.includes(regex);
+                    }
+                });
 
                 return {
                     regex,
@@ -239,43 +245,52 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
     const selectAllNew = () => setSelectedPatterns(new Set(newPatterns.map(p => p.regex)));
     const deselectAll = () => setSelectedPatterns(new Set());
 
-    const renderPatternRow = (p: ParsedPattern) => (
-        <div key={p.regex} className="flex items-start gap-3 p-3 hover:bg-muted/30 border-b border-border/40 transition-colors group/row">
-            <Checkbox
-                id={`pattern-${p.regex}`}
-                checked={selectedPatterns.has(p.regex)}
-                onCheckedChange={(checked) => {
-                    const next = new Set(selectedPatterns);
-                    if (checked) next.add(p.regex);
-                    else next.delete(p.regex);
-                    setSelectedPatterns(next);
-                }}
-                className="mt-0.5"
-            />
-            <div className="flex-1 min-w-0">
-                <label htmlFor={`pattern-${p.regex}`} className="text-sm font-medium text-foreground cursor-pointer block truncate">
-                    {p.customName}
-                </label>
-                <p
-                    className="text-[10px] text-foreground/50 font-mono mt-0.5 block overflow-hidden text-ellipsis whitespace-nowrap max-w-full"
-                    title={p.regex}
-                >
-                    {p.regex}
-                </p>
-                <div className="flex gap-1.5 mt-2 flex-wrap">
-                    {p.existsInCurrent ? (
-                        p.hasChanges ? (
-                            <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20 text-[9px] px-1.5 py-0">Update</Badge>
+    const renderPatternRow = (p: ParsedPattern) => {
+        const isSynced = p.existsInCurrent && !p.hasChanges;
+        const isUpdate = p.existsInCurrent && p.hasChanges;
+
+        return (
+            <div key={p.regex} className={`flex items-start gap-3 p-3 border-b border-border/40 transition-colors group/row ${isSynced ? 'opacity-40 bg-muted/5' : 'hover:bg-muted/30'}`}>
+                <Checkbox
+                    id={`pattern-${p.regex}`}
+                    checked={selectedPatterns.has(p.regex)}
+                    disabled={isSynced}
+                    onCheckedChange={(checked) => {
+                        const next = new Set(selectedPatterns);
+                        if (checked) next.add(p.regex);
+                        else next.delete(p.regex);
+                        setSelectedPatterns(next);
+                    }}
+                    className="mt-0.5"
+                />
+                <div className="flex-1 min-w-0">
+                    <label 
+                        htmlFor={`pattern-${p.regex}`} 
+                        className={`text-sm font-medium block truncate ${isSynced ? 'text-foreground/60 cursor-default' : 'text-foreground cursor-pointer'}`}
+                    >
+                        {p.customName}
+                    </label>
+                    <p
+                        className={`text-[10px] font-mono mt-0.5 block overflow-hidden text-ellipsis whitespace-nowrap max-w-full ${isSynced ? 'text-foreground/30' : 'text-foreground/50'}`}
+                        title={p.regex}
+                    >
+                        {p.regex}
+                    </p>
+                    <div className="flex gap-1.5 mt-2 flex-wrap text-[9px]">
+                        {p.existsInCurrent ? (
+                            p.hasChanges ? (
+                                <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20 px-1.5 py-0">Update</Badge>
+                            ) : (
+                                <Badge variant="outline" className="bg-muted/50 text-foreground/40 border-border/50 px-1.5 py-0">Synced</Badge>
+                            )
                         ) : (
-                            <Badge variant="outline" className="bg-muted text-foreground/50 border-border text-[9px] px-1.5 py-0">Synced</Badge>
-                        )
-                    ) : (
-                        <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20 text-[9px] px-1.5 py-0">New</Badge>
-                    )}
+                            <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20 px-1.5 py-0">New</Badge>
+                        )}
+                    </div>
                 </div>
             </div>
-        </div>
-    );
+        );
+    };
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>

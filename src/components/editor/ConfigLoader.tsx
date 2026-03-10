@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, Github, Upload, CheckCircle2, Sparkles, FileJson, BookOpen, Heart, ChevronDown, FileDown, ExternalLink, Download, ChevronRight } from "lucide-react";
+import { AlertCircle, Github, Upload, CheckCircle2, Sparkles, FileJson, BookOpen, Heart, ChevronDown, FileDown, ExternalLink, Download, ChevronRight, Layout, UploadCloud } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogTrigger, DialogContent } from "@/components/ui/dialog";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Documentation } from "@/components/editor/Documentation";
 import { TemplateGuide } from "@/components/editor/TemplateGuide";
+import { APP_VERSION } from "@/lib/constants";
 
 function fixMojibakeString(str: string): string {
     if ([...str].some(c => c.charCodeAt(0) > 255)) return str;
@@ -294,226 +295,137 @@ export function ConfigLoader() {
                         Import an Omni snapshot from GitHub or your local disk, or create a new setup from scratch.
                     </p>
 
-                    <div className="pt-4 flex flex-col items-center gap-3">
-                        {/* Row 1: Docs & Support on mobile, all together on desktop */}
-                        <div className="flex flex-row items-center justify-center gap-3 sm:flex-wrap sm:gap-4">
+                    <div className="pt-8 flex flex-col items-center gap-6">
+                        <div className="flex flex-wrap items-center justify-center gap-3">
+                            {/* 1. Documentation */}
                             <Dialog>
                                 <DialogTrigger asChild>
-                                    <button className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2 text-sm text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-colors font-medium border border-blue-500/20 hover:border-blue-500/40 backdrop-blur-sm min-w-[100px] sm:min-w-0">
-                                        <BookOpen className="w-4 h-4" />
-                                        <span className="hidden sm:inline">Documentation</span>
-                                        <span className="sm:hidden">Docs</span>
+                                    <button className="group flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-blue-500/10 dark:bg-blue-500/15 backdrop-blur-md border border-blue-500/20 hover:border-blue-500/40 hover:bg-blue-500/20 transition-all duration-300 shadow-sm hover:shadow-blue-500/10 hover:-translate-y-0.5">
+                                        <BookOpen className="h-4 w-4 text-blue-500 group-hover:scale-110 transition-all" />
+                                        <span className="text-[12px] font-bold text-blue-400 group-hover:text-blue-300 tracking-tight">Documentation</span>
                                     </button>
                                 </DialogTrigger>
                                 <Documentation />
                             </Dialog>
 
-                            <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer" className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2 text-sm text-pink-500 hover:text-pink-400 hover:bg-pink-500/10 rounded-lg transition-colors font-medium border border-pink-500/20 hover:border-pink-500/40 backdrop-blur-sm group min-w-[100px] sm:min-w-0">
-                                <Heart className="w-4 h-4 group-hover:fill-pink-500/20 transition-all" />
-                                <span className="hidden sm:inline">Support my work</span>
-                                <span className="sm:hidden">Support</span>
-                            </a>
-                        </div>
-
-                        {(() => {
-                            const templatesContent = (
-                                <>
-                                    <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-foreground/50 font-bold px-3 py-2">
-                                        Direct Downloads
+                            {/* 2. UME Templates */}
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button className="group flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15 backdrop-blur-md border border-emerald-500/20 hover:border-emerald-500/40 hover:bg-emerald-500/20 transition-all duration-300 shadow-sm hover:shadow-emerald-500/10 hover:-translate-y-0.5">
+                                        <Layout className="h-4 w-4 text-emerald-500 group-hover:rotate-12 transition-all" />
+                                        <span className="text-[12px] font-bold text-emerald-400 group-hover:text-emerald-300 tracking-tight">UME Templates</span>
+                                        <ChevronDown className="h-3.5 w-3.5 text-emerald-500/50 group-hover:text-emerald-500 transition-colors" />
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-64 bg-card/95 border-border shadow-2xl backdrop-blur-2xl pb-2 animate-in fade-in zoom-in-95 duration-200" align="center">
+                                    <DropdownMenuLabel className="text-[10px] uppercase tracking-[0.2em] text-foreground/40 font-black px-3 py-2.5">
+                                        Official Templates
                                     </DropdownMenuLabel>
                                     {(() => {
-                                        const template = manifest?.templates?.find(t => t.url && t.isDefault && t.id.startsWith('ume-'))
-                                            || manifest?.templates?.find(t => t.url && t.id.startsWith('ume-'))
-                                            || manifest?.templates?.find(t => t.id === 'ume-main' && t.url);
-
-                                        if (template && !template.url) return null;
-
-                                        const versionRegex = /v\d+(?:\.\d+)*/;
-                                        const v = template?.version || template?.name.match(versionRegex)?.[0];
-                                        const name = template?.name.replace(versionRegex, "").replace("UME Template", "Omni Template").replace("UME Omni Template", "Omni Template").trim() || "Omni Template";
-
-                                        return (
-                                            <DropdownMenuItem
-                                                className="cursor-pointer focus:bg-emerald-500/10 focus:text-emerald-400 flex items-center gap-2 px-3 py-1.5 group"
-                                                onClick={() => handleDownload(
-                                                    template?.url || "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/Older%20Versions/v1.7.1/omni-snapshot-unified-media-experience-v1.7.1-2026-03-02.json",
-                                                    getStandardizedFilename(name, v)
-                                                )}
-                                            >
-                                                <FileJson className="w-4 h-4 text-emerald-500 opacity-70 group-hover:opacity-100" />
-                                                <div className="flex flex-col gap-0.5">
-                                                    <span className="text-xs font-semibold leading-tight">{name}</span>
-                                                    {v && <span className="text-[10px] opacity-50 font-medium leading-tight">{v}</span>}
-                                                </div>
-                                                <FileDown className="w-3.5 h-3.5 ml-auto opacity-20 group-hover:opacity-100 transition-opacity" />
-                                            </DropdownMenuItem>
+                                        const templates = manifest?.templates?.filter(t => t.url && t.id !== 'ume-catalogs') || [];
+                                        
+                                        if (templates.length === 0) return (
+                                            <div className="px-3 py-4 text-center">
+                                                <p className="text-[10px] text-foreground/40 italic">No templates found.</p>
+                                            </div>
                                         );
+
+                                        return templates.map(template => {
+                                            const versionRegex = /v\d+(?:\.\d+)*/;
+                                            const v = template.version || template.name.match(versionRegex)?.[0];
+                                            const name = template.name.replace(versionRegex, "").replace("UME Template", "Omni Template").trim() || "Omni Template";
+
+                                            return (
+                                                <DropdownMenuItem
+                                                    key={template.id}
+                                                    className="mx-1.5 mb-1 cursor-pointer focus:bg-emerald-500/15 focus:text-emerald-400 flex items-center gap-3 px-3 py-2.5 rounded-lg group transition-colors"
+                                                    onClick={() => handleDownload(
+                                                        template.url || "",
+                                                        getStandardizedFilename(name, v)
+                                                    )}
+                                                >
+                                                    <div className="p-1.5 bg-emerald-500/10 rounded-md group-hover:bg-emerald-500/20 transition-colors">
+                                                        <FileJson className="w-4 h-4 text-emerald-500" />
+                                                    </div>
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <span className="text-[11px] font-bold leading-none">{name}</span>
+                                                        {v && <span className="text-[9px] opacity-40 font-bold uppercase tracking-tighter">{v}</span>}
+                                                    </div>
+                                                    <FileDown className="w-3.5 h-3.5 ml-auto opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all" />
+                                                </DropdownMenuItem>
+                                            );
+                                        });
                                     })()}
 
-                                    {(() => {
-                                        const template = manifest?.templates?.find(t => t.id === 'aiometadata');
-                                        if (template && !template.url) return null;
-
-                                        const versionRegex = /v\d+(?:\.\d+)*/;
-                                        const v = template?.version || template?.name.match(versionRegex)?.[0];
-                                        const name = template?.name.replace(versionRegex, "").trim() || "AIOMetadata Template";
-
-                                        return (
-                                            <DropdownMenuItem
-                                                className="cursor-pointer focus:bg-emerald-500/10 focus:text-emerald-400 flex items-center gap-2 px-3 py-1.5 group"
-                                                onClick={() => {
-                                                    const url = template?.url || "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/aiometadata-patterns-v1.json";
-                                                    handleDownload(url, getStandardizedFilename(name, v));
-                                                }}
-                                            >
-                                                <FileJson className="w-4 h-4 text-blue-500 opacity-70 group-hover:opacity-100" />
-                                                <div className="flex flex-col gap-0.5">
-                                                    <span className="text-xs font-semibold leading-tight">{name}</span>
-                                                    {v && <span className="text-[10px] opacity-50 font-medium leading-tight">{v}</span>}
-                                                </div>
-                                                <FileDown className="w-3.5 h-3.5 ml-auto opacity-20 group-hover:opacity-100 transition-opacity" />
-                                            </DropdownMenuItem>
-                                        );
-                                    })()}
-
-                                    {(() => {
-                                        const template = manifest?.templates?.find(t => t.id === 'ume-catalogs');
-                                        if (template && !template.url) return null;
-
-                                        const versionRegex = /v\d+(?:\.\d+)*/;
-                                        const v = template?.version || template?.name.match(versionRegex)?.[0];
-                                        const name = template?.name.replace(versionRegex, "").trim() || "AIOMetadata (Catalogs Only)";
-
-                                        return (
-                                            <DropdownMenuItem
-                                                className="cursor-pointer focus:bg-emerald-500/10 focus:text-emerald-400 flex items-center gap-2 px-3 py-1.5 group"
-                                                onClick={() => {
-                                                    const url = template?.url || "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/catalogs-only-template.json";
-                                                    handleDownload(url, getStandardizedFilename(name, v));
-                                                }}
-                                            >
-                                                <FileJson className="w-4 h-4 text-indigo-500 opacity-70 group-hover:opacity-100" />
-                                                <div className="flex flex-col gap-0.5">
-                                                    <span className="text-xs font-semibold leading-tight">{name}</span>
-                                                    {v && <span className="text-[10px] opacity-50 font-medium leading-tight">{v}</span>}
-                                                </div>
-                                                <FileDown className="w-3.5 h-3.5 ml-auto opacity-20 group-hover:opacity-100 transition-opacity" />
-                                            </DropdownMenuItem>
-                                        );
-                                    })()}
-
-                                    {(() => {
-                                        const template = manifest?.templates?.find(t => t.id === 'aiostreams');
-                                        if (template && !template.url) return null;
-
-                                        const versionRegex = /v\d+(?:\.\d+)*/;
-                                        const v = template?.version || template?.name.match(versionRegex)?.[0];
-                                        const name = template?.name.replace(versionRegex, "").trim() || "AIOStreams Template";
-
-                                        return (
-                                            <DropdownMenuItem
-                                                className="cursor-pointer focus:bg-emerald-500/10 focus:text-emerald-400 flex items-center gap-2 px-3 py-1.5 group"
-                                                onClick={() => {
-                                                    const url = template?.url || "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/aiostreams-patterns-v1.json";
-                                                    handleDownload(url, getStandardizedFilename(name, v));
-                                                }}
-                                            >
-                                                <FileJson className="w-4 h-4 text-purple-500 opacity-70 group-hover:opacity-100" />
-                                                <div className="flex flex-col gap-0.5">
-                                                    <span className="text-xs font-semibold leading-tight">{name}</span>
-                                                    {v && <span className="text-[10px] opacity-50 font-medium leading-tight">{v}</span>}
-                                                </div>
-                                                <FileDown className="w-3.5 h-3.5 ml-auto opacity-20 group-hover:opacity-100 transition-opacity" />
-                                            </DropdownMenuItem>
-                                        );
-                                    })()}
-
-                                    <DropdownMenuSeparator className="bg-border/40" />
-                                    <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-foreground/50 font-bold px-3 py-2">
-                                        Help & Guides
+                                    <DropdownMenuSeparator className="bg-white/5 mx-2 my-1" />
+                                    
+                                    <DropdownMenuLabel className="text-[10px] uppercase tracking-[0.2em] text-foreground/40 font-black px-3 py-2">
+                                        Guide
                                     </DropdownMenuLabel>
-                                    <Dialog>
-                                        <DialogTrigger asChild>
-                                            <DropdownMenuItem
-                                                onSelect={(e) => e.preventDefault()}
-                                                className="cursor-pointer focus:bg-blue-500/10 focus:text-blue-400 flex items-center gap-2 px-3 py-1.5 group"
-                                            >
-                                                <BookOpen className="w-4 h-4 opacity-70 group-hover:opacity-100" />
-                                                <span className="text-xs font-semibold">How to Install</span>
-                                                <ExternalLink className="w-3.5 h-3.5 ml-auto opacity-40" />
-                                            </DropdownMenuItem>
-                                        </DialogTrigger>
-                                        <TemplateGuide />
-                                    </Dialog>
-
-                                    <DropdownMenuSeparator className="bg-border/40" />
-                                    <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-foreground/50 font-bold px-3 py-2">
-                                        Project Resources
-                                    </DropdownMenuLabel>
-                                    <DropdownMenuItem asChild className="cursor-pointer focus:bg-blue-500/10 focus:text-blue-400 group">
-                                        <a
-                                            href="https://github.com/nobnobz/Omni-Template-Bot-Bid-Raiser"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center gap-2 w-full px-2 py-1.5"
-                                        >
-                                            <Github className="w-4 h-4 opacity-70 group-hover:opacity-100" />
-                                            <span className="text-xs font-semibold">UME Templates</span>
-                                            <ExternalLink className="w-3.5 h-3.5 ml-auto opacity-40" />
-                                        </a>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem asChild className="cursor-pointer focus:bg-blue-500/10 focus:text-blue-400 group">
-                                        <a
-                                            href="https://github.com/nobnobz/omni-snapshot-editor"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center gap-2 w-full px-2 py-1.5"
-                                        >
-                                            <Github className="w-4 h-4 opacity-70 group-hover:opacity-100" />
-                                            <span className="text-xs font-semibold">Manager Source Code</span>
-                                            <ExternalLink className="w-3.5 h-3.5 ml-auto opacity-40" />
-                                        </a>
-                                    </DropdownMenuItem>
-                                </>
-                            );
-
-                            return (
-                                <div className="flex flex-col gap-4 max-w-xl mx-auto px-4">
-                                    <div className="flex flex-row justify-center gap-3">
+                                    <div className="px-1.5 py-1">
                                         <Dialog>
                                             <DialogTrigger asChild>
-                                                <Button variant="outline" className="flex-1 bg-white/5 hover:bg-white/10 text-white border-white/10 hover:border-white/20 h-10 text-xs sm:text-sm transition-all duration-300">
-                                                    <BookOpen className="w-4 h-4 mr-2 text-blue-400" />
-                                                    Docs
-                                                </Button>
+                                                <DropdownMenuItem 
+                                                    onSelect={(e) => e.preventDefault()}
+                                                    className="cursor-pointer focus:bg-blue-500/15 focus:text-blue-400 flex items-center gap-3 px-3 py-2 rounded-lg group transition-colors"
+                                                >
+                                                    <div className="p-1.5 bg-blue-500/10 rounded-md group-hover:bg-blue-500/20 transition-colors">
+                                                        <UploadCloud className="w-3.5 h-3.5 text-blue-500" />
+                                                    </div>
+                                                    <span className="text-[11px] font-bold">How to Install</span>
+                                                    <ChevronRight className="w-3 h-3 ml-auto opacity-20 group-hover:opacity-100 transition-opacity" />
+                                                </DropdownMenuItem>
                                             </DialogTrigger>
-                                            <Documentation />
+                                            <TemplateGuide />
                                         </Dialog>
-                                        <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer" className="flex-1">
-                                            <Button variant="outline" className="w-full bg-white/5 hover:bg-white/10 text-white border-white/10 hover:border-white/20 h-10 text-xs sm:text-sm transition-all duration-300">
-                                                <Heart className="w-4 h-4 mr-2 text-pink-500" />
-                                                Support
-                                            </Button>
-                                        </a>
                                     </div>
 
-                                    <div className="flex justify-center">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button className="w-full sm:w-auto min-w-[200px] bg-blue-600 hover:bg-blue-500 text-white h-11 text-sm font-bold shadow-lg shadow-blue-500/20 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]">
-                                                    <Download className="w-4 h-4 mr-2" />
-                                                    UME Templates
-                                                    <ChevronRight className="w-4 h-4 ml-2 opacity-50" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent className="w-64 bg-card border-border shadow-2xl backdrop-blur-xl pb-2" align="center">
-                                                {templatesContent}
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                    <DropdownMenuSeparator className="bg-white/5 mx-2 my-1" />
+
+                                    <DropdownMenuLabel className="text-[10px] uppercase tracking-[0.2em] text-foreground/40 font-black px-3 py-2">
+                                        GitHub
+                                    </DropdownMenuLabel>
+                                    <div className="px-1.5 py-1 space-y-0.5">
+                                        <DropdownMenuItem 
+                                            asChild
+                                            className="cursor-pointer focus:bg-foreground/10 flex items-center gap-3 px-3 py-2 rounded-lg group transition-colors"
+                                        >
+                                            <a href="https://github.com/nobnobz/Omni-Template-Bot-Bid-Raiser" target="_blank" rel="noopener noreferrer">
+                                                <div className="p-1.5 bg-foreground/5 rounded-md group-hover:bg-foreground/10 transition-colors">
+                                                    <Github className="w-3.5 h-3.5 text-foreground/70" />
+                                                </div>
+                                                <span className="text-[11px] font-bold text-foreground/70">UME Templates</span>
+                                                <ExternalLink className="w-3 h-3 ml-auto opacity-20 group-hover:opacity-100 transition-opacity" />
+                                            </a>
+                                        </DropdownMenuItem>
+                                        
+                                        <DropdownMenuItem 
+                                            asChild
+                                            className="cursor-pointer focus:bg-foreground/10 flex items-center gap-3 px-3 py-2 rounded-lg group transition-colors"
+                                        >
+                                            <a href="https://github.com/nobnobz/omni-snapshot-editor" target="_blank" rel="noopener noreferrer">
+                                                <div className="p-1.5 bg-foreground/5 rounded-md group-hover:bg-foreground/10 transition-colors">
+                                                    <Github className="w-3.5 h-3.5 text-foreground/70" />
+                                                </div>
+                                                <span className="text-[11px] font-bold text-foreground/70">Omni Snapshot Manager</span>
+                                                <ExternalLink className="w-3 h-3 ml-auto opacity-20 group-hover:opacity-100 transition-opacity" />
+                                            </a>
+                                        </DropdownMenuItem>
                                     </div>
-                                </div>
-                            );
-                        })()}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            {/* 3. Support Me */}
+                            <a
+                                href="https://ko-fi.com/botbidraiser"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-pink-500/10 dark:bg-pink-500/15 backdrop-blur-md border border-pink-500/20 hover:border-pink-500/40 hover:bg-pink-500/20 transition-all duration-300 shadow-sm hover:shadow-pink-500/10 hover:-translate-y-0.5"
+                            >
+                                <Heart className="h-4 w-4 text-pink-500 group-hover:scale-110 group-hover:fill-pink-500/20 transition-all" />
+                                <span className="text-[12px] font-bold text-pink-400 group-hover:text-pink-300 tracking-tight">Support Me</span>
+                            </a>
+                        </div>
                     </div>
                 </div>
 
@@ -660,7 +572,7 @@ export function ConfigLoader() {
 
                 <div className="mt-8 text-center">
                     <p className="text-[10px] text-foreground/70 font-bold uppercase tracking-widest leading-relaxed">
-                        v0.2.3 • Built with Antigravity by Bot-Bid-Raiser
+                        v{APP_VERSION} • Built with Antigravity by Bot-Bid-Raiser
                     </p>
                 </div>
             </div>

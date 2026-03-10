@@ -18,6 +18,8 @@ import {
     TouchSensor,
     useSensor,
     useSensors,
+    DragOverlay,
+    defaultDropAnimationSideEffects,
 } from '@dnd-kit/core';
 import {
     arrayMove,
@@ -29,7 +31,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { GripVertical, ArrowDownAZ, ArrowUpZA, ImageIcon, LinkIcon, ChevronRight, ChevronDown, RotateCcw, Search, Pin, PinOff, CheckSquare, Square, Layout } from "lucide-react";
+import { GripVertical, ArrowDownAZ, ArrowUpZA, ImageIcon, LinkIcon, ChevronRight, ChevronDown, RotateCcw, Search, Pin, PinOff, CheckSquare, Square, Layout, Plus, Pencil, Trash2, FolderPlus, UploadCloud } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
@@ -51,8 +53,6 @@ import { ImportSetupModal } from "./ImportSetupModal";
 import { TrashBin } from "./TrashBin";
 import { formatDisplayName, resolveCatalogName, ensureCatalogPrefix } from "@/lib/utils";
 import { CATALOG_FALLBACKS } from "@/lib/catalog-fallbacks";
-
-import { Trash2, Plus, FolderPlus, UploadCloud, Pencil } from "lucide-react";
 import { Label } from "@/components/ui/label";
 
 // ----------------------------------------------------------------------
@@ -121,7 +121,12 @@ function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => vo
             style={style}
             className={`flex items-center gap-3 p-2.5 bg-muted/50 border border-border rounded-lg mb-2 group/cat transition-all duration-200 hover:border-border/80 hover:bg-muted/80 shadow-sm ${isDragging ? "opacity-50 border-blue-500 z-50 shadow-2xl scale-[1.02]" : ""}`}
         >
-            <button {...attributes} {...listeners} className="cursor-grab text-foreground/70 hover:text-foreground shrink-0 p-1 rounded-md hover:bg-muted/80 transition-colors touch-action-none select-none">
+            <button
+                {...attributes}
+                {...listeners}
+                className="cursor-grab text-foreground/70 hover:text-foreground shrink-0 p-1 rounded-md hover:bg-muted/80 transition-colors select-none"
+                style={{ touchAction: 'none' }}
+            >
                 <GripVertical className="h-4 w-4" />
             </button>
 
@@ -182,6 +187,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
     const [urlInput, setUrlInput] = useState(imageUrl);
     const [isRenaming, setIsRenaming] = useState(false);
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+    const [activeCatalogId, setActiveCatalogId] = useState<string | null>(null);
     const [catalogSearch, setCatalogSearch] = useState("");
 
     const customNames: Record<string, string> = React.useMemo(() => currentValues["custom_catalog_names"] || {}, [currentValues]);
@@ -266,8 +272,13 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
+    const handleCatalogDragStart = (event: any) => {
+        setActiveCatalogId(event.active.id);
+    };
+
     const handleCatalogDragEnd = (event: any) => {
         const { active, over } = event;
+        setActiveCatalogId(null);
         if (over && active.id !== over.id) {
             const oldIndex = subgroupCatalogs.indexOf(active.id as string);
             const newIndex = subgroupCatalogs.indexOf(over.id as string);
@@ -292,24 +303,28 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
         <div ref={setNodeRef} style={style} className={`border border-border shadow-sm hover:shadow-md rounded-xl overflow-hidden mb-3 bg-card/40 backdrop-blur-sm transition-all hover:border-border/60 group/subgroup ${isDragging ? "opacity-50 border-blue-500 scale-[1.01] shadow-2xl" : ""}`}>
             {/* Header: Drag Handle + Subgroup Name */}
             <div className={`flex items-center gap-3 p-4 bg-muted/40 backdrop-blur-sm border-border/40 ${isExpanded ? "border-b border-border/50" : ""}`}>
-                <button {...attributes} {...listeners} className="cursor-grab hover:text-foreground text-foreground/70 p-1 rounded-md hover:bg-muted transition-colors touch-action-none select-none">
+                <button
+                    {...attributes}
+                    {...listeners}
+                    className="cursor-grab hover:text-foreground text-foreground/70 p-1 rounded-md hover:bg-muted transition-colors select-none"
+                    style={{ touchAction: 'none' }}
+                >
                     <GripVertical className="h-4 w-4" />
                 </button>
-                <div
-                    className="flex-1 font-semibold text-sm text-foreground cursor-pointer flex items-center select-none tracking-tight"
-                    onClick={toggleExpanded}
-                >
+                <div className="flex-1 font-semibold text-sm text-foreground cursor-pointer flex items-center select-none tracking-tight" onClick={toggleExpanded}>
                     {isExpanded ? <ChevronDown className="w-4 h-4 mr-2 text-foreground/70 group-hover:text-foreground transition-colors" /> : <ChevronRight className="w-4 h-4 mr-2 text-foreground/70 group-hover:text-foreground transition-colors" />}
                     {formatDisplayName(subgroupName)}
                 </div>
-                <div className="flex items-center gap-1 opacity-80 hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" onClick={() => setIsRenaming(true)} className="h-7 w-7 text-foreground/70 hover:text-foreground hover:bg-muted transition-colors rounded-md border border-transparent hover:border-border/50">
+
+                {/* Action Buttons: Desktop Header, Mobile hidden here (moved to layout section below) */}
+                <div className="hidden sm:flex items-center gap-1 opacity-80 hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="icon" onClick={() => setIsRenaming(true)} className="h-7 w-7 text-foreground/70 hover:text-foreground hover:bg-muted transition-colors rounded-md border border-transparent hover:border-border/50" title="Rename Subgroup">
                         <Pencil className="h-3.5 w-3.5" />
                     </Button>
                     <Button variant="ghost" size="icon" onClick={() => {
                         unassignCatalogGroup(subgroupName);
                         if (onUnassign) onUnassign(subgroupName, parentUUID);
-                    }} className="h-7 w-7 text-foreground/70 hover:text-red-400 hover:bg-red-500/10 transition-colors rounded-md border border-transparent hover:border-red-500/30">
+                    }} className="h-7 w-7 text-foreground/70 hover:text-red-400 hover:bg-red-500/10 transition-colors rounded-md border border-transparent hover:border-red-500/30" title="Unassign Subgroup">
                         <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                 </div>
@@ -329,33 +344,58 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
             {isExpanded && (
                 <div className="p-4 space-y-5">
                     {/* Image URL Input */}
-                    <div className="flex items-center gap-3 bg-background/50 p-3 rounded-lg border border-border/60 shadow-inner">
-                        {urlInput && urlInput.startsWith("http") ? (
-                            <div className={`${isLandscape ? "h-10 w-16" : "h-14 w-10"} rounded-md shrink-0 overflow-hidden bg-muted border border-border/50 shadow-sm flex items-center justify-center`}>
-                                <img
-                                    src={urlInput}
-                                    alt="Thumb"
-                                    className="h-full w-full object-cover"
-                                    onError={(e) => {
-                                        (e.target as HTMLImageElement).style.display = 'none';
-                                        (e.target as HTMLImageElement).parentElement!.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-foreground/70"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
-                                    }}
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-3 bg-background/50 p-3 rounded-lg border border-border/60 shadow-inner">
+                            {urlInput && urlInput.startsWith("http") ? (
+                                <div className={`${isLandscape ? "h-10 w-16" : "h-14 w-10"} rounded-md shrink-0 overflow-hidden bg-muted border border-border/50 shadow-sm flex items-center justify-center`}>
+                                    <img
+                                        src={urlInput}
+                                        alt="Thumb"
+                                        className="h-full w-full object-cover"
+                                        onError={(e) => {
+                                            (e.target as HTMLImageElement).style.display = 'none';
+                                            (e.target as HTMLImageElement).parentElement!.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-foreground/70"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
+                                        }}
+                                    />
+                                </div>
+                            ) : (
+                                <div className="h-10 w-10 rounded-md bg-muted border border-border flex items-center justify-center shrink-0">
+                                    <ImageIcon className="w-4 h-4 text-foreground/70" />
+                                </div>
+                            )}
+                            <div className="flex-1 space-y-1">
+                                <Label className="text-[11px] uppercase font-bold tracking-widest text-foreground/70">Poster Image URL</Label>
+                                <Input
+                                    placeholder="https://..."
+                                    value={urlInput}
+                                    onChange={e => setUrlInput(e.target.value)}
+                                    onBlur={handleUrlBlur}
+                                    className="h-8 text-xs bg-background border-border focus-visible:ring-1 focus-visible:ring-blue-500 shadow-inner transition-colors font-mono"
                                 />
                             </div>
-                        ) : (
-                            <div className="h-10 w-10 rounded-md bg-muted border border-border flex items-center justify-center shrink-0">
-                                <ImageIcon className="w-4 h-4 text-foreground/70" />
-                            </div>
-                        )}
-                        <div className="flex-1 space-y-1">
-                            <Label className="text-[11px] uppercase font-bold tracking-widest text-foreground/70">Poster Image URL</Label>
-                            <Input
-                                placeholder="https://..."
-                                value={urlInput}
-                                onChange={e => setUrlInput(e.target.value)}
-                                onBlur={handleUrlBlur}
-                                className="h-8 text-xs bg-background border-border focus-visible:ring-1 focus-visible:ring-blue-500 shadow-inner transition-colors font-mono"
-                            />
+                        </div>
+
+                        {/* Mobile Action Buttons: Move here under layout */}
+                        <div className="sm:hidden flex items-center gap-2 pt-1">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setIsRenaming(true)}
+                                className="flex-1 h-9 text-xs text-foreground/70 hover:text-foreground bg-background/50 border-border/80"
+                            >
+                                <Pencil className="w-3.5 h-3.5 mr-2" /> Rename Subgroup
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    unassignCatalogGroup(subgroupName);
+                                    if (onUnassign) onUnassign(subgroupName, parentUUID);
+                                }}
+                                className="flex-1 h-9 text-xs text-red-400 hover:text-red-300 bg-background/50 border-border/80"
+                            >
+                                <Trash2 className="w-3.5 h-3.5 mr-2" /> Unassign
+                            </Button>
                         </div>
                     </div>
 
@@ -372,7 +412,12 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                             </div>
                         ) : (
                             <div className="space-y-0.5">
-                                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleCatalogDragEnd}>
+                                <DndContext 
+                                    sensors={sensors} 
+                                    collisionDetection={closestCenter} 
+                                    onDragStart={handleCatalogDragStart}
+                                    onDragEnd={handleCatalogDragEnd}
+                                >
                                     <SortableContext items={subgroupCatalogs} strategy={verticalListSortingStrategy}>
                                         {subgroupCatalogs.map(catId => (
                                             <SortableCatalogNode
@@ -386,6 +431,26 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                             />
                                         ))}
                                     </SortableContext>
+                                    <DragOverlay dropAnimation={{
+                                        sideEffects: defaultDropAnimationSideEffects({
+                                            styles: {
+                                                active: {
+                                                    opacity: '0.4',
+                                                },
+                                            },
+                                        }),
+                                    }}>
+                                        {activeCatalogId ? (
+                                            <div className="flex items-center gap-3 p-2.5 bg-muted border border-blue-500 rounded-lg shadow-2xl scale-[1.02] opacity-90">
+                                                <GripVertical className="h-4 w-4 text-blue-500" />
+                                                <div className="flex-1 min-w-0 pr-2">
+                                                    <p className="text-sm truncate font-semibold tracking-tight text-foreground">
+                                                        {resolveCatalogName(activeCatalogId, currentValues.custom_catalog_names || {})}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ) : null}
+                                    </DragOverlay>
                                 </DndContext>
                             </div>
                         )}
@@ -511,6 +576,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
     // We maintain local subgroup ordering state
     const [subgroups, setSubgroups] = useState(subgroupNames);
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+    const [activeSubgroupId, setActiveSubgroupId] = useState<string | null>(null);
     const [expandedSubgroup, setExpandedSubgroup] = useState<string | null>(null);
 
     React.useEffect(() => {
@@ -518,18 +584,27 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
     }, [JSON.stringify(subgroupNames)]);
 
     const sensors = useSensors(
-        useSensor(PointerSensor),
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
         useSensor(TouchSensor, {
             activationConstraint: {
-                delay: 150,
-                tolerance: 5,
+                delay: 300,
+                tolerance: 8,
             },
         }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
+    const handleSubgroupDragStart = (event: any) => {
+        setActiveSubgroupId(event.active.id);
+    };
+
     const handleSubgroupDragEnd = (event: any) => {
         const { active, over } = event;
+        setActiveSubgroupId(null);
         if (over && active.id !== over.id) {
             const oldIndex = subgroups.indexOf(active.id as string);
             const newIndex = subgroups.indexOf(over.id as string);
@@ -569,7 +644,13 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
             <AccordionItem value={uuid} className="border-none">
                 <AccordionTrigger className="w-full justify-between items-center p-4 hover:bg-muted/40 hover:no-underline flex text-sm transition-colors group">
                     <div className="flex flex-1 items-center gap-4 text-left">
-                        <div {...attributes} {...listeners} className="cursor-grab text-foreground/70 hover:text-foreground shrink-0 p-1.5 rounded-md hover:bg-muted transition-colors pointer-events-auto touch-action-none select-none" onClick={(e) => e.stopPropagation()}>
+                        <div
+                            {...attributes}
+                            {...listeners}
+                            className="cursor-grab text-foreground/70 hover:text-foreground shrink-0 p-1.5 rounded-md hover:bg-muted transition-colors pointer-events-auto select-none"
+                            style={{ touchAction: 'none' }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
                             <GripVertical className="h-5 w-5" />
                         </div>
                         <div>
@@ -626,45 +707,46 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                 </DropdownMenuContent>
                             </DropdownMenu>
 
-                            <div className="hidden sm:block w-px h-4 bg-border mx-1" />
+                            <div className="hidden sm:flex items-center gap-1.5 sm:gap-2">
+                                <div className="w-px h-4 bg-border mx-1" />
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setIsRenaming(true)}
+                                    className="h-8 text-[11px] sm:text-xs text-foreground/70 hover:text-foreground hover:bg-muted font-medium tracking-tight px-2"
+                                >
+                                    Rename
+                                </Button>
 
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setIsRenaming(true)}
-                                className="h-8 text-[11px] sm:text-xs text-foreground/70 hover:text-foreground hover:bg-muted font-medium tracking-tight px-2"
-                            >
-                                Rename
-                            </Button>
-
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-8 text-[11px] sm:text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 font-medium tracking-tight px-2 ml-auto sm:ml-0"
-                                    >
-                                        Disable
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent className="bg-card border-border text-foreground">
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Disable Main Group?</AlertDialogTitle>
-                                        <AlertDialogDescription className="text-foreground/70">
-                                            This will hide the group <span className="text-foreground font-bold">"{formatDisplayName(name)}"</span> and all its subgroups. You can restore them anytime from the Recycle Bin at the bottom.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel className="bg-muted border-border text-foreground/70 hover:bg-accent hover:text-accent-foreground">Cancel</AlertDialogCancel>
-                                        <AlertDialogAction
-                                            onClick={() => removeMainCatalogGroup(uuid)}
-                                            className="bg-red-600 text-white hover:bg-red-700 font-bold"
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 text-[11px] sm:text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 font-medium tracking-tight px-2"
                                         >
-                                            Disable Group
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
+                                            Disable
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent className="bg-card border-border text-foreground">
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Disable Main Group?</AlertDialogTitle>
+                                            <AlertDialogDescription className="text-foreground/70">
+                                                This will hide the group <span className="text-foreground font-bold">"{formatDisplayName(name)}"</span> and all its subgroups. You can restore them anytime from the Recycle Bin at the bottom.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel className="bg-muted border-border text-foreground/70 hover:bg-accent hover:text-accent-foreground">Cancel</AlertDialogCancel>
+                                            <AlertDialogAction
+                                                onClick={() => removeMainCatalogGroup(uuid)}
+                                                className="bg-red-600 text-white hover:bg-red-700 font-bold"
+                                            >
+                                                Disable Group
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
 
                             <div className="hidden sm:block w-px h-4 bg-border mx-1" />
 
@@ -678,6 +760,55 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                 New Subgroup
                             </Button>
                         </div>
+                        {/* Management buttons for mobile */}
+                        <div className="flex sm:hidden items-center gap-2 bg-background/50 border border-border rounded-lg p-2 w-full mt-4 justify-between">
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setIsRenaming(true)}
+                                    className="h-9 w-9 p-0 text-foreground/70 hover:text-foreground bg-background/50 border-border"
+                                >
+                                    <Pencil className="w-4 h-4" />
+                                </Button>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-9 w-9 p-0 text-red-400 hover:text-red-300 bg-background/50 border-border"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent className="bg-card border-border text-foreground">
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Disable Main Group?</AlertDialogTitle>
+                                            <AlertDialogDescription className="text-foreground/70">
+                                                This will hide the group <span className="text-foreground font-bold">"{formatDisplayName(name)}"</span> and all its subgroups.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel className="bg-muted border-border text-foreground/70">Cancel</AlertDialogCancel>
+                                            <AlertDialogAction
+                                                onClick={() => removeMainCatalogGroup(uuid)}
+                                                className="bg-red-600 text-white hover:bg-red-700 font-bold"
+                                            >
+                                                Disable
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => onAddSubgroup?.(uuid)}
+                                className="flex-1 h-9 text-[11px] text-blue-400 hover:text-blue-300 bg-blue-500/5 border-blue-500/20 font-bold"
+                            >
+                                <Plus className="w-3.5 h-3.5 mr-1.5" /> New Subgroup
+                            </Button>
+                        </div>
                     </div>
 
                     <RenameGroupModal
@@ -685,7 +816,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                         onClose={() => setIsRenaming(false)}
                         oldName={name}
                         isMainGroup={true}
-                        onRename={(oldN, newN) => {
+                        onRename={(oldN: string, newN: string) => {
                             setIsRenaming(false);
                             renameMainCatalogGroup(uuid, newN);
                         }}
@@ -693,13 +824,18 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
 
                     {subgroups.length === 0 ? (
                         <div className="text-center py-8 border border-dashed border-border/80 rounded-xl bg-background/30 flex flex-col items-center justify-center gap-2">
-                            <FolderPlus className="w-8 h-8 text-foreground/70/50" />
+                            <FolderPlus className="w-8 h-8 text-foreground/70" />
                             <p className="text-sm font-medium text-foreground/70">No subgroups exist here.</p>
                             <p className="text-xs text-foreground/70/80">Add subgroups by clicking "Add to Group" at the top.</p>
                         </div>
                     ) : (
                         <div className="space-y-1">
-                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleSubgroupDragEnd}>
+                            <DndContext 
+                                sensors={sensors} 
+                                collisionDetection={closestCenter} 
+                                onDragStart={handleSubgroupDragStart}
+                                onDragEnd={handleSubgroupDragEnd}
+                            >
                                 <SortableContext items={subgroups} strategy={verticalListSortingStrategy}>
                                     {subgroups.map(sg => (
                                         <SortableSubgroupNode
@@ -712,6 +848,24 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                         />
                                     ))}
                                 </SortableContext>
+                                <DragOverlay dropAnimation={{
+                                    sideEffects: defaultDropAnimationSideEffects({
+                                        styles: {
+                                            active: {
+                                                opacity: '0.4',
+                                            },
+                                        },
+                                    }),
+                                }}>
+                                    {activeSubgroupId ? (
+                                        <div className="border border-blue-500 rounded-xl overflow-hidden bg-card shadow-2xl scale-[1.02] opacity-90 p-4 flex items-center gap-4">
+                                            <GripVertical className="h-4 w-4 text-blue-500" />
+                                            <div className="font-semibold text-sm text-foreground">
+                                                {formatDisplayName(activeSubgroupId)}
+                                            </div>
+                                        </div>
+                                    ) : null}
+                                </DragOverlay>
                             </DndContext>
                         </div>
                     )}
@@ -792,7 +946,7 @@ function UnassignedSubgroupRow({
         );
     }, [catalogOptions, catalogSearch]);
 
-    const handleAddCatalog = (e: Event, catalogId: string) => {
+    const handleAddCatalog = (e: any, catalogId: string) => {
         e.preventDefault();
         if (!catalogId.trim()) return;
         const name = resolveCatalogName(catalogId.trim(), currentValues.custom_catalog_names || {});
@@ -812,11 +966,15 @@ function UnassignedSubgroupRow({
     };
 
     const sensors = useSensors(
-        useSensor(PointerSensor),
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
         useSensor(TouchSensor, {
             activationConstraint: {
-                delay: 250,
-                tolerance: 5,
+                delay: 300,
+                tolerance: 8,
             },
         }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -1007,7 +1165,7 @@ function UnassignedSubgroupRow({
                                                         {groups[category].map(c => (
                                                             <DropdownMenuItem
                                                                 key={c.id}
-                                                                onSelect={(e) => handleAddCatalog(e, c.id)}
+                                                                onSelect={(e: any) => handleAddCatalog(e, c.id)}
                                                                 className="flex items-start gap-2 p-2 rounded cursor-pointer focus:bg-blue-500/10 focus:text-blue-400"
                                                             >
                                                                 <div className="flex-1 min-w-0">
@@ -1046,6 +1204,7 @@ export function UnifiedSubgroupEditor() {
     const [createParentUUID, setCreateParentUUID] = useState<string | undefined>();
     const [isAddToGroupModalOpen, setIsAddToGroupModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [activeMainGroupId, setActiveMainGroupId] = useState<string | null>(null);
     const [recentUnassigns, setRecentUnassigns] = useState<Record<string, string>>({}); // subgroupName -> parentUuid
 
     const handleUnassignSubgroup = (subgroupName: string, parentUuid: string) => {
@@ -1057,18 +1216,27 @@ export function UnifiedSubgroupEditor() {
     }, [JSON.stringify(mainGroupOrderFromConfig)]);
 
     const sensors = useSensors(
-        useSensor(PointerSensor),
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
         useSensor(TouchSensor, {
             activationConstraint: {
-                delay: 150,
-                tolerance: 5,
+                delay: 300,
+                tolerance: 8,
             },
         }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
+    const handleMainDragStart = (event: any) => {
+        setActiveMainGroupId(event.active.id);
+    };
+
     const handleMainDragEnd = (event: any) => {
         const { active, over } = event;
+        setActiveMainGroupId(null);
         if (over && active.id !== over.id) {
             const oldIndex = mainGroupOrder.indexOf(active.id as string);
             const newIndex = mainGroupOrder.indexOf(over.id as string);
@@ -1161,7 +1329,12 @@ export function UnifiedSubgroupEditor() {
                 </div>
             )}
 
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleMainDragEnd}>
+            <DndContext 
+                sensors={sensors} 
+                collisionDetection={closestCenter} 
+                onDragStart={handleMainDragStart}
+                onDragEnd={handleMainDragEnd}
+            >
                 <SortableContext items={mainGroupOrder} strategy={verticalListSortingStrategy}>
                     <Accordion type="single" collapsible className="w-full space-y-4">
                         {mainGroupOrder.map(uuid => {
@@ -1183,6 +1356,24 @@ export function UnifiedSubgroupEditor() {
                         })}
                     </Accordion>
                 </SortableContext>
+                <DragOverlay dropAnimation={{
+                    sideEffects: defaultDropAnimationSideEffects({
+                        styles: {
+                            active: {
+                                opacity: '0.4',
+                            },
+                        },
+                    }),
+                }}>
+                    {activeMainGroupId ? (
+                        <div className="border border-blue-500 rounded-xl overflow-hidden bg-card shadow-2xl scale-[1.02] opacity-90 p-4 flex items-center gap-4">
+                            <GripVertical className="h-5 w-5 text-blue-500" />
+                            <div className="font-bold text-lg tracking-tight text-foreground">
+                                {formatDisplayName(mainCatalogGroups[activeMainGroupId]?.name || "Moving Group...")}
+                            </div>
+                        </div>
+                    ) : null}
+                </DragOverlay>
             </DndContext>
 
             {unassignedGroups.length > 0 && (

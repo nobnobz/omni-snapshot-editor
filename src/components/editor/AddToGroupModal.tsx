@@ -185,12 +185,12 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                     }
 
                                     const unassignedElements: React.ReactNode[] = [];
-                                    // Process categories in a stable order (e.g., appearance order in allSubgroupNames, which the Map preserves)
+                                    // Process categories in a stable order
                                     for (const [cat, items] of categories.entries()) {
                                         if (items.length > 0) {
                                             unassignedElements.push(
-                                                <div key={`header-${cat}`} className="sticky top-0 bg-background text-[10px] font-bold text-foreground/50 uppercase tracking-widest mt-6 mb-2 pl-1 border-b border-border/30 pb-1.5 z-10">
-                                                    {cat}
+                                                <div key={`header-${cat}`} className="sticky top-0 bg-background py-2.5 z-20 mb-2 border-b border-border/40">
+                                                    <h5 className="text-[11px] font-bold text-blue-500 uppercase tracking-[0.2em]">{cat}</h5>
                                                 </div>
                                             );
 
@@ -228,13 +228,19 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                         <div className="space-y-1 pr-3 pb-2 pt-1">
                                             {assignedNodes.length > 0 && (
                                                 <div className="mb-6 space-y-1">
-                                                    <div className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-2 border-b border-border pb-1">Assigned</div>
+                                                    <div className="sticky top-0 bg-background py-2.5 z-20 mb-2 border-b border-border/40">
+                                                        <h5 className="text-[11px] font-bold text-emerald-500 uppercase tracking-[0.2em]">Assigned</h5>
+                                                    </div>
                                                     {assignedNodes}
                                                 </div>
                                             )}
                                             {unassignedElements.length > 0 && (
                                                 <div className="space-y-1">
-                                                    {assignedNodes.length > 0 && <div className="text-xs font-semibold text-foreground/70 uppercase tracking-wider mb-2 border-b border-border pb-1 mt-6">Unassigned</div>}
+                                                    {assignedNodes.length > 0 && (
+                                                        <div className="sticky top-0 bg-background py-2.5 z-20 mb-2 border-b border-border/40 mt-4">
+                                                            <h5 className="text-[11px] font-bold text-foreground/50 uppercase tracking-[0.2em]">Unassigned</h5>
+                                                        </div>
+                                                    )}
                                                     {unassignedElements}
                                                 </div>
                                             )}

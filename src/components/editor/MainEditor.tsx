@@ -50,6 +50,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { APP_VERSION } from "@/lib/constants";
 
 export function MainEditor() {
     const { originalConfig, currentValues, fileName, exportConfig, exportPartialConfig, resetAll, cleanupOrphans, customFallbacks, setCustomFallbacks, unloadConfig } = useConfig();
@@ -375,7 +376,8 @@ export function MainEditor() {
                                     Made by Bot-Bid-Raiser
                                 </div>
                                 <div className="text-[9px] text-foreground/70 font-medium">
-                                    v0.2.3 • Built with Antigravity                             </div>
+                                    v{APP_VERSION}
+                                </div>
                             </div>
                         </div>
                     </div>

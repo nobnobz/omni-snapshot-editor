@@ -10,6 +10,8 @@ import {
     TouchSensor,
     useSensor,
     useSensors,
+    DragOverlay,
+    defaultDropAnimationSideEffects,
 } from '@dnd-kit/core';
 import {
     arrayMove,
@@ -88,7 +90,13 @@ function SortableItem({
             style={style}
             className={`group flex items-center gap-3 p-3 bg-card border border-border rounded-lg mb-2 ${isDragging ? "opacity-50 border-blue-500" : ""}`}
         >
-            <button {...attributes} {...listeners} className="cursor-grab hover:text-white text-foreground/70" aria-label="Drag handle">
+            <button
+                {...attributes}
+                {...listeners}
+                className="cursor-grab hover:text-white text-foreground/70 select-none"
+                style={{ touchAction: 'none' }}
+                aria-label="Drag handle"
+            >
                 <GripVertical className="h-4 w-4" />
             </button>
             <div className="flex-1 min-w-0">
@@ -151,25 +159,35 @@ function SortableList({
     onToggleCatalog: (id: string, isEnabled: boolean) => void
 }) {
     const [items, setItems] = useState(itemsList);
+    const [activeId, setActiveId] = useState<string | null>(null);
 
     React.useEffect(() => {
         setItems(itemsList);
     }, [JSON.stringify(itemsList)]);
 
     const sensors = useSensors(
-        useSensor(PointerSensor),
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
         useSensor(TouchSensor, {
             activationConstraint: {
-                delay: 250,
-                tolerance: 5,
+                delay: 300,
+                tolerance: 8,
             },
         }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
+    const handleDragStart = (event: any) => {
+        setActiveId(event.active.id);
+    };
+
     const handleDragEnd = (event: any) => {
         const { active, over } = event;
-        if (active.id !== over.id) {
+        setActiveId(null);
+        if (over && active.id !== over.id) {
             const oldIndex = items.indexOf(active.id);
             const newIndex = items.indexOf(over.id);
             const newArray = arrayMove(items, oldIndex, newIndex);
@@ -213,7 +231,12 @@ function SortableList({
                 <Button variant="ghost" size="sm" onClick={disableAll} className="h-8 text-[13px] text-foreground/70 hover:text-foreground/70">Disable All</Button>
             </div>
 
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <DndContext 
+                sensors={sensors} 
+                collisionDetection={closestCenter} 
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+            >
                 <SortableContext items={items} strategy={verticalListSortingStrategy}>
                     <div className="space-y-0.5 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
                         {items.map((id) => (
@@ -230,6 +253,27 @@ function SortableList({
                         ))}
                     </div>
                 </SortableContext>
+                <DragOverlay dropAnimation={{
+                    sideEffects: defaultDropAnimationSideEffects({
+                        styles: {
+                            active: {
+                                opacity: '0.4',
+                            },
+                        },
+                    }),
+                }}>
+                    {activeId ? (
+                        <div className="flex items-center gap-3 p-3 bg-muted border border-blue-500 rounded-lg shadow-2xl scale-[1.02] opacity-90">
+                            <GripVertical className="h-4 w-4 text-blue-500" />
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[15px] truncate font-medium text-foreground">
+                                    {resolveCatalogName(activeId, customNames)}
+                                </p>
+                                {resolveCatalogName(activeId, customNames) === activeId && <p className="text-[11px] text-foreground/70 truncate font-mono">{activeId}</p>}
+                            </div>
+                        </div>
+                    ) : null}
+                </DragOverlay>
             </DndContext>
         </div>
     );

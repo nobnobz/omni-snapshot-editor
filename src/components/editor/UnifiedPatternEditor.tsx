@@ -135,7 +135,7 @@ function PatternNode({ regex, onDelete, onRename }: { regex: string, onDelete: (
                     ) : (
                         <div className="flex items-center gap-3 p-2.5 rounded-lg border border-border/80 bg-background/50 shadow-inner group/regex transition-colors hover:border-border/80">
                             <code className="text-[11px] sm:text-xs font-mono text-blue-400 flex-1 break-all tracking-tight">{regex}</code>
-                            <Button size="icon" variant="ghost" onClick={handleStartEdit} className="h-7 w-7 text-foreground/70 hover:text-blue-400 hover:bg-blue-500/10 rounded-md opacity-0 group-hover/regex:opacity-100 transition-all shrink-0">
+                            <Button size="icon" variant="ghost" onClick={handleStartEdit} className="h-7 w-7 text-foreground/70 hover:text-blue-400 hover:bg-blue-500/10 rounded-md opacity-100 sm:opacity-0 sm:group-hover/regex:opacity-100 transition-all shrink-0">
                                 <Pencil className="w-3.5 h-3.5" />
                             </Button>
                         </div>
