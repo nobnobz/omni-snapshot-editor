@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, Github, Upload, CheckCircle2, Sparkles, FileJson, BookOpen, Heart, ChevronDown, FileDown, ExternalLink } from "lucide-react";
+import { AlertCircle, Github, Upload, CheckCircle2, Sparkles, FileJson, BookOpen, Heart, ChevronDown, FileDown, ExternalLink, Download, ChevronRight } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
@@ -478,32 +478,33 @@ export function ConfigLoader() {
                             );
 
                             return (
-                                <div className="flex flex-col gap-3 w-full sm:w-auto items-center sm:flex-row">
-                                    {/* Row 2: UME Templates on mobile */}
-                                    <div className="w-full flex justify-center sm:hidden">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <button className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm text-foreground/70 hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors font-medium border border-white/20 hover:border-white/40 backdrop-blur-sm group">
-                                                    <Github className="w-4 h-4" />
-                                                    <span>UME Templates</span>
-                                                    <ChevronDown className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-opacity" />
-                                                </button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent className="w-64 bg-card border-border shadow-2xl backdrop-blur-xl pb-2" align="center">
-                                                {templatesContent}
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                <div className="flex flex-col gap-4 max-w-xl mx-auto px-4">
+                                    <div className="flex flex-row justify-center gap-3">
+                                        <Dialog>
+                                            <DialogTrigger asChild>
+                                                <Button variant="outline" className="flex-1 bg-white/5 hover:bg-white/10 text-white border-white/10 hover:border-white/20 h-10 text-xs sm:text-sm transition-all duration-300">
+                                                    <BookOpen className="w-4 h-4 mr-2 text-blue-400" />
+                                                    Docs
+                                                </Button>
+                                            </DialogTrigger>
+                                            <Documentation />
+                                        </Dialog>
+                                        <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer" className="flex-1">
+                                            <Button variant="outline" className="w-full bg-white/5 hover:bg-white/10 text-white border-white/10 hover:border-white/20 h-10 text-xs sm:text-sm transition-all duration-300">
+                                                <Heart className="w-4 h-4 mr-2 text-pink-500" />
+                                                Support
+                                            </Button>
+                                        </a>
                                     </div>
 
-                                    {/* Original UME Templates for Desktop */}
-                                    <div className="hidden sm:block">
+                                    <div className="flex justify-center">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <button className="inline-flex items-center gap-2 px-4 py-2 text-sm text-foreground/70 hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors font-medium border border-white/20 hover:border-white/40 backdrop-blur-sm group">
-                                                    <Github className="w-4 h-4" />
-                                                    <span>UME Templates</span>
-                                                    <ChevronDown className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-opacity" />
-                                                </button>
+                                                <Button className="w-full sm:w-auto min-w-[200px] bg-blue-600 hover:bg-blue-500 text-white h-11 text-sm font-bold shadow-lg shadow-blue-500/20 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]">
+                                                    <Download className="w-4 h-4 mr-2" />
+                                                    UME Templates
+                                                    <ChevronRight className="w-4 h-4 ml-2 opacity-50" />
+                                                </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent className="w-64 bg-card border-border shadow-2xl backdrop-blur-xl pb-2" align="center">
                                                 {templatesContent}
@@ -659,7 +660,7 @@ export function ConfigLoader() {
 
                 <div className="mt-8 text-center">
                     <p className="text-[10px] text-foreground/70 font-bold uppercase tracking-widest leading-relaxed">
-                        v0.2.1 • Built with Antigravity by Bot-Bid-Raiser
+                        v0.2.2 • Built with Antigravity by Bot-Bid-Raiser
                     </p>
                 </div>
             </div>

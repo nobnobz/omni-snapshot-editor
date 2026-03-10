@@ -811,8 +811,14 @@ function UnassignedSubgroupRow({
         updateValue(["catalog_groups", groupName], newOrder);
     };
 
-    const catalogSensors = useSensors(
+    const sensors = useSensors(
         useSensor(PointerSensor),
+        useSensor(TouchSensor, {
+            activationConstraint: {
+                delay: 250,
+                tolerance: 5,
+            },
+        }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
@@ -922,7 +928,7 @@ function UnassignedSubgroupRow({
             {isExpanded && (
                 <div className="p-4 border-t border-border bg-background">
                     <div className="space-y-1 mb-4">
-                        <DndContext sensors={catalogSensors} collisionDetection={closestCenter} onDragEnd={handleInternalDragEnd}>
+                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleInternalDragEnd}>
                             <SortableContext items={subgroupCatalogsProp} strategy={verticalListSortingStrategy}>
                                 {subgroupCatalogsProp.map(catId => (
                                     <SortableCatalogNode
@@ -1102,26 +1108,28 @@ export function UnifiedSubgroupEditor() {
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center mb-6">
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 w-full">
                     <Button
                         onClick={() => setIsCreateModalOpen(true)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-semibold"
+                        className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-semibold h-10 px-3 sm:px-4"
                     >
-                        <Plus className="w-5 h-5 mr-2" />
-                        Create New Group
+                        <Plus className="w-5 h-5 mr-1.5 sm:mr-2" />
+                        <span className="hidden sm:inline">Create New Group</span>
+                        <span className="sm:hidden">New Group</span>
                     </Button>
                     <Button
                         onClick={() => setIsAddToGroupModalOpen(true)}
-                        className="bg-muted hover:bg-muted/80 text-foreground border border-border shadow-sm"
+                        className="bg-muted hover:bg-muted/80 text-foreground border border-border shadow-sm h-10 px-3 sm:px-4"
                     >
-                        <FolderPlus className="w-5 h-5 mr-2" />
-                        Add to Group
+                        <FolderPlus className="w-5 h-5 mr-1.5 sm:mr-2" />
+                        <span className="hidden sm:inline">Add to Group</span>
+                        <span className="sm:hidden">Add Group</span>
                     </Button>
                     <Button
                         onClick={() => setIsImportModalOpen(true)}
-                        className="bg-muted hover:bg-muted/80 text-foreground border border-border shadow-sm"
+                        className="bg-muted hover:bg-muted/80 text-foreground border border-border shadow-sm h-10 px-3 sm:px-4 col-span-2 sm:col-auto"
                     >
-                        <UploadCloud className="w-5 h-5 mr-2" />
+                        <UploadCloud className="w-5 h-5 mr-1.5 sm:mr-2" />
                         Update from Template
                     </Button>
                 </div>

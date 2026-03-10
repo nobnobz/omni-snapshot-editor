@@ -514,7 +514,7 @@ export function CatalogEditor() {
                                 />
                             </div>
                         </div>
-                        <div className="max-h-[320px] overflow-y-auto p-1 pt-0 custom-scrollbar">
+                        <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar overscroll-contain pb-4">
                             {filteredAddCandidates.length === 0 ? (
                                 <p className="text-[10px] text-foreground/70 p-4 text-center">No catalogs found.</p>
                             ) : (

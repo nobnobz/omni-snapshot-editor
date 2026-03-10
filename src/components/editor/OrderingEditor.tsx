@@ -208,7 +208,7 @@ function SortableList({
 
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={items} strategy={verticalListSortingStrategy}>
-                    <div className="space-y-0.5 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="space-y-0.5 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
                         {items.map((id) => (
                             <SortableItem
                                 key={id}
