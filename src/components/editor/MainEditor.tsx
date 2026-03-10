@@ -14,11 +14,9 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Textarea } from "@/components/ui/textarea";
 import { Documentation } from "@/components/editor/Documentation";
 import {
-    Search,
     Download,
     Copy,
     RotateCcw,
-    Eye,
     Check,
     UploadCloud,
     ClipboardPaste,
@@ -52,9 +50,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { APP_VERSION } from "@/lib/constants";
 
+type UiNotice = {
+    tone: "success" | "error" | "info";
+    message: string;
+};
+
 export function MainEditor() {
-    const { originalConfig, currentValues, fileName, exportConfig, exportPartialConfig, resetAll, cleanupOrphans, customFallbacks, setCustomFallbacks, unloadConfig } = useConfig();
-    const [searchTerm, setSearchTerm] = useState("");
+    const { originalConfig, currentValues, fileName, exportConfig, exportPartialConfig, customFallbacks, setCustomFallbacks, unloadConfig } = useConfig();
+    const searchTerm = "";
 
     // Export Modal State
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -67,6 +70,7 @@ export function MainEditor() {
     // Sidebar State
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isCopied, setIsCopied] = useState(false);
+    const [uiNotice, setUiNotice] = useState<UiNotice | null>(null);
 
     const ignoredKeys = new Set([
         "stream_button_elements_order",
@@ -118,9 +122,9 @@ export function MainEditor() {
         { id: "patterns", title: "Patterns & Regex", keys: ["pattern_tag_enabled_patterns", "regex_pattern_custom_names", "regex_pattern_image_urls", "pattern_default_filter_enabled_patterns", "pattern_image_color_indices", "pattern_border_radius_indices", "pattern_background_opacities", "pattern_border_thickness_indices", "pattern_color_indices", "pattern_color_hex_values", "auto_play_enabled_patterns", "auto_play_patterns"] },
     ];
 
-    // Map keys to their section
-    const keyToSectionMap = new Map<string, string>();
-    sections.forEach(s => s.keys.forEach(k => keyToSectionMap.set(k, s.id)));
+    const showNotice = (tone: UiNotice["tone"], message: string) => {
+        setUiNotice({ tone, message });
+    };
 
     const handleDownloadClick = () => {
         setSetupName(originalConfig?.name || "");
@@ -166,7 +170,7 @@ export function MainEditor() {
         setIsExitConfirmOpen(false);
     };
 
-    const handleSectionExport = (sectionId: string, sectionTitle: string, keys: string[]) => {
+    const handleSectionExport = (_sectionId: string, sectionTitle: string, keys: string[]) => {
         const config = exportPartialConfig(keys);
         if (!config) return;
 
@@ -203,7 +207,7 @@ export function MainEditor() {
             const config = JSON.parse(jsonText);
             const catalogsList = config?.config?.catalogs || config?.catalogs;
             if (!catalogsList || !Array.isArray(catalogsList)) {
-                alert("Invalid JSON format. Could not find catalogs array.");
+                showNotice("error", "Invalid JSON format. Could not find catalogs array.");
                 return;
             }
 
@@ -218,11 +222,11 @@ export function MainEditor() {
 
             setCustomFallbacks(newFallbacks);
             localStorage.setItem("omni_custom_fallbacks", JSON.stringify(newFallbacks));
-            alert(`Successfully imported ${addedCount} catalog names!`);
+            showNotice("success", `Imported ${addedCount} catalog names from AIOMetadata.`);
             setPastedJson(""); // clear on success
-        } catch (err) {
+        } catch (err: unknown) {
             console.error(err);
-            alert("Failed to parse JSON. Please ensure it is valid JSON.");
+            showNotice("error", "Failed to parse JSON. Please ensure it is valid JSON.");
         }
     };
 
@@ -250,7 +254,7 @@ export function MainEditor() {
     const confirmResetCatalogNames = () => {
         setCustomFallbacks({});
         localStorage.removeItem("omni_custom_fallbacks");
-        alert("AIOMetadata imported names have been cleared.");
+        showNotice("info", "Imported AIOMetadata names were cleared.");
         setIsResetConfirmOpen(false);
     };
 
@@ -289,6 +293,7 @@ export function MainEditor() {
                             size="icon"
                             className="lg:hidden text-foreground/70 hover:text-white -mr-2"
                             onClick={() => setIsSidebarOpen(false)}
+                            aria-label="Close sidebar"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                         </Button>
@@ -308,38 +313,48 @@ export function MainEditor() {
                     <div className="pt-4 mt-4 border-t border-border space-y-2">
                         <Dialog>
                             <DialogTrigger asChild>
-                                <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-md transition-colors font-medium">
+                                <Button
+                                    variant="ghost"
+                                    className="w-full justify-start gap-3 h-10 px-3 text-sm text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 font-medium"
+                                >
                                     <BookOpen className="w-4 h-4" />
                                     Documentation
-                                </button>
+                                </Button>
                             </DialogTrigger>
                             <Documentation />
                         </Dialog>
-                        <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer" className="w-full flex items-center gap-3 px-3 py-2 text-sm text-pink-500 hover:text-pink-400 hover:bg-pink-500/10 rounded-md transition-colors font-medium">
-                            <Heart className="w-4 h-4" />
-                            Support my work
-                        </a>
+                        <Button
+                            asChild
+                            variant="ghost"
+                            className="w-full justify-start gap-3 h-10 px-3 text-sm text-pink-500 hover:text-pink-400 hover:bg-pink-500/10 font-medium"
+                        >
+                            <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer">
+                                <Heart className="w-4 h-4" />
+                                Support Me
+                            </a>
+                        </Button>
                     </div>
                 </nav>
 
                 <div className="p-4 border-t border-border bg-card flex flex-col gap-2">
                     <div className="bg-background/40 rounded-lg p-2.5 border border-border/60 mb-1">
                         <div className="flex justify-between items-center mb-1.5">
-                            <div className="text-[8px] font-bold uppercase tracking-widest text-foreground/70 flex items-center gap-1.5 leading-none">
+                            <div className="text-[11px] font-bold uppercase tracking-wide text-foreground/70 flex items-center gap-1.5 leading-none">
                                 <FileJson className="w-3 h-3 text-foreground/70" />
                                 Selected File
                             </div>
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-5 w-5 text-foreground/70 hover:text-blue-500 hover:bg-blue-500/10 -mr-1 -mt-1 group/back"
+                                className="h-8 w-8 text-foreground/70 hover:text-blue-500 hover:bg-blue-500/10 -mr-1 -mt-1 group/back"
                                 onClick={handleBackToStart}
                                 title="Back to Start"
+                                aria-label="Back to start"
                             >
-                                <LogOut className="w-2.5 h-2.5 transition-transform group-hover/back:-translate-x-0.5" />
+                                <LogOut className="w-3.5 h-3.5 transition-transform group-hover/back:-translate-x-0.5" />
                             </Button>
                         </div>
-                        <p className="text-[10px] text-foreground/70 font-mono truncate">{fileName}</p>
+                        <p className="text-xs text-foreground/70 font-mono truncate">{fileName}</p>
                     </div>
 
                     <div className="hidden lg:flex flex-col gap-2">
@@ -363,7 +378,7 @@ export function MainEditor() {
                     <div className="mt-3">
                         <div className="flex flex-col gap-2.5 pt-3 pb-2 border-t border-border/40">
                             <div className="flex items-center justify-between">
-                                <a href="https://github.com/nobnobz/omni-snapshot-editor" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-[9px] text-foreground/70 hover:text-foreground transition-colors font-medium">
+                                <a href="https://github.com/nobnobz/omni-snapshot-editor" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-foreground/70 hover:text-foreground transition-colors font-medium">
                                     <Github className="w-3.5 h-3.5" />
                                     GitHub
                                 </a>
@@ -372,10 +387,10 @@ export function MainEditor() {
                                 </div>
                             </div>
                             <div className="flex items-center justify-between">
-                                <div className="text-[9px] text-foreground/70 font-medium">
+                                <div className="text-xs text-foreground/70 font-medium">
                                     Made by Bot-Bid-Raiser
                                 </div>
-                                <div className="text-[9px] text-foreground/70 font-medium">
+                                <div className="text-xs text-foreground/70 font-medium">
                                     v{APP_VERSION}
                                 </div>
                             </div>
@@ -440,6 +455,7 @@ export function MainEditor() {
                         size="icon"
                         onClick={() => setIsSidebarOpen(true)}
                         className="text-foreground/70 hover:text-white lg:hidden h-8 w-8 shrink-0"
+                        aria-label="Open sidebar"
                     >
                         <Menu className="w-5 h-5" />
                     </Button>
@@ -450,7 +466,7 @@ export function MainEditor() {
                         </div>
                         <div className="flex flex-col">
                             <span className="leading-none text-foreground font-bold text-[13px] sm:text-sm">Omni Snapshot</span>
-                            <span className="text-[8px] sm:text-[9px] text-blue-400 font-bold uppercase tracking-widest mt-0.5">Manager</span>
+                            <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wide mt-0.5">Manager</span>
                         </div>
                     </div>
 
@@ -490,6 +506,7 @@ export function MainEditor() {
                             onClick={handleBackToStart}
                             className="h-8 w-8 text-foreground/70 hover:text-foreground hover:bg-muted"
                             title="Back to Start"
+                            aria-label="Back to start"
                         >
                             <RotateCcw className="h-4 w-4" />
                         </Button>
@@ -497,8 +514,31 @@ export function MainEditor() {
                 </header>
 
                 <div className="max-w-5xl mx-auto px-4 py-8 sm:p-10 space-y-16">
-
-
+                    {uiNotice && (
+                        <div
+                            className={`rounded-xl border px-4 py-3 text-sm leading-relaxed ${uiNotice.tone === "error"
+                                ? "border-red-500/30 bg-red-500/10 text-red-200"
+                                : uiNotice.tone === "success"
+                                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+                                    : "border-blue-500/30 bg-blue-500/10 text-blue-200"
+                                }`}
+                            role="status"
+                            aria-live="polite"
+                        >
+                            <div className="flex items-start justify-between gap-3">
+                                <span>{uiNotice.message}</span>
+                                <Button
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    className="shrink-0 text-foreground/80 hover:text-foreground"
+                                    onClick={() => setUiNotice(null)}
+                                    aria-label="Dismiss notice"
+                                >
+                                    <span className="text-base leading-none">x</span>
+                                </Button>
+                            </div>
+                        </div>
+                    )}
 
                     {sections.map(section => {
                         // For predefined sections, show all specified keys

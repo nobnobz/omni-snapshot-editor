@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
 import { OmniConfig } from "../lib/types";
-import { formatDisplayName, resolveCatalogName, ensureCatalogPrefix } from '@/lib/utils';
+import { resolveCatalogName, ensureCatalogPrefix } from '@/lib/utils';
 import { decodeConfig, encodeConfig, pruneDisabledCatalogs, pruneDisabledKeys } from "../lib/config-utils";
 import { renameGroup, renameMainGroup, disableGroup, disableMainGroup, disableCatalog, validateAndFix, countGroupReferences, countMainGroupReferences, unassignSubgroup, assignSubgroup, createMainGroup, createSubgroup, importGroups } from "../lib/mutations";
 
@@ -266,7 +266,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         });
     };
 
-    const updateCatalogsOrder = (newOrder: any[]) => {
+    const updateCatalogsOrder = (_newOrder: any[]) => {
         // Specifically for catalogs
     };
 

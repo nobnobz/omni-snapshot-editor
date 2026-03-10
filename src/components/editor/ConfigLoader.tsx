@@ -1,16 +1,16 @@
 "use client";
 
-import { decodeConfig, encodeConfig, validateOmniConfig } from "@/lib/config-utils";
+import { validateOmniConfig } from "@/lib/config-utils";
 import { useState, useEffect } from "react";
 import { useConfig } from "@/context/ConfigContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, Github, Upload, CheckCircle2, Sparkles, FileJson, BookOpen, Heart, ChevronDown, FileDown, ExternalLink, Download, ChevronRight, Layout, UploadCloud } from "lucide-react";
+import { AlertCircle, Github, Upload, Sparkles, FileJson, BookOpen, Heart, ChevronDown, FileDown, ExternalLink, ChevronRight, Layout, UploadCloud } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Dialog, DialogTrigger, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -22,6 +22,11 @@ import {
 import { Documentation } from "@/components/editor/Documentation";
 import { TemplateGuide } from "@/components/editor/TemplateGuide";
 import { APP_VERSION } from "@/lib/constants";
+import type { OmniConfig } from "@/lib/types";
+
+type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+type JsonObject = { [key: string]: JsonValue };
+type LoaderSkeleton = OmniConfig & { catalogs?: unknown[] };
 
 function fixMojibakeString(str: string): string {
     if ([...str].some(c => c.charCodeAt(0) > 255)) return str;
@@ -29,20 +34,20 @@ function fixMojibakeString(str: string): string {
         const bytes = new Uint8Array(str.split("").map(c => c.charCodeAt(0)));
         const decoded = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
         return decoded === str ? str : decoded;
-    } catch (e) {
+    } catch {
         return str;
     }
 }
 
-function repairMojibakeInConfig(obj: any): any {
+function repairMojibakeInConfig(obj: unknown): unknown {
     if (typeof obj === "string") {
         return fixMojibakeString(obj);
     } else if (Array.isArray(obj)) {
         return obj.map(repairMojibakeInConfig);
     } else if (obj !== null && typeof obj === "object") {
-        const newObj: any = {};
+        const newObj: Record<string, unknown> = {};
         for (const key in obj) {
-            newObj[key] = repairMojibakeInConfig(obj[key]);
+            newObj[key] = repairMojibakeInConfig((obj as Record<string, unknown>)[key]);
         }
         return newObj;
     }
@@ -50,11 +55,11 @@ function repairMojibakeInConfig(obj: any): any {
 }
 
 export function ConfigLoader() {
-    const { loadConfig, manifest, manifestStatus, fetchManifest } = useConfig();
+    const { loadConfig, manifest, fetchManifest } = useConfig();
 
     useEffect(() => {
         fetchManifest();
-    }, []);
+    }, [fetchManifest]);
 
     const templates: { label: string; url: string }[] = manifest?.templates?.length ?
         manifest.templates
@@ -77,7 +82,6 @@ export function ConfigLoader() {
         }
     }, [manifest]);
 
-    const [token, setToken] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -95,18 +99,14 @@ export function ConfigLoader() {
         setLoading(true);
         setError(null);
         try {
-            const headers: HeadersInit = {};
-            if (token) {
-                headers["Authorization"] = `token ${token}`;
-            }
-            const response = await fetch(url, { headers });
+            const response = await fetch(url);
             if (!response.ok) {
                 throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`);
             }
             const buffer = await response.arrayBuffer();
             const decoder = new TextDecoder("utf-8");
             const text = decoder.decode(buffer);
-            const json = repairMojibakeInConfig(JSON.parse(text));
+            const json = repairMojibakeInConfig(JSON.parse(text)) as OmniConfig;
 
             // Structural Validation
             if (!validateOmniConfig(json)) {
@@ -115,8 +115,9 @@ export function ConfigLoader() {
 
             const fn = url.split("/").pop() || "omni-config.json";
             loadConfig(json, fn);
-        } catch (err: any) {
-            setError(err.message || "Failed to load JSON from URL.");
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Failed to load JSON from URL.";
+            setError(message);
         } finally {
             setLoading(false);
         }
@@ -173,7 +174,7 @@ export function ConfigLoader() {
         const reader = new FileReader();
         reader.onload = (event) => {
             try {
-                const json = repairMojibakeInConfig(JSON.parse(event.target?.result as string));
+                const json = repairMojibakeInConfig(JSON.parse(event.target?.result as string)) as OmniConfig;
 
                 // Structural Validation
                 if (!validateOmniConfig(json)) {
@@ -183,7 +184,7 @@ export function ConfigLoader() {
                 }
 
                 loadConfig(json, file.name);
-            } catch (err) {
+            } catch {
                 setError("Invalid JSON file.");
             } finally {
                 setLoading(false);
@@ -193,8 +194,8 @@ export function ConfigLoader() {
     };
 
     const handleCreateBlank = () => {
-        const wrap = (val: any) => ({ _data: btoa(JSON.stringify(val)) });
-        const skeleton: any = {
+        const wrap = (val: JsonValue): { _data: string } => ({ _data: btoa(JSON.stringify(val)) });
+        const skeleton: LoaderSkeleton = {
             name: "New Project",
             version: "1.0.0",
             values: {
@@ -267,7 +268,7 @@ export function ConfigLoader() {
             },
             catalogs: []
         };
-        skeleton.includedKeys = Object.keys(skeleton.values);
+        skeleton.includedKeys = Object.keys(skeleton.values as JsonObject);
         loadConfig(skeleton, "clear-config.json");
     };
 
@@ -308,12 +309,12 @@ export function ConfigLoader() {
                                 <Documentation />
                             </Dialog>
 
-                            {/* 2. UME Templates */}
+                            {/* 2. UME */}
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <button className="group flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15 backdrop-blur-md border border-emerald-500/20 hover:border-emerald-500/40 hover:bg-emerald-500/20 transition-all duration-300 shadow-sm hover:shadow-emerald-500/10 hover:-translate-y-0.5">
                                         <Layout className="h-4 w-4 text-emerald-500 group-hover:rotate-12 transition-all" />
-                                        <span className="text-[12px] font-bold text-emerald-400 group-hover:text-emerald-300 tracking-tight">UME Templates</span>
+                                        <span className="text-[12px] font-bold text-emerald-400 group-hover:text-emerald-300 tracking-tight">UME</span>
                                         <ChevronDown className="h-3.5 w-3.5 text-emerald-500/50 group-hover:text-emerald-500 transition-colors" />
                                     </button>
                                 </DropdownMenuTrigger>

@@ -60,7 +60,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
         if (isOpen) {
             fetchManifest();
         }
-    }, [isOpen]);
+    }, [isOpen, fetchManifest]);
 
     const templates: { label: string; url: string }[] = [];
     if (manifest) {
@@ -86,7 +86,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
         if (manifest && templates.length > 0) {
             setSelectedVersion(templates[0].label);
         }
-    }, [manifest]);
+    }, [manifest, templates.length, templates[0]?.label]);
 
     const [templateLoading, setTemplateLoading] = useState(false);
 

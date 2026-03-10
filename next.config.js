@@ -4,10 +4,6 @@ const nextConfig = {
     images: { unoptimized: true },
     basePath: '/omni-snapshot-editor',
     trailingSlash: true,
-    typescript: {
-        ignoreBuildErrors: true,
-    },
 };
 
 module.exports = nextConfig;
-

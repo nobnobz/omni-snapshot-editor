@@ -79,7 +79,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
         if (isOpen) {
             fetchManifest();
         }
-    }, [isOpen]);
+    }, [isOpen, fetchManifest]);
 
     const omniTemplate = manifest?.templates.find(t => t.id === 'ume-main');
 
@@ -101,7 +101,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
         if (omniTemplate) {
             setSelectedVersion(omniTemplate.name);
         }
-    }, [manifest]);
+    }, [omniTemplate]);
 
     const [templateLoading, setTemplateLoading] = useState(false);
 

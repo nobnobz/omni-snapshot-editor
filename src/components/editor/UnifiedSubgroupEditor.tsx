@@ -55,6 +55,10 @@ import { formatDisplayName, resolveCatalogName, ensureCatalogPrefix } from "@/li
 import { CATALOG_FALLBACKS } from "@/lib/catalog-fallbacks";
 import { Label } from "@/components/ui/label";
 
+const stringArraysEqual = (a: string[], b: string[]) => (
+    a.length === b.length && a.every((item, idx) => item === b[idx])
+);
+
 // ----------------------------------------------------------------------
 // 1. Sortable Catalog Node (Inside a Subgroup)
 // ----------------------------------------------------------------------
@@ -147,7 +151,8 @@ function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => vo
                         variant="ghost"
                         size="icon"
                         onClick={(e) => { e.stopPropagation(); onRemove(); }}
-                        className="h-7 w-7 text-foreground/70 hover:text-red-400 hover:bg-red-500/10 transition-colors rounded-md border border-transparent hover:border-red-500/30"
+                        className="h-9 w-9 text-foreground/70 hover:text-red-400 hover:bg-red-500/10 transition-colors rounded-md border border-transparent hover:border-red-500/30"
+                        aria-label="Remove catalog from subgroup"
                     >
                         <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -180,8 +185,10 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
     };
 
     // Subgroup state
-    const catalogsList = currentValues.catalog_groups?.[subgroupName] || [];
-    const imageUrl = currentValues.catalog_group_image_urls?.[subgroupName] || "";
+    const rawCatalogsList = currentValues.catalog_groups?.[subgroupName];
+    const catalogsList: string[] = Array.isArray(rawCatalogsList) ? rawCatalogsList : [];
+    const rawImageUrl = currentValues.catalog_group_image_urls?.[subgroupName];
+    const imageUrl: string = typeof rawImageUrl === "string" ? rawImageUrl : "";
 
     const [subgroupCatalogs, setSubgroupCatalogs] = useState<string[]>(catalogsList);
     const [urlInput, setUrlInput] = useState(imageUrl);
@@ -251,9 +258,9 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
     const isLandscape = ["discover", "streaming services", "decades", "collection", "collections"].includes(parentName.toLowerCase());
 
     React.useEffect(() => {
-        setSubgroupCatalogs(catalogsList);
-        setUrlInput(imageUrl);
-    }, [JSON.stringify(catalogsList), imageUrl]);
+        setSubgroupCatalogs(prev => (stringArraysEqual(prev, catalogsList) ? prev : catalogsList));
+        setUrlInput(prev => (prev === imageUrl ? prev : imageUrl));
+    }, [catalogsList, imageUrl]);
 
     const handleUrlBlur = () => {
         if (urlInput !== imageUrl) {
@@ -318,13 +325,13 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
 
                 {/* Action Buttons: Desktop Header, Mobile hidden here (moved to layout section below) */}
                 <div className="hidden sm:flex items-center gap-1 opacity-80 hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" onClick={() => setIsRenaming(true)} className="h-7 w-7 text-foreground/70 hover:text-foreground hover:bg-muted transition-colors rounded-md border border-transparent hover:border-border/50" title="Rename Subgroup">
+                    <Button variant="ghost" size="icon" onClick={() => setIsRenaming(true)} className="h-9 w-9 text-foreground/70 hover:text-foreground hover:bg-muted transition-colors rounded-md border border-transparent hover:border-border/50" title="Rename Subgroup" aria-label="Rename subgroup">
                         <Pencil className="h-3.5 w-3.5" />
                     </Button>
                     <Button variant="ghost" size="icon" onClick={() => {
                         unassignCatalogGroup(subgroupName);
                         if (onUnassign) onUnassign(subgroupName, parentUUID);
-                    }} className="h-7 w-7 text-foreground/70 hover:text-red-400 hover:bg-red-500/10 transition-colors rounded-md border border-transparent hover:border-red-500/30" title="Unassign Subgroup">
+                    }} className="h-9 w-9 text-foreground/70 hover:text-red-400 hover:bg-red-500/10 transition-colors rounded-md border border-transparent hover:border-red-500/30" title="Unassign Subgroup" aria-label="Unassign subgroup">
                         <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                 </div>
@@ -580,8 +587,8 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
     const [expandedSubgroup, setExpandedSubgroup] = useState<string | null>(null);
 
     React.useEffect(() => {
-        setSubgroups(subgroupNames);
-    }, [JSON.stringify(subgroupNames)]);
+        setSubgroups(prev => (stringArraysEqual(prev, subgroupNames) ? prev : subgroupNames));
+    }, [subgroupNames]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -707,7 +714,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                 </DropdownMenuContent>
                             </DropdownMenu>
 
-                            <div className="hidden sm:flex items-center gap-1.5 sm:gap-2">
+                            <div className="flex items-center gap-1.5 sm:gap-2">
                                 <div className="w-px h-4 bg-border mx-1" />
                                 <Button
                                     variant="ghost"
@@ -715,7 +722,8 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                     onClick={() => setIsRenaming(true)}
                                     className="h-8 text-[11px] sm:text-xs text-foreground/70 hover:text-foreground hover:bg-muted font-medium tracking-tight px-2"
                                 >
-                                    Rename
+                                    <Pencil className="w-3.5 h-3.5 sm:hidden" />
+                                    <span className="hidden sm:inline">Rename</span>
                                 </Button>
 
                                 <AlertDialog>
@@ -725,7 +733,8 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                             size="sm"
                                             className="h-8 text-[11px] sm:text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 font-medium tracking-tight px-2"
                                         >
-                                            Disable
+                                            <Trash2 className="w-3.5 h-3.5 sm:hidden" />
+                                            <span className="hidden sm:inline">Disable</span>
                                         </Button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent className="bg-card border-border text-foreground">
@@ -748,65 +757,16 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                 </AlertDialog>
                             </div>
 
-                            <div className="hidden sm:block w-px h-4 bg-border mx-1" />
+                            <div className="w-px h-4 bg-border mx-1" />
 
                             <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => onAddSubgroup?.(uuid)}
-                                className="h-8 text-[11px] sm:text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition-all flex items-center gap-1.5 px-3 rounded-lg font-bold w-full sm:w-auto mt-2 sm:mt-0 border border-blue-500/20 sm:border-transparent bg-blue-500/5 sm:bg-transparent"
+                                className="h-8 text-[11px] sm:text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition-all flex items-center gap-1.5 px-2.5 rounded-lg font-bold"
                             >
-                                <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                New Subgroup
-                            </Button>
-                        </div>
-                        {/* Management buttons for mobile */}
-                        <div className="flex sm:hidden items-center gap-2 bg-background/50 border border-border rounded-lg p-2 w-full mt-4 justify-between">
-                            <div className="flex gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setIsRenaming(true)}
-                                    className="h-9 w-9 p-0 text-foreground/70 hover:text-foreground bg-background/50 border-border"
-                                >
-                                    <Pencil className="w-4 h-4" />
-                                </Button>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="h-9 w-9 p-0 text-red-400 hover:text-red-300 bg-background/50 border-border"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent className="bg-card border-border text-foreground">
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Disable Main Group?</AlertDialogTitle>
-                                            <AlertDialogDescription className="text-foreground/70">
-                                                This will hide the group <span className="text-foreground font-bold">"{formatDisplayName(name)}"</span> and all its subgroups.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel className="bg-muted border-border text-foreground/70">Cancel</AlertDialogCancel>
-                                            <AlertDialogAction
-                                                onClick={() => removeMainCatalogGroup(uuid)}
-                                                className="bg-red-600 text-white hover:bg-red-700 font-bold"
-                                            >
-                                                Disable
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => onAddSubgroup?.(uuid)}
-                                className="flex-1 h-9 text-[11px] text-blue-400 hover:text-blue-300 bg-blue-500/5 border-blue-500/20 font-bold"
-                            >
-                                <Plus className="w-3.5 h-3.5 mr-1.5" /> New Subgroup
+                                <Plus className="w-4 h-4" />
+                                <span className="hidden sm:inline">New Subgroup</span>
                             </Button>
                         </div>
                     </div>
@@ -1058,7 +1018,7 @@ function UnassignedSubgroupRow({
 
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 p-0 flex items-center justify-center text-foreground/70 hover:text-red-400 hover:bg-red-500/10 transition-colors rounded-md border border-transparent hover:border-red-500/30">
+                            <Button variant="ghost" size="icon" className="h-9 w-9 p-0 flex items-center justify-center text-foreground/70 hover:text-red-400 hover:bg-red-500/10 transition-colors rounded-md border border-transparent hover:border-red-500/30" aria-label="Delete subgroup">
                                 <Trash2 className="w-3.5 h-3.5" />
                             </Button>
                         </AlertDialogTrigger>
@@ -1212,8 +1172,8 @@ export function UnifiedSubgroupEditor() {
     };
 
     React.useEffect(() => {
-        setMainGroupOrder(mainGroupOrderFromConfig);
-    }, [JSON.stringify(mainGroupOrderFromConfig)]);
+        setMainGroupOrder(prev => (stringArraysEqual(prev, mainGroupOrderFromConfig) ? prev : mainGroupOrderFromConfig));
+    }, [mainGroupOrderFromConfig]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {

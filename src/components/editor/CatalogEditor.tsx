@@ -481,7 +481,7 @@ export function CatalogEditor() {
     };
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 max-w-full overflow-x-hidden">
             {/* Toolbar */}
             <div className="flex flex-wrap items-center gap-2 bg-muted/50 p-2 rounded-lg border border-border">
                 <div className="flex-1" />
@@ -582,7 +582,7 @@ export function CatalogEditor() {
             </div>
 
             {/* Stats */}
-            <div className="flex gap-4 text-[13px] text-foreground/70 px-1 py-2">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-foreground/70 px-1 py-1">
                 <span>
                     <span className="text-foreground font-medium">{enabledCatalogs.length}</span> shown
                 </span>

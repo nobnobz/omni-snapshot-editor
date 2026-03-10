@@ -6,14 +6,12 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, ChevronRight, ChevronDown, AlertCircle, Search, Check } from "lucide-react";
+import { Plus, Trash2, Search, Check } from "lucide-react";
 import { ISO_639_2_LANGUAGES } from "@/lib/languages";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatDisplayName, resolveCatalogName } from "@/lib/utils";
-import { getAllCatalogIds } from "@/lib/mutations";
+import { resolveCatalogName } from "@/lib/utils";
 
 // Helper to format snake_case keys to Title Case
 const formatKeyToTitle = (key: string): string => {
@@ -60,25 +58,20 @@ const SETTING_DESCRIPTIONS: Record<string, string> = {
 };
 
 interface GenericRendererProps {
-    data: any;
+    data: unknown;
     path: string[];
     searchQuery?: string;
 }
 
 export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendererProps) {
-    const { updateValue, toggleKey, disabledKeys, originalConfig, currentValues } = useConfig();
+    const { updateValue, toggleKey, disabledKeys, currentValues } = useConfig();
 
     const currentKey = path[path.length - 1];
     const pathString = path.join(".");
     const isDisabled = disabledKeys.has(pathString);
+    const [catSearch, setCatSearch] = useState("");
 
-    // If there's a search query, only render if the key matches or if a descendant matches
-    // A simplistic filter check: does the path include the search term?
-    if (searchQuery && pathString) {
-        if (!pathString.toLowerCase().includes(searchQuery.toLowerCase())) {
-            return null;
-        }
-    }
+    const isFilteredOut = !!(searchQuery && pathString && !pathString.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const handleToggle = (checked: boolean) => {
         toggleKey(path, checked);
@@ -131,19 +124,21 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
     };
 
     const handleArrayStringChange = (index: number, val: string) => {
+        if (!Array.isArray(data)) return;
         const newArr = [...data];
         newArr[index] = val;
         updateValue(path, newArr);
     };
 
     const removeArrayItem = (index: number) => {
+        if (!Array.isArray(data)) return;
         const newArr = [...data];
         newArr.splice(index, 1);
         updateValue(path, newArr);
     };
 
     const addArrayItem = () => {
-        const newArr = [...(data || [])];
+        const newArr = Array.isArray(data) ? [...data] : [];
         newArr.push(""); // Assuming string array by default for simple lists
         updateValue(path, newArr);
     };
@@ -152,12 +147,13 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
     const UNIFIED_KEYS = ["hide_spoilers", "small_continue_watching_shelf", "hide_external_playback_prompt", "oled_mode_enabled", "hide_addon_info_in_catalog_names", "hidden_stream_button_elements"];
     const ALWAYS_RENDER_KEYS = ["hide_spoilers", "small_continue_watching_shelf", "hide_external_playback_prompt", "oled_mode_enabled", "hide_addon_info_in_catalog_names", "hidden_stream_button_elements"];
 
-    if ((data === null || data === undefined) && !ALWAYS_RENDER_KEYS.includes(currentKey) && !["preferred_audio_language", "preferred_subtitle_language"].includes(currentKey)) {
-        return null; // Skip rendering nulls, or render a baseline
-    }
+    const shouldSkipNullData =
+        (data === null || data === undefined)
+        && !ALWAYS_RENDER_KEYS.includes(currentKey)
+        && !["preferred_audio_language", "preferred_subtitle_language"].includes(currentKey);
 
     // Determine custom checked state if unified logic applies
-    let customChecked = undefined;
+    let customChecked: boolean | undefined = undefined;
     if (currentKey === "hide_external_playback_prompt") {
         customChecked = data === undefined ? true : !data; // ON = true (default) or !hide
     } else if (currentKey === "hide_spoilers" || currentKey === "small_continue_watching_shelf" || currentKey === "oled_mode_enabled" || currentKey === "hide_addon_info_in_catalog_names") {
@@ -166,8 +162,8 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
         customChecked = data !== undefined; // Switch ON if array exists
     }
 
-    // Header/Wrapper for the field
-    const Wrapper = ({ children, isPrimitive = false, hideToggle = false }: { children?: React.ReactNode, isPrimitive?: boolean, hideToggle?: boolean }) => {
+    // Shared field chrome to keep all controls visually consistent.
+    const renderWrapper = (children?: React.ReactNode, hideToggle = false) => {
         if (!currentKey) return <>{children}</>; // Root level bypass
 
         const displayChecked = customChecked !== undefined ? customChecked : !isDisabled;
@@ -205,20 +201,82 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                 </div>
 
                 {hasVisibleChildren && (
-                    <div className={`${isPrimitive ? "" : ""}`}>
-                        {children}
-                    </div>
+                    <div>{children}</div>
                 )}
             </div>
         );
     };
 
+    const isCustomCatalogNames =
+        currentKey === "custom_catalog_names"
+        && typeof data === "object"
+        && data !== null
+        && !Array.isArray(data);
+
+    const customCatalogEntries: Array<[string, string]> = isCustomCatalogNames
+        ? Object.entries(data as Record<string, string>)
+        : [];
+
+    const usedCatalogIds = React.useMemo(() => {
+        if (!isCustomCatalogNames) {
+            return new Set<string>();
+        }
+
+        const ids = new Set<string>();
+        const arrayKeys = [
+            "catalog_ordering",
+            "selected_catalogs",
+            "pinned_catalogs",
+            "small_catalogs",
+            "top_row_catalogs",
+            "starred_catalogs",
+            "randomized_catalogs",
+            "small_toprow_catalogs",
+        ];
+
+        arrayKeys.forEach(key => {
+            const list = currentValues[key];
+            if (Array.isArray(list)) {
+                list.forEach(id => {
+                    if (typeof id === "string") {
+                        ids.add(id);
+                    }
+                });
+            }
+        });
+
+        if (currentValues.catalog_groups && typeof currentValues.catalog_groups === "object") {
+            Object.values(currentValues.catalog_groups).forEach(idList => {
+                if (Array.isArray(idList)) {
+                    idList.forEach(id => {
+                        if (typeof id === "string") {
+                            ids.add(id);
+                        }
+                    });
+                }
+            });
+        }
+
+        if (currentValues.top_row_item_limits && typeof currentValues.top_row_item_limits === "object") {
+            Object.keys(currentValues.top_row_item_limits).forEach(id => ids.add(id));
+        }
+
+        return ids;
+    }, [isCustomCatalogNames, currentValues]);
+
+    if (isFilteredOut) {
+        return null;
+    }
+    if (shouldSkipNullData) {
+        return null;
+    }
+
     // Specialized rendering for languages
     if (currentKey === "preferred_audio_language" || currentKey === "preferred_subtitle_language") {
-        return (
-            <Wrapper isPrimitive hideToggle={true}>
+        const selectedLanguage = typeof data === "string" ? data : "";
+        return renderWrapper(
                 <div className="space-y-1">
-                    <Select value={data} onValueChange={(val) => updateValue(path, val)}>
+                    <Select value={selectedLanguage} onValueChange={(val) => updateValue(path, val)}>
                         <SelectTrigger className="bg-background/50 border-border text-foreground h-10 hover:border-border transition-colors shadow-inner focus:ring-1 focus:ring-blue-500">
                             <SelectValue placeholder="Select Language" />
                         </SelectTrigger>
@@ -232,57 +290,19 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                                 ))}
                         </SelectContent>
                     </Select>
-                </div>
-            </Wrapper>
+                </div>,
+            true
         );
     }
 
     // Specialized rendering for Custom Catalog Names
-    if (currentKey === "custom_catalog_names" && typeof data === "object" && data !== null) {
-        const [catSearch, setCatSearch] = useState("");
-        const entries = Object.entries(data as Record<string, string>);
-
-        // Find all used IDs with a precise approach to avoid false positives
-        const usedCatalogIds = React.useMemo(() => {
-            const ids = new Set<string>();
-
-            // 1. Array-based lists
-            const arrayKeys = [
-                "catalog_ordering", "selected_catalogs", "pinned_catalogs",
-                "small_catalogs", "top_row_catalogs", "starred_catalogs",
-                "randomized_catalogs", "small_toprow_catalogs"
-            ];
-            arrayKeys.forEach(key => {
-                const list = currentValues[key];
-                if (Array.isArray(list)) {
-                    list.forEach(id => { if (typeof id === 'string') ids.add(id); });
-                }
-            });
-
-            // 2. Subgroups
-            if (currentValues.catalog_groups && typeof currentValues.catalog_groups === 'object') {
-                Object.values(currentValues.catalog_groups).forEach((idList: any) => {
-                    if (Array.isArray(idList)) {
-                        idList.forEach(id => { if (typeof id === 'string') ids.add(id); });
-                    }
-                });
-            }
-
-            // 3. Top Row Limits
-            if (currentValues.top_row_item_limits && typeof currentValues.top_row_item_limits === 'object') {
-                Object.keys(currentValues.top_row_item_limits).forEach(id => ids.add(id));
-            }
-
-            return ids;
-        }, [currentValues]);
-
-        const filteredEntries = entries.filter(([id, name]) =>
+    if (isCustomCatalogNames) {
+        const filteredEntries = customCatalogEntries.filter(([id, name]) =>
             id.toLowerCase().includes(catSearch.toLowerCase()) ||
             name.toLowerCase().includes(catSearch.toLowerCase())
         ).sort((a, b) => a[1].localeCompare(b[1]));
 
-        return (
-            <Wrapper>
+        return renderWrapper(
                 <div className="space-y-4">
                     <div className="relative">
                         <Input
@@ -327,21 +347,20 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                             );
                         })}
 
-                        {entries.length === 0 && (
+                        {customCatalogEntries.length === 0 && (
                             <div className="text-center py-8 border border-dashed border-border/50 rounded-xl bg-background/20 flex flex-col items-center justify-center gap-2">
                                 <Search className="w-6 h-6 text-muted-foreground" />
                                 <p className="text-xs text-muted-foreground font-medium">No custom catalog names defined</p>
                             </div>
                         )}
-                        {entries.length > 0 && filteredEntries.length === 0 && (
+                        {customCatalogEntries.length > 0 && filteredEntries.length === 0 && (
                             <div className="text-center py-8 border border-dashed border-border/50 rounded-xl bg-background/20 flex flex-col items-center justify-center gap-2">
                                 <Search className="w-6 h-6 text-muted-foreground" />
-                                <p className="text-xs text-muted-foreground font-medium">No matches found for "{catSearch}"</p>
+                                <p className="text-xs text-muted-foreground font-medium">No matches found for &quot;{catSearch}&quot;</p>
                             </div>
                         )}
                     </div>
                 </div>
-            </Wrapper>
         );
     }
 
@@ -359,8 +378,7 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                 }
             };
 
-            return (
-                <Wrapper hideToggle={true}>
+            return renderWrapper(
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
                         {options.map((opt) => {
                             const isChecked = currentSelection.includes(opt);
@@ -373,7 +391,7 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                                     <Checkbox
                                         id={`checkbox-${opt}`}
                                         checked={isChecked}
-                                        onCheckedChange={(val: boolean | string) => handleCheckboxChange(opt, !!val)}
+                                        onCheckedChange={(val) => handleCheckboxChange(opt, val === true)}
                                         className="pointer-events-none"
                                     />
                                     <div className="flex flex-col flex-1 pointer-events-none">
@@ -383,19 +401,17 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                                 </div>
                             );
                         })}
-                    </div>
-                </Wrapper>
+                    </div>,
+                true
             );
         }
 
-        return <Wrapper isPrimitive />;
+        return renderWrapper();
     }
 
     if (typeof data === "string") {
-        return (
-            <Wrapper isPrimitive>
-                {/* Attempt to detect colors for specialized input */}
-                {data.startsWith("#") && data.length === 7 ? (
+        return renderWrapper(
+                data.startsWith("#") && data.length === 7 ? (
                     <div className="flex items-center gap-3">
                         <div
                             className="w-10 h-10 rounded-lg border border-border/50 shrink-0 shadow-inner ring-1 ring-black/20"
@@ -415,29 +431,25 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                         onChange={handleStringChange}
                         className="bg-background/50 border-border hover:border-border focus-visible:ring-1 focus-visible:ring-blue-500 text-foreground transition-colors shadow-inner w-full"
                     />
-                )}
-            </Wrapper>
+                )
         );
     }
 
     // Number rendering
     if (typeof data === "number") {
-        return (
-            <Wrapper isPrimitive>
+        return renderWrapper(
                 <Input
                     type="number"
                     value={data}
                     onChange={handleNumberChange}
                     className="bg-background/50 border-border hover:border-border focus-visible:ring-1 focus-visible:ring-blue-500 font-mono text-foreground w-full max-w-[200px] transition-colors shadow-inner"
                 />
-            </Wrapper>
         );
     }
 
     // Boolean rendering
     if (typeof data === "boolean" && !UNIFIED_KEYS.includes(currentKey)) {
-        return (
-            <Wrapper isPrimitive>
+        return renderWrapper(
                 <div className="flex flex-row items-center justify-between rounded-xl border border-border/80 p-4 bg-background/40 shadow-inner">
                     <div className="space-y-1">
                         <Label className="text-sm font-medium text-foreground">Value</Label>
@@ -451,14 +463,12 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                         className="data-[state=checked]:bg-emerald-500 data-[state=unchecked]:bg-accent transition-colors shadow-sm"
                     />
                 </div>
-            </Wrapper>
         );
     }
 
     // Array rendering
     if (Array.isArray(data)) {
-        return (
-            <Wrapper>
+        return renderWrapper(
                 <div className="space-y-3">
                     {data.map((item, idx) => {
                         // Check if it's a primitive array (e.g. strings)
@@ -500,43 +510,41 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                         Add Item
                     </Button>
                 </div>
-            </Wrapper>
         );
     }
 
     // Object rendering
-    if (typeof data === "object") {
+    if (data && typeof data === "object") {
+        const objectData = data as Record<string, unknown>;
         // Do not use a wrapper if it's the root to avoid double boxing
         if (!currentKey) {
             return (
                 <div className="space-y-4">
-                    {Object.entries(data).map(([key, val]) => (
+                    {Object.entries(objectData).map(([key, val]) => (
                         <GenericRenderer key={key} data={val} path={[...path, key]} searchQuery={searchQuery} />
                     ))}
                 </div>
             );
         }
 
-        return (
-            <Wrapper>
+        return renderWrapper(
                 <Accordion type="single" collapsible className="w-full overflow-hidden border border-border/80 rounded-xl bg-background/40 shadow-sm transition-all hover:border-border/80">
                     <AccordionItem value="item-1" className="border-b-0">
                         <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-card/50 text-sm font-medium text-foreground transition-colors">
                             <span className="flex items-center gap-3">
                                 View Object Details
                                 <span className="flex items-center justify-center px-2 py-0.5 rounded-full bg-muted text-[10px] font-bold text-muted-foreground">
-                                    {Object.keys(data).length} keys
+                                    {Object.keys(objectData).length} keys
                                 </span>
                             </span>
                         </AccordionTrigger>
                         <AccordionContent className="p-5 border-t border-border/50 space-y-5 bg-background/20">
-                            {Object.entries(data).map(([key, val]) => (
+                            {Object.entries(objectData).map(([key, val]) => (
                                 <GenericRenderer key={key} data={val} path={[...path, key]} searchQuery={searchQuery} />
                             ))}
                         </AccordionContent>
                     </AccordionItem>
                 </Accordion>
-            </Wrapper>
         );
     }
 

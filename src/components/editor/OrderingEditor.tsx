@@ -29,6 +29,10 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { RenameGroupModal } from "./RenameGroupModal";
 import { formatDisplayName, resolveCatalogName } from "@/lib/utils";
 
+const stringArraysEqual = (a: string[], b: string[]) => (
+    a.length === b.length && a.every((item, idx) => item === b[idx])
+);
+
 function SortableItem({
     id,
     displayName,
@@ -162,8 +166,8 @@ function SortableList({
     const [activeId, setActiveId] = useState<string | null>(null);
 
     React.useEffect(() => {
-        setItems(itemsList);
-    }, [JSON.stringify(itemsList)]);
+        setItems(prev => (stringArraysEqual(prev, itemsList) ? prev : itemsList));
+    }, [itemsList]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
