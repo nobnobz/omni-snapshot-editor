@@ -7,6 +7,7 @@ import {
     closestCenter,
     KeyboardSensor,
     PointerSensor,
+    TouchSensor,
     useSensor,
     useSensors,
     DragEndEvent,
@@ -374,6 +375,12 @@ export function CatalogEditor() {
 
     const sensors = useSensors(
         useSensor(PointerSensor),
+        useSensor(TouchSensor, {
+            activationConstraint: {
+                delay: 250,
+                tolerance: 5,
+            },
+        }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
@@ -514,7 +521,7 @@ export function CatalogEditor() {
                                 />
                             </div>
                         </div>
-                        <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar overscroll-contain pb-4">
+                        <div className="flex-1 overflow-x-hidden overflow-y-auto custom-scrollbar overscroll-contain pb-4">
                             {filteredAddCandidates.length === 0 ? (
                                 <p className="text-[10px] text-foreground/70 p-4 text-center">No catalogs found.</p>
                             ) : (

@@ -660,7 +660,7 @@ export function ConfigLoader() {
 
                 <div className="mt-8 text-center">
                     <p className="text-[10px] text-foreground/70 font-bold uppercase tracking-widest leading-relaxed">
-                        v0.2.2 • Built with Antigravity by Bot-Bid-Raiser
+                        v0.2.3 • Built with Antigravity by Bot-Bid-Raiser
                     </p>
                 </div>
             </div>
