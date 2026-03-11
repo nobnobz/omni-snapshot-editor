@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useState, useEffect, useRef } from "react";
 import { useConfig } from "@/context/ConfigContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,6 +72,32 @@ export function MainEditor() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isCopied, setIsCopied] = useState(false);
     const [uiNotice, setUiNotice] = useState<UiNotice | null>(null);
+    const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+    const lastScrollY = useRef(0);
+    const scrollThreshold = 10; // min px to trigger hide/show
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY;
+            
+            // Only toggle if we've scrolled more than threshold
+            if (Math.abs(currentScrollY - lastScrollY.current) < scrollThreshold) {
+                return;
+            }
+
+            if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
+                // Scrolling down - hide
+                setIsHeaderVisible(false);
+            } else {
+                // Scrolling up - show
+                setIsHeaderVisible(true);
+            }
+            lastScrollY.current = currentScrollY;
+        };
+
+        window.addEventListener("scroll", handleScroll, { passive: true });
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
 
     const ignoredKeys = new Set([
         "stream_button_elements_order",
@@ -458,7 +484,7 @@ export function MainEditor() {
                     </div>
                 </div>
 
-                <header className="lg:hidden h-[calc(3.5rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] border-b border-border bg-background/95 backdrop-blur-md shadow-sm flex items-center gap-2 px-3 sm:px-6 shrink-0 sticky top-0 z-30">
+                <header className={`lg:hidden h-[calc(3.5rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] border-b border-border bg-background/95 backdrop-blur-md shadow-sm flex items-center gap-2 px-3 sm:px-6 shrink-0 sticky top-0 z-30 transition-transform duration-300 ${isHeaderVisible ? "translate-y-0" : "-translate-y-full"}`}>
                     <Button
                         variant="ghost"
                         size="icon"

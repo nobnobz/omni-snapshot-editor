@@ -59,7 +59,7 @@ const IMAGE_COLOR_OPTIONS = [
 // Observed: index 3 = 6px, 4 = 8px, 6 = 12px → all fit index * 2
 const BORDER_RADIUS_OPTIONS = Array.from({ length: 8 }, (_, i) => ({ index: i, px: i * 2 }));
 
-function PatternNode({ regex, onDelete, onRename }: { regex: string, onDelete: (r: string) => void, onRename: (oldRegex: string, newRegex: string) => void }) {
+const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename }: { regex: string, onDelete: (r: string) => void, onRename: (oldRegex: string, newRegex: string) => void }) {
     const { currentValues, updateValue, originalConfig } = useConfig();
     const [editingRegex, setEditingRegex] = useState(false);
     const [regexDraft, setRegexDraft] = useState(regex);
@@ -333,7 +333,7 @@ function PatternNode({ regex, onDelete, onRename }: { regex: string, onDelete: (
             </AccordionContent>
         </AccordionItem>
     );
-}
+});
 
 export function UnifiedPatternEditor() {
     const { currentValues, updateValue, clearPatterns } = useConfig();
@@ -344,26 +344,30 @@ export function UnifiedPatternEditor() {
     const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
 
     // Gather all unique regex strings from all dicts
-    const allRegexSet = new Set<string>();
-    PATTERN_DICTS.forEach(d => {
-        const dict = currentValues[d.key];
-        if (Array.isArray(dict)) {
-            dict.forEach((k: string) => allRegexSet.add(k));
-        } else if (dict && typeof dict === "object") {
-            Object.keys(dict).forEach(k => allRegexSet.add(k));
-        }
-    });
-
-    // Also include from auto_play_patterns (for ordering)
-    const autoPlayOrder: string[] = Array.isArray(currentValues["auto_play_patterns"])
-        ? currentValues["auto_play_patterns"]
-        : [];
+    const allRegexSet = React.useMemo(() => {
+        const set = new Set<string>();
+        PATTERN_DICTS.forEach(d => {
+            const dict = currentValues[d.key];
+            if (Array.isArray(dict)) {
+                dict.forEach((k: string) => set.add(k));
+            } else if (dict && typeof dict === "object") {
+                Object.keys(dict).forEach(k => set.add(k));
+            }
+        });
+        return set;
+    }, [currentValues]);
 
     // Sort: first those in auto_play_patterns (in order), then the rest alphabetically
-    const orderedKeys = [
-        ...autoPlayOrder.filter(k => allRegexSet.has(k)),
-        ...Array.from(allRegexSet).filter(k => !autoPlayOrder.includes(k)).sort()
-    ];
+    const orderedKeys = React.useMemo(() => {
+        const autoPlayOrder: string[] = Array.isArray(currentValues["auto_play_patterns"])
+            ? currentValues["auto_play_patterns"]
+            : [];
+            
+        return [
+            ...autoPlayOrder.filter(k => allRegexSet.has(k)),
+            ...Array.from(allRegexSet).filter(k => !autoPlayOrder.includes(k)).sort()
+        ];
+    }, [currentValues, allRegexSet]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -373,7 +377,7 @@ export function UnifiedPatternEditor() {
         }),
         useSensor(TouchSensor, {
             activationConstraint: {
-                delay: 150,
+                delay: 250,
                 tolerance: 5,
             },
         }),

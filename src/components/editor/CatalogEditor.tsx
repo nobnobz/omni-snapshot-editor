@@ -510,7 +510,7 @@ export function CatalogEditor() {
                             <Plus className="w-4 h-4 mr-1" /> Add Catalog
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-80 bg-popover border-border text-popover-foreground shadow-2xl p-0">
+                    <DropdownMenuContent align="end" className="w-[90vw] sm:w-80 bg-popover border-border text-popover-foreground shadow-2xl p-0">
                         <div className="p-3 border-b border-border bg-card space-y-2">
                             <h4 className="text-[10px] uppercase font-bold text-foreground/70 flex justify-between">
                                 <span>Add Catalog</span>
