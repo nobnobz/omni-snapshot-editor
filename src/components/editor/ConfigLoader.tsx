@@ -238,18 +238,33 @@ export function ConfigLoader() {
     };
 
     return (
-        <div className="flex items-center justify-center min-h-[100dvh] p-4 sm:p-8 font-sans text-foreground relative overflow-hidden">
-            {/* Animated Background Effects - Fixed to cover full viewport including notch */}
-            <div className="fixed inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] -z-10 bg-background"></div>
-            <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-500/20 dark:bg-blue-900/20 rounded-full blur-[120px] pointer-events-none animate-pulse duration-10000 -z-10" />
-            <div className="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-purple-500/20 dark:bg-indigo-900/20 rounded-full blur-[120px] pointer-events-none animate-pulse duration-7000 -z-10" />
-            <div className="fixed top-[20%] right-[20%] w-[30%] h-[30%] bg-emerald-500/10 dark:bg-emerald-900/20 rounded-full blur-[100px] pointer-events-none animate-pulse duration-8000 -z-10" />
+        <div className="min-h-screen relative font-sans text-foreground selection:bg-blue-500/30">
+            {/* Robust Background Stack - Guaranteed to cover full viewport including notch/safe areas */}
+            <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
+                {/* 1. Base solid background */}
+                <div className="absolute inset-0 bg-background" />
+
+                {/* 2. Grid pattern - extended top/bottom to handle safe areas & overscroll */}
+                <div 
+                    className="absolute inset-x-0 -top-[20vh] -bottom-[20vh]" 
+                    style={{ 
+                        backgroundImage: `linear-gradient(to right, #80808012 1px, transparent 1px), linear-gradient(to bottom, #80808012 1px, transparent 1px)`,
+                        backgroundSize: '24px 24px'
+                    }} 
+                />
+
+                {/* 3. Decorative Blobs */}
+                <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-blue-500/15 dark:bg-blue-900/15 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: '10s' }} />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-purple-500/15 dark:bg-indigo-900/15 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: '7s' }} />
+                <div className="absolute top-[20%] right-[10%] w-[40%] h-[40%] bg-emerald-500/10 dark:bg-emerald-900/15 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '12s' }} />
+            </div>
 
             <div className="absolute top-4 right-4 z-50 pt-safe pr-safe">
                 <ThemeToggle />
             </div>
 
-            <div className="w-full max-w-5xl relative z-10 pt-safe">
+            <div className="w-full min-h-screen flex items-center justify-center relative z-10 px-4 py-8 pt-[max(2rem,env(safe-area-inset-top))]">
+                <div className="w-full max-w-5xl">
                 <div className="text-center mb-6 space-y-3">
                     <div className="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center mb-2 mx-auto">
                         <img src="/omni-snapshot-editor/clown.png" alt="Logo" className="w-full h-full object-contain" />
@@ -554,6 +569,7 @@ export function ConfigLoader() {
                     <p className="text-[10px] text-foreground/70 font-bold uppercase tracking-widest leading-relaxed">
                         v{APP_VERSION} • Built with Antigravity by Bot-Bid-Raiser
                     </p>
+                </div>
                 </div>
             </div>
         </div>
