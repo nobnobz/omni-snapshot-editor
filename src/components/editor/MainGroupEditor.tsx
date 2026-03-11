@@ -344,7 +344,7 @@ function SortableMainGroupItem({
                         groupData={groupData}
                         customNames={customNames}
                         disabledCatalogs={disabledCatalogs}
-                        onUpdateSubgroups={handleUpdateSubgroups}
+                        onUpdateSubgroups={onUpdateSubgroups}
                         onRenameCatalog={onRenameCatalog}
                         onToggleCatalog={onToggleCatalog}
                     />
@@ -372,8 +372,8 @@ export function MainGroupEditor() {
     const orderedGroups = useMemo(() => {
         const orderSet = new Set(mainGroupOrder);
         const allKeys = Object.keys(mainGroups);
-        const missing = allKeys.filter(k => !orderSet.has(k));
-        const filtered = mainGroupOrder.filter(k => mainGroups[k]);
+        const missing = allKeys.filter((k: string) => !orderSet.has(k));
+        const filtered = mainGroupOrder.filter((k: string) => mainGroups[k]);
         return [...filtered, ...missing];
     }, [mainGroups, mainGroupOrder]);
 
