@@ -52,7 +52,7 @@ export function RenameGroupModal({ isOpen, onClose, oldName, isMainGroup = false
     return (
         <Dialog open={isOpen} onOpenChange={handleOpenChange}>
             <DialogContent
-                className="bg-background border-border text-foreground"
+                className="w-[96vw] max-w-[calc(100%-1rem)] sm:max-w-[425px] bg-background border-border text-foreground p-4 sm:p-6 sm:rounded-2xl top-[45%]"
                 onOpenAutoFocus={() => setNewName(oldName)}
             >
                 <DialogHeader>

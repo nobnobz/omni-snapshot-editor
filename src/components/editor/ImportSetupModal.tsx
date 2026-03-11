@@ -504,7 +504,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="sm:max-w-2xl bg-background border-border text-foreground">
+            <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="w-[96vw] max-w-[calc(100%-1rem)] sm:max-w-2xl bg-background border-border text-foreground max-h-[90dvh] overflow-y-auto flex flex-col p-4 sm:p-6 sm:rounded-2xl top-[45%]">
                 <DialogHeader>
                     <DialogTitle>Add From Existing Setup</DialogTitle>
                     <DialogDescription className="text-foreground/70">

@@ -89,11 +89,11 @@ export function MainEditor() {
                 return;
             }
 
-            if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
+            if (currentScrollY > lastScrollY.current && currentScrollY > 60) {
                 // Scrolling down - hide
                 setIsHeaderVisible(false);
-            } else {
-                // Scrolling up - show
+            } else if (currentScrollY < lastScrollY.current || currentScrollY <= 10) {
+                // Scrolling up or at top - show
                 setIsHeaderVisible(true);
             }
             lastScrollY.current = currentScrollY;
@@ -491,7 +491,11 @@ export function MainEditor() {
                     </div>
                 </div>
 
-                <header className={`lg:hidden h-[calc(3.5rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] border-b border-border bg-background/95 backdrop-blur-md shadow-sm flex items-center gap-2 px-3 sm:px-6 shrink-0 sticky top-0 z-30 transition-transform duration-300 ${isHeaderVisible ? "translate-y-0" : "-translate-y-full"}`}>
+                <header
+                className={`sticky top-0 z-50 w-full border-b border-border/50 bg-card/80 backdrop-blur-md transition-all duration-300 transform pt-safe-top
+                    ${isHeaderVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"}
+                `}
+            >
                     <Button
                         variant="ghost"
                         size="icon"

@@ -28,8 +28,6 @@ import {
     useSensor,
     useSensors,
     DragEndEvent,
-    DragOverlay,
-    defaultDropAnimationSideEffects,
     DragStartEvent,
 } from '@dnd-kit/core';
 import {
@@ -81,9 +79,9 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
     } = useSortable({ id: regex, disabled: false });
 
     const style = {
-        transform: CSS.Translate.toString(transform),
+        transform: CSS.Transform.toString(transform),
         transition,
-        opacity: isDragging ? 0 : 1,
+        opacity: isDragging ? 0.3 : 1,
         position: 'relative' as const,
     };
 
@@ -130,7 +128,7 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                     <button
                         {...attributes}
                         {...listeners}
-                        className={`cursor-grab shrink-0 p-2 ml-0.5 rounded-md transition-colors ${isTagEnabled ? "text-foreground/70 hover:text-foreground hover:bg-muted" : "text-foreground/40 pointer-events-none"}`}
+                        className={`cursor-grab shrink-0 p-4 -ml-2 rounded-md transition-colors ${isTagEnabled ? "text-foreground/70 hover:text-foreground hover:bg-muted" : "text-foreground/40 pointer-events-none"}`}
                         style={{ touchAction: 'none' }}
                     >
                         <GripVertical className="h-5 w-5" />
@@ -344,7 +342,6 @@ export function UnifiedPatternEditor() {
     const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
     const [patternNameDraft, setPatternNameDraft] = useState("");
     const [patternToDelete, setPatternToDelete] = useState<string | null>(null);
-    const [activePatternId, setActivePatternId] = useState<string | null>(null);
     const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
 
     // Gather all unique regex strings from all dicts
@@ -388,13 +385,8 @@ export function UnifiedPatternEditor() {
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
-    const handleDragStart = (event: DragStartEvent) => {
-        setActivePatternId(event.active.id as string);
-    };
-
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
-        setActivePatternId(null);
         if (!over || active.id === over.id) return;
 
         const oldIndex = orderedKeys.indexOf(active.id as string);
@@ -566,7 +558,6 @@ export function UnifiedPatternEditor() {
                         <DndContext 
                             sensors={sensors} 
                             collisionDetection={closestCenter} 
-                            onDragStart={handleDragStart}
                             onDragEnd={handleDragEnd}
                         >
                             <SortableContext items={orderedKeys} strategy={verticalListSortingStrategy}>
@@ -576,45 +567,6 @@ export function UnifiedPatternEditor() {
                                     ))}
                                 </Accordion>
                             </SortableContext>
-                            <DragOverlay dropAnimation={{
-                                sideEffects: defaultDropAnimationSideEffects({
-                                    styles: {
-                                        active: {
-                                            opacity: '0.4',
-                                        },
-                                    },
-                                }),
-                            }}>
-                                {activePatternId ? (
-                                    <div className="border border-blue-500 rounded-lg overflow-hidden bg-card shadow-2xl scale-[1.02] opacity-95">
-                                        <div className="flex items-center justify-between bg-card pl-2 pr-1">
-                                            <div className="flex items-center flex-1 gap-3">
-                                                <div className="p-2 ml-0.5 rounded-md text-blue-500">
-                                                    <GripVertical className="h-5 w-5" />
-                                                </div>
-                                                <div className="pr-4 py-4 flex-1 flex items-center justify-between">
-                                                    <div className="flex items-center gap-3">
-                                                        <ChevronRight className="w-4 h-4 shrink-0 text-foreground/70" />
-                                                        <span className="font-bold text-sm tracking-tight text-foreground truncate">
-                                                            {currentValues["regex_pattern_custom_names"]?.[activePatternId] || activePatternId}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="pr-2 shrink-0 flex items-center gap-4">
-                                                {currentValues["regex_pattern_image_urls"]?.[activePatternId] && (
-                                                    <div className="h-8 w-auto max-w-24 shrink-0 overflow-hidden rounded-md border border-border/50 bg-neutral-900 flex items-center justify-center">
-                                                        <img src={currentValues["regex_pattern_image_urls"]?.[activePatternId]} className="h-full w-auto object-contain" alt="" />
-                                                    </div>
-                                                )}
-                                                <div className="h-8 w-8 text-foreground/70 flex items-center justify-center">
-                                                    <Trash2 className="w-4 h-4" />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : null}
-                            </DragOverlay>
                         </DndContext>
                         {orderedKeys.length === 0 && (
                             <div className="text-center py-12 border border-dashed border-border/80 rounded-xl bg-background/20 flex flex-col items-center justify-center gap-3">

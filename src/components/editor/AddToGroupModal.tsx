@@ -79,7 +79,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <DialogContent className="sm:max-w-[425px] bg-background border-border text-foreground flex flex-col max-h-[90vh]">
+            <DialogContent className="w-[96vw] max-w-[calc(100%-1rem)] sm:max-w-[425px] bg-background border-border text-foreground flex flex-col max-h-[90dvh] p-4 sm:p-6 sm:rounded-2xl top-[45%]">
                 <DialogHeader>
                     <DialogTitle>Add to Existing Group</DialogTitle>
                     <DialogDescription className="text-foreground/60">

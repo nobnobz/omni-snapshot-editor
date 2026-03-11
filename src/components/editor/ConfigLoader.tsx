@@ -238,15 +238,15 @@ export function ConfigLoader() {
     };
 
     return (
-        <div className="min-h-screen relative font-sans text-foreground selection:bg-blue-500/30">
+        <div className="min-h-[100dvh] relative font-sans text-foreground selection:bg-blue-500/30 overflow-x-hidden">
             {/* Robust Background Stack - Guaranteed to cover full viewport including notch/safe areas */}
             <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
                 {/* 1. Base solid background */}
                 <div className="absolute inset-0 bg-background" />
 
-                {/* 2. Grid pattern - extended top/bottom to handle safe areas & overscroll */}
+                {/* 2. Grid pattern - extended even further for super-robust coverage */}
                 <div 
-                    className="absolute inset-x-0 -top-[100px] -bottom-[100px]" 
+                    className="absolute inset-x-0 -top-[300px] -bottom-[300px]" 
                     style={{ 
                         backgroundImage: `linear-gradient(to right, #80808012 1px, transparent 1px), linear-gradient(to bottom, #80808012 1px, transparent 1px)`,
                         backgroundSize: '24px 24px'
@@ -263,8 +263,9 @@ export function ConfigLoader() {
                 <ThemeToggle />
             </div>
 
-            <div className="w-full min-h-screen flex items-center justify-center relative z-10 px-4 py-8 pt-[max(2rem,env(safe-area-inset-top))]">
-                <div className="w-full max-w-5xl">
+            <div className="w-full min-h-[100dvh] flex items-center justify-center relative z-10 px-4 py-8 pt-[max(2rem,env(safe-area-inset-top))]">
+                {/* Content Wrapper */}
+            <div className="relative z-10 w-full max-w-4xl mx-auto px-4 py-8 sm:py-12 pt-safe-top">
                 <div className="text-center mb-6 space-y-3">
                     <div className="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center mb-2 mx-auto">
                         <img src="/omni-snapshot-editor/clown.png" alt="Logo" className="w-full h-full object-contain" />
@@ -567,7 +568,7 @@ export function ConfigLoader() {
 
                 <div className="mt-8 text-center pb-safe">
                     <p className="text-[10px] text-foreground/70 font-bold uppercase tracking-widest leading-relaxed">
-                        v0.2.16 • Built with Antigravity by Bot-Bid-Raiser
+                        v0.2.17 • Built with Antigravity by Bot-Bid-Raiser
                     </p>
                 </div>
                 </div>

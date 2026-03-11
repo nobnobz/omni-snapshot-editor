@@ -144,7 +144,15 @@
     padding-top: env(safe-area-inset-top);
   }
 
+  .pt-safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
   .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .pb-safe-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }
 

@@ -114,7 +114,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <DialogContent className="sm:max-w-[425px] md:max-w-3xl bg-background border-border text-foreground max-h-[90dvh] overflow-y-auto w-[95vw] md:w-full flex flex-col p-4 sm:p-6 sm:rounded-2xl gap-4">
+            <DialogContent className="w-[96vw] max-w-[calc(100%-1rem)] sm:max-w-[425px] md:max-w-3xl bg-background border-border text-foreground max-h-[90dvh] overflow-y-auto flex flex-col p-4 sm:p-6 sm:rounded-2xl gap-4 top-[45%]">
                 <DialogHeader>
                     <DialogTitle>Create New Group</DialogTitle>
                     <DialogDescription className="text-foreground/70">
