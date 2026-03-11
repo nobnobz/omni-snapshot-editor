@@ -246,7 +246,7 @@ export function ConfigLoader() {
 
                 {/* 2. Grid pattern - extended top/bottom to handle safe areas & overscroll */}
                 <div 
-                    className="absolute inset-x-0 -top-[20vh] -bottom-[20vh]" 
+                    className="absolute inset-x-0 -top-[100px] -bottom-[100px]" 
                     style={{ 
                         backgroundImage: `linear-gradient(to right, #80808012 1px, transparent 1px), linear-gradient(to bottom, #80808012 1px, transparent 1px)`,
                         backgroundSize: '24px 24px'
@@ -515,7 +515,7 @@ export function ConfigLoader() {
                                         value={url}
                                         onChange={(e) => setUrl(e.target.value)}
                                         placeholder="https://raw.githubusercontent.com/..."
-                                        className="bg-background/40 border-border text-foreground placeholder:text-foreground/70 font-mono text-[10px] sm:text-xs h-10 transition-colors focus-visible:ring-1 focus-visible:ring-blue-500"
+                                        className="h-10 sm:h-9 text-base sm:text-xs bg-muted/30 border-input focus:border-blue-500/50 text-foreground placeholder:text-foreground/40 rounded-xl"
                                     />
                                 </div>
                             </div>
@@ -565,9 +565,9 @@ export function ConfigLoader() {
                     </Card>
                 </div>
 
-                <div className="mt-8 text-center">
+                <div className="mt-8 text-center pb-safe">
                     <p className="text-[10px] text-foreground/70 font-bold uppercase tracking-widest leading-relaxed">
-                        v{APP_VERSION} • Built with Antigravity by Bot-Bid-Raiser
+                        v0.2.14 • Built with Antigravity by Bot-Bid-Raiser
                     </p>
                 </div>
                 </div>

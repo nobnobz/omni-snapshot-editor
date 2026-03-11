@@ -139,7 +139,7 @@ function SortableCatalogItem({
                             onBlur={submitName}
                             onKeyDown={e => e.key === 'Enter' && submitName()}
                             autoFocus
-                            className="h-8 text-sm bg-background border-blue-500"
+                            className="h-10 sm:h-8 text-base sm:text-sm bg-background border-blue-500 font-bold"
                         />
                     ) : (
                         <div className="flex flex-col min-w-0">
@@ -510,7 +510,7 @@ export function CatalogEditor() {
                             <Plus className="w-4 h-4 mr-1" /> Add Catalog
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-[90vw] sm:w-80 bg-popover border-border text-popover-foreground shadow-2xl p-0">
+                    <DropdownMenuContent align="end" className="w-[84vw] sm:w-80 bg-popover border-border text-popover-foreground shadow-2xl p-0">
                         <div className="p-3 border-b border-border bg-card space-y-2">
                             <h4 className="text-[10px] uppercase font-bold text-foreground/70 flex justify-between">
                                 <span>Add Catalog</span>
@@ -522,7 +522,7 @@ export function CatalogEditor() {
                                     placeholder="Search by name or ID..."
                                     value={addSearch}
                                     onChange={e => setAddSearch(e.target.value)}
-                                    className="h-7 text-[11px] pl-7 bg-background border-border focus-visible:ring-blue-600"
+                                    className="h-9 sm:h-7 text-base sm:text-[11px] pl-7 bg-background border-border focus-visible:ring-blue-600"
                                     autoFocus
                                     onKeyDown={e => e.stopPropagation()}
                                 />

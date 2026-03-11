@@ -203,7 +203,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                         value={subName}
                                         onChange={(e) => setSubName(e.target.value)}
                                         placeholder="e.g. Action Movies"
-                                        className="h-10 text-base sm:text-sm bg-background border-input focus-visible:ring-blue-500"
+                                        className="h-10 text-base sm:text-sm bg-background border-input focus-visible:ring-blue-500 font-bold"
                                     />
                                 </div>
 
@@ -257,7 +257,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                             value={subImageUrl}
                                             onChange={(e) => setSubImageUrl(e.target.value)}
                                             placeholder="https://..."
-                                            className="border-0 bg-transparent focus-visible:ring-0 px-1 py-0 h-10 text-base sm:text-sm"
+                                            className="border-0 bg-transparent focus-visible:ring-0 px-1 py-0 h-10 text-base sm:text-sm font-medium"
                                         />
                                     </div>
                                 </div>
@@ -273,7 +273,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                         placeholder="Search catalogs by name or ID..."
                                         value={catalogSearch}
                                         onChange={e => setCatalogSearch(e.target.value)}
-                                        className="pl-8 h-10 sm:h-8 text-base sm:text-xs bg-background border-input focus-visible:ring-blue-500 mb-2"
+                                        className="pl-8 h-10 sm:h-8 text-base sm:text-xs bg-background border-input focus-visible:ring-blue-500 mb-2 focus:ring-0"
                                     />
                                 </div>
 

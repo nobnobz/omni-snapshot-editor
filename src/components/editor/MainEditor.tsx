@@ -74,11 +74,15 @@ export function MainEditor() {
     const [uiNotice, setUiNotice] = useState<UiNotice | null>(null);
     const [isHeaderVisible, setIsHeaderVisible] = useState(true);
     const lastScrollY = useRef(0);
+    const scrollContainerRef = useRef<HTMLElement>(null);
     const scrollThreshold = 10; // min px to trigger hide/show
 
     useEffect(() => {
+        const container = scrollContainerRef.current;
+        if (!container) return;
+
         const handleScroll = () => {
-            const currentScrollY = window.scrollY;
+            const currentScrollY = container.scrollTop;
             
             // Only toggle if we've scrolled more than threshold
             if (Math.abs(currentScrollY - lastScrollY.current) < scrollThreshold) {
@@ -95,8 +99,8 @@ export function MainEditor() {
             lastScrollY.current = currentScrollY;
         };
 
-        window.addEventListener("scroll", handleScroll, { passive: true });
-        return () => window.removeEventListener("scroll", handleScroll);
+        container.addEventListener("scroll", handleScroll, { passive: true });
+        return () => container.removeEventListener("scroll", handleScroll);
     }, []);
 
     const ignoredKeys = new Set([
@@ -447,7 +451,7 @@ export function MainEditor() {
                                 value={setupName}
                                 onChange={(e) => setSetupName(e.target.value)}
                                 placeholder="E.g., My Awesome Setup"
-                                className="bg-background border-border focus-visible:ring-blue-500"
+                                className="h-10 sm:h-9 text-base sm:text-xs bg-background border-border focus-visible:ring-blue-500"
                             />
                             <p className="text-xs text-foreground/70">
                                 The export will include a new timestamp automatically.
@@ -466,7 +470,10 @@ export function MainEditor() {
             </Dialog>
 
             {/* Main Content */}
-            <main className="flex-1 overflow-x-hidden overflow-y-auto scroll-smooth">
+            <main 
+                ref={scrollContainerRef}
+                className="flex-1 overflow-x-hidden overflow-y-auto scroll-smooth"
+            >
                 {/* Desktop Static Header (Not Sticky) */}
                 <div className="hidden lg:flex items-center justify-between px-8 py-10 border-b border-border bg-gradient-to-b from-card to-transparent">
                     <div>
@@ -694,7 +701,7 @@ export function MainEditor() {
                                                     <div className="flex flex-col gap-2 mt-auto relative z-10">
                                                         <Textarea
                                                             placeholder="Paste your JSON configuration here..."
-                                                            className="min-h-[60px] text-base sm:text-xs bg-muted/30 border-input focus:border-blue-500/50 text-foreground resize-none font-mono placeholder:text-foreground/50 custom-scrollbar rounded-lg"
+                                                            className="min-h-[60px] text-base bg-muted/30 border-input focus:border-blue-500/50 text-foreground resize-none font-mono placeholder:text-foreground/50 custom-scrollbar rounded-lg"
                                                             value={pastedJson}
                                                             onChange={(e) => setPastedJson(e.target.value)}
                                                         />
