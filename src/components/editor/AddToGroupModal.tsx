@@ -229,7 +229,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                             {assignedNodes.length > 0 && (
                                                 <div className="mb-6 space-y-1">
                                                     <div className="sticky top-0 bg-background py-2.5 z-20 mb-2 border-b border-border/40">
-                                                        <h5 className="text-[11px] font-bold text-emerald-500 uppercase tracking-[0.2em]">Assigned</h5>
+                                                        <h5 className="text-[11px] font-bold text-foreground/50 uppercase tracking-[0.2em]">Assigned</h5>
                                                     </div>
                                                     {assignedNodes}
                                                 </div>

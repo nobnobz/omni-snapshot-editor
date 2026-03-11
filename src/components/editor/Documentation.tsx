@@ -99,12 +99,12 @@ export function Documentation() {
 
             <div className="space-y-16 pb-12">
                 {/* PREREQUISITE WARNING */}
-                <div className="bg-amber-500/10 border border-amber-500/20 p-5 rounded-2xl flex items-start gap-4">
-                    <ShieldCheck className="w-6 h-6 text-amber-500 shrink-0 mt-0.5" />
+                <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 p-5 rounded-2xl flex items-start gap-4">
+                    <ShieldCheck className="w-6 h-6 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
                     <div>
-                        <h4 className="text-base font-bold text-amber-500 mb-1.5">Prerequisite</h4>
+                        <h4 className="text-base font-bold text-amber-700 dark:text-amber-500 mb-1.5">Prerequisite</h4>
                         <p className="text-sm text-foreground/80 leading-relaxed">
-                            You need to install the <strong>AIOMetadata Addon</strong> on Omni for the Snapshot to function correctly. You can use my template from <a href="https://github.com/nobnobz/Omni-Template-Bot-Bid-Raiser" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline inline-flex items-center gap-1">here <ExternalLink className="w-3 h-3" /></a>.
+                            You need to install the <strong>AIOMetadata Addon</strong> on Omni for the Snapshot to function correctly. You can use my template from <a href="https://github.com/nobnobz/Omni-Template-Bot-Bid-Raiser" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1 font-bold">here <ExternalLink className="w-3 h-3" /></a>.
                         </p>
                     </div>
                 </div>
@@ -150,7 +150,7 @@ export function Documentation() {
                 </section>
 
                 {/* CHAPTER 2: AIOMetadata INTEGRATION */}
-                <section className="space-y-6 bg-blue-500/5 p-8 rounded-3xl border border-blue-500/20">
+                <section className="space-y-6 bg-blue-50 dark:bg-blue-500/5 p-8 rounded-3xl border border-blue-100 dark:border-blue-500/20">
                     <div className="flex items-center justify-between">
                         <h2 className="text-xl font-bold text-foreground flex items-center gap-3">
                             <Database className="w-7 h-7 text-blue-400" />
@@ -160,7 +160,7 @@ export function Documentation() {
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         <div className="space-y-4">
-                            <h4 className="text-base font-bold text-blue-400 flex items-center gap-2">
+                            <h4 className="text-base font-bold text-blue-600 dark:text-blue-400 flex items-center gap-2">
                                 <AlertCircle className="w-5 h-5" />
                                 Why is this needed?
                             </h4>
@@ -174,7 +174,7 @@ export function Documentation() {
 
                         <div className="space-y-4 bg-background/40 p-6 rounded-2xl border border-border/50">
                             <h4 className="text-base font-bold text-foreground flex items-center gap-2">
-                                <HelpCircle className="w-5 h-5 text-blue-400" />
+                                <HelpCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                 How to export from AIOMetadata?
                             </h4>
                             <ol className="space-y-3 ml-4 list-decimal text-sm text-foreground/70">
@@ -227,9 +227,9 @@ export function Documentation() {
                             </div>
                         </div>
 
-                        <div className="bg-blue-500/5 border border-blue-500/20 p-8 rounded-3xl">
+                        <div className="bg-blue-50 dark:bg-blue-500/5 border border-blue-100 dark:border-blue-500/20 p-8 rounded-3xl">
                             <h4 className="font-bold text-foreground text-lg mb-4 flex items-center gap-3">
-                                <Settings className="w-5 h-5 text-blue-400" />
+                                <Settings className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                 Customization Options
                             </h4>
                             <ul className="space-y-4">
@@ -267,8 +267,8 @@ export function Documentation() {
                         <div className="grid grid-cols-1 divide-y divide-border">
                             {/* Feature 1: Shelf Visibility */}
                             <div className="p-6 flex gap-5 hover:bg-white/[0.02] transition-colors">
-                                <div className="h-12 w-12 shrink-0 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-                                    <Layout className="w-6 h-6 text-blue-400" />
+                                <div className="h-12 w-12 shrink-0 rounded-2xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center border border-blue-100 dark:border-blue-500/20">
+                                    <Layout className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                                 </div>
                                 <div className="space-y-1.5">
                                     <h4 className="font-bold text-foreground text-base tracking-tight">Shelf Visibility</h4>
@@ -280,8 +280,8 @@ export function Documentation() {
 
                             {/* Feature 2: Top Row */}
                             <div className="p-6 flex gap-5 hover:bg-white/[0.02] transition-colors">
-                                <div className="h-12 w-12 shrink-0 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-                                    <Hash className="w-6 h-6 text-blue-400" />
+                                <div className="h-12 w-12 shrink-0 rounded-2xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center border border-blue-100 dark:border-blue-500/20">
+                                    <Hash className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                                 </div>
                                 <div className="space-y-1.5">
                                     <h4 className="font-bold text-foreground text-base tracking-tight">Top Row</h4>
@@ -293,8 +293,8 @@ export function Documentation() {
 
                             {/* Feature 3: Header Feature */}
                             <div className="p-6 flex gap-5 hover:bg-white/[0.02] transition-colors">
-                                <div className="h-12 w-12 shrink-0 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-                                    <Maximize className="w-6 h-6 text-blue-400" />
+                                <div className="h-12 w-12 shrink-0 rounded-2xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center border border-blue-100 dark:border-blue-500/20">
+                                    <Maximize className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                                 </div>
                                 <div className="space-y-1.5">
                                     <h4 className="font-bold text-foreground text-base tracking-tight">Header Feature</h4>
@@ -306,8 +306,8 @@ export function Documentation() {
 
                             {/* Feature 4: Randomize */}
                             <div className="p-6 flex gap-5 hover:bg-white/[0.02] transition-colors">
-                                <div className="h-12 w-12 shrink-0 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-                                    <RefreshCcw className="w-6 h-6 text-blue-400" />
+                                <div className="h-12 w-12 shrink-0 rounded-2xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center border border-blue-100 dark:border-blue-500/20">
+                                    <RefreshCcw className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                                 </div>
                                 <div className="space-y-1.5">
                                     <h4 className="font-bold text-foreground text-base tracking-tight">Randomize</h4>
@@ -319,8 +319,8 @@ export function Documentation() {
 
                             {/* Feature 5: Small Layout */}
                             <div className="p-6 flex gap-5 hover:bg-white/[0.02] transition-colors">
-                                <div className="h-12 w-12 shrink-0 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-                                    <LayoutGrid className="w-6 h-6 text-blue-400" />
+                                <div className="h-12 w-12 shrink-0 rounded-2xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center border border-blue-100 dark:border-blue-500/20">
+                                    <LayoutGrid className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                                 </div>
                                 <div className="space-y-1.5">
                                     <h4 className="font-bold text-foreground text-base tracking-tight">Small Layout</h4>
@@ -343,9 +343,9 @@ export function Documentation() {
                         Fine-tune how your content is tagged and displayed using tags and patterns.
                     </p>
                     <div className="space-y-6">
-                        <div className="bg-blue-500/5 border border-border p-6 rounded-3xl space-y-6">
+                        <div className="bg-blue-50 dark:bg-blue-500/5 border border-border p-6 rounded-3xl space-y-6">
                             <h4 className="text-base font-bold text-foreground flex items-center gap-2">
-                                <AlertCircle className="w-5 h-5 text-blue-400" />
+                                <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                 What can you do with Patterns?
                             </h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -437,27 +437,41 @@ export function Documentation() {
                         7. How to install
                     </h2>
 
-                    <div className="bg-blue-500/5 p-8 rounded-3xl border border-blue-500/20 space-y-4">
+                    <div className="bg-blue-50 dark:bg-blue-500/5 p-8 rounded-3xl border border-blue-100 dark:border-blue-500/20 space-y-4">
                         <p className="text-sm text-foreground/70 leading-relaxed">
                             Access the <strong>UME Templates</strong> menu in the navigation bar or download these core files directly:
                         </p>
                         <div className="flex flex-wrap gap-2.5">
-                            {templates.map((item, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => handleDownload(item.url, item.filename)}
-                                    className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-background border border-border text-[13px] font-black text-foreground/60 uppercase tracking-tight hover:bg-blue-500/10 hover:text-blue-400 hover:border-blue-500/30 transition-all cursor-pointer"
-                                >
-                                    <FileJson className="w-3.5 h-3.5 text-blue-400" /> {item.name}
-                                </button>
-                            ))}
+                                {templates.map((item, i) => {
+                                    const parts = item.name.split('(');
+                                    const mainTitle = parts[0].trim();
+                                    const subtitle = parts[1] ? `(${parts[1]}` : null;
+
+                                    return (
+                                        <button
+                                            key={i}
+                                            onClick={() => handleDownload(item.url, item.filename)}
+                                            className="flex items-center gap-3 px-5 py-3 rounded-xl bg-background border border-border text-foreground/60 uppercase tracking-tight hover:bg-blue-500/10 hover:text-blue-400 hover:border-blue-500/30 transition-all cursor-pointer group"
+                                        >
+                                            <FileJson className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform shrink-0" /> 
+                                            <div className="flex flex-col items-start gap-0.5">
+                                                <span className="text-[13px] font-black leading-none">{mainTitle}</span>
+                                                {subtitle && (
+                                                    <span className="text-[10px] font-bold text-foreground/40 lowercase tracking-normal">
+                                                        {subtitle.toLowerCase()}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </button>
+                                    );
+                                })}
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         <div className="bg-card/30 p-8 rounded-3xl border border-border flex flex-col gap-6 hover:bg-card/50 transition-colors">
                             <div className="flex items-center gap-4">
-                                <div className="h-12 w-12 shrink-0 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 text-blue-400">
+                                <div className="h-12 w-12 shrink-0 rounded-2xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-400">
                                     <Smartphone className="w-6 h-6" />
                                 </div>
                                 <h4 className="font-bold text-foreground text-lg tracking-tight">Installation</h4>
@@ -474,7 +488,7 @@ export function Documentation() {
                                             <span className="w-1.5 h-1.5 rounded-full bg-blue-500/50 mt-1.5" />
                                             <span>Copy the <strong>.json</strong> file into the folder:</span>
                                         </div>
-                                        <div className="bg-background/80 px-4 py-3 rounded-2xl text-blue-400 font-mono text-[11px] border border-border/50 shadow-inner flex items-center gap-3 ml-4">
+                                        <div className="bg-blue-50 dark:bg-background/80 px-4 py-3 rounded-2xl text-blue-600 dark:text-blue-400 font-mono text-[11px] border border-blue-100 dark:border-border/50 shadow-inner flex items-center gap-3 ml-4">
                                             <span className="w-1.5 h-1.5 rounded-full bg-blue-500/50" />
                                             Files › On my iPhone › Omni › Backups
                                         </div>
@@ -496,7 +510,7 @@ export function Documentation() {
 
                         <div className="bg-card/30 p-8 rounded-3xl border border-border flex flex-col gap-6 hover:bg-card/50 transition-colors">
                             <div className="flex items-center gap-4">
-                                <div className="h-12 w-12 shrink-0 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 text-blue-400">
+                                <div className="h-12 w-12 shrink-0 rounded-2xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-400">
                                     <Monitor className="w-6 h-6" />
                                 </div>
                                 <h4 className="font-bold text-foreground text-lg tracking-tight">Syncing with Apple TV</h4>

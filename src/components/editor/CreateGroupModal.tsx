@@ -136,7 +136,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                 value={mainName}
                                 onChange={(e) => setMainName(e.target.value)}
                                 placeholder="e.g. User Collections"
-                                className="bg-background border-input focus-visible:ring-blue-500"
+                                className="h-10 text-base sm:text-sm bg-background border-input focus-visible:ring-blue-500"
                             />
                         </div>
 
@@ -150,7 +150,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                     placeholder="Search subgroups..."
                                     value={searchQuery}
                                     onChange={e => setSearchQuery(e.target.value)}
-                                    className="pl-8 h-8 text-xs bg-background border-input focus-visible:ring-blue-500 mb-2"
+                                    className="pl-8 h-10 sm:h-8 text-base sm:text-xs bg-background border-input focus-visible:ring-blue-500 mb-2"
                                 />
                             </div>
 
@@ -203,14 +203,14 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                         value={subName}
                                         onChange={(e) => setSubName(e.target.value)}
                                         placeholder="e.g. Action Movies"
-                                        className="bg-background border-input focus-visible:ring-blue-500"
+                                        className="h-10 text-base sm:text-sm bg-background border-input focus-visible:ring-blue-500"
                                     />
                                 </div>
 
                                 <div className="space-y-2">
                                     <Label htmlFor="target-main" className="text-foreground">Main Group</Label>
                                     <Select value={targetMainGroup} onValueChange={setTargetMainGroup}>
-                                        <SelectTrigger className="w-full bg-background border-input text-foreground">
+                                        <SelectTrigger className="w-full h-10 text-base sm:text-sm bg-background border-input text-foreground">
                                             <SelectValue placeholder="Select a Main Group" />
                                         </SelectTrigger>
                                         <SelectContent className="bg-popover border-border text-popover-foreground max-h-[200px]">
@@ -257,7 +257,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                             value={subImageUrl}
                                             onChange={(e) => setSubImageUrl(e.target.value)}
                                             placeholder="https://..."
-                                            className="border-0 bg-transparent focus-visible:ring-0 px-1 py-0 h-auto"
+                                            className="border-0 bg-transparent focus-visible:ring-0 px-1 py-0 h-10 text-base sm:text-sm"
                                         />
                                     </div>
                                 </div>
@@ -273,7 +273,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                         placeholder="Search catalogs by name or ID..."
                                         value={catalogSearch}
                                         onChange={e => setCatalogSearch(e.target.value)}
-                                        className="pl-8 h-8 text-xs bg-background border-input focus-visible:ring-blue-500 mb-2"
+                                        className="pl-8 h-10 sm:h-8 text-base sm:text-xs bg-background border-input focus-visible:ring-blue-500 mb-2"
                                     />
                                 </div>
 

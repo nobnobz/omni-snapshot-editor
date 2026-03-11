@@ -671,11 +671,25 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                             <div className="p-3 bg-blue-900/10 border-b border-border text-xs text-blue-300 px-4">
                                                 Select subgroups you want to import independent of Main Groups. You can assign them to your <strong>existing</strong> main groups below.
                                             </div>
-                                            <div className="p-2 bg-muted/50 border-b border-border flex flex-wrap gap-2">
-                                                <Button variant="secondary" size="sm" onClick={selectAllSubgroups} className="h-7 text-xs bg-muted hover:bg-muted/80 text-foreground">Select All</Button>
-                                                <Button variant="secondary" size="sm" onClick={selectCatalogUpdates} className="h-7 text-xs bg-amber-600/20 text-amber-500 hover:bg-amber-600/30 border border-amber-500/30">Update Catalogs</Button>
-                                                <Button variant="secondary" size="sm" onClick={selectImageUpdates} className="h-7 text-xs bg-purple-600/20 text-purple-400 hover:bg-purple-600/30 border border-purple-500/30">Update Images</Button>
-                                                <Button variant="ghost" size="sm" onClick={deselectAllSubgroups} className="h-7 text-xs text-foreground/70 hover:text-foreground mb-1">Deselect All</Button>
+                                            <div className="p-2 bg-muted/50 border-b border-border flex flex-col gap-2">
+                                                {/* Selection Row */}
+                                                <div className="flex gap-2">
+                                                    <Button variant="secondary" size="sm" onClick={selectAllSubgroups} className="flex-1 h-8 text-xs bg-muted hover:bg-muted/80 text-foreground font-semibold">
+                                                        Select All
+                                                    </Button>
+                                                    <Button variant="ghost" size="sm" onClick={deselectAllSubgroups} className="flex-1 h-8 text-xs text-foreground/70 hover:text-foreground border border-border/50 font-semibold">
+                                                        Deselect All
+                                                    </Button>
+                                                </div>
+                                                {/* Update Row */}
+                                                <div className="flex gap-2">
+                                                    <Button variant="secondary" size="sm" onClick={selectCatalogUpdates} className="flex-1 h-8 text-xs bg-amber-600/10 text-amber-500 hover:bg-amber-600/20 border border-amber-500/20 font-semibold px-2">
+                                                        Update Catalogs
+                                                    </Button>
+                                                    <Button variant="secondary" size="sm" onClick={selectImageUpdates} className="flex-1 h-8 text-xs bg-purple-600/10 text-purple-400 hover:bg-purple-600/20 border border-purple-500/20 font-semibold px-2">
+                                                        Update Images
+                                                    </Button>
+                                                </div>
                                             </div>
                                             {(() => {
                                                 const newSgs = parsedSubgroups.filter(sg => !sg.isDuplicate);

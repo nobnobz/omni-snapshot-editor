@@ -259,7 +259,7 @@ export function MainEditor() {
     };
 
     return (
-        <div className="flex h-screen overflow-hidden bg-background text-foreground font-sans relative">
+        <div className="flex h-[100dvh] overflow-hidden bg-background text-foreground font-sans relative">
 
             {/* Mobile Sidebar Overlay */}
             {isSidebarOpen && (
@@ -269,12 +269,11 @@ export function MainEditor() {
                 />
             )}
 
-            {/* Sidebar */}
             <aside className={`
                 fixed lg:static inset-y-0 left-0 z-50 w-72 lg:w-64 border-r border-border bg-card flex flex-col transform transition-transform duration-300 ease-in-out
                 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
             `}>
-                <div className="p-5 border-b border-border flex flex-col gap-4 bg-card/50">
+                <div className="p-5 pt-[calc(1.25rem+env(safe-area-inset-top))] border-b border-border flex flex-col gap-4 bg-card/50">
                     <div className="flex justify-between items-start">
                         <div>
                             <h1 className="text-base font-black flex items-center gap-3 text-white tracking-tight">
@@ -449,7 +448,7 @@ export function MainEditor() {
                     </div>
                 </div>
 
-                <header className="lg:hidden h-[calc(3.5rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] border-b border-border bg-card/80 backdrop-blur-sm shadow-sm flex items-center gap-2 px-3 sm:px-6 shrink-0 sticky top-0 z-30">
+                <header className="lg:hidden h-[calc(3.5rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] border-b border-border bg-card backdrop-blur-md shadow-sm flex items-center gap-2 px-3 sm:px-6 shrink-0 sticky top-0 z-30">
                     <Button
                         variant="ghost"
                         size="icon"
@@ -580,10 +579,10 @@ export function MainEditor() {
                                                 <p className="text-sm text-foreground/70 leading-relaxed">
                                                     Import your catalogs by uploading an AIOMetadata config file or pasting the JSON. To export your catalogs in AIOMetadata, go to Catalogs &gt; Share Setup.
                                                 </p>
-                                                <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 text-[13px] text-blue-400 flex gap-4 items-start mt-4 shadow-sm">
-                                                    <Info className="w-5 h-5 shrink-0 mt-0.5 text-blue-400" />
-                                                    <p className="leading-relaxed">
-                                                        <span className="font-bold">Note:</span> You can skip this step if you don’t want to import additional catalogs from your AIOMetadata setup.
+                                                <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-xl p-4 text-[13px] text-blue-700 dark:text-blue-400 flex gap-4 items-start mt-4 shadow-sm">
+                                                    <Info className="w-5 h-5 shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" />
+                                                    <p className="leading-relaxed text-blue-800 dark:text-blue-400/90">
+                                                        <span className="font-bold text-blue-700 dark:text-blue-400">Note:</span> You can skip this step if you don’t want to import additional catalogs from your AIOMetadata setup.
                                                     </p>
                                                 </div>
                                                 {Object.keys(customFallbacks).length > 0 && (
@@ -659,7 +658,7 @@ export function MainEditor() {
                                                     <div className="flex flex-col gap-2 mt-auto relative z-10">
                                                         <Textarea
                                                             placeholder="Paste your JSON configuration here..."
-                                                            className="min-h-[60px] text-xs bg-muted/30 border-input focus:border-blue-500/50 text-foreground resize-none font-mono placeholder:text-foreground/50 custom-scrollbar rounded-lg"
+                                                            className="min-h-[60px] text-base sm:text-xs bg-muted/30 border-input focus:border-blue-500/50 text-foreground resize-none font-mono placeholder:text-foreground/50 custom-scrollbar rounded-lg"
                                                             value={pastedJson}
                                                             onChange={(e) => setPastedJson(e.target.value)}
                                                         />

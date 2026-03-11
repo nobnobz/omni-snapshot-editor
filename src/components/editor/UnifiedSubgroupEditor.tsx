@@ -128,10 +128,10 @@ function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => vo
             <button
                 {...attributes}
                 {...listeners}
-                className="cursor-grab text-foreground/70 hover:text-foreground shrink-0 p-1 rounded-md hover:bg-muted/80 transition-colors select-none"
+                className="cursor-grab text-foreground/70 hover:text-foreground shrink-0 p-2 rounded-md hover:bg-muted/80 transition-colors select-none"
                 style={{ touchAction: 'none' }}
             >
-                <GripVertical className="h-4 w-4" />
+                <GripVertical className="h-5 w-5" />
             </button>
 
             <div className="flex-1 min-w-0 pr-2 flex items-center gap-2">
@@ -307,18 +307,18 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
     };
 
     return (
-        <div ref={setNodeRef} style={style} className={`border border-border shadow-sm hover:shadow-md rounded-xl overflow-hidden mb-3 bg-card/40 backdrop-blur-sm transition-all hover:border-border/60 group/subgroup ${isDragging ? "opacity-50 border-blue-500 scale-[1.01] shadow-2xl" : ""}`}>
+        <div ref={setNodeRef} style={style} className={`border border-border shadow-sm hover:shadow-md rounded-lg overflow-hidden mb-3 bg-card/40 backdrop-blur-sm transition-all hover:border-border/60 group/subgroup ${isDragging ? "opacity-50 border-blue-500 scale-[1.01] shadow-2xl" : ""}`}>
             {/* Header: Drag Handle + Subgroup Name */}
-            <div className={`flex items-center gap-3 p-4 bg-muted/40 backdrop-blur-sm border-border/40 ${isExpanded ? "border-b border-border/50" : ""}`}>
+            <div className={`flex items-center gap-3 p-3 bg-muted/40 backdrop-blur-sm border-border/40 ${isExpanded ? "border-b border-border/50" : ""}`}>
                 <button
                     {...attributes}
                     {...listeners}
-                    className="cursor-grab hover:text-foreground text-foreground/70 p-1 rounded-md hover:bg-muted transition-colors select-none"
+                    className="cursor-grab hover:text-foreground text-foreground/70 p-1.5 rounded-md hover:bg-muted transition-colors select-none"
                     style={{ touchAction: 'none' }}
                 >
-                    <GripVertical className="h-4 w-4" />
+                    <GripVertical className="h-5 w-5" />
                 </button>
-                <div className="flex-1 font-semibold text-sm text-foreground cursor-pointer flex items-center select-none tracking-tight" onClick={toggleExpanded}>
+                <div className="flex-1 font-bold text-sm text-foreground cursor-pointer flex items-center select-none tracking-tight" onClick={toggleExpanded}>
                     {isExpanded ? <ChevronDown className="w-4 h-4 mr-2 text-foreground/70 group-hover:text-foreground transition-colors" /> : <ChevronRight className="w-4 h-4 mr-2 text-foreground/70 group-hover:text-foreground transition-colors" />}
                     {formatDisplayName(subgroupName)}
                 </div>
@@ -377,7 +377,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                     value={urlInput}
                                     onChange={e => setUrlInput(e.target.value)}
                                     onBlur={handleUrlBlur}
-                                    className="h-8 text-xs bg-background border-border focus-visible:ring-1 focus-visible:ring-blue-500 shadow-inner transition-colors font-mono"
+                                    className="h-10 sm:h-8 text-base sm:text-xs bg-background border-border focus-visible:ring-1 focus-visible:ring-blue-500 shadow-inner transition-colors font-mono"
                                 />
                             </div>
                         </div>
@@ -647,21 +647,21 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
     };
 
     return (
-        <div ref={setNodeRef} style={style} className={`border border-border/60 rounded-xl overflow-hidden bg-card/80 shadow-sm transition-all hover:border-border hover:shadow-md group/main ${isDragging ? "opacity-50 border-blue-500 scale-[1.01] shadow-2xl" : ""}`}>
+        <div ref={setNodeRef} style={style} className={`border border-border/60 rounded-lg overflow-hidden bg-card/80 shadow-sm transition-all hover:border-border hover:shadow-md group/main ${isDragging ? "opacity-50 border-blue-500 scale-[1.01] shadow-2xl" : ""}`}>
             <AccordionItem value={uuid} className="border-none">
-                <AccordionTrigger className="w-full justify-between items-center p-4 hover:bg-muted/40 hover:no-underline flex text-sm transition-colors group">
-                    <div className="flex flex-1 items-center gap-4 text-left">
+                <AccordionTrigger className="w-full justify-between items-center p-3 hover:bg-muted/40 hover:no-underline flex text-sm transition-colors group">
+                    <div className="flex flex-1 items-center gap-3 text-left">
                         <div
                             {...attributes}
                             {...listeners}
-                            className="cursor-grab text-foreground/70 hover:text-foreground shrink-0 p-1.5 rounded-md hover:bg-muted transition-colors pointer-events-auto select-none"
+                            className="cursor-grab text-foreground/70 hover:text-foreground shrink-0 p-2 rounded-md hover:bg-muted transition-colors pointer-events-auto select-none"
                             style={{ touchAction: 'none' }}
                             onClick={(e) => e.stopPropagation()}
                         >
                             <GripVertical className="h-5 w-5" />
                         </div>
                         <div>
-                            <div className="font-bold text-lg tracking-tight text-foreground flex items-center gap-2">
+                            <div className="font-bold text-sm tracking-tight text-foreground flex items-center gap-2">
                                 {formatDisplayName(name)}
                                 {posterSize !== "Default" && (
                                     <Badge variant="outline" className="text-[10px] uppercase tracking-widest bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30">
@@ -669,7 +669,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                     </Badge>
                                 )}
                             </div>
-                            <div className="text-[12px] text-foreground/70 font-medium mt-0.5 flex items-center gap-2">
+                            <div className="text-[11px] text-foreground/70 font-medium mt-0.5 flex items-center gap-2">
                                 <span>{subgroupNames.length} Subgroups</span>
                             </div>
                         </div>
@@ -683,7 +683,13 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" size="sm" className="h-8 text-[11px] sm:text-xs text-foreground/70 hover:text-foreground hover:bg-muted font-medium tracking-tight px-2">
-                                        Layout: <span className="text-foreground ml-1 font-bold">{posterType} / {posterSize}</span> <ChevronDown className="w-3.5 h-3.5 ml-1 opacity-50" />
+                                        Layout: <span className="text-foreground ml-1 font-bold">
+                                            {posterType}
+                                            <span className="hidden sm:inline"> / {posterSize}</span>
+                                            <span className="sm:hidden">
+                                                {posterSize !== "Default" && posterSize !== "Small" ? ` / ${posterSize}` : ""}
+                                            </span>
+                                        </span> <ChevronDown className="w-3.5 h-3.5 ml-1 opacity-50" />
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent className="bg-card border-border text-foreground">
@@ -1082,7 +1088,7 @@ function UnassignedSubgroupRow({
                                             placeholder="Search by name or ID..."
                                             value={catalogSearch}
                                             onChange={e => setCatalogSearch(e.target.value)}
-                                            className="h-7 text-[11px] pl-7 bg-background border-border focus-visible:ring-blue-600"
+                                            className="h-10 sm:h-7 text-base sm:text-[11px] pl-7 bg-background border-border focus-visible:ring-blue-600"
                                             autoFocus
                                             onKeyDown={e => e.stopPropagation()}
                                         />

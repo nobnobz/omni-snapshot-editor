@@ -273,14 +273,14 @@ export function ConfigLoader() {
     };
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-background p-4 sm:p-8 font-sans text-foreground relative overflow-hidden">
+        <div className="flex items-center justify-center min-h-screen bg-background p-4 sm:p-8 pt-safe font-sans text-foreground relative overflow-hidden">
             {/* Animated Background Effects */}
             <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
             <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-500/20 dark:bg-blue-900/20 rounded-full blur-[120px] pointer-events-none animate-pulse duration-10000" />
             <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-purple-500/20 dark:bg-indigo-900/20 rounded-full blur-[120px] pointer-events-none animate-pulse duration-7000" />
             <div className="absolute top-[20%] right-[20%] w-[30%] h-[30%] bg-emerald-500/10 dark:bg-emerald-900/20 rounded-full blur-[100px] pointer-events-none animate-pulse duration-8000" />
 
-            <div className="absolute top-4 right-4 z-50">
+            <div className="absolute top-4 right-4 z-50 pt-safe pr-safe">
                 <ThemeToggle />
             </div>
 
@@ -296,31 +296,23 @@ export function ConfigLoader() {
                         Import an Omni snapshot from GitHub or your local disk, or create a new setup from scratch.
                     </p>
 
-                    <div className="pt-8 flex flex-col items-center gap-6">
-                        <div className="flex flex-wrap items-center justify-center gap-3">
-                            {/* 1. Documentation */}
-                            <Dialog>
-                                <DialogTrigger asChild>
-                                    <button className="group flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-blue-500/10 dark:bg-blue-500/15 backdrop-blur-md border border-blue-500/20 hover:border-blue-500/40 hover:bg-blue-500/20 transition-all duration-300 shadow-sm hover:shadow-blue-500/10 hover:-translate-y-0.5">
-                                        <BookOpen className="h-4 w-4 text-blue-500 group-hover:scale-110 transition-all" />
-                                        <span className="text-[12px] font-bold text-blue-400 group-hover:text-blue-300 tracking-tight">Documentation</span>
-                                    </button>
-                                </DialogTrigger>
-                                <Documentation />
-                            </Dialog>
-
-                            {/* 2. UME */}
+                    <div className="pt-8 flex flex-col items-center gap-4">
+                        {/* Row 1: UME Templates (Centered & Prominent) */}
+                        <div className="flex justify-center w-full">
+                            {/* 1. UME Templates */}
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <button className="group flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15 backdrop-blur-md border border-emerald-500/20 hover:border-emerald-500/40 hover:bg-emerald-500/20 transition-all duration-300 shadow-sm hover:shadow-emerald-500/10 hover:-translate-y-0.5">
-                                        <Layout className="h-4 w-4 text-emerald-500 group-hover:rotate-12 transition-all" />
-                                        <span className="text-[12px] font-bold text-emerald-400 group-hover:text-emerald-300 tracking-tight">UME</span>
-                                        <ChevronDown className="h-3.5 w-3.5 text-emerald-500/50 group-hover:text-emerald-500 transition-colors" />
+                                    <button className="group flex items-center justify-center gap-2.5 px-6 py-3 rounded-xl bg-blue-500/10 border border-blue-500/20 backdrop-blur-xl text-blue-400 hover:bg-blue-500/20 transition-all duration-300 shadow-lg hover:shadow-blue-500/10 hover:-translate-y-0.5 min-w-[292px]">
+                                        <div className="p-1.5 bg-blue-500/20 rounded-lg group-hover:scale-110 transition-transform">
+                                            <FileDown className="h-4 w-4 text-blue-400" />
+                                        </div>
+                                        <span className="text-[13px] font-bold tracking-tight">Download UME Templates</span>
+                                        <ChevronDown className="h-4 w-4 opacity-50 group-hover:opacity-100 transition-opacity" />
                                     </button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-64 bg-card/95 border-border shadow-2xl backdrop-blur-2xl pb-2 animate-in fade-in zoom-in-95 duration-200" align="center">
+                                <DropdownMenuContent className="min-w-[280px] bg-card/95 border-border shadow-2xl backdrop-blur-2xl pb-2 animate-in fade-in zoom-in-95 duration-200" align="center">
                                     <DropdownMenuLabel className="text-[10px] uppercase tracking-[0.2em] text-foreground/40 font-black px-3 py-2.5">
-                                        Official Templates
+                                        UME Templates
                                     </DropdownMenuLabel>
                                     {(() => {
                                         const templates = manifest?.templates?.filter(t => t.url && t.id !== 'ume-catalogs') || [];
@@ -333,26 +325,28 @@ export function ConfigLoader() {
 
                                         return templates.map(template => {
                                             const versionRegex = /v\d+(?:\.\d+)*/;
-                                            const v = template.version || template.name.match(versionRegex)?.[0];
-                                            const name = template.name.replace(versionRegex, "").replace("UME Template", "Omni Template").trim() || "Omni Template";
+                                            const v = template.name.match(versionRegex)?.[0];
+                                            const baseName = template.name.replace(versionRegex, "").replace("UME Template", "Omni Template").trim() || "Omni Template";
 
                                             return (
                                                 <DropdownMenuItem
                                                     key={template.id}
-                                                    className="mx-1.5 mb-1 cursor-pointer focus:bg-emerald-500/15 focus:text-emerald-400 flex items-center gap-3 px-3 py-2.5 rounded-lg group transition-colors"
-                                                    onClick={() => handleDownload(
-                                                        template.url || "",
-                                                        getStandardizedFilename(name, v)
-                                                    )}
+                                                    onSelect={() => {
+                                                        setSelectedVersion(template.name);
+                                                        setUrl(template.url);
+                                                        // Scroll to GitHub section
+                                                        document.querySelector('.grid')?.children[1].scrollIntoView({ behavior: 'smooth' });
+                                                    }}
+                                                    className="cursor-pointer focus:bg-blue-500/15 focus:text-blue-400 flex items-center gap-3 px-3 py-2.5 rounded-lg group transition-colors"
                                                 >
-                                                    <div className="p-1.5 bg-emerald-500/10 rounded-md group-hover:bg-emerald-500/20 transition-colors">
-                                                        <FileJson className="w-4 h-4 text-emerald-500" />
+                                                    <div className="p-1.5 bg-blue-500/10 rounded-md group-hover:bg-blue-500/20 transition-colors">
+                                                        <FileJson className="w-3.5 h-3.5 text-blue-500" />
                                                     </div>
-                                                    <div className="flex flex-col gap-0.5">
-                                                        <span className="text-[11px] font-bold leading-none">{name}</span>
-                                                        {v && <span className="text-[9px] opacity-40 font-bold uppercase tracking-tighter">{v}</span>}
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[11px] font-bold text-foreground">{baseName}</span>
+                                                        {v && <span className="text-[9px] text-foreground/50 font-mono">{v}</span>}
                                                     </div>
-                                                    <FileDown className="w-3.5 h-3.5 ml-auto opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all" />
+                                                    <FileDown className="w-3 h-3 ml-auto opacity-20 group-hover:opacity-100 transition-opacity" />
                                                 </DropdownMenuItem>
                                             );
                                         });
@@ -373,7 +367,7 @@ export function ConfigLoader() {
                                                     <div className="p-1.5 bg-blue-500/10 rounded-md group-hover:bg-blue-500/20 transition-colors">
                                                         <UploadCloud className="w-3.5 h-3.5 text-blue-500" />
                                                     </div>
-                                                    <span className="text-[11px] font-bold">How to Install</span>
+                                                    <span className="text-[11px] font-bold text-foreground">How to Install</span>
                                                     <ChevronRight className="w-3 h-3 ml-auto opacity-20 group-hover:opacity-100 transition-opacity" />
                                                 </DropdownMenuItem>
                                             </DialogTrigger>
@@ -415,16 +409,30 @@ export function ConfigLoader() {
                                     </div>
                                 </DropdownMenuContent>
                             </DropdownMenu>
+                        </div>
+
+                        {/* Row 2: Secondary Resources */}
+                        <div className="flex items-center justify-center gap-3 w-full">
+                            {/* 2. Documentation */}
+                            <Dialog>
+                                <DialogTrigger asChild>
+                                    <button className="group flex items-center justify-center gap-2.5 px-5 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 backdrop-blur-md text-indigo-400 hover:bg-indigo-500/20 transition-all duration-300 shadow-sm hover:-translate-y-0.5 min-w-[140px] text-center">
+                                        <BookOpen className="h-3.5 w-3.5 text-indigo-400/80 group-hover:text-indigo-400 transition-all" />
+                                        <span className="text-[11px] font-bold tracking-tight">Documentation</span>
+                                    </button>
+                                </DialogTrigger>
+                                <Documentation />
+                            </Dialog>
 
                             {/* 3. Support Me */}
                             <a
                                 href="https://ko-fi.com/botbidraiser"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="group flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-pink-500/10 dark:bg-pink-500/15 backdrop-blur-md border border-pink-500/20 hover:border-pink-500/40 hover:bg-pink-500/20 transition-all duration-300 shadow-sm hover:shadow-pink-500/10 hover:-translate-y-0.5"
+                                className="group flex items-center justify-center gap-2.5 px-5 py-2 rounded-xl bg-pink-500/10 border border-pink-500/20 backdrop-blur-md text-pink-400 hover:text-pink-400 hover:bg-pink-500/20 transition-all duration-300 shadow-sm hover:-translate-y-0.5 min-w-[140px] text-center"
                             >
-                                <Heart className="h-4 w-4 text-pink-500 group-hover:scale-110 group-hover:fill-pink-500/20 transition-all" />
-                                <span className="text-[12px] font-bold text-pink-400 group-hover:text-pink-300 tracking-tight">Support Me</span>
+                                <Heart className="h-3.5 w-3.5 text-pink-400/80 group-hover:text-pink-400 group-hover:fill-pink-400/10 transition-all" />
+                                <span className="text-[11px] font-bold tracking-tight">Support Me</span>
                             </a>
                         </div>
                     </div>
@@ -472,7 +480,7 @@ export function ConfigLoader() {
                             <div className="mt-auto">
                                 <label
                                     htmlFor="file-upload"
-                                    className={`flex items-center justify-center w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-md h-10 font-bold transition-all cursor-pointer shadow-sm text-sm ${loading ? 'opacity-70 pointer-events-none' : ''}`}
+                                    className={`flex items-center justify-center w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl h-10 font-bold transition-all cursor-pointer shadow-md text-sm ${loading ? 'opacity-70 pointer-events-none' : ''}`}
                                 >
                                     {loading ? "Loading..." : "Select Local File"}
                                 </label>
@@ -529,7 +537,7 @@ export function ConfigLoader() {
                                 <Button
                                     onClick={fetchFromGitHub}
                                     disabled={loading}
-                                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white h-10 font-bold transition-all shadow-sm"
+                                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white h-10 font-bold transition-all shadow-md rounded-xl"
                                 >
                                     {loading ? "Loading..." : "Load from GitHub"}
                                 </Button>
@@ -562,9 +570,9 @@ export function ConfigLoader() {
                                 <Button
                                     onClick={handleCreateBlank}
                                     disabled={loading}
-                                    className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white h-10 font-bold transition-all shadow-sm"
+                                    className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white h-10 font-bold transition-all shadow-md rounded-xl"
                                 >
-                                    Create Clean File
+                                    {loading ? "Loading..." : "Create Clean File"}
                                 </Button>
                             </div>
                         </CardContent>

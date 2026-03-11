@@ -122,9 +122,10 @@ function SortableCatalogItem({
             <button
                 {...attributes}
                 {...listeners}
-                className={`cursor-grab shrink-0 ${isActive ? "text-foreground/70 hover:text-white" : "text-foreground pointer-events-none"}`}
+                className={`cursor-grab shrink-0 p-2 rounded-md transition-colors ${isActive ? "text-foreground/70 hover:text-foreground hover:bg-muted" : "text-foreground pointer-events-none"}`}
+                style={{ touchAction: 'none' }}
             >
-                <GripVertical className="h-4 w-4" />
+                <GripVertical className="h-5 w-5" />
             </button>
 
             {/* Name + ID and Badges wrapper */}
@@ -143,14 +144,14 @@ function SortableCatalogItem({
                     ) : (
                         <div className="flex flex-col min-w-0">
                             <h4
-                                className={`text-sm font-bold flex items-center gap-1.5 cursor-pointer hover:underline underline-offset-4 decoration-blue-500/40 w-fit max-w-full group/name ${isActive ? "text-foreground" : "text-foreground/70"}`}
+                                className={`text-sm font-bold flex items-center gap-1.5 cursor-pointer hover:underline underline-offset-4 decoration-blue-500/40 max-w-full group/name ${isActive ? "text-foreground" : "text-foreground/70"}`}
                                 onClick={() => setIsEditingName(true)}
                             >
                                 <span className="truncate">{catalog.name || catalog.id}</span>
                                 {catalog.showInHome && <Star className="w-3 h-3 text-amber-500 shrink-0" />}
                                 <Pencil className="w-3 h-3 text-blue-400 opacity-0 group-hover/name:opacity-100 transition-opacity shrink-0" />
                             </h4>
-                            <p className="text-[11px] text-foreground/70 truncate font-mono mt-0.5 w-fit">{catalog.id}</p>
+                            <p className="text-[11px] text-foreground/70 truncate font-mono mt-0.5">{catalog.id}</p>
                         </div>
                     )}
                 </div>
@@ -163,25 +164,31 @@ function SortableCatalogItem({
                     {!isActive && (
                         <Badge variant="outline" className="text-[10px] h-4 px-1 bg-background text-foreground/70 border-border border-dashed">Disabled</Badge>
                     )}
-                    {catalog.showInHome && (
-                        <Badge className={`text-[10px] h-4 px-1 border ${isSmallTopRow ? 'bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/20' : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'}`}>
-                            {isSmallTopRow ? 'Top Row (small)' : 'Top Row'}
-                        </Badge>
-                    )}
-                    {isLandscape && (
-                        <Badge className="text-[10px] h-4 px-1 bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20">Wide</Badge>
-                    )}
-                    {isSmall && (
-                        <Badge className="text-[10px] h-4 px-1 bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20">Small</Badge>
-                    )}
                     {isPinned && (
                         <Badge className="text-[10px] h-4 px-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">Header</Badge>
                     )}
+                    
+                    {/* Top Row Group */}
+                    <div className="flex items-center gap-1">
+                        {isSmall && (
+                            <Badge className="text-[10px] h-4 px-1 bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20">Small</Badge>
+                        )}
+                        {catalog.showInHome && (
+                            <Badge className={`text-[10px] h-4 px-1 border ${isSmallTopRow ? 'bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/20' : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'}`}>
+                                {isSmallTopRow ? 'Top Row (small)' : 'Top Row'}
+                            </Badge>
+                        )}
+                        {itemCount && catalog.showInHome && (
+                            <Badge variant="secondary" className="text-[10px] h-4 px-1 bg-muted text-foreground/70 border-none">{itemCount}</Badge>
+                        )}
+                    </div>
+
+                    {/* Shelf Specifics */}
+                    {isLandscape && (
+                        <Badge className="text-[10px] h-4 px-1 bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20">Wide</Badge>
+                    )}
                     {isRandom && (
                         <Badge variant="secondary" className="text-[10px] h-4 px-1 bg-muted text-foreground/70 border-none">Rand</Badge>
-                    )}
-                    {itemCount && catalog.showInHome && (
-                        <Badge variant="secondary" className="text-[10px] h-4 px-1 bg-muted text-foreground/70 border-none">{itemCount}</Badge>
                     )}
                 </div>
             </div>

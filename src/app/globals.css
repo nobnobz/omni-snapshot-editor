@@ -140,6 +140,22 @@
     @apply bg-border rounded-full hover:bg-foreground/20 transition-colors;
   }
 
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .mt-safe {
+    margin-top: env(safe-area-inset-top);
+  }
+
+  .mb-safe {
+    margin-bottom: env(safe-area-inset-bottom);
+  }
+
   /* Wider scrollbars on touch for better visibility */
   @media (pointer: coarse) {
     .custom-scrollbar::-webkit-scrollbar {

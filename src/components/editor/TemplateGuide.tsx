@@ -136,7 +136,7 @@ export function TemplateGuide() {
                         <Download className="w-7 h-7 text-blue-500" />
                         2. Download Templates
                     </h2>
-                    <div className="bg-blue-500/5 p-8 rounded-3xl border border-blue-500/20 space-y-4">
+                    <div className="bg-blue-50 dark:bg-blue-500/5 p-8 rounded-3xl border border-blue-100 dark:border-blue-500/20 space-y-4">
                         <p className="text-sm text-foreground/70 leading-relaxed font-bold">
                             Download the UME Templates:
                         </p>
@@ -164,7 +164,7 @@ export function TemplateGuide() {
                     <div className="space-y-6">
                         {/* AIOStreams Setup */}
                         <div className="bg-card/40 p-6 rounded-2xl border border-border flex gap-5">
-                            <div className="h-12 w-12 shrink-0 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 text-blue-400">
+                            <div className="h-12 w-12 shrink-0 rounded-2xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-400">
                                 <Zap className="w-6 h-6" />
                             </div>
                             <div className="space-y-4 flex-1">
@@ -176,16 +176,16 @@ export function TemplateGuide() {
                                     <li>Add your services: <strong>Debrid, TMDB, TVDB API Keys</strong>.</li>
                                 </ul>
                                 <div className="space-y-4">
-                                    <div className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-2xl flex gap-4">
-                                        <Save className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                                    <div className="p-4 bg-amber-50 dark:bg-amber-500/5 border border-amber-100 dark:border-amber-500/20 rounded-2xl flex gap-4">
+                                        <Save className="w-5 h-5 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
                                         <p className="text-sm text-foreground/70 leading-relaxed italic">
-                                            Set a password, click <strong className="text-amber-500">CREATE</strong>, and save your <strong>UUID + Password</strong>.
+                                            Set a password, click <strong className="text-amber-600 dark:text-amber-500">CREATE</strong>, and save your <strong>UUID + Password</strong>.
                                         </p>
                                     </div>
-                                    <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex gap-4">
-                                        <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
-                                        <p className="text-sm text-foreground/80 font-bold uppercase tracking-tight">
-                                            Final Step: Add AIOStreams Manifest URL to <span className="text-blue-400">Omni › Addons</span>.
+                                    <div className="p-4 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-2xl flex gap-4">
+                                        <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                                        <p className="text-sm text-blue-900 dark:text-foreground/80 font-bold uppercase tracking-tight">
+                                            Final Step: Add AIOStreams Manifest URL to <span className="text-blue-600 dark:text-blue-400">Omni › Addons</span>.
                                         </p>
                                     </div>
                                 </div>
@@ -194,7 +194,7 @@ export function TemplateGuide() {
 
                         {/* AIOMetadata Setup */}
                         <div className="bg-card/40 p-6 rounded-2xl border border-border flex gap-5">
-                            <div className="h-12 w-12 shrink-0 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 text-blue-400">
+                            <div className="h-12 w-12 shrink-0 rounded-2xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-400">
                                 <Search className="w-6 h-6" />
                             </div>
                             <div className="space-y-4 flex-1">
@@ -204,16 +204,16 @@ export function TemplateGuide() {
                                     <li>Add your API keys (also your MDBList key in catalogs section).</li>
                                 </ul>
                                 <div className="space-y-4">
-                                    <div className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-2xl flex gap-4">
-                                        <Save className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                                    <div className="p-4 bg-amber-50 dark:bg-amber-500/5 border border-amber-100 dark:border-amber-500/20 rounded-2xl flex gap-4">
+                                        <Save className="w-5 h-5 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
                                         <p className="text-sm text-foreground/70 leading-relaxed italic">
                                             Save configuration, set a password and save your UUID + password.
                                         </p>
                                     </div>
-                                    <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex gap-4">
-                                        <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
-                                        <p className="text-sm text-foreground/80 font-bold uppercase tracking-tight">
-                                            Final Step: Add AIOMetadata Manifest URL to <span className="text-blue-400">Omni › Addons</span>.
+                                    <div className="p-4 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-2xl flex gap-4">
+                                        <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                                        <p className="text-sm text-blue-900 dark:text-foreground/80 font-bold uppercase tracking-tight">
+                                            Final Step: Add AIOMetadata Manifest URL to <span className="text-blue-600 dark:text-blue-400">Omni › Addons</span>.
                                         </p>
                                     </div>
                                 </div>
@@ -233,7 +233,7 @@ export function TemplateGuide() {
                         {/* iOS */}
                         <div className="bg-card/30 p-8 rounded-3xl border border-border flex flex-col gap-6 hover:bg-card/50 transition-colors">
                             <div className="flex items-center gap-4">
-                                <div className="h-12 w-12 shrink-0 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 text-blue-400">
+                                <div className="h-12 w-12 shrink-0 rounded-2xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-400">
                                     <Smartphone className="w-6 h-6" />
                                 </div>
                                 <h4 className="font-bold text-foreground text-lg tracking-tight">iOS Import</h4>
@@ -242,7 +242,7 @@ export function TemplateGuide() {
                             <div className="space-y-5">
                                 <div className="space-y-2">
                                     <p className="text-sm text-foreground/70">Move the JSON file to:</p>
-                                    <div className="bg-background/80 px-4 py-3 rounded-2xl text-blue-400 font-mono text-[13px] border border-border/50 shadow-inner flex items-center gap-3">
+                                    <div className="bg-blue-50 dark:bg-background/80 px-4 py-3 rounded-2xl text-blue-600 dark:text-blue-400 font-mono text-[13px] border border-blue-100 dark:border-border/50 shadow-inner flex items-center gap-3">
                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-500/50" />
                                         Files › On my iPhone › Omni › Backups
                                     </div>
@@ -260,7 +260,7 @@ export function TemplateGuide() {
                         {/* Apple TV */}
                         <div className="bg-card/30 p-8 rounded-3xl border border-border flex flex-col gap-6 hover:bg-card/50 transition-colors">
                             <div className="flex items-center gap-4">
-                                <div className="h-12 w-12 shrink-0 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 text-blue-400">
+                                <div className="h-12 w-12 shrink-0 rounded-2xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-400">
                                     <Cloud className="w-6 h-6" />
                                 </div>
                                 <h4 className="font-bold text-foreground text-lg tracking-tight">Apple TV Sync</h4>

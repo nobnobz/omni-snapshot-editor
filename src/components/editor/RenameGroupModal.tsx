@@ -58,7 +58,7 @@ export function RenameGroupModal({ isOpen, onClose, oldName, isMainGroup = false
                         <Input
                             value={newName}
                             onChange={e => setNewName(e.target.value)}
-                            className="bg-background border-input focus-visible:ring-blue-500"
+                            className="h-10 text-base sm:text-sm bg-background border-input focus-visible:ring-blue-500"
                             autoFocus
                         />
                     </div>
