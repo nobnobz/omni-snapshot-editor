@@ -523,7 +523,7 @@ export function CatalogEditor() {
         }));
     }, [filteredAddCandidates]);
 
-    const addCatalogCandidate = (cat: typeof addCandidates[0]) => {
+    const handleAddCatalog = (cat: typeof addCandidates[0]) => {
         if (cat.action === 'reenable') {
             updateCatalogField(cat.id, {
                 enabled: true,
@@ -612,7 +612,7 @@ export function CatalogEditor() {
                                                     {groups[category].map(c => (
                                                         <DropdownMenuItem
                                                             key={c.id}
-                                                            onSelect={(e) => handleAddCatalog(e, c)}
+                                                            onSelect={() => handleAddCatalog(c)}
                                                             className="flex items-start gap-2 p-2 rounded cursor-pointer focus:bg-blue-500/10 focus:text-blue-400"
                                                         >
                                                             <div className="flex-1 min-w-0">
