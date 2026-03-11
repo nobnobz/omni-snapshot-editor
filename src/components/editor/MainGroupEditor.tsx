@@ -127,11 +127,7 @@ function SortableSubgroupItem({
                     )}
                 </div>
 
-                {/* Badges */}
                 <div className="flex items-center gap-1 shrink-0 flex-wrap sm:justify-end">
-                    {!isEnabled && (
-                        <Badge variant="outline" className="text-[10px] h-4 px-1 bg-background text-foreground/70 border-border border-dashed">Disabled</Badge>
-                    )}
                     
                     {/* Top Row Group */}
                     <div className="flex items-center gap-1">

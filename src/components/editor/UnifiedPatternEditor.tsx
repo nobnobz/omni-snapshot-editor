@@ -138,11 +138,6 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                             <ChevronRight className="w-4 h-4 shrink-0 text-foreground/70 transition-transform duration-200 group-data-[state=open]/item:rotate-90" />
                             <span className={`font-bold text-sm tracking-tight transition-colors text-left flex items-center flex-wrap gap-2 ${!isTagEnabled ? "text-foreground/50 line-through decoration-foreground/30" : "text-foreground"}`}>
                                 {customName || <span className={`font-mono text-[11px] inline-block break-all bg-background/50 px-2 py-0.5 rounded border border-border ${!isTagEnabled ? "text-foreground/50 line-through decoration-foreground/30" : "text-blue-400"}`}>{regex}</span>}
-                                {!isTagEnabled && (
-                                    <Badge variant="outline" className="text-[9px] uppercase tracking-widest bg-foreground/5 text-foreground/60 border-foreground/10 font-bold px-1.5 py-0 shrink-0">
-                                        Disabled
-                                    </Badge>
-                                )}
                             </span>
                         </div>
                     </AccordionTrigger>

@@ -169,9 +169,6 @@ function SortableCatalogItem({
                     {!catalog.enabled && (
                         <Badge variant="outline" className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-background text-foreground/70 border-border">Hidden</Badge>
                     )}
-                    {!isActive && (
-                        <Badge variant="outline" className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-background text-foreground/70 border-border border-dashed">Disabled</Badge>
-                    )}
                     {isPinned && (
                         <Badge className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">Header</Badge>
                     )}
