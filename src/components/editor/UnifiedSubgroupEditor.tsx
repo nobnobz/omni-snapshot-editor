@@ -123,12 +123,13 @@ function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => vo
         <div
             ref={setNodeRef}
             style={style}
-            className={`flex items-center gap-3 p-2.5 bg-muted/50 border border-border rounded-lg mb-2 group/cat transition-all duration-200 hover:border-border/80 hover:bg-muted/80 shadow-sm ${isDragging ? "opacity-50 border-blue-500 z-50 shadow-2xl scale-[1.02]" : ""}`}
+            className={`flex items-center gap-3 p-2.5 bg-muted/50 border rounded-lg mb-2 group/cat transition-all duration-200 
+                ${isDragging ? "opacity-30 border-blue-500/50 bg-blue-500/5 border-dashed z-50 shadow-none scale-[0.98]" : "border-border hover:border-border/80 hover:bg-muted/80 shadow-sm"}`}
         >
             <button
                 {...attributes}
                 {...listeners}
-                className="cursor-grab text-foreground/70 hover:text-foreground shrink-0 p-2 rounded-md hover:bg-muted/80 transition-colors select-none"
+                className={`cursor-grab shrink-0 p-2 rounded-md transition-colors select-none ${isDragging ? "text-blue-500" : "text-foreground/70 hover:text-foreground hover:bg-muted/80"}`}
                 style={{ touchAction: 'none' }}
             >
                 <GripVertical className="h-5 w-5" />
@@ -269,11 +270,15 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
     };
 
     const sensors = useSensors(
-        useSensor(PointerSensor),
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
         useSensor(TouchSensor, {
             activationConstraint: {
-                delay: 150,
-                tolerance: 5,
+                delay: 300,
+                tolerance: 8,
             },
         }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -448,10 +453,10 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                         }),
                                     }}>
                                         {activeCatalogId ? (
-                                            <div className="flex items-center gap-3 p-2.5 bg-muted border border-blue-500 rounded-lg shadow-2xl scale-[1.02] opacity-90">
-                                                <GripVertical className="h-4 w-4 text-blue-500" />
+                                            <div className="flex items-center gap-3 p-2.5 bg-card border border-blue-500/50 rounded-lg shadow-2xl scale-[1.02] opacity-95 backdrop-blur-xl ring-1 ring-blue-500/20">
+                                                <GripVertical className="h-5 w-5 text-blue-500" />
                                                 <div className="flex-1 min-w-0 pr-2">
-                                                    <p className="text-sm truncate font-semibold tracking-tight text-foreground">
+                                                    <p className="text-sm truncate font-bold tracking-tight text-foreground">
                                                         {resolveCatalogName(activeCatalogId, currentValues.custom_catalog_names || {})}
                                                     </p>
                                                 </div>
