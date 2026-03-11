@@ -73,6 +73,7 @@ export function MainEditor() {
     const [isCopied, setIsCopied] = useState(false);
     const [uiNotice, setUiNotice] = useState<UiNotice | null>(null);
     const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+    const [isScrolled, setIsScrolled] = useState(false);
     const lastScrollY = useRef(0);
     const scrollContainerRef = useRef<HTMLElement>(null);
     const scrollThreshold = 10; // min px to trigger hide/show
@@ -83,6 +84,7 @@ export function MainEditor() {
 
         const handleScroll = () => {
             const currentScrollY = container.scrollTop;
+            setIsScrolled(currentScrollY > 8);
             
             // Only toggle if we've scrolled more than threshold
             if (Math.abs(currentScrollY - lastScrollY.current) < scrollThreshold) {
@@ -300,16 +302,16 @@ export function MainEditor() {
     return (
         <div className="relative flex h-[100dvh] overflow-x-hidden overflow-y-hidden bg-background text-foreground font-sans">
             {/* Background Grid Pattern - Visual Continuity from Home */}
-            <div className="absolute -inset-[100px] z-0 pointer-events-none overflow-hidden">
+            <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+                <div className="absolute inset-0 bg-background" />
                 <div 
                     className="absolute inset-0 opacity-[0.15] dark:opacity-[0.25]"
                     style={{
                         backgroundImage: `linear-gradient(to right, oklch(0.60 0 0 / 0.2) 1px, transparent 1px), linear-gradient(to bottom, oklch(0.60 0 0 / 0.2) 1px, transparent 1px)`,
                         backgroundSize: '40px 40px',
-                        maskImage: 'radial-gradient(circle at 50% 50%, black, transparent 80%)',
-                        WebkitMaskImage: 'radial-gradient(circle at 50% 50%, black, transparent 80%)'
                     }}
                 />
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-transparent dark:from-blue-500/10" />
             </div>
 
 
@@ -483,7 +485,7 @@ export function MainEditor() {
             {/* Main Content */}
             <main 
                 ref={scrollContainerRef}
-                className="flex-1 overflow-x-hidden overflow-y-auto scroll-smooth relative z-10"
+                className="flex-1 overflow-x-hidden overflow-y-auto scroll-smooth relative z-10 pb-safe-bottom"
             >
                 {/* Desktop Static Header (Not Sticky) */}
                 <div className="hidden lg:flex items-center justify-between px-8 py-10 border-b border-border bg-gradient-to-b from-card to-transparent">
@@ -503,7 +505,8 @@ export function MainEditor() {
                 </div>
 
                 <header
-                className={`sticky top-0 z-50 w-full border-b border-border/50 bg-card/80 backdrop-blur-md transition-all duration-300 transform pt-safe-top flex items-center px-4 h-16 lg:hidden
+                className={`sticky top-0 z-50 w-full border-b transition-all duration-300 transform pt-safe-top flex items-center px-4 h-[calc(4rem+env(safe-area-inset-top))] lg:hidden
+                    ${isScrolled ? "border-border/40 bg-card/55 backdrop-blur-xl" : "border-transparent bg-transparent backdrop-blur-none"}
                     ${isHeaderVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"}
                 `}
             >
@@ -570,7 +573,7 @@ export function MainEditor() {
                     </div>
                 </header>
 
-                <div className="max-w-5xl mx-auto px-4 py-8 sm:p-10 space-y-10">
+                <div className="max-w-5xl mx-auto px-4 py-8 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:p-10 space-y-10">
                     {uiNotice && (
                         <div
                             className={`rounded-xl border px-4 py-3 text-sm leading-relaxed ${uiNotice.tone === "error"

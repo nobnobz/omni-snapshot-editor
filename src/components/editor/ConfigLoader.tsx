@@ -123,6 +123,36 @@ export function ConfigLoader() {
         }
     };
 
+    const handleDownloadTemplate = async (templateUrl: string, templateName: string) => {
+        try {
+            setLoading(true);
+            const response = await fetch(templateUrl);
+            if (!response.ok) throw new Error("Download failed");
+            
+            const text = await response.text();
+            // We use application/octet-stream to force download on iOS
+            const blob = new Blob([text], { type: "application/octet-stream" });
+            const downloadUrl = URL.createObjectURL(blob);
+            
+            // Clean filename and ensure .json extension
+            const safeName = templateName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            const fileName = safeName.endsWith('.json') ? safeName : `${safeName}.json`;
+            
+            const a = document.createElement("a");
+            a.href = downloadUrl;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(downloadUrl);
+        } catch (err) {
+            setError("Failed to download template. Please try again.");
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -318,6 +348,7 @@ export function ConfigLoader() {
                                                     onSelect={() => {
                                                         setSelectedVersion(template.name);
                                                         setUrl(template.url);
+                                                        handleDownloadTemplate(template.url, template.name);
                                                         // Scroll to GitHub section
                                                         document.querySelector('.grid')?.children[1].scrollIntoView({ behavior: 'smooth' });
                                                     }}

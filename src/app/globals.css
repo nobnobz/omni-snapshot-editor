@@ -49,6 +49,8 @@
 
 :root {
   --radius: 0.625rem;
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --background: oklch(0.975 0 0);
   --foreground: oklch(0.13 0 0);
   --card: oklch(1 0 0);
@@ -117,12 +119,18 @@
 }
 
 @layer base {
+  html,
+  body {
+    min-height: 100%;
+  }
+
   * {
     @apply border-border outline-ring/50;
   }
 
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
   }
 }
 

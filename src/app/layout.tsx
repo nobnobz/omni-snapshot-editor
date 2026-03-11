@@ -7,7 +7,7 @@ export const metadata = {
   description: "A client-side JSON editor for Omni configs",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "Omni Editor",
   },
   manifest: "/omni-snapshot-editor/manifest.json",
