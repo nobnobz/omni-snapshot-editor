@@ -136,6 +136,9 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                                 return formatDisplayName(mgName).replace(/[\[\]❗️❗]/g, '').trim();
                                             }
                                         }
+                                        // Fallback: Parse category from bracket if unassigned to any main group
+                                        const match = sgName.match(/^\[(.*?)\]/);
+                                        if (match) return match[1].trim();
                                         return "Unassigned";
                                     };
 
@@ -235,11 +238,6 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                             )}
                                             {unassignedElements.length > 0 && (
                                                 <div className="space-y-1">
-                                                    {assignedNodes.length > 0 && (
-                                                        <div className="sticky top-0 bg-card/95 backdrop-blur-sm py-2.5 z-20 mb-2 border-b border-border/40 mt-4 -mx-4 px-4">
-                                                            <h5 className="text-[11px] font-bold text-foreground/50 uppercase tracking-[0.2em]">Unassigned</h5>
-                                                        </div>
-                                                    )}
                                                     {unassignedElements}
                                                 </div>
                                             )}
