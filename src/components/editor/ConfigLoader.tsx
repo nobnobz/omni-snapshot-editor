@@ -395,16 +395,16 @@ export function ConfigLoader() {
                         </div>
 
                         {/* Row 2: Secondary Resources */}
-                        <div className="flex w-full flex-wrap items-center justify-center gap-3 sm:flex-nowrap">
+                        <div className="flex w-full flex-row items-center justify-center gap-2 sm:gap-3">
                             {/* 2. Documentation */}
                             <Dialog>
                                 <DialogTrigger asChild>
                                     <button
                                         type="button"
-                                        className="group flex w-full items-center justify-center gap-2.5 rounded-xl border border-indigo-500/20 bg-indigo-500/10 px-5 py-2 text-center text-indigo-400 backdrop-blur-md transition-all duration-300 shadow-sm hover:-translate-y-0.5 hover:bg-indigo-500/20 sm:min-w-[140px] sm:w-auto"
+                                        className="group flex flex-1 items-center justify-center gap-2 rounded-xl border border-indigo-500/20 bg-indigo-500/10 px-3 py-2 text-center text-indigo-400 backdrop-blur-md transition-all duration-300 shadow-sm hover:-translate-y-0.5 hover:bg-indigo-500/20 sm:min-w-[140px] sm:w-auto"
                                     >
                                         <BookOpen className="h-3.5 w-3.5 text-indigo-400/80 group-hover:text-indigo-400 transition-all" />
-                                        <span className="text-[11px] font-bold tracking-tight">Documentation</span>
+                                        <span className="text-[10px] sm:text-[11px] font-bold tracking-tight">Documentation</span>
                                     </button>
                                 </DialogTrigger>
                                 <Documentation />
@@ -415,10 +415,10 @@ export function ConfigLoader() {
                                 href="https://ko-fi.com/botbidraiser"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="group flex w-full items-center justify-center gap-2.5 rounded-xl border border-pink-500/20 bg-pink-500/10 px-5 py-2 text-center text-pink-400 backdrop-blur-md transition-all duration-300 shadow-sm hover:-translate-y-0.5 hover:bg-pink-500/20 hover:text-pink-400 sm:min-w-[140px] sm:w-auto"
+                                className="group flex flex-1 items-center justify-center gap-2 rounded-xl border border-pink-500/20 bg-pink-500/10 px-3 py-2 text-center text-pink-400 backdrop-blur-md transition-all duration-300 shadow-sm hover:-translate-y-0.5 hover:bg-pink-500/20 hover:text-pink-400 sm:min-w-[140px] sm:w-auto"
                             >
                                 <Heart className="h-3.5 w-3.5 text-pink-400/80 group-hover:text-pink-400 group-hover:fill-pink-400/10 transition-all" />
-                                <span className="text-[11px] font-bold tracking-tight">Support Me</span>
+                                <span className="text-[10px] sm:text-[11px] font-bold tracking-tight">Support Me</span>
                             </a>
                         </div>
                     </div>
@@ -567,7 +567,7 @@ export function ConfigLoader() {
 
                 <div className="mt-8 text-center pb-safe">
                     <p className="text-[10px] text-foreground/70 font-bold uppercase tracking-widest leading-relaxed">
-                        v0.2.15 • Built with Antigravity by Bot-Bid-Raiser
+                        v0.2.16 • Built with Antigravity by Bot-Bid-Raiser
                     </p>
                 </div>
                 </div>
