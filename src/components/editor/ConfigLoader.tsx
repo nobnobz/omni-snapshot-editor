@@ -275,31 +275,6 @@ export function ConfigLoader() {
 
     return (
         <div className="min-h-[100dvh] relative font-sans text-foreground selection:bg-blue-500/30 overflow-x-hidden">
-            {/* Robust Background Stack - Guaranteed to cover full viewport including notch/safe areas */}
-            <div
-                className="fixed inset-0 z-0 pointer-events-none overflow-hidden"
-                style={{
-                    top: "calc(env(safe-area-inset-top) * -1)",
-                    bottom: "calc(env(safe-area-inset-bottom) * -1)",
-                }}
-            >
-                {/* 1. Base solid background */}
-                <div className="absolute inset-0 bg-background" />
-
-                {/* 2. Grid pattern - extended even further for super-robust coverage */}
-                <div 
-                    className="absolute inset-0" 
-                    style={{ 
-                        backgroundImage: `linear-gradient(to right, #80808012 1px, transparent 1px), linear-gradient(to bottom, #80808012 1px, transparent 1px)`,
-                        backgroundSize: '24px 24px'
-                    }} 
-                />
-
-                {/* 3. Decorative Blobs */}
-                <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-blue-500/15 dark:bg-blue-900/15 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: '10s' }} />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-purple-500/15 dark:bg-indigo-900/15 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: '7s' }} />
-                <div className="absolute top-[20%] right-[10%] w-[40%] h-[40%] bg-emerald-500/10 dark:bg-emerald-900/15 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '12s' }} />
-            </div>
 
             <div
                 className="absolute z-50"

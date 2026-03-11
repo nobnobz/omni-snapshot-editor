@@ -11,9 +11,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useConfig } from "@/context/ConfigContext";
-import { UploadCloud, AlertTriangle, FileJson, Search } from "lucide-react";
+import { UploadCloud, AlertTriangle, Search } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { decodeConfig } from "@/lib/config-utils";
 import { Badge } from "@/components/ui/badge";
@@ -191,7 +190,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
             setImportedValues(extracted);
             setParsedPatterns(finalParsed);
             setStep(2);
-        } catch (e: any) {
+        } catch {
             setError("Invalid JSON format or corrupted file.");
         }
     };
@@ -240,7 +239,6 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
 
     const renderPatternRow = (p: ParsedPattern) => {
         const isSynced = p.existsInCurrent && !p.hasChanges;
-        const isUpdate = p.existsInCurrent && p.hasChanges;
 
         return (
             <div key={p.regex} className={`flex items-start gap-3 p-3 border-b border-border/40 transition-colors group/row ${isSynced ? 'opacity-40 bg-muted/5' : 'hover:bg-muted/30'}`}>
@@ -287,17 +285,20 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="sm:max-w-lg bg-background border-border text-foreground overflow-hidden flex flex-col max-h-[90vh]">
-                <DialogHeader>
+            <DialogContent
+                onOpenAutoFocus={(e) => e.preventDefault()}
+                className="fixed left-1/2 top-1/2 w-[96vw] max-w-[calc(100%-1rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card p-4 sm:p-6 shadow-2xl backdrop-blur-xl border-border focus:outline-none z-50 h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] max-h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] sm:h-auto sm:max-h-[92dvh] flex flex-col overflow-hidden sm:max-w-2xl"
+            >
+                <DialogHeader className="shrink-0">
                     <DialogTitle>Import Patterns & Regex</DialogTitle>
-                    <DialogDescription className="text-foreground/60">
+                    <DialogDescription className="text-foreground/70">
                         {step === 1 ? "Load a template or upload a config to import patterns." : `Select patterns to import from ${fileName}`}
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="flex-1 flex flex-col min-h-0">
+                <div className="flex-1 flex flex-col min-h-0 mt-4">
                     {step === 1 ? (
-                        <div className="space-y-6 pt-2 overflow-y-auto flex-1">
+                        <div className="space-y-6 pt-1 overflow-y-auto custom-scrollbar flex-1 pr-1">
                             <div className="p-5 border border-border rounded-xl bg-card/50 space-y-4">
                                 <h3 className="font-semibold text-sm text-foreground/90">Load from Template</h3>
                                 <div className="flex flex-col gap-3">
@@ -360,7 +361,6 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                         </div>
                     ) : (
                         <div className="flex flex-col min-h-0 flex-1 gap-3 overflow-hidden">
-                            {/* Search bar: always visible at the top */}
                             <div className="relative flex-shrink-0">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/50" />
                                 <Input
@@ -371,25 +371,37 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                                 />
                             </div>
 
-                            {/* Pattern list with pinned action bar */}
                             <div className="flex-1 flex flex-col min-h-0 border border-border rounded-xl bg-card/30 overflow-hidden">
-                                {/* Action bar: always visible, never scrolls */}
                                 <div className="flex-shrink-0 px-3 py-2 bg-card border-b border-border flex items-center justify-between sticky top-0 z-20">
                                     <div className="flex gap-1">
-                                        <button onClick={selectAllChanged} className="text-[11px] font-semibold text-foreground/60 hover:text-foreground px-2 py-1 rounded-md hover:bg-muted/50 transition-colors">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={selectAllChanged}
+                                            className="h-7 px-2 text-[11px] font-semibold text-foreground/70 hover:text-foreground hover:bg-muted/50"
+                                        >
                                             Select All
-                                        </button>
-                                        <button onClick={selectAllNew} className="text-[11px] font-semibold text-blue-500 hover:text-blue-400 px-2 py-1 rounded-md hover:bg-blue-500/10 transition-colors">
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={selectAllNew}
+                                            className="h-7 px-2 text-[11px] font-semibold text-blue-500 hover:text-blue-400 hover:bg-blue-500/10"
+                                        >
                                             New Only
-                                        </button>
+                                        </Button>
                                     </div>
-                                    <button onClick={deselectAll} className="text-[11px] font-semibold text-foreground/40 hover:text-foreground/70 px-2 py-1 rounded-md hover:bg-muted/50 transition-colors">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={deselectAll}
+                                        className="h-7 px-2 text-[11px] font-semibold text-foreground/50 hover:text-foreground/70 hover:bg-muted/50"
+                                    >
                                         Clear
-                                    </button>
+                                    </Button>
                                 </div>
 
-                                {/* Scrollable pattern list */}
-                                <div className="flex-1 overflow-y-auto min-h-0">
+                                <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar">
                                     {newPatterns.length > 0 && (
                                         <>
                                             <div className="px-3 py-2 bg-card text-[10px] font-bold text-foreground/50 uppercase tracking-widest border-b border-border/30 sticky top-0 z-10">
@@ -426,23 +438,23 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                 </div>
 
                 {error && (
-                    <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-3 text-red-400 text-sm animate-in fade-in slide-in-from-bottom-2">
+                    <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-3 text-red-400 text-sm animate-in fade-in slide-in-from-bottom-2 shrink-0">
                         <AlertTriangle className="w-4 h-4 shrink-0" />
                         <p>{error}</p>
                     </div>
                 )}
 
-                <DialogFooter className="mt-6 pt-4 border-t border-border flex items-center justify-between">
-                    <Button variant="outline" onClick={handleClose} className="bg-muted/50 border-border text-foreground hover:bg-muted font-bold">
+                <DialogFooter className="mt-4 shrink-0 border-t border-border/50 pt-3 pb-[calc(0.5rem+env(safe-area-inset-bottom))] flex-row justify-end gap-2">
+                    <Button variant="outline" onClick={handleClose} className="bg-muted/50 border-border text-foreground hover:bg-muted font-bold h-10">
                         Cancel
                     </Button>
                     {step === 2 && (
                         <Button
                             onClick={handleImport}
                             disabled={selectedPatterns.size === 0}
-                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6"
+                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 h-10"
                         >
-                            Import Selected ({selectedPatterns.size})
+                            Import ({selectedPatterns.size})
                         </Button>
                     )}
                 </DialogFooter>

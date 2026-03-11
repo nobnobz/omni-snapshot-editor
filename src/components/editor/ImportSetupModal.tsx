@@ -12,12 +12,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { useConfig } from "@/context/ConfigContext";
 import { formatDisplayName, cn } from "@/lib/utils";
-import { UploadCloud, CheckCircle2, AlertTriangle, FileJson, ChevronDown, CheckSquare, Square, RefreshCw, Image as ImageIcon, Info } from "lucide-react";
+import { UploadCloud, AlertTriangle, ChevronDown, CheckSquare, Square, RefreshCw, Image as ImageIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { decodeConfig } from "@/lib/config-utils";
-import { OmniConfig } from "@/lib/types";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -514,7 +512,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                 </DialogHeader>
 
                 {step === 1 && (
-                    <div className="space-y-4 flex-1 min-h-0 overflow-y-auto pr-1">
+                    <div className="space-y-4 flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1">
                         {/* Template Loader */}
                         <div className="p-5 border border-border rounded-lg bg-muted/50">
                             <h3 className="font-semibold text-sm text-foreground mb-3">Load Unified Media Experience Template</h3>
@@ -556,9 +554,6 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                     {templateLoading ? "Loading..." : "Load"}
                                 </Button>
                             </div>
-                            <p className="mt-2 text-[11px] leading-snug text-foreground/60 break-words sm:hidden">
-                                {selectedVersion}
-                            </p>
                         </div>
 
                         <div className="flex items-center gap-3">
@@ -612,16 +607,16 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                             </TabsTrigger>
                         </TabsList>
 
-                        <div className="mt-4 border border-border rounded-md bg-background flex-1 min-h-0">
-                            <ScrollArea className="h-full">
+                        <div className="mt-4 border border-border rounded-xl bg-card/30 flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+                            <div className="h-full">
                                 <TabsContent value="main" className="p-0 m-0">
                                     {parsedMainGroups.length === 0 ? (
                                         <div className="p-8 text-center text-foreground/70 italic">No Main Groups found in this file.</div>
                                     ) : (
                                         <div className="flex flex-col divide-y divide-border/50">
-                                            <div className="p-2 bg-muted/50 border-b border-border flex gap-2">
-                                                <Button variant="secondary" size="sm" onClick={selectAllMain} className="h-7 text-xs bg-muted hover:bg-muted/80 text-foreground">Select All New</Button>
-                                                <Button variant="ghost" size="sm" onClick={deselectAllMain} className="h-7 text-xs text-foreground/70 hover:text-foreground">Deselect All</Button>
+                                            <div className="px-3 py-2 bg-card border-b border-border/60 flex items-center gap-2">
+                                                <Button variant="outline" size="sm" onClick={selectAllMain} className="h-8 text-xs bg-background/50 border-border text-foreground/80 hover:bg-muted">Select All New</Button>
+                                                <Button variant="ghost" size="sm" onClick={deselectAllMain} className="h-8 text-xs text-foreground/70 hover:text-foreground hover:bg-muted/50">Deselect All</Button>
                                             </div>
                                             {parsedMainGroups.map(mg => {
                                                 const isFullyImported = mg.isDuplicate && !mg.hasChanges;
@@ -680,13 +675,13 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                                         Select subgroups you want to import. You can assign them to your existing main groups below.
                                                     </p>
                                             </div>
-                                            <div className="p-3 bg-muted/30 border-b border-border">
+                                            <div className="p-3 bg-card border-b border-border/60">
                                                 <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row">
                                                     <Button 
                                                         variant="outline" 
                                                         size="sm" 
                                                         onClick={selectAllSubgroups} 
-                                                        className="flex-1 h-11 sm:h-9 text-[11px] sm:text-xs bg-background/50 border-border hover:bg-muted text-foreground/80 font-semibold transition-all justify-center"
+                                                        className="flex-1 h-10 sm:h-9 text-[11px] sm:text-xs bg-background/50 border-border hover:bg-muted text-foreground/80 font-semibold transition-all justify-center"
                                                     >
                                                         <CheckSquare className="w-3.5 h-3.5 mr-2 opacity-70" />
                                                         Select All
@@ -695,7 +690,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                                         variant="outline" 
                                                         size="sm" 
                                                         onClick={deselectAllSubgroups} 
-                                                        className="flex-1 h-11 sm:h-9 text-[11px] sm:text-xs bg-background/50 border-border hover:bg-muted text-foreground/70 font-semibold transition-all justify-center"
+                                                        className="flex-1 h-10 sm:h-9 text-[11px] sm:text-xs bg-background/50 border-border hover:bg-muted text-foreground/70 font-semibold transition-all justify-center"
                                                     >
                                                         <Square className="w-3.5 h-3.5 mr-2 opacity-70" />
                                                         Deselect All
@@ -704,7 +699,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                                         variant="outline" 
                                                         size="sm" 
                                                         onClick={selectCatalogUpdates} 
-                                                        className="flex-1 h-11 sm:h-9 text-[11px] sm:text-xs bg-amber-500/5 text-amber-500 hover:bg-amber-500/10 border-amber-500/20 font-semibold transition-all justify-center"
+                                                        className="flex-1 h-10 sm:h-9 text-[11px] sm:text-xs bg-amber-500/5 text-amber-500 hover:bg-amber-500/10 border-amber-500/20 font-semibold transition-all justify-center"
                                                     >
                                                         <RefreshCw className="w-3.5 h-3.5 mr-2 opacity-70" />
                                                         Update Catalogs
@@ -713,7 +708,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                                         variant="outline" 
                                                         size="sm" 
                                                         onClick={selectImageUpdates} 
-                                                        className="flex-1 h-11 sm:h-9 text-[11px] sm:text-xs bg-purple-500/5 text-purple-400 hover:bg-purple-500/10 border-purple-500/20 font-semibold transition-all justify-center"
+                                                        className="flex-1 h-10 sm:h-9 text-[11px] sm:text-xs bg-blue-500/5 text-blue-400 hover:bg-blue-500/10 border-blue-500/20 font-semibold transition-all justify-center"
                                                     >
                                                         <ImageIcon className="w-3.5 h-3.5 mr-2 opacity-70" />
                                                         Update Images
@@ -848,23 +843,22 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                     )}
                                 </TabsContent>
 
-                            </ScrollArea>
+                            </div>
                         </div>
                     </Tabs>
                 )}
 
-                <DialogFooter className="mt-4 shrink-0 border-t border-border/50 pt-3 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
-                    <Button variant="ghost" onClick={handleClose} className="w-full sm:w-auto text-foreground/70 hover:text-foreground">
+                <DialogFooter className="mt-4 shrink-0 border-t border-border/50 pt-3 pb-[calc(0.5rem+env(safe-area-inset-bottom))] flex-row justify-end gap-2">
+                    <Button variant="outline" onClick={handleClose} className="h-10 bg-muted/50 border-border text-foreground/80 hover:bg-muted">
                         Cancel
                     </Button>
                     {step === 2 && (
                         <Button
                             onClick={handleImport}
                             disabled={totalSelectedToImport === 0}
-                            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                            className="h-10 bg-blue-600 hover:bg-blue-700 text-white font-bold"
                         >
-                            <FileJson className="w-4 h-4 mr-2" />
-                            Import Selected ({totalSelectedToImport})
+                            Import ({totalSelectedToImport})
                         </Button>
                     )}
                 </DialogFooter>

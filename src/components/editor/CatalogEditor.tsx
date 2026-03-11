@@ -34,7 +34,6 @@ import {
 import {
     DropdownMenu,
     DropdownMenuContent,
-    DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
@@ -50,7 +49,7 @@ import {
 } from "@/components/ui/select";
 import { CATALOG_FALLBACKS } from "@/lib/catalog-fallbacks";
 import { resolveCatalogName } from "@/lib/utils";
-import { GripVertical, Eye, EyeOff, Trash2, ArrowDownAZ, ArrowUpZA, Search, Settings2, Image, Monitor, Shuffle, LayoutGrid, Star, ChevronDown, ChevronUp, Plus, Maximize, Pencil, ListX, Pin } from "lucide-react";
+import { GripVertical, Eye, EyeOff, Trash2, ArrowDownAZ, ArrowUpZA, Search, Settings2, Shuffle, LayoutGrid, Star, ChevronDown, ChevronUp, Plus, Maximize, Pencil, ListX, Pin, Check } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 interface ManifestCatalog {
@@ -331,7 +330,6 @@ function SortableCatalogItem({
 export function CatalogEditor() {
     const {
         catalogs,
-        originalConfig,
         currentValues,
         updateValue,
         updateCatalogField,
@@ -346,6 +344,7 @@ export function CatalogEditor() {
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [addSearch, setAddSearch] = useState("");
+    const [pendingAddSelections, setPendingAddSelections] = useState<Set<string>>(new Set());
     const [isMobileView, setIsMobileView] = useState(false);
 
     useEffect(() => {
@@ -481,7 +480,7 @@ export function CatalogEditor() {
             });
 
         return [...fromDisabled, ...fromFallbacks];
-    }, [disabledCatalogs, existingIds, customNames, catalogs, customFallbacks]);
+    }, [disabledCatalogs, existingIds, customNames, customFallbacks]);
 
     const filteredAddCandidates = useMemo(() => {
         if (!addSearch) return addCandidates;
@@ -520,7 +519,28 @@ export function CatalogEditor() {
         }));
     }, [filteredAddCandidates]);
 
-    const handleAddCatalog = (cat: typeof addCandidates[0]) => {
+    const addCandidatesById = useMemo(() => {
+        return new Map(addCandidates.map(candidate => [candidate.id, candidate]));
+    }, [addCandidates]);
+
+    const resetAddSelectionUi = () => {
+        setAddSearch("");
+        setPendingAddSelections(new Set());
+    };
+
+    const togglePendingSelection = (candidateId: string) => {
+        setPendingAddSelections(prev => {
+            const next = new Set(prev);
+            if (next.has(candidateId)) {
+                next.delete(candidateId);
+            } else {
+                next.add(candidateId);
+            }
+            return next;
+        });
+    };
+
+    const handleAddCatalog = (cat: (typeof addCandidates)[number]) => {
         if (cat.action === 'reenable') {
             updateCatalogField(cat.id, {
                 enabled: true,
@@ -531,6 +551,20 @@ export function CatalogEditor() {
         } else {
             addManifestCatalog({ id: cat.id, name: cat.name, enabled: true });
         }
+    };
+
+    const handleBatchImport = () => {
+        if (pendingAddSelections.size === 0) return;
+
+        pendingAddSelections.forEach(candidateId => {
+            const candidate = addCandidatesById.get(candidateId);
+            if (!candidate) return;
+            handleAddCatalog(candidate);
+        });
+
+        setIsAddDialogOpen(false);
+        setIsAddMenuOpen(false);
+        resetAddSelectionUi();
     };
 
     return (
@@ -544,7 +578,7 @@ export function CatalogEditor() {
                             open={isAddDialogOpen}
                             onOpenChange={(open) => {
                                 setIsAddDialogOpen(open);
-                                if (!open) setAddSearch("");
+                                if (!open) resetAddSelectionUi();
                             }}
                         >
                             <DialogTrigger asChild>
@@ -552,7 +586,10 @@ export function CatalogEditor() {
                                     <Plus className="w-4 h-4 mr-1.5" /> Add Catalog
                                 </Button>
                             </DialogTrigger>
-                            <DialogContent className="sm:hidden fixed left-1/2 top-1/2 w-[96vw] max-w-[calc(100%-1rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card p-0 shadow-2xl border-border z-50 h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] max-h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] flex flex-col overflow-hidden">
+                            <DialogContent
+                                onOpenAutoFocus={(e) => e.preventDefault()}
+                                className="sm:hidden fixed left-1/2 top-1/2 w-[96vw] max-w-[calc(100%-1rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card p-0 shadow-2xl border-border z-50 h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] max-h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] flex flex-col overflow-hidden"
+                            >
                                 <DialogHeader className="shrink-0 border-b border-border/60 p-4 pb-3">
                                     <DialogTitle className="text-base">Add Catalog</DialogTitle>
                                     <DialogDescription className="text-xs text-foreground/60">
@@ -583,12 +620,23 @@ export function CatalogEditor() {
                                                         <button
                                                             key={c.id}
                                                             type="button"
-                                                            onClick={() => handleAddCatalog(c)}
-                                                            className="w-full text-left flex items-start gap-2 p-2.5 rounded-md border border-transparent hover:border-border/60 hover:bg-muted/60 transition-colors"
+                                                            onClick={() => togglePendingSelection(c.id)}
+                                                            className={`w-full text-left flex items-start gap-2 p-2.5 rounded-md border transition-colors ${
+                                                                pendingAddSelections.has(c.id)
+                                                                    ? "border-blue-500/40 bg-blue-500/10"
+                                                                    : "border-transparent hover:border-border/60 hover:bg-muted/60"
+                                                            }`}
                                                         >
                                                             <div className="flex-1 min-w-0">
                                                                 <p className="text-sm font-medium truncate">{c.name}</p>
                                                                 <p className="text-[10px] text-foreground/70 font-mono truncate mt-0.5">{c.id}</p>
+                                                            </div>
+                                                            <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                                                                pendingAddSelections.has(c.id)
+                                                                    ? "border-blue-500 bg-blue-600 text-white"
+                                                                    : "border-border bg-background"
+                                                            }`}>
+                                                                {pendingAddSelections.has(c.id) && <Check className="w-3 h-3" />}
                                                             </div>
                                                             {c.action === 'reenable' && (
                                                                 <Badge variant="outline" className="text-[8px] h-4 px-1 border-border text-foreground/70 shrink-0 self-center">disabled</Badge>
@@ -601,17 +649,41 @@ export function CatalogEditor() {
                                     )}
                                 </div>
 
-                                <DialogFooter className="shrink-0 border-t border-border/60 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
-                                    <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} className="w-full">
-                                        Done
+                                <DialogFooter className="shrink-0 border-t border-border/60 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] flex-row justify-between gap-2">
+                                    <Button
+                                        variant="ghost"
+                                        onClick={() => setPendingAddSelections(new Set())}
+                                        disabled={pendingAddSelections.size === 0}
+                                        className="h-10 px-3 text-foreground/70"
+                                    >
+                                        Clear
                                     </Button>
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => {
+                                                setIsAddDialogOpen(false);
+                                                resetAddSelectionUi();
+                                            }}
+                                            className="h-10"
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            onClick={handleBatchImport}
+                                            disabled={pendingAddSelections.size === 0}
+                                            className="h-10 bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                                        >
+                                            Import ({pendingAddSelections.size})
+                                        </Button>
+                                    </div>
                                 </DialogFooter>
                             </DialogContent>
                         </Dialog>
                     ) : (
                         <DropdownMenu open={isAddMenuOpen} onOpenChange={open => {
                             setIsAddMenuOpen(open);
-                            if (!open) setAddSearch("");
+                            if (!open) resetAddSelectionUi();
                         }}>
                             <DropdownMenuTrigger asChild>
                                 <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-8 px-3 shadow-lg shadow-blue-500/20">
@@ -649,28 +721,76 @@ export function CatalogEditor() {
                                                 </div>
                                                 <div className="flex flex-col gap-0.5 px-1">
                                                     {group.items.map(c => (
-                                                        <DropdownMenuItem
+                                                        <button
                                                             key={c.id}
-                                                            onSelect={() => handleAddCatalog(c)}
-                                                            className="flex items-start gap-2 p-2 rounded cursor-pointer focus:bg-blue-500/10 focus:text-blue-400"
+                                                            type="button"
+                                                            onClick={() => togglePendingSelection(c.id)}
+                                                            className={`w-full text-left flex items-start gap-2 p-2 rounded transition-colors ${
+                                                                pendingAddSelections.has(c.id)
+                                                                    ? "bg-blue-500/10 text-blue-400"
+                                                                    : "hover:bg-blue-500/10 hover:text-blue-400"
+                                                            }`}
                                                         >
                                                             <div className="flex-1 min-w-0">
                                                                 <p className="text-sm font-medium truncate">{c.name}</p>
                                                                 <p className="text-[9px] text-foreground/70 font-mono truncate">{c.id}</p>
                                                             </div>
+                                                            <div className={`mt-0.5 w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0 ${
+                                                                pendingAddSelections.has(c.id)
+                                                                    ? "border-blue-500 bg-blue-600 text-white"
+                                                                    : "border-border bg-background"
+                                                            }`}>
+                                                                {pendingAddSelections.has(c.id) && <Check className="w-2.5 h-2.5" />}
+                                                            </div>
                                                             {c.action === 'reenable' && (
                                                                 <Badge variant="outline" className="text-[8px] h-4 px-1 border-border text-foreground/70 shrink-0 self-center">disabled</Badge>
                                                             )}
-                                                        </DropdownMenuItem>
+                                                        </button>
                                                     ))}
                                                 </div>
                                             </div>
                                         ))
                                     )}
                                 </div>
+                                <div className="shrink-0 border-t border-border/60 p-2.5 flex items-center justify-between gap-2 bg-card">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setPendingAddSelections(new Set())}
+                                        disabled={pendingAddSelections.size === 0}
+                                        className="h-8 px-2 text-xs text-foreground/70"
+                                    >
+                                        Clear
+                                    </Button>
+                                    <div className="flex items-center gap-1.5">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-8 text-xs"
+                                            onClick={() => {
+                                                setIsAddMenuOpen(false);
+                                                resetAddSelectionUi();
+                                            }}
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                                            onClick={handleBatchImport}
+                                            disabled={pendingAddSelections.size === 0}
+                                        >
+                                            Import ({pendingAddSelections.size})
+                                        </Button>
+                                    </div>
+                                </div>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     )}
+                    {/*
+                        The mobile and desktop add flows intentionally keep selected rows visible
+                        until the user confirms with Import (x).
+                    */}
 
                     <div className="w-px h-5 bg-border mx-1" />
                     <Button variant="outline" size="sm" onClick={handleSortAZ} className="h-8 text-xs border-border hover:bg-muted text-foreground/70 hover:text-foreground">

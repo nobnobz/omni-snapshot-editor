@@ -307,19 +307,7 @@ export function MainEditor() {
     };
 
     return (
-        <div className="relative flex min-h-screen lg:h-[100dvh] w-full max-w-[100vw] overflow-x-hidden lg:overflow-y-hidden bg-background text-foreground font-sans">
-            {/* Background Grid Pattern - Visual Continuity from Home */}
-            <div className="fixed -inset-[100px] z-0 pointer-events-none overflow-hidden">
-                <div className="absolute -inset-[100px] bg-background" />
-                <div 
-                    className="absolute -inset-[100px] opacity-[0.15] dark:opacity-[0.25]"
-                    style={{
-                        backgroundImage: `linear-gradient(to right, oklch(0.60 0 0 / 0.2) 1px, transparent 1px), linear-gradient(to bottom, oklch(0.60 0 0 / 0.2) 1px, transparent 1px)`,
-                        backgroundSize: '40px 40px',
-                    }}
-                />
-                <div className="absolute -inset-[100px] bg-gradient-to-br from-blue-500/5 via-transparent to-transparent dark:from-blue-500/10" />
-            </div>
+        <div className="relative flex min-h-screen lg:h-[100dvh] w-full max-w-[100vw] overflow-x-hidden lg:overflow-y-hidden bg-transparent text-foreground font-sans">
 
 
             {/* Mobile Sidebar Overlay */}
