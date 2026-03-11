@@ -299,6 +299,19 @@ export function MainEditor() {
 
     return (
         <div className="relative flex h-[100dvh] overflow-x-hidden overflow-y-hidden bg-background text-foreground font-sans">
+            {/* Background Grid Pattern - Visual Continuity from Home */}
+            <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+                <div 
+                    className="absolute inset-[0%] w-full h-full opacity-[0.15] dark:opacity-[0.25]"
+                    style={{
+                        backgroundImage: `linear-gradient(to right, oklch(0.60 0 0 / 0.2) 1px, transparent 1px), linear-gradient(to bottom, oklch(0.60 0 0 / 0.2) 1px, transparent 1px)`,
+                        backgroundSize: '40px 40px',
+                        maskImage: 'radial-gradient(circle at 50% 50%, black, transparent 80%)',
+                        WebkitMaskImage: 'radial-gradient(circle at 50% 50%, black, transparent 80%)'
+                    }}
+                />
+            </div>
+
 
             {/* Mobile Sidebar Overlay */}
             {isSidebarOpen && (
@@ -309,7 +322,7 @@ export function MainEditor() {
             )}
 
             <aside className={`
-                fixed lg:static inset-y-0 left-0 z-50 w-72 lg:w-64 border-r border-border bg-card flex flex-col transform transition-transform duration-300 ease-in-out
+                fixed lg:static inset-y-0 left-0 z-50 w-72 lg:w-64 border-r border-border bg-card/95 backdrop-blur-md lg:backdrop-blur-none lg:bg-card flex flex-col transform transition-transform duration-300 ease-in-out
                 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
             `}>
                 <div className="p-5 pt-[calc(1.25rem+env(safe-area-inset-top))] border-b border-border flex flex-col gap-4 bg-card/50">
@@ -413,7 +426,7 @@ export function MainEditor() {
                         </Button>
                     </div>
 
-                    <div className="mt-3">
+                    <div className="mt-3 hidden lg:block">
                         <div className="flex flex-col gap-2.5 pt-3 pb-2 border-t border-border/40">
                             <div className="flex items-center justify-between">
                                 <a href="https://github.com/nobnobz/omni-snapshot-editor" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-foreground/70 hover:text-foreground transition-colors font-medium">
@@ -472,7 +485,7 @@ export function MainEditor() {
             {/* Main Content */}
             <main 
                 ref={scrollContainerRef}
-                className="flex-1 overflow-x-hidden overflow-y-auto scroll-smooth"
+                className="flex-1 overflow-x-hidden overflow-y-auto scroll-smooth relative z-10"
             >
                 {/* Desktop Static Header (Not Sticky) */}
                 <div className="hidden lg:flex items-center justify-between px-8 py-10 border-b border-border bg-gradient-to-b from-card to-transparent">
@@ -799,6 +812,34 @@ export function MainEditor() {
                             </section>
                         );
                     })}
+
+                    {/* Mobile Specific Footer - Fills the "dead zone" at bottom */}
+                    <footer className="lg:hidden mt-16 pt-10 pb-20 border-t border-border/30 px-4">
+                        <div className="flex flex-col items-center gap-6">
+                            <div className="flex items-center gap-8">
+                                <a href="https://github.com/nobnobz/omni-snapshot-editor" target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 text-foreground/60 hover:text-foreground transition-colors">
+                                    <Github className="w-6 h-6" />
+                                    <span className="text-[10px] font-bold uppercase tracking-widest">GitHub</span>
+                                </a>
+                                <div className="w-px h-8 bg-border/40" />
+                                <div className="flex flex-col items-center gap-2">
+                                    <ThemeToggle />
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/60">Theme</span>
+                                </div>
+                            </div>
+
+                            <div className="text-center space-y-1">
+                                <p className="text-[11px] font-bold text-foreground/50 uppercase tracking-tighter">
+                                    Omni Snapshot Manager
+                                </p>
+                                <p className="text-[10px] text-foreground/40 font-medium tracking-tight">
+                                    Made by Bot-Bid-Raiser • v{APP_VERSION}
+                                </p>
+                            </div>
+
+                            <div className="pb-safe-bottom" />
+                        </div>
+                    </footer>
                 </div>
             </main>
 

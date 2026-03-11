@@ -568,7 +568,7 @@ export function ConfigLoader() {
 
                 <div className="mt-8 text-center pb-safe">
                     <p className="text-[10px] text-foreground/70 font-bold uppercase tracking-widest leading-relaxed">
-                        v0.2.17 • Built with Antigravity by Bot-Bid-Raiser
+                        v0.2.18 • Built with Antigravity by Bot-Bid-Raiser
                     </p>
                 </div>
                 </div>
