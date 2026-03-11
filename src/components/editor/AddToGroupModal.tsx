@@ -79,8 +79,8 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <DialogContent className="fixed left-1/2 top-1/2 w-[96vw] max-w-[calc(100%-1rem)] sm:max-w-[425px] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card p-4 sm:p-6 shadow-2xl backdrop-blur-xl border-border focus:outline-none z-50 max-h-[90vh] flex flex-col">
-                <DialogHeader>
+            <DialogContent className="fixed left-1/2 top-1/2 w-[96vw] max-w-[calc(100%-1rem)] sm:max-w-[425px] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card p-4 sm:p-6 shadow-2xl backdrop-blur-xl border-border focus:outline-none z-50 h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] max-h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] sm:h-auto sm:max-h-[90dvh] flex flex-col overflow-hidden">
+                <DialogHeader className="shrink-0">
                     <DialogTitle>Add to Existing Group</DialogTitle>
                     <DialogDescription className="text-foreground/60">
                         Select multiple subgroups and assign them to a main group.
@@ -91,7 +91,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                     <div className="flex flex-col shrink-0 gap-2">
                         <Label htmlFor="target-main" className="text-foreground">Target Main Group</Label>
                         <Select value={targetMainGroupUuid} onValueChange={setTargetMainGroupUuid}>
-                            <SelectTrigger className="w-full bg-background border-input text-foreground">
+                            <SelectTrigger className="w-full h-10 text-base sm:text-sm bg-background border-input text-foreground">
                                 <SelectValue placeholder="Select a Main Group" />
                             </SelectTrigger>
                             <SelectContent className="bg-popover border-border text-popover-foreground max-h-[200px]">
@@ -117,7 +117,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                 placeholder="Search subgroups..."
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
-                                className="pl-8 h-8 text-xs bg-background border-input focus-visible:ring-blue-500 mb-2"
+                                className="pl-8 h-10 sm:h-8 text-base sm:text-sm bg-background border-input focus-visible:ring-blue-500 mb-2"
                             />
                         </div>
 
@@ -252,13 +252,13 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                     </div>
                 </div>
 
-                <DialogFooter className="mt-6 shrink-0 flex items-center justify-between">
-                    <p className="text-xs text-foreground/70">
+                <DialogFooter className="mt-4 shrink-0 flex flex-col gap-3 border-t border-border/50 pt-3 pb-[max(0px,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-xs text-foreground/70 sm:order-1">
                         {selectedSubgroups.size} subgroup(s) checked
                     </p>
-                    <div className="flex gap-2">
-                        <Button variant="outline" onClick={handleClose} className="bg-muted border-border text-foreground hover:bg-accent hover:text-white">Cancel</Button>
-                        <Button onClick={handleAssign} disabled={!targetMainGroupUuid} className="bg-blue-600 text-white hover:bg-blue-700">Save Changes</Button>
+                    <div className="flex w-full sm:w-auto gap-2 sm:order-2">
+                        <Button variant="outline" onClick={handleClose} className="flex-1 sm:flex-none bg-muted border-border text-foreground hover:bg-accent hover:text-white">Cancel</Button>
+                        <Button onClick={handleAssign} disabled={!targetMainGroupUuid} className="flex-1 sm:flex-none bg-blue-600 text-white hover:bg-blue-700">Save Changes</Button>
                     </div>
                 </DialogFooter>
             </DialogContent >

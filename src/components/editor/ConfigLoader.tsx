@@ -135,7 +135,7 @@ export function ConfigLoader() {
             const downloadUrl = URL.createObjectURL(blob);
             
             // Clean filename and ensure .json extension
-            const safeName = templateName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            const safeName = templateName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9.-]/g, '');
             const fileName = safeName.endsWith('.json') ? safeName : `${safeName}.json`;
             
             const a = document.createElement("a");
@@ -270,7 +270,13 @@ export function ConfigLoader() {
     return (
         <div className="min-h-[100dvh] relative font-sans text-foreground selection:bg-blue-500/30 overflow-x-hidden">
             {/* Robust Background Stack - Guaranteed to cover full viewport including notch/safe areas */}
-            <div className="fixed -inset-[100px] -z-10 pointer-events-none overflow-hidden">
+            <div
+                className="fixed inset-0 z-0 pointer-events-none overflow-hidden"
+                style={{
+                    top: "calc(env(safe-area-inset-top) * -1)",
+                    bottom: "calc(env(safe-area-inset-bottom) * -1)",
+                }}
+            >
                 {/* 1. Base solid background */}
                 <div className="absolute inset-0 bg-background" />
 
@@ -289,11 +295,17 @@ export function ConfigLoader() {
                 <div className="absolute top-[20%] right-[10%] w-[40%] h-[40%] bg-emerald-500/10 dark:bg-emerald-900/15 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '12s' }} />
             </div>
 
-            <div className="absolute top-4 right-4 z-50 pt-safe pr-safe">
+            <div
+                className="absolute z-50"
+                style={{
+                    top: "max(0.75rem, env(safe-area-inset-top))",
+                    right: "max(0.75rem, env(safe-area-inset-right))",
+                }}
+            >
                 <ThemeToggle />
             </div>
 
-            <div className="w-full min-h-[100dvh] flex items-center justify-center relative z-10 px-4 pt-safe pb-8">
+            <div className="w-full min-h-[100dvh] flex items-start sm:items-center justify-center relative z-10 px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
                 {/* Content Wrapper */}
             <div className="relative z-10 w-full max-w-4xl mx-auto px-4 py-6 sm:py-8">
                 <div className="text-center mb-4 space-y-3">

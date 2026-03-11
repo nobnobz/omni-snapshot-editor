@@ -694,11 +694,11 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
 
                 <AccordionContent className="p-5 border-t border-border/40 bg-background/20">
                     <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
-                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 bg-background/50 border border-border rounded-lg p-1.5 sm:p-1 w-full sm:w-auto">
+                        <div className="flex w-full sm:w-auto flex-nowrap items-center gap-1.5 sm:gap-2 overflow-x-auto sm:overflow-visible scrollbar-hidden bg-background/50 border border-border rounded-lg p-1.5 sm:p-1">
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-8 text-[11px] sm:text-xs text-foreground/70 hover:text-foreground hover:bg-muted font-medium tracking-tight px-2">
-                                        Layout: <span className="text-foreground ml-1 font-bold">
+                                    <Button variant="ghost" size="sm" className="h-8 shrink-0 text-[11px] sm:text-xs text-foreground/70 hover:text-foreground hover:bg-muted font-medium tracking-tight px-2">
+                                        <span className="hidden sm:inline">Layout:</span> <span className="text-foreground sm:ml-1 font-bold">
                                             {posterType}
                                             <span className="hidden sm:inline"> / {posterSize}</span>
                                             <span className="sm:hidden">
@@ -735,13 +735,13 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                 </DropdownMenuContent>
                             </DropdownMenu>
 
-                            <div className="flex items-center gap-1.5 sm:gap-2">
-                                <div className="w-px h-4 bg-border mx-1" />
+                            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                                <div className="hidden sm:block w-px h-4 bg-border mx-1 shrink-0" />
                                 <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => setIsRenaming(true)}
-                                    className="h-8 text-[11px] sm:text-xs text-foreground/70 hover:text-foreground hover:bg-muted font-medium tracking-tight px-2"
+                                    className="h-8 shrink-0 text-[11px] sm:text-xs text-foreground/70 hover:text-foreground hover:bg-muted font-medium tracking-tight px-2"
                                 >
                                     <Pencil className="w-3.5 h-3.5 sm:hidden" />
                                     <span className="hidden sm:inline">Rename</span>
@@ -752,7 +752,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            className="h-8 text-[11px] sm:text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 font-medium tracking-tight px-2"
+                                            className="h-8 shrink-0 text-[11px] sm:text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 font-medium tracking-tight px-2"
                                         >
                                             <Trash2 className="w-3.5 h-3.5 sm:hidden" />
                                             <span className="hidden sm:inline">Disable</span>
@@ -778,13 +778,13 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                 </AlertDialog>
                             </div>
 
-                            <div className="w-px h-4 bg-border mx-1" />
+                            <div className="hidden sm:block w-px h-4 bg-border mx-1 shrink-0" />
 
                             <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => onAddSubgroup?.(uuid)}
-                                className="h-8 text-[11px] sm:text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition-all flex items-center gap-1.5 px-2.5 rounded-lg font-bold"
+                                className="h-8 shrink-0 text-[11px] sm:text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition-all flex items-center gap-1.5 px-2.5 rounded-lg font-bold"
                             >
                                 <Plus className="w-4 h-4" />
                                 <span className="hidden sm:inline">New Subgroup</span>
@@ -1257,11 +1257,11 @@ export function UnifiedSubgroupEditor() {
         <div className="space-y-4">
             <div className="border border-border rounded-xl bg-card/20 overflow-hidden shadow-inner">
                 {/* Unified Sticky Toolbar */}
-                <div className="sticky top-0 z-30 flex flex-wrap items-center gap-2 bg-card/95 backdrop-blur-md p-3 border-b border-border/80 shadow-sm">
+                <div className="sticky top-0 z-30 grid grid-cols-2 items-center gap-2 bg-card/95 backdrop-blur-md p-3 border-b border-border/80 shadow-sm sm:flex sm:flex-wrap">
                     <Button
                         onClick={() => setIsCreateModalOpen(true)}
                         size="sm"
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-8 px-3 shadow-lg shadow-blue-500/20"
+                        className="col-span-2 sm:col-auto bg-blue-600 hover:bg-blue-700 text-white font-bold h-9 sm:h-8 px-3 shadow-lg shadow-blue-500/20 whitespace-nowrap justify-center sm:justify-start"
                     >
                         <Plus className="w-4 h-4 mr-1.5" /> Create New Group
                     </Button>
@@ -1269,7 +1269,7 @@ export function UnifiedSubgroupEditor() {
                         onClick={() => setIsAddToGroupModalOpen(true)}
                         variant="outline"
                         size="sm"
-                        className="h-8 text-xs border-border/60 hover:bg-muted text-foreground/70 hover:text-foreground transition-all px-3 font-medium"
+                        className="h-9 sm:h-8 text-sm sm:text-xs border-border/60 hover:bg-muted text-foreground/70 hover:text-foreground transition-all px-3 font-medium whitespace-nowrap justify-center sm:justify-start"
                     >
                         <FolderPlus className="w-4 h-4 mr-1.5" /> Add to Group
                     </Button>
@@ -1277,7 +1277,7 @@ export function UnifiedSubgroupEditor() {
                         onClick={() => setIsImportModalOpen(true)}
                         variant="outline"
                         size="sm"
-                        className="h-8 text-xs border-border/60 hover:bg-muted text-foreground/70 hover:text-foreground transition-all px-3 font-medium"
+                        className="h-9 sm:h-8 text-sm sm:text-xs border-border/60 hover:bg-muted text-foreground/70 hover:text-foreground transition-all px-3 font-medium whitespace-nowrap justify-center sm:justify-start"
                     >
                         <UploadCloud className="w-4 h-4 mr-1.5" /> Update from Template
                     </Button>
