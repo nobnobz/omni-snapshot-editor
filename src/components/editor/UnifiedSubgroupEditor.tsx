@@ -699,7 +699,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
 
                 <AccordionContent className="p-5 border-t border-border/40 bg-background/20">
                     <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
-                        <div className="flex w-full sm:w-auto flex-nowrap items-center gap-1.5 sm:gap-2 overflow-x-auto sm:overflow-visible scrollbar-hidden bg-background/50 border border-border rounded-lg p-1.5 sm:p-1">
+                        <div className="flex w-full sm:w-auto items-center gap-1.5 sm:gap-2 bg-background/50 border border-border rounded-lg p-1.5 sm:p-1">
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" size="sm" className="h-8 shrink-0 text-[11px] sm:text-xs text-foreground/70 hover:text-foreground hover:bg-muted font-medium tracking-tight px-2">
@@ -740,8 +740,9 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                 </DropdownMenuContent>
                             </DropdownMenu>
 
-                            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                                <div className="hidden sm:block w-px h-4 bg-border mx-1 shrink-0" />
+                            <div className="hidden sm:block w-px h-4 bg-border mx-1 shrink-0" />
+
+                            <div className="ml-auto flex items-center justify-end gap-1.5 sm:gap-2 shrink-0">
                                 <Button
                                     variant="ghost"
                                     size="sm"
@@ -781,19 +782,18 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
+                                <div className="hidden sm:block w-px h-4 bg-border mx-1 shrink-0" />
+
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => onAddSubgroup?.(uuid)}
+                                    className="h-8 shrink-0 text-[11px] sm:text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition-all flex items-center gap-1.5 px-2.5 rounded-lg font-bold"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    <span className="hidden sm:inline">New Subgroup</span>
+                                </Button>
                             </div>
-
-                            <div className="hidden sm:block w-px h-4 bg-border mx-1 shrink-0" />
-
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => onAddSubgroup?.(uuid)}
-                                className="h-8 shrink-0 text-[11px] sm:text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition-all flex items-center gap-1.5 px-2.5 rounded-lg font-bold"
-                            >
-                                <Plus className="w-4 h-4" />
-                                <span className="hidden sm:inline">New Subgroup</span>
-                            </Button>
                         </div>
                     </div>
 
@@ -1284,7 +1284,9 @@ export function UnifiedSubgroupEditor() {
                         size="sm"
                         className="h-9 sm:h-8 text-sm sm:text-xs border-border/60 hover:bg-muted text-foreground/70 hover:text-foreground transition-all px-3 font-medium whitespace-nowrap justify-center sm:justify-start"
                     >
-                        <UploadCloud className="w-4 h-4 mr-1.5" /> Update from Template
+                        <UploadCloud className="w-4 h-4 mr-1.5" />
+                        <span className="sm:hidden">Update</span>
+                        <span className="hidden sm:inline">Update from Template</span>
                     </Button>
                 </div>
 

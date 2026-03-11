@@ -280,7 +280,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                     />
                                 </div>
 
-                                <ScrollArea className="h-[28vh] sm:h-[300px] md:h-[450px] rounded-md border border-border bg-transparent px-4 pb-4">
+                                <ScrollArea className="h-[40vh] min-h-[320px] sm:h-[300px] md:h-[450px] rounded-md border border-border bg-transparent px-4 pb-4">
                                     {filteredCatalogs.length === 0 ? (
                                         <p className="text-sm text-foreground/70 italic">No catalogs found.</p>
                                     ) : (

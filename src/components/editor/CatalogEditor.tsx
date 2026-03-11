@@ -23,6 +23,15 @@ import { CSS } from '@dnd-kit/utilities';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
+import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
@@ -338,7 +347,21 @@ export function CatalogEditor() {
     // Local state for UI
     const [showDisabled, setShowDisabled] = useState(false);
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [addSearch, setAddSearch] = useState("");
+    const [isMobileView, setIsMobileView] = useState(false);
+
+    useEffect(() => {
+        const media = window.matchMedia("(max-width: 639px)");
+        const handleMediaChange = () => setIsMobileView(media.matches);
+        handleMediaChange();
+        if (typeof media.addEventListener === "function") {
+            media.addEventListener("change", handleMediaChange);
+            return () => media.removeEventListener("change", handleMediaChange);
+        }
+        media.addListener(handleMediaChange);
+        return () => media.removeListener(handleMediaChange);
+    }, []);
 
     // Landscape is stored in currentValues.landscape_catalogs (side-array)
     const landscapeList: string[] = useMemo(() => currentValues["landscape_catalogs"] || [], [currentValues]);
@@ -471,9 +494,36 @@ export function CatalogEditor() {
         );
     }, [addCandidates, addSearch]);
 
-    const handleAddCatalog = (e: Event, cat: typeof addCandidates[0]) => {
-        e.preventDefault(); // Prevent dropdown from closing
+    const groupedAddCandidates = useMemo(() => {
+        const groups: Record<string, typeof filteredAddCandidates> = {
+            "Other": [],
+        };
+        filteredAddCandidates.forEach(c => {
+            const match = c.name.match(/^\[(.*?)\]\s*(.*)$/);
+            if (match) {
+                const category = match[1];
+                const cleanName = match[2];
+                if (!groups[category]) groups[category] = [];
+                groups[category].push({ ...c, name: cleanName });
+            } else {
+                groups["Other"].push(c);
+            }
+        });
 
+        const sortedCategories = Object.keys(groups)
+            .filter(k => k !== "Other")
+            .sort((a, b) => a.localeCompare(b));
+        if (groups["Other"].length > 0) {
+            sortedCategories.push("Other");
+        }
+
+        return sortedCategories.map(category => ({
+            category,
+            items: groups[category],
+        }));
+    }, [filteredAddCandidates]);
+
+    const addCatalogCandidate = (cat: typeof addCandidates[0]) => {
         if (cat.action === 'reenable') {
             updateCatalogField(cat.id, {
                 enabled: true,

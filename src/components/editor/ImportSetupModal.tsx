@@ -520,7 +520,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                             <h3 className="font-semibold text-sm text-foreground mb-3">Load Unified Media Experience Template</h3>
                             <div className="flex items-center gap-3">
                                 <Select value={selectedVersion} onValueChange={setSelectedVersion}>
-                                    <SelectTrigger className="flex-1 h-10 rounded-md border border-border bg-background/50 text-base sm:text-xs text-foreground font-mono focus:ring-1 focus:ring-blue-500 shadow-inner overflow-hidden">
+                                    <SelectTrigger className="flex-1 h-10 rounded-md border border-border bg-background/50 text-[12px] sm:text-xs text-foreground font-medium sm:font-mono focus:ring-1 focus:ring-blue-500 shadow-inner overflow-hidden">
                                         <SelectValue placeholder="Select template version" />
                                     </SelectTrigger>
                                     <SelectContent className="bg-popover border-border text-popover-foreground">
@@ -556,6 +556,9 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                     {templateLoading ? "Loading..." : "Load"}
                                 </Button>
                             </div>
+                            <p className="mt-2 text-[11px] leading-snug text-foreground/60 break-words sm:hidden">
+                                {selectedVersion}
+                            </p>
                         </div>
 
                         <div className="flex items-center gap-3">
@@ -678,12 +681,12 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                                     </p>
                                             </div>
                                             <div className="p-3 bg-muted/30 border-b border-border">
-                                                <div className="flex flex-col sm:flex-row gap-2">
+                                                <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row">
                                                     <Button 
                                                         variant="outline" 
                                                         size="sm" 
                                                         onClick={selectAllSubgroups} 
-                                                        className="flex-1 h-9 text-xs bg-background/50 border-border hover:bg-muted text-foreground/80 font-semibold transition-all"
+                                                        className="flex-1 h-11 sm:h-9 text-[11px] sm:text-xs bg-background/50 border-border hover:bg-muted text-foreground/80 font-semibold transition-all justify-center"
                                                     >
                                                         <CheckSquare className="w-3.5 h-3.5 mr-2 opacity-70" />
                                                         Select All
@@ -692,7 +695,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                                         variant="outline" 
                                                         size="sm" 
                                                         onClick={deselectAllSubgroups} 
-                                                        className="flex-1 h-9 text-xs bg-background/50 border-border hover:bg-muted text-foreground/70 font-semibold transition-all"
+                                                        className="flex-1 h-11 sm:h-9 text-[11px] sm:text-xs bg-background/50 border-border hover:bg-muted text-foreground/70 font-semibold transition-all justify-center"
                                                     >
                                                         <Square className="w-3.5 h-3.5 mr-2 opacity-70" />
                                                         Deselect All
@@ -701,7 +704,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                                         variant="outline" 
                                                         size="sm" 
                                                         onClick={selectCatalogUpdates} 
-                                                        className="flex-1 h-9 text-xs bg-amber-500/5 text-amber-500 hover:bg-amber-500/10 border-amber-500/20 font-semibold transition-all"
+                                                        className="flex-1 h-11 sm:h-9 text-[11px] sm:text-xs bg-amber-500/5 text-amber-500 hover:bg-amber-500/10 border-amber-500/20 font-semibold transition-all justify-center"
                                                     >
                                                         <RefreshCw className="w-3.5 h-3.5 mr-2 opacity-70" />
                                                         Update Catalogs
@@ -710,7 +713,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                                         variant="outline" 
                                                         size="sm" 
                                                         onClick={selectImageUpdates} 
-                                                        className="flex-1 h-9 text-xs bg-purple-500/5 text-purple-400 hover:bg-purple-500/10 border-purple-500/20 font-semibold transition-all"
+                                                        className="flex-1 h-11 sm:h-9 text-[11px] sm:text-xs bg-purple-500/5 text-purple-400 hover:bg-purple-500/10 border-purple-500/20 font-semibold transition-all justify-center"
                                                     >
                                                         <ImageIcon className="w-3.5 h-3.5 mr-2 opacity-70" />
                                                         Update Images

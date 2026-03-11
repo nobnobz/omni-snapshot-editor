@@ -79,30 +79,37 @@ export function MainEditor() {
     const scrollThreshold = 10; // min px to trigger hide/show
 
     useEffect(() => {
-        const container = scrollContainerRef.current;
-        if (!container) return;
-
         const handleScroll = () => {
-            const currentScrollY = container.scrollTop;
+            // On mobile we scroll the window/body, on desktop we scroll the ref container
+            const currentScrollY = window.innerWidth < 1024 
+                ? window.scrollY 
+                : scrollContainerRef.current?.scrollTop || 0;
+
             setIsScrolled(currentScrollY > 8);
             
-            // Only toggle if we've scrolled more than threshold
             if (Math.abs(currentScrollY - lastScrollY.current) < scrollThreshold) {
                 return;
             }
 
             if (currentScrollY > lastScrollY.current && currentScrollY > 60) {
-                // Scrolling down - hide
                 setIsHeaderVisible(false);
             } else if (currentScrollY < lastScrollY.current || currentScrollY <= 10) {
-                // Scrolling up or at top - show
                 setIsHeaderVisible(true);
             }
             lastScrollY.current = currentScrollY;
         };
 
-        container.addEventListener("scroll", handleScroll, { passive: true });
-        return () => container.removeEventListener("scroll", handleScroll);
+        const container = scrollContainerRef.current;
+        if (window.innerWidth < 1024) {
+            window.addEventListener("scroll", handleScroll, { passive: true });
+        } else if (container) {
+            container.addEventListener("scroll", handleScroll, { passive: true });
+        }
+
+        return () => {
+            window.removeEventListener("scroll", handleScroll);
+            container?.removeEventListener("scroll", handleScroll);
+        };
     }, []);
 
     const ignoredKeys = new Set([
@@ -300,18 +307,18 @@ export function MainEditor() {
     };
 
     return (
-        <div className="relative flex h-[100dvh] overflow-x-hidden overflow-y-hidden bg-background text-foreground font-sans">
+        <div className="relative flex min-h-screen lg:h-[100dvh] overflow-x-hidden lg:overflow-y-hidden bg-background text-foreground font-sans">
             {/* Background Grid Pattern - Visual Continuity from Home */}
-            <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-                <div className="absolute inset-0 bg-background" />
+            <div className="fixed -inset-[100px] z-0 pointer-events-none overflow-hidden">
+                <div className="absolute -inset-[100px] bg-background" />
                 <div 
-                    className="absolute inset-0 opacity-[0.15] dark:opacity-[0.25]"
+                    className="absolute -inset-[100px] opacity-[0.15] dark:opacity-[0.25]"
                     style={{
                         backgroundImage: `linear-gradient(to right, oklch(0.60 0 0 / 0.2) 1px, transparent 1px), linear-gradient(to bottom, oklch(0.60 0 0 / 0.2) 1px, transparent 1px)`,
                         backgroundSize: '40px 40px',
                     }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-transparent dark:from-blue-500/10" />
+                <div className="absolute -inset-[100px] bg-gradient-to-br from-blue-500/5 via-transparent to-transparent dark:from-blue-500/10" />
             </div>
 
 
@@ -485,7 +492,7 @@ export function MainEditor() {
             {/* Main Content */}
             <main 
                 ref={scrollContainerRef}
-                className="flex-1 overflow-x-hidden overflow-y-auto scroll-smooth relative z-10 pb-safe-bottom"
+                className="flex-1 lg:overflow-x-hidden lg:overflow-y-auto scroll-smooth relative z-10 pb-safe-bottom"
             >
                 {/* Desktop Static Header (Not Sticky) */}
                 <div className="hidden lg:flex items-center justify-between px-8 py-10 border-b border-border bg-gradient-to-b from-card to-transparent">
