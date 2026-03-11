@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useId, useState } from "react";
 import {
     Dialog,
     DialogContent,
@@ -24,11 +24,7 @@ interface RenameGroupModalProps {
 export function RenameGroupModal({ isOpen, onClose, oldName, isMainGroup = false, onRename }: RenameGroupModalProps) {
     const { countReferences, currentValues } = useConfig();
     const [newName, setNewName] = useState(oldName);
-
-    // reset on open
-    useEffect(() => {
-        if (isOpen) setNewName(oldName);
-    }, [isOpen, oldName]);
+    const nameInputId = useId();
 
     const refCount = countReferences(oldName, isMainGroup);
 
@@ -46,16 +42,27 @@ export function RenameGroupModal({ isOpen, onClose, oldName, isMainGroup = false
         onClose();
     };
 
+    const handleOpenChange = (open: boolean) => {
+        if (!open) {
+            setNewName(oldName);
+            onClose();
+        }
+    };
+
     return (
-        <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="bg-background border-border text-foreground">
+        <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+            <DialogContent
+                className="bg-background border-border text-foreground"
+                onOpenAutoFocus={() => setNewName(oldName)}
+            >
                 <DialogHeader>
                     <DialogTitle>Rename {isMainGroup ? "Main Group" : "Group"}</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4 pt-4">
                     <div>
-                        <label className="text-xs text-foreground/70 mb-1 block">Name</label>
+                        <label htmlFor={nameInputId} className="text-xs text-foreground/70 mb-1 block">Name</label>
                         <Input
+                            id={nameInputId}
                             value={newName}
                             onChange={e => setNewName(e.target.value)}
                             className="h-10 text-base sm:text-sm bg-background border-input focus-visible:ring-blue-500"
@@ -76,7 +83,7 @@ export function RenameGroupModal({ isOpen, onClose, oldName, isMainGroup = false
                             <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
                             <div>
                                 <p className="text-yellow-500 font-medium">Merge Warning</p>
-                                <p className="text-yellow-500/80 text-xs mt-1">A group named "{newName.trim()}" already exists. Proceeding will merge their contents together.</p>
+                                <p className="text-yellow-500/80 text-xs mt-1">A group named &quot;{newName.trim()}&quot; already exists. Proceeding will merge their contents together.</p>
                             </div>
                         </div>
                     )}

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, Github, Upload, Sparkles, FileJson, BookOpen, Heart, ChevronDown, FileDown, ExternalLink, ChevronRight, Layout, UploadCloud } from "lucide-react";
+import { AlertCircle, Github, Upload, Sparkles, FileJson, BookOpen, Heart, ChevronDown, FileDown, ExternalLink, ChevronRight, UploadCloud } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
@@ -121,41 +121,6 @@ export function ConfigLoader() {
         } finally {
             setLoading(false);
         }
-    };
-
-    const handleDownload = async (url: string, filename: string) => {
-        try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error("Failed to fetch file");
-            const blob = await response.blob();
-
-            // Fix for iOS Safari appending .txt to JSON downloads
-            // By using application/octet-stream, we force the browser to treat it as a generic binary file
-            const downloadBlob = new Blob([blob], { type: "application/octet-stream" });
-
-            const blobUrl = URL.createObjectURL(downloadBlob);
-            const a = document.createElement("a");
-            a.href = blobUrl;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(blobUrl);
-        } catch (err) {
-            console.error("Download failed:", err);
-            setError("Failed to download file. Please try right-clicking and 'Save Link As'.");
-        }
-    };
-
-    const getStandardizedFilename = (name: string, version?: string) => {
-        const cleanName = name
-            .toLowerCase()
-            .replace(/\s+/g, '-')
-            .replace(/[()]/g, '')
-            .replace(/-+/g, '-')
-            .trim();
-        const v = version ? `-${version.toLowerCase()}` : "";
-        return `ume-${cleanName}${v}.json`;
     };
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -273,12 +238,12 @@ export function ConfigLoader() {
     };
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-background p-4 sm:p-8 font-sans text-foreground relative overflow-hidden">
-            {/* Animated Background Effects */}
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-            <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-500/20 dark:bg-blue-900/20 rounded-full blur-[120px] pointer-events-none animate-pulse duration-10000" />
-            <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-purple-500/20 dark:bg-indigo-900/20 rounded-full blur-[120px] pointer-events-none animate-pulse duration-7000" />
-            <div className="absolute top-[20%] right-[20%] w-[30%] h-[30%] bg-emerald-500/10 dark:bg-emerald-900/20 rounded-full blur-[100px] pointer-events-none animate-pulse duration-8000" />
+        <div className="flex items-center justify-center min-h-[100dvh] p-4 sm:p-8 font-sans text-foreground relative overflow-hidden">
+            {/* Animated Background Effects - Fixed to cover full viewport including notch */}
+            <div className="fixed inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] -z-10 bg-background"></div>
+            <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-500/20 dark:bg-blue-900/20 rounded-full blur-[120px] pointer-events-none animate-pulse duration-10000 -z-10" />
+            <div className="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-purple-500/20 dark:bg-indigo-900/20 rounded-full blur-[120px] pointer-events-none animate-pulse duration-7000 -z-10" />
+            <div className="fixed top-[20%] right-[20%] w-[30%] h-[30%] bg-emerald-500/10 dark:bg-emerald-900/20 rounded-full blur-[100px] pointer-events-none animate-pulse duration-8000 -z-10" />
 
             <div className="absolute top-4 right-4 z-50 pt-safe pr-safe">
                 <ThemeToggle />
@@ -302,7 +267,10 @@ export function ConfigLoader() {
                             {/* 1. UME Templates */}
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <button className="group flex items-center justify-center gap-2.5 px-6 py-3 rounded-xl bg-blue-500/10 border border-blue-500/20 backdrop-blur-xl text-blue-400 hover:bg-blue-500/20 transition-all duration-300 shadow-lg hover:shadow-blue-500/10 hover:-translate-y-0.5 min-w-[292px]">
+                                    <button
+                                        type="button"
+                                        className="group flex w-full max-w-[292px] items-center justify-center gap-2.5 rounded-xl border border-blue-500/20 bg-blue-500/10 px-6 py-3 text-blue-400 backdrop-blur-xl transition-all duration-300 shadow-lg hover:-translate-y-0.5 hover:bg-blue-500/20 hover:shadow-blue-500/10 sm:min-w-[292px] sm:w-auto"
+                                    >
                                         <div className="p-1.5 bg-blue-500/20 rounded-lg group-hover:scale-110 transition-transform">
                                             <FileDown className="h-4 w-4 text-blue-400" />
                                         </div>
@@ -412,11 +380,14 @@ export function ConfigLoader() {
                         </div>
 
                         {/* Row 2: Secondary Resources */}
-                        <div className="flex items-center justify-center gap-3 w-full">
+                        <div className="flex w-full flex-wrap items-center justify-center gap-3 sm:flex-nowrap">
                             {/* 2. Documentation */}
                             <Dialog>
                                 <DialogTrigger asChild>
-                                    <button className="group flex items-center justify-center gap-2.5 px-5 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 backdrop-blur-md text-indigo-400 hover:bg-indigo-500/20 transition-all duration-300 shadow-sm hover:-translate-y-0.5 min-w-[140px] text-center">
+                                    <button
+                                        type="button"
+                                        className="group flex w-full items-center justify-center gap-2.5 rounded-xl border border-indigo-500/20 bg-indigo-500/10 px-5 py-2 text-center text-indigo-400 backdrop-blur-md transition-all duration-300 shadow-sm hover:-translate-y-0.5 hover:bg-indigo-500/20 sm:min-w-[140px] sm:w-auto"
+                                    >
                                         <BookOpen className="h-3.5 w-3.5 text-indigo-400/80 group-hover:text-indigo-400 transition-all" />
                                         <span className="text-[11px] font-bold tracking-tight">Documentation</span>
                                     </button>
@@ -429,7 +400,7 @@ export function ConfigLoader() {
                                 href="https://ko-fi.com/botbidraiser"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="group flex items-center justify-center gap-2.5 px-5 py-2 rounded-xl bg-pink-500/10 border border-pink-500/20 backdrop-blur-md text-pink-400 hover:text-pink-400 hover:bg-pink-500/20 transition-all duration-300 shadow-sm hover:-translate-y-0.5 min-w-[140px] text-center"
+                                className="group flex w-full items-center justify-center gap-2.5 rounded-xl border border-pink-500/20 bg-pink-500/10 px-5 py-2 text-center text-pink-400 backdrop-blur-md transition-all duration-300 shadow-sm hover:-translate-y-0.5 hover:bg-pink-500/20 hover:text-pink-400 sm:min-w-[140px] sm:w-auto"
                             >
                                 <Heart className="h-3.5 w-3.5 text-pink-400/80 group-hover:text-pink-400 group-hover:fill-pink-400/10 transition-all" />
                                 <span className="text-[11px] font-bold tracking-tight">Support Me</span>

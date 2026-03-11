@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useConfig } from "@/context/ConfigContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,6 +58,7 @@ type UiNotice = {
 export function MainEditor() {
     const { originalConfig, currentValues, fileName, exportConfig, exportPartialConfig, customFallbacks, setCustomFallbacks, unloadConfig } = useConfig();
     const searchTerm = "";
+    const exportSetupNameId = useId();
 
     // Export Modal State
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -193,12 +194,20 @@ export function MainEditor() {
         URL.revokeObjectURL(url);
     };
 
-    const handleCopy = () => {
+    const handleCopy = async () => {
         const config = exportConfig();
         if (!config) return;
-        navigator.clipboard.writeText(JSON.stringify(config, null, 2));
-        setIsCopied(true);
-        setTimeout(() => setIsCopied(false), 2000);
+        try {
+            if (!navigator?.clipboard?.writeText) {
+                throw new Error("Clipboard API unavailable");
+            }
+            await navigator.clipboard.writeText(JSON.stringify(config, null, 2));
+            setIsCopied(true);
+            setTimeout(() => setIsCopied(false), 2000);
+        } catch (err: unknown) {
+            console.error(err);
+            showNotice("error", "Copy failed. Please use download export instead.");
+        }
     };
 
 
@@ -259,7 +268,7 @@ export function MainEditor() {
     };
 
     return (
-        <div className="flex h-[100dvh] overflow-hidden bg-background text-foreground font-sans relative">
+        <div className="relative flex h-[100dvh] overflow-x-hidden overflow-y-hidden bg-background text-foreground font-sans">
 
             {/* Mobile Sidebar Overlay */}
             {isSidebarOpen && (
@@ -406,8 +415,9 @@ export function MainEditor() {
                     </DialogHeader>
                     <div className="space-y-4 pt-4">
                         <div className="space-y-2">
-                            <label className="text-sm text-foreground/70">Setup Name</label>
+                            <label htmlFor={exportSetupNameId} className="text-sm text-foreground/70">Setup Name</label>
                             <Input
+                                id={exportSetupNameId}
                                 value={setupName}
                                 onChange={(e) => setSetupName(e.target.value)}
                                 placeholder="E.g., My Awesome Setup"
@@ -430,7 +440,7 @@ export function MainEditor() {
             </Dialog>
 
             {/* Main Content */}
-            <main className="flex-1 overflow-y-auto scroll-smooth">
+            <main className="flex-1 overflow-x-hidden overflow-y-auto scroll-smooth">
                 {/* Desktop Static Header (Not Sticky) */}
                 <div className="hidden lg:flex items-center justify-between px-8 py-10 border-b border-border bg-gradient-to-b from-card to-transparent">
                     <div>
@@ -453,7 +463,7 @@ export function MainEditor() {
                         variant="ghost"
                         size="icon"
                         onClick={() => setIsSidebarOpen(true)}
-                        className="text-foreground/70 hover:text-white lg:hidden h-8 w-8 shrink-0"
+                        className="text-foreground/70 hover:text-white lg:hidden h-9 w-9 shrink-0"
                         aria-label="Open sidebar"
                     >
                         <Menu className="w-5 h-5" />
@@ -475,7 +485,7 @@ export function MainEditor() {
                         <Button
                             onClick={handleDownloadClick}
                             size="sm"
-                            className="bg-blue-600 hover:bg-blue-700 h-8 text-white shadow-lg shadow-blue-500/20 px-2.5 sm:px-4 flex items-center justify-center font-bold"
+                            className="bg-blue-600 hover:bg-blue-700 h-9 text-white shadow-lg shadow-blue-500/20 px-2.5 sm:px-4 flex items-center justify-center font-bold"
                         >
                             <Download className="w-4 h-4 sm:mr-2" />
                             <span className="hidden sm:inline">Download</span>
@@ -484,7 +494,7 @@ export function MainEditor() {
                             variant="outline"
                             size="sm"
                             onClick={handleCopy}
-                            className={`h-8 min-w-[32px] sm:w-[100px] flex items-center justify-center transition-all duration-300 border-border/60 hover:bg-muted px-2.5 sm:px-3 ${isCopied ? 'border-emerald-500/50 text-emerald-500 bg-emerald-500/5' : 'text-foreground/80'}`}
+                            className={`h-9 min-w-[36px] sm:w-[100px] flex items-center justify-center transition-all duration-300 border-border/60 hover:bg-muted px-2.5 sm:px-3 ${isCopied ? 'border-emerald-500/50 text-emerald-500 bg-emerald-500/5' : 'text-foreground/80'}`}
                             title="Copy to Clipboard"
                         >
                             {isCopied ? (
@@ -503,7 +513,7 @@ export function MainEditor() {
                             variant="ghost"
                             size="icon"
                             onClick={handleBackToStart}
-                            className="h-8 w-8 text-foreground/70 hover:text-foreground hover:bg-muted"
+                            className="h-9 w-9 text-foreground/70 hover:text-foreground hover:bg-muted"
                             title="Back to Start"
                             aria-label="Back to start"
                         >
