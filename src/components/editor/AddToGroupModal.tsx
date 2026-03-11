@@ -143,65 +143,34 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                     };
 
                                     const categories = new Map<string, string[]>();
-                                    const assignedNames: string[] = [];
 
                                     for (const name of allSubgroupNames) {
                                         const isMatch = !query || name.toLowerCase().includes(query);
-                                        
-                                        // If it is assigned to the CURRENT target, it goes to the "Assigned" list
-                                        if (selectedSubgroups.has(name) && isMatch) {
-                                            assignedNames.push(name);
-                                        }
-
-                                        // Always group it by its "Home" category as well, so it stays in the list
                                         const cat = getCategory(name);
+                                        
                                         if (isMatch || (cat.toLowerCase().includes(query) && query)) {
                                             if (!categories.has(cat)) categories.set(cat, []);
                                             categories.get(cat)!.push(name);
                                         }
                                     }
 
-                                    const assignedNodes: React.ReactNode[] = [];
-                                    for (const name of assignedNames) {
-                                        assignedNodes.push(
-                                            <div key={`assigned-${name}`} className="flex items-center space-x-2 pl-2 py-1.5 hover:bg-muted/50 rounded-sm group/sg">
-                                                <Checkbox
-                                                    id={`add-assigned-${name}`}
-                                                    checked={selectedSubgroups.has(name)}
-                                                    onCheckedChange={(checked) => {
-                                                        const next = new Set(selectedSubgroups);
-                                                        if (checked) next.add(name);
-                                                        else next.delete(name);
-                                                        setSelectedSubgroups(next);
-                                                    }}
-                                                    className="border-border data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 h-4 w-4 shrink-0"
-                                                />
-                                                <label
-                                                    htmlFor={`add-assigned-${name}`}
-                                                    className="flex-1 text-sm font-medium leading-none cursor-pointer select-none transition-colors text-blue-600 dark:text-blue-400"
-                                                >
-                                                    {formatDisplayName(name)}
-                                                </label>
-                                            </div>
-                                        );
-                                    }
-
-                                    const unassignedElements: React.ReactNode[] = [];
+                                    const categoryElements: React.ReactNode[] = [];
                                     // Process categories in a stable order
                                     for (const [cat, items] of categories.entries()) {
                                         if (items.length > 0) {
-                                            unassignedElements.push(
-                                                <div key={`header-${cat}`} className="sticky top-0 bg-card/95 backdrop-blur-sm py-2.5 z-20 mb-2 border-b border-border/40 -mx-4 px-4">
+                                            categoryElements.push(
+                                                <div key={`header-${cat}`} className="sticky top-0 bg-card/95 backdrop-blur-sm py-2.5 z-20 mb-2 border-b border-border/40 -mx-4 px-4 mt-4 first:mt-0">
                                                     <h5 className="text-[11px] font-bold text-foreground/50 uppercase tracking-[0.2em]">{cat}</h5>
                                                 </div>
                                             );
 
                                             for (const name of items) {
-                                                unassignedElements.push(
-                                                    <div key={`unassigned-${name}`} className="flex items-center space-x-2 pl-2 py-1.5 hover:bg-muted/50 rounded-sm group/sg">
+                                                const isAssigned = selectedSubgroups.has(name);
+                                                categoryElements.push(
+                                                    <div key={`sg-${name}`} className="flex items-center space-x-2 pl-2 py-1.5 hover:bg-muted/50 rounded-sm group/sg">
                                                         <Checkbox
-                                                            id={`add-unassigned-${name}`}
-                                                            checked={selectedSubgroups.has(name)}
+                                                            id={`add-sg-${name}`}
+                                                            checked={isAssigned}
                                                             onCheckedChange={(checked) => {
                                                                 const next = new Set(selectedSubgroups);
                                                                 if (checked) next.add(name);
@@ -211,8 +180,8 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                                             className="border-border data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 h-4 w-4 shrink-0"
                                                         />
                                                         <label
-                                                            htmlFor={`add-unassigned-${name}`}
-                                                            className="flex-1 text-sm font-medium leading-none cursor-pointer select-none transition-colors text-foreground group-hover/sg:text-foreground"
+                                                            htmlFor={`add-sg-${name}`}
+                                                            className={`flex-1 text-sm font-medium leading-none cursor-pointer select-none transition-colors ${isAssigned ? "text-blue-600 dark:text-blue-400 font-bold" : "text-foreground group-hover/sg:text-foreground"}`}
                                                         >
                                                             {formatDisplayName(name)}
                                                         </label>
@@ -222,25 +191,13 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                         }
                                     }
 
-                                    if (assignedNodes.length === 0 && unassignedElements.length === 0) {
+                                    if (categoryElements.length === 0) {
                                         return <p className="text-sm text-foreground/70 italic p-4">No subgroups found matching search.</p>;
                                     }
 
                                     return (
                                         <div className="space-y-1 pr-3 pb-2 pt-4">
-                                            {assignedNodes.length > 0 && (
-                                                <div className="mb-6 space-y-1">
-                                                    <div className="sticky top-0 bg-card/95 backdrop-blur-sm py-2.5 z-20 mb-2 border-b border-border/40 -mx-4 px-4">
-                                                        <h5 className="text-[11px] font-bold text-foreground/50 uppercase tracking-[0.2em]">Assigned</h5>
-                                                    </div>
-                                                    {assignedNodes}
-                                                </div>
-                                            )}
-                                            {unassignedElements.length > 0 && (
-                                                <div className="space-y-1">
-                                                    {unassignedElements}
-                                                </div>
-                                            )}
+                                            {categoryElements}
                                         </div>
                                     );
                                 })()
