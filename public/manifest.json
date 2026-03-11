@@ -8,13 +8,13 @@
   "theme_color": "#fafafa",
   "icons": [
     {
-      "src": "clown.png",
+      "src": "/omni-snapshot-editor/clown.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "clown.png",
+      "src": "/omni-snapshot-editor/clown.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"

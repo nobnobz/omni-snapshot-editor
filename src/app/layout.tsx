@@ -12,6 +12,7 @@ export const metadata = {
   },
   manifest: "/omni-snapshot-editor/manifest.json",
   icons: {
+    icon: "/omni-snapshot-editor/clown.png",
     apple: "/omni-snapshot-editor/clown.png",
   },
 };
