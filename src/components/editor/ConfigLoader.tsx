@@ -135,7 +135,13 @@ export function ConfigLoader() {
             const downloadUrl = URL.createObjectURL(blob);
             
             // Clean filename and ensure .json extension
-            const safeName = templateName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9.-]/g, '');
+            let safeName = templateName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9.-]/g, '');
+            
+            // Prepend 'ume-' if it's an AIOMetadata or AIOStreams template and doesn't have it
+            if ((safeName.includes('aiometadata') || safeName.includes('aiostreams')) && !safeName.startsWith('ume-')) {
+                safeName = `ume-${safeName}`;
+            }
+
             const fileName = safeName.endsWith('.json') ? safeName : `${safeName}.json`;
             
             const a = document.createElement("a");
