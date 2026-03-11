@@ -5,6 +5,15 @@ import "./globals.css";
 export const metadata = {
   title: "Omni Config Editor",
   description: "A client-side JSON editor for Omni configs",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Omni Editor",
+  },
+  manifest: "/omni-snapshot-editor/manifest.json",
+  icons: {
+    apple: "/omni-snapshot-editor/clown.png",
+  },
 };
 
 export const viewport = {
@@ -14,7 +23,7 @@ export const viewport = {
   userScalable: false,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
     { media: "(prefers-color-scheme: dark)", color: "#09090b" },
   ],
 };

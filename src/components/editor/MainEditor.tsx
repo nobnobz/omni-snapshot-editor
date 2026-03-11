@@ -448,7 +448,7 @@ export function MainEditor() {
                     </div>
                 </div>
 
-                <header className="lg:hidden h-[calc(3.5rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] border-b border-border bg-card backdrop-blur-md shadow-sm flex items-center gap-2 px-3 sm:px-6 shrink-0 sticky top-0 z-30">
+                <header className="lg:hidden h-[calc(3.5rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] border-b border-border bg-background/95 backdrop-blur-md shadow-sm flex items-center gap-2 px-3 sm:px-6 shrink-0 sticky top-0 z-30">
                     <Button
                         variant="ghost"
                         size="icon"

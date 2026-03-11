@@ -588,18 +588,6 @@ export function CatalogEditor() {
                 </DropdownMenu>
             </div>
 
-            {/* Stats */}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-foreground/70 px-1 py-1">
-                <span>
-                    <span className="text-foreground font-medium">{enabledCatalogs.length}</span> shown
-                </span>
-                <span>·</span>
-                <span><span className="text-foreground font-medium">{enabledCatalogs.filter(c => c.showInHome).length}</span> in Top Row</span>
-                <span>·</span>
-                <span><span className="text-foreground">{landscapeList.length}</span> landscape</span>
-                <span>·</span>
-                <span>{disabledCatalogs.length} disabled</span>
-            </div>
 
             {/* Sortable list */}
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>

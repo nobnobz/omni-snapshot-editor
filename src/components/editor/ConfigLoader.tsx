@@ -273,7 +273,7 @@ export function ConfigLoader() {
     };
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-background p-4 sm:p-8 pt-safe font-sans text-foreground relative overflow-hidden">
+        <div className="flex items-center justify-center min-h-screen bg-background p-4 sm:p-8 font-sans text-foreground relative overflow-hidden">
             {/* Animated Background Effects */}
             <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
             <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-500/20 dark:bg-blue-900/20 rounded-full blur-[120px] pointer-events-none animate-pulse duration-10000" />
@@ -284,7 +284,7 @@ export function ConfigLoader() {
                 <ThemeToggle />
             </div>
 
-            <div className="w-full max-w-5xl relative z-10">
+            <div className="w-full max-w-5xl relative z-10 pt-safe">
                 <div className="text-center mb-6 space-y-3">
                     <div className="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center mb-2 mx-auto">
                         <img src="/omni-snapshot-editor/clown.png" alt="Logo" className="w-full h-full object-contain" />
