@@ -131,7 +131,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                     // Map each subgroup to its "Home" category (the name of the first Main Group it belongs to)
                                     const getCategory = (sgName: string) => {
                                         for (const [uuid, arr] of Object.entries(subgroupOrder)) {
-                                            if (Array.isArray(arr) && arr.includes(sgName) && uuid !== targetMainGroupUuid) {
+                                            if (Array.isArray(arr) && arr.includes(sgName)) {
                                                 const mgName = mainCatalogGroups[uuid]?.name || "General";
                                                 return formatDisplayName(mgName).replace(/[\[\]❗️❗]/g, '').trim();
                                             }
