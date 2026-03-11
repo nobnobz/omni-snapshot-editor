@@ -501,7 +501,13 @@ export function CatalogEditor() {
                                 <Plus className="w-4 h-4 mr-1.5" /> Add Catalog
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-[84vw] sm:w-80 bg-popover border-border text-popover-foreground shadow-2xl p-0 max-h-[70vh] flex flex-col overflow-hidden">
+                        <DropdownMenuContent
+                            align="end"
+                            className="w-[min(92vw,28rem)] sm:w-80 bg-popover border-border text-popover-foreground shadow-2xl p-0 flex flex-col overflow-hidden"
+                            style={{
+                                maxHeight: "calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 5rem)",
+                            }}
+                        >
                             <div className="p-3 border-b border-border bg-card space-y-2 shrink-0">
                                 <h4 className="text-[10px] uppercase font-bold text-foreground/70 flex justify-between">
                                     <span>Add Catalog</span>
@@ -518,7 +524,7 @@ export function CatalogEditor() {
                                     />
                                 </div>
                             </div>
-                            <div className="flex-1 overflow-y-auto custom-scrollbar overscroll-contain pb-4">
+                            <div className="flex-1 overflow-y-auto custom-scrollbar overscroll-contain pb-[calc(1rem+env(safe-area-inset-bottom))]">
                                 {filteredAddCandidates.length === 0 ? (
                                     <p className="text-[10px] text-foreground/70 p-4 text-center">No catalogs found.</p>
                                 ) : (

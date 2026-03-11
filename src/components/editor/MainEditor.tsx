@@ -506,7 +506,7 @@ export function MainEditor() {
 
                 <header
                 className={`sticky top-0 z-50 w-full border-b transition-all duration-300 transform pt-safe-top flex items-center px-4 h-[calc(4rem+env(safe-area-inset-top))] lg:hidden
-                    ${isScrolled ? "border-border/40 bg-card/55 backdrop-blur-xl" : "border-transparent bg-transparent backdrop-blur-none"}
+                    ${isScrolled ? "border-transparent bg-transparent backdrop-blur-none" : "border-border/40 bg-card/55 backdrop-blur-xl"}
                     ${isHeaderVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"}
                 `}
             >

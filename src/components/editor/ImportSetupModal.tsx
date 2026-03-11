@@ -503,10 +503,10 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
             <DialogContent className={cn(
-                "fixed left-1/2 top-1/2 w-[96vw] max-w-[calc(100%-1rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card p-4 sm:p-6 shadow-2xl backdrop-blur-xl border-border focus:outline-none z-50 transition-all duration-300",
+                "fixed left-1/2 top-1/2 w-[96vw] max-w-[calc(100%-1rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card p-4 sm:p-6 shadow-2xl backdrop-blur-xl border-border focus:outline-none z-50 transition-all duration-300 h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] max-h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] sm:h-auto sm:max-h-[92dvh] flex flex-col overflow-hidden",
                 "sm:max-w-2xl"
             )}>
-                <DialogHeader>
+                <DialogHeader className="shrink-0">
                     <DialogTitle>Add From Existing Setup</DialogTitle>
                     <DialogDescription className="text-foreground/70">
                         {step === 1 ? "Upload a Omni .json configuration to extract groups." : `Review and select groups from ${fileName}`}
@@ -514,13 +514,13 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                 </DialogHeader>
 
                 {step === 1 && (
-                    <div className="space-y-4">
+                    <div className="space-y-4 flex-1 min-h-0 overflow-y-auto pr-1">
                         {/* Template Loader */}
                         <div className="p-5 border border-border rounded-lg bg-muted/50">
                             <h3 className="font-semibold text-sm text-foreground mb-3">Load Unified Media Experience Template</h3>
                             <div className="flex items-center gap-3">
                                 <Select value={selectedVersion} onValueChange={setSelectedVersion}>
-                                    <SelectTrigger className="flex-1 h-10 rounded-md border border-border bg-background/50 text-xs text-foreground font-mono focus:ring-1 focus:ring-blue-500 shadow-inner overflow-hidden">
+                                    <SelectTrigger className="flex-1 h-10 rounded-md border border-border bg-background/50 text-base sm:text-xs text-foreground font-mono focus:ring-1 focus:ring-blue-500 shadow-inner overflow-hidden">
                                         <SelectValue placeholder="Select template version" />
                                     </SelectTrigger>
                                     <SelectContent className="bg-popover border-border text-popover-foreground">
@@ -593,8 +593,8 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                 )}
 
                 {step === 2 && (
-                    <Tabs defaultValue="subgroups" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 bg-muted/50 p-1 h-11 rounded-xl border border-border/40">
+                    <Tabs defaultValue="subgroups" className="w-full flex-1 min-h-0 flex flex-col">
+                        <TabsList className="grid w-full grid-cols-2 bg-muted/50 p-1 h-11 rounded-xl border border-border/40 shrink-0">
                             <TabsTrigger
                                 value="subgroups"
                                 className="rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all duration-200 text-xs font-medium"
@@ -609,8 +609,8 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                             </TabsTrigger>
                         </TabsList>
 
-                        <div className="mt-4 border border-border rounded-md bg-background">
-                            <ScrollArea className="h-[58vh]">
+                        <div className="mt-4 border border-border rounded-md bg-background flex-1 min-h-0">
+                            <ScrollArea className="h-full">
                                 <TabsContent value="main" className="p-0 m-0">
                                     {parsedMainGroups.length === 0 ? (
                                         <div className="p-8 text-center text-foreground/70 italic">No Main Groups found in this file.</div>
@@ -850,15 +850,15 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                     </Tabs>
                 )}
 
-                <DialogFooter className="mt-4">
-                    <Button variant="ghost" onClick={handleClose} className="text-foreground/70 hover:text-foreground">
+                <DialogFooter className="mt-4 shrink-0 border-t border-border/50 pt-3 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+                    <Button variant="ghost" onClick={handleClose} className="w-full sm:w-auto text-foreground/70 hover:text-foreground">
                         Cancel
                     </Button>
                     {step === 2 && (
                         <Button
                             onClick={handleImport}
                             disabled={totalSelectedToImport === 0}
-                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold"
                         >
                             <FileJson className="w-4 h-4 mr-2" />
                             Import Selected ({totalSelectedToImport})

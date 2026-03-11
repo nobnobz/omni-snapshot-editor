@@ -143,17 +143,16 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                     const assignedNames: string[] = [];
 
                                     for (const name of allSubgroupNames) {
+                                        const isMatch = !query || name.toLowerCase().includes(query);
+                                        
                                         // If it is assigned to the CURRENT target, it goes to the "Assigned" list
-                                        if (selectedSubgroups.has(name)) {
-                                            if (!query || name.toLowerCase().includes(query)) {
-                                                assignedNames.push(name);
-                                            }
-                                            continue;
+                                        if (selectedSubgroups.has(name) && isMatch) {
+                                            assignedNames.push(name);
                                         }
 
-                                        // Otherwise, group it by its "Home" category
+                                        // Always group it by its "Home" category as well, so it stays in the list
                                         const cat = getCategory(name);
-                                        if (!query || name.toLowerCase().includes(query) || cat.toLowerCase().includes(query)) {
+                                        if (isMatch || (cat.toLowerCase().includes(query) && query)) {
                                             if (!categories.has(cat)) categories.set(cat, []);
                                             categories.get(cat)!.push(name);
                                         }
