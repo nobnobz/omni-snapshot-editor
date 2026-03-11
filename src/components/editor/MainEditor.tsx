@@ -505,7 +505,7 @@ export function MainEditor() {
                 </div>
 
                 <header
-                className={`sticky top-0 z-50 w-full border-b border-border/50 bg-card/80 backdrop-blur-md transition-all duration-300 transform pt-safe-top
+                className={`sticky top-0 z-50 w-full border-b border-border/50 bg-card/80 backdrop-blur-md transition-all duration-300 transform pt-safe-top flex items-center px-4 h-16
                     ${isHeaderVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"}
                 `}
             >
@@ -616,7 +616,7 @@ export function MainEditor() {
                         if (keysToRender.length === 0 && !["aiometadata", "catalogs", "groups", "patterns"].includes(section.id)) return null;
 
                         return (
-                            <section key={section.id} id={section.id} className="scroll-mt-8">
+                            <section key={section.id} id={section.id} className="scroll-mt-8 pb-12 border-b border-border/20 last:border-0 last:pb-0">
                                 <div className="flex items-center justify-between mb-5">
                                     <h3 className="text-xl font-bold text-foreground tracking-tight">{section.title}</h3>
                                     {["groups", "catalogs", "patterns"].includes(section.id) && (

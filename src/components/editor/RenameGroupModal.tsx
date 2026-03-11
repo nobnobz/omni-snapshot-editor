@@ -51,9 +51,9 @@ export function RenameGroupModal({ isOpen, onClose, oldName, isMainGroup = false
 
     return (
         <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-            <DialogContent
-                className="w-[96vw] max-w-[calc(100%-1rem)] sm:max-w-[425px] bg-background border-border text-foreground p-4 sm:p-6 sm:rounded-2xl top-[45%]"
+            <DialogContent 
                 onOpenAutoFocus={() => setNewName(oldName)}
+                className="fixed left-1/2 top-1/2 w-[96vw] max-w-[calc(100%-1rem)] sm:max-w-[425px] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card p-4 sm:p-6 shadow-2xl backdrop-blur-xl border-border focus:outline-none z-50"
             >
                 <DialogHeader>
                     <DialogTitle>Rename {isMainGroup ? "Main Group" : "Group"}</DialogTitle>

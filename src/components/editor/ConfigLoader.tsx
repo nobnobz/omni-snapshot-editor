@@ -402,7 +402,7 @@ export function ConfigLoader() {
                                 <DialogTrigger asChild>
                                     <button
                                         type="button"
-                                        className="group flex flex-1 items-center justify-center gap-2 rounded-xl border border-indigo-500/20 bg-indigo-500/10 px-3 py-2 text-center text-indigo-400 backdrop-blur-md transition-all duration-300 shadow-sm hover:-translate-y-0.5 hover:bg-indigo-500/20 sm:min-w-[140px] sm:w-auto"
+                                        className="group flex items-center justify-center gap-2 rounded-xl border border-indigo-500/20 bg-indigo-500/10 px-4 py-2 text-center text-indigo-400 backdrop-blur-md transition-all duration-300 shadow-sm hover:-translate-y-0.5 hover:bg-indigo-500/20 w-fit min-w-[120px]"
                                     >
                                         <BookOpen className="h-3.5 w-3.5 text-indigo-400/80 group-hover:text-indigo-400 transition-all" />
                                         <span className="text-[10px] sm:text-[11px] font-bold tracking-tight">Documentation</span>
@@ -416,7 +416,7 @@ export function ConfigLoader() {
                                 href="https://ko-fi.com/botbidraiser"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="group flex flex-1 items-center justify-center gap-2 rounded-xl border border-pink-500/20 bg-pink-500/10 px-3 py-2 text-center text-pink-400 backdrop-blur-md transition-all duration-300 shadow-sm hover:-translate-y-0.5 hover:bg-pink-500/20 hover:text-pink-400 sm:min-w-[140px] sm:w-auto"
+                                className="group flex items-center justify-center gap-2 rounded-xl border border-pink-500/20 bg-pink-500/10 px-4 py-2 text-center text-pink-400 backdrop-blur-md transition-all duration-300 shadow-sm hover:-translate-y-0.5 hover:bg-pink-500/20 hover:text-pink-400 w-fit min-w-[120px]"
                             >
                                 <Heart className="h-3.5 w-3.5 text-pink-400/80 group-hover:text-pink-400 group-hover:fill-pink-400/10 transition-all" />
                                 <span className="text-[10px] sm:text-[11px] font-bold tracking-tight">Support Me</span>
@@ -568,7 +568,7 @@ export function ConfigLoader() {
 
                 <div className="mt-8 text-center pb-safe">
                     <p className="text-[10px] text-foreground/70 font-bold uppercase tracking-widest leading-relaxed">
-                        v0.2.18 • Built with Antigravity by Bot-Bid-Raiser
+                        v0.2.19 • Built with Antigravity by Bot-Bid-Raiser
                     </p>
                 </div>
                 </div>
