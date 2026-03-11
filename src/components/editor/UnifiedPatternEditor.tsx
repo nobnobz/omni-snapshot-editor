@@ -137,7 +137,7 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                         <div className="flex items-center gap-3">
                             <ChevronRight className="w-4 h-4 shrink-0 text-foreground/70 transition-transform duration-200 group-data-[state=open]/item:rotate-90" />
                             <span className={`font-bold text-sm tracking-tight transition-colors text-left flex items-center flex-wrap gap-2 ${!isTagEnabled ? "text-foreground/50 line-through decoration-foreground/30" : "text-foreground"}`}>
-                                {customName || <span className={`font-mono text-[11px] inline-block break-all bg-background/50 px-2 py-0.5 rounded border border-border ${!isTagEnabled ? "text-foreground/50 line-through decoration-foreground/30" : "text-blue-400"}`}>{regex}</span>}
+                                {customName || <span className={`font-mono text-xs inline-block break-all bg-background/50 px-2 py-0.5 rounded border border-border ${!isTagEnabled ? "text-foreground/50 line-through decoration-foreground/30" : "text-blue-400"}`}>{regex}</span>}
                             </span>
                         </div>
                     </AccordionTrigger>
@@ -162,7 +162,7 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
             <AccordionContent className="p-5 border-t border-border/50 bg-background/20">
                 {/* Regex Editor */}
                 <div className="mb-6">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest text-foreground/70 mb-2 block">Pattern Regex</Label>
+                    <Label className="text-xs font-bold uppercase tracking-widest text-foreground/70 mb-2 block">Pattern Regex</Label>
                     {editingRegex ? (
                         <div className="flex flex-col gap-2">
                             <Textarea
@@ -176,22 +176,22 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                                     if (e.key === 'Escape') handleCancelEdit(e as any);
                                 }}
                                 rows={1}
-                                className="min-h-[unset] py-2 text-base sm:text-xs font-mono bg-background/80 border-blue-500/50 focus-visible:ring-1 focus-visible:ring-blue-500 text-blue-300 flex-1 shadow-inner resize-none"
+                                className="min-h-[unset] py-2 text-base sm:text-sm font-mono bg-background/80 border-blue-500/50 focus-visible:ring-1 focus-visible:ring-blue-500 text-blue-300 flex-1 shadow-inner resize-none"
                             />
                             <div className="flex justify-end gap-2">
                                 <Button size="sm" variant="ghost" onClick={handleConfirmEdit} className="h-8 px-3 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-300 rounded-md transition-colors flex items-center gap-2">
                                     <Check className="w-3.5 h-3.5" />
-                                    <span className="text-[10px] font-bold uppercase font-sans">Save</span>
+                                    <span className="text-xs font-bold uppercase font-sans">Save</span>
                                 </Button>
                                 <Button size="sm" variant="ghost" onClick={handleCancelEdit} className="h-8 px-3 bg-muted/50 text-foreground/70 hover:bg-muted hover:text-white rounded-md transition-colors flex items-center gap-2">
                                     <X className="w-3.5 h-3.5" />
-                                    <span className="text-[10px] font-bold uppercase font-sans">Cancel</span>
+                                    <span className="text-xs font-bold uppercase font-sans">Cancel</span>
                                 </Button>
                             </div>
                         </div>
                     ) : (
                         <div className="flex items-center gap-3 p-2.5 rounded-lg border border-border/80 bg-background/50 shadow-inner group/regex transition-colors hover:border-border/80">
-                            <code className="text-[11px] sm:text-xs font-mono text-blue-400 flex-1 break-all tracking-tight">{regex}</code>
+                            <code className="text-xs sm:text-sm font-mono text-blue-400 flex-1 break-all tracking-tight">{regex}</code>
                             <Button size="icon" variant="ghost" onClick={handleStartEdit} className="h-7 w-7 text-foreground/70 hover:text-blue-400 hover:bg-blue-500/10 rounded-md opacity-100 sm:opacity-0 sm:group-hover/regex:opacity-100 transition-all shrink-0">
                                 <Pencil className="w-3.5 h-3.5" />
                             </Button>
@@ -265,12 +265,12 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                                         value={displayVal !== "" ? String(displayVal) : ""}
                                         onValueChange={(v) => handleChange(Number(v))}
                                     >
-                                        <SelectTrigger className="h-10 sm:h-9 text-base sm:text-xs bg-background/80 border-border w-full hover:border-border focus:ring-1 focus:ring-blue-500 transition-colors shadow-inner">
+                                        <SelectTrigger className="h-10 sm:h-9 text-base sm:text-sm bg-background/80 border-border w-full hover:border-border focus:ring-1 focus:ring-blue-500 transition-colors shadow-inner">
                                             <SelectValue placeholder="Select color..." />
                                         </SelectTrigger>
                                         <SelectContent className="bg-card/95 backdrop-blur-xl border-border text-foreground shadow-xl">
                                             {IMAGE_COLOR_OPTIONS.map(opt => (
-                                                <SelectItem key={opt.value} value={String(opt.value)} className="text-base sm:text-xs focus:bg-blue-600 focus:text-white cursor-pointer transition-colors">
+                                                <SelectItem key={opt.value} value={String(opt.value)} className="text-base sm:text-sm focus:bg-blue-600 focus:text-white cursor-pointer transition-colors">
                                                     {opt.label}
                                                 </SelectItem>
                                             ))}
@@ -281,12 +281,12 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                                         value={displayVal !== "" ? String(displayVal) : ""}
                                         onValueChange={(v) => handleChange(Number(v))}
                                     >
-                                        <SelectTrigger className="h-10 sm:h-9 text-base sm:text-xs bg-background/80 border-border w-full hover:border-border focus:ring-1 focus:ring-blue-500 transition-colors shadow-inner">
+                                        <SelectTrigger className="h-10 sm:h-9 text-base sm:text-sm bg-background/80 border-border w-full hover:border-border focus:ring-1 focus:ring-blue-500 transition-colors shadow-inner">
                                             <SelectValue placeholder="Select radius..." />
                                         </SelectTrigger>
                                         <SelectContent className="bg-card/95 backdrop-blur-xl border-border text-foreground shadow-xl max-h-[250px]">
                                             {BORDER_RADIUS_OPTIONS.map(r => (
-                                                <SelectItem key={r.index} value={String(r.index)} className="text-base sm:text-xs focus:bg-blue-600 focus:text-white cursor-pointer transition-colors">
+                                                <SelectItem key={r.index} value={String(r.index)} className="text-base sm:text-sm focus:bg-blue-600 focus:text-white cursor-pointer transition-colors">
                                                     {r.px}px
                                                 </SelectItem>
                                             ))}
@@ -297,7 +297,7 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                                         type="number"
                                         value={displayVal}
                                         onChange={(e) => handleChange(e.target.value === "" ? "" : Number(e.target.value))}
-                                        className="h-10 sm:h-9 text-base sm:text-xs bg-background/80 border-border hover:border-border focus-visible:ring-1 focus-visible:ring-blue-500 shadow-inner font-mono transition-colors w-full"
+                                        className="h-10 sm:h-9 text-base sm:text-sm bg-background/80 border-border hover:border-border focus-visible:ring-1 focus-visible:ring-blue-500 shadow-inner font-mono transition-colors w-full"
                                     />
                                 ) : inferredType === "color" ? (
                                     <div className="flex gap-2">
@@ -314,7 +314,7 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                                             value={displayVal}
                                             onChange={(e) => handleChange(e.target.value)}
                                             placeholder="#FFFFFF"
-                                            className="h-10 sm:h-9 text-base sm:text-xs font-mono bg-background/80 border-border uppercase focus-visible:ring-1 focus-visible:ring-blue-500 shadow-inner transition-colors"
+                                            className="h-10 sm:h-9 text-base sm:text-sm font-mono bg-background/80 border-border uppercase focus-visible:ring-1 focus-visible:ring-blue-500 shadow-inner transition-colors"
                                         />
                                     </div>
                                 ) : (
@@ -323,7 +323,7 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                                         value={displayVal}
                                         onChange={(e) => handleChange(e.target.value)}
                                         placeholder={`Enter ${dictDef.label}...`}
-                                        className="h-10 sm:h-9 text-base sm:text-xs bg-background/80 border-border hover:border-border focus-visible:ring-1 focus-visible:ring-blue-500 shadow-inner transition-colors"
+                                        className="h-10 sm:h-9 text-base sm:text-sm bg-background/80 border-border hover:border-border focus-visible:ring-1 focus-visible:ring-blue-500 shadow-inner transition-colors"
                                     />
                                 )}
                             </div>
@@ -494,7 +494,7 @@ export function UnifiedPatternEditor() {
                         <WandSparkles className="w-5 h-5 text-purple-400 group-hover:text-purple-300 transition-colors" />
                         <span className="font-bold text-base tracking-tight text-foreground flex items-center gap-2">
                             Pattern & Regex Settings
-                            <Badge variant="outline" className="text-[10px] uppercase tracking-widest bg-purple-500/10 text-purple-400 border-purple-500/30 font-bold ml-2">
+                            <Badge variant="outline" className="text-xs uppercase tracking-widest bg-purple-500/10 text-purple-400 border-purple-500/30 font-bold ml-2">
                                 {orderedKeys.length} Patterns
                             </Badge>
                         </span>
@@ -519,7 +519,7 @@ export function UnifiedPatternEditor() {
                             <div className="flex items-center justify-end pt-2 border-t border-border/20 mt-1">
                                 {confirmDeleteAll ? (
                                     <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2">
-                                        <span className="text-[11px] font-medium text-red-500">Are you sure you want to delete all?</span>
+                                        <span className="text-xs font-medium text-red-500">Are you sure you want to delete all?</span>
                                         <Button
                                             variant="destructive"
                                             size="sm"
@@ -527,7 +527,7 @@ export function UnifiedPatternEditor() {
                                                 clearPatterns();
                                                 setConfirmDeleteAll(false);
                                             }}
-                                            className="h-8 px-3 text-[11px]"
+                                            className="h-8 px-3 text-xs"
                                         >
                                             Yes, Delete All
                                         </Button>
@@ -535,7 +535,7 @@ export function UnifiedPatternEditor() {
                                             variant="ghost"
                                             size="sm"
                                             onClick={() => setConfirmDeleteAll(false)}
-                                            className="h-8 px-3 text-[11px]"
+                                            className="h-8 px-3 text-xs"
                                         >
                                             Cancel
                                         </Button>
@@ -545,7 +545,7 @@ export function UnifiedPatternEditor() {
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => setConfirmDeleteAll(true)}
-                                        className="text-red-500 hover:text-red-400 hover:bg-red-500/10 h-8 px-3 border border-transparent text-[11px]"
+                                        className="text-red-500 hover:text-red-400 hover:bg-red-500/10 h-8 px-3 border border-transparent text-xs"
                                     >
                                         <Trash2 className="w-3.5 h-3.5 mr-2" />
                                         Delete All Patterns
@@ -597,7 +597,7 @@ export function UnifiedPatternEditor() {
                     </DialogHeader>
                     <div className="py-6 space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="pattern-name" className="text-[10px] font-bold uppercase tracking-widest text-foreground/70 ml-1">
+                            <Label htmlFor="pattern-name" className="text-xs font-bold uppercase tracking-widest text-foreground/70 ml-1">
                                 Display Name
                             </Label>
                             <Input

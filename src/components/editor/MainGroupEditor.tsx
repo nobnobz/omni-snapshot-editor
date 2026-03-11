@@ -122,7 +122,7 @@ function SortableSubgroupItem({
                                 {showInHome && <Star className="w-3 h-3 text-amber-500 shrink-0" />}
                                 <Edit2 className="w-3 h-3 text-blue-400 opacity-0 group-hover/name:opacity-100 transition-opacity shrink-0" />
                             </h4>
-                            {displayName !== id && <p className="text-[11px] text-foreground/70 truncate font-mono mt-0.5">{id}</p>}
+                            {displayName !== id && <p className="text-xs text-foreground/70 truncate font-mono mt-0.5">{id}</p>}
                         </div>
                     )}
                 </div>
@@ -132,21 +132,21 @@ function SortableSubgroupItem({
                     {/* Top Row Group */}
                     <div className="flex items-center gap-1">
                         {isSmall && (
-                            <Badge className="text-[10px] h-4 px-1 bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20">Small</Badge>
+                            <Badge className="text-xs h-4 px-1 bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20">Small</Badge>
                         )}
                         {showInHome && (
-                            <Badge className={`text-[10px] h-4 px-1 border ${isSmallTopRow ? 'bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/20' : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'}`}>
+                            <Badge className={`text-xs h-4 px-1 border ${isSmallTopRow ? 'bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/20' : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'}`}>
                                 {isSmallTopRow ? 'Top Row (small)' : 'Top Row'}
                             </Badge>
                         )}
                         {itemCount && showInHome && (
-                            <Badge variant="secondary" className="text-[10px] h-4 px-1 bg-muted text-foreground/70 border-none">{itemCount}</Badge>
+                            <Badge variant="outline" className="text-xs h-4 px-1 bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30">{itemCount}</Badge>
                         )}
                     </div>
 
                     {/* Shelf Specifics */}
                     {isLandscape && (
-                        <Badge className="text-[10px] h-4 px-1 bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20">Wide</Badge>
+                        <Badge className="text-xs h-4 px-1 bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20">Wide</Badge>
                     )}
                 </div>
             </div>
@@ -327,9 +327,9 @@ function SortableMainGroupItem({
                                 {groupData.name || "Unnamed Group"}
                             </span>
                             <div className="flex items-center gap-2">
-                                <span className="text-[10px] text-foreground/50 font-mono font-normal uppercase tracking-widest leading-none">{(groupData.subgroupNames || []).length} catalogs</span>
+                                <span className="text-xs text-foreground/50 font-mono font-normal uppercase tracking-widest leading-none">{(groupData.subgroupNames || []).length} catalogs</span>
                                 <div className="w-1 h-1 rounded-full bg-blue-500/30" />
-                                <span className="text-[10px] text-foreground/40 font-mono font-normal truncate uppercase tracking-widest leading-none">{groupId}</span>
+                                <span className="text-xs text-foreground/40 font-mono font-normal truncate uppercase tracking-widest leading-none">{groupId}</span>
                             </div>
                         </div>
                     </AccordionTrigger>

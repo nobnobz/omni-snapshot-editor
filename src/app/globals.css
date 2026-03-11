@@ -82,6 +82,18 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --editor-info-bg: oklch(0.965 0.02 240 / 55%);
+  --editor-info-fg: oklch(0.42 0.11 245);
+  --editor-info-border: oklch(0.82 0.06 240 / 70%);
+  --editor-success-bg: oklch(0.965 0.035 155 / 55%);
+  --editor-success-fg: oklch(0.44 0.12 155);
+  --editor-success-border: oklch(0.82 0.07 155 / 70%);
+  --editor-warning-bg: oklch(0.97 0.045 88 / 55%);
+  --editor-warning-fg: oklch(0.5 0.11 80);
+  --editor-warning-border: oklch(0.84 0.08 88 / 70%);
+  --editor-danger-bg: oklch(0.965 0.03 25 / 55%);
+  --editor-danger-fg: oklch(0.53 0.17 25);
+  --editor-danger-border: oklch(0.8 0.11 25 / 70%);
 }
 
 .dark {
@@ -116,6 +128,18 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  --editor-info-bg: oklch(0.34 0.05 246 / 45%);
+  --editor-info-fg: oklch(0.83 0.08 240);
+  --editor-info-border: oklch(0.64 0.1 240 / 60%);
+  --editor-success-bg: oklch(0.34 0.07 155 / 45%);
+  --editor-success-fg: oklch(0.84 0.1 155);
+  --editor-success-border: oklch(0.66 0.1 155 / 60%);
+  --editor-warning-bg: oklch(0.35 0.07 88 / 45%);
+  --editor-warning-fg: oklch(0.86 0.1 88);
+  --editor-warning-border: oklch(0.68 0.09 88 / 60%);
+  --editor-danger-bg: oklch(0.33 0.09 25 / 45%);
+  --editor-danger-fg: oklch(0.84 0.12 25);
+  --editor-danger-border: oklch(0.66 0.12 25 / 60%);
 }
 
 @layer base {
@@ -192,5 +216,29 @@
   .scrollbar-hidden {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  .editor-tone-info {
+    color: var(--editor-info-fg);
+    background-color: var(--editor-info-bg);
+    border-color: var(--editor-info-border);
+  }
+
+  .editor-tone-success {
+    color: var(--editor-success-fg);
+    background-color: var(--editor-success-bg);
+    border-color: var(--editor-success-border);
+  }
+
+  .editor-tone-warning {
+    color: var(--editor-warning-fg);
+    background-color: var(--editor-warning-bg);
+    border-color: var(--editor-warning-border);
+  }
+
+  .editor-tone-danger {
+    color: var(--editor-danger-fg);
+    background-color: var(--editor-danger-bg);
+    border-color: var(--editor-danger-border);
   }
 }

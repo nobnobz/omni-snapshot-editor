@@ -10,7 +10,8 @@ import { ScrollArea } from "../ui/scroll-area";
 import { Checkbox } from "../ui/checkbox";
 import { ImageIcon, Search } from 'lucide-react';
 import { CATALOG_FALLBACKS } from '@/lib/catalog-fallbacks';
-import { formatDisplayName, resolveCatalogName, ensureCatalogPrefix } from '@/lib/utils';
+import { cn, formatDisplayName, resolveCatalogName, ensureCatalogPrefix } from '@/lib/utils';
+import { editorAction, editorLayout } from "./ui/style-contract";
 
 export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpen: boolean, onClose: () => void, initialParentUUID?: string }) {
     const { currentValues, addMainCatalogGroup, addCatalogGroup, catalogs, customFallbacks } = useConfig();
@@ -114,7 +115,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <DialogContent className="fixed left-1/2 top-1/2 w-[96vw] max-w-[calc(100%-1rem)] sm:max-w-[425px] md:max-w-3xl -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card p-4 sm:p-6 shadow-2xl backdrop-blur-xl border-border focus:outline-none z-50 h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] max-h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] sm:h-auto sm:max-h-[95dvh] flex flex-col overflow-hidden">
+            <DialogContent className={cn(editorLayout.dialogContent, "sm:max-w-[425px] md:max-w-3xl sm:max-h-[95dvh]")}>
                 <DialogHeader className="shrink-0">
                     <DialogTitle>Create New Group</DialogTitle>
                     <DialogDescription className="text-foreground/70">
@@ -191,7 +192,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
 
                         <DialogFooter className="mt-4 border-t border-border/50 pt-3 pb-[max(0px,env(safe-area-inset-bottom))]">
                             <Button variant="outline" onClick={handleClose} className="bg-muted border-border text-foreground hover:bg-muted/80">Cancel</Button>
-                            <Button onClick={handleCreateMain} disabled={!mainName.trim()} className="bg-blue-600 text-white hover:bg-blue-700">Create Main Group</Button>
+                            <Button onClick={handleCreateMain} disabled={!mainName.trim()} className={editorAction.primary}>Create Main Group</Button>
                         </DialogFooter>
                     </TabsContent>
 
@@ -313,7 +314,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                                 return sortedCategories.map(category => (
                                                     <div key={category} className="space-y-2">
                                                         <div className="sticky top-0 bg-card/95 backdrop-blur-sm py-2.5 z-[60] mb-2 border-b border-border/40 -mx-4 px-4">
-                                                            <h5 className="text-[11px] font-bold text-foreground/50 uppercase tracking-[0.2em]">{category}</h5>
+                                                            <h5 className="text-xs font-bold text-foreground/50 uppercase tracking-[0.2em]">{category}</h5>
                                                         </div>
                                                         <div className="space-y-3 pt-1">
                                                             {groups[category].map(cat => (
@@ -334,7 +335,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                                                         className="flex-1 text-sm font-medium leading-none text-foreground cursor-pointer select-none"
                                                                     >
                                                                         <div>{cat.name}</div>
-                                                                        <div className="text-[9px] text-foreground/70 font-mono mt-1 w-full max-w-[300px] break-all">{cat.id}</div>
+                                                                        <div className="text-xs text-foreground/70 font-mono mt-1 w-full max-w-[300px] break-all">{cat.id}</div>
                                                                     </label>
                                                                 </div>
                                                             ))}
@@ -351,7 +352,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
 
                         <DialogFooter className="mt-4 border-t border-border/50 pt-3 pb-[max(0px,env(safe-area-inset-bottom))]">
                             <Button variant="outline" onClick={handleClose} className="bg-muted border-border text-foreground hover:bg-muted/80">Cancel</Button>
-                            <Button onClick={handleCreateSub} disabled={!subName.trim()} className="bg-blue-600 text-white hover:bg-blue-700">Create Subgroup</Button>
+                            <Button onClick={handleCreateSub} disabled={!subName.trim()} className={editorAction.primary}>Create Subgroup</Button>
                         </DialogFooter>
                     </TabsContent>
                 </Tabs>

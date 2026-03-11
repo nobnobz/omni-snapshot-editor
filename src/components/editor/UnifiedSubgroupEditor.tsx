@@ -20,6 +20,8 @@ import {
     useSensors,
     DragOverlay,
     defaultDropAnimationSideEffects,
+    type DragEndEvent,
+    type Modifier,
 } from '@dnd-kit/core';
 import {
     arrayMove,
@@ -31,7 +33,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { GripVertical, ArrowDownAZ, ArrowUpZA, ImageIcon, LinkIcon, ChevronRight, ChevronDown, RotateCcw, Search, Pin, PinOff, CheckSquare, Square, Layout, Plus, Pencil, Trash2, FolderPlus, UploadCloud } from "lucide-react";
+import { GripVertical, ArrowDownAZ, ArrowUpZA, ImageIcon, LinkIcon, ChevronRight, ChevronDown, RotateCcw, Search, Pin, PinOff, CheckSquare, Square, Layout, Plus, Pencil, Trash2, FolderPlus, UploadCloud, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
@@ -58,6 +60,12 @@ import { Label } from "@/components/ui/label";
 const stringArraysEqual = (a: string[], b: string[]) => (
     a.length === b.length && a.every((item, idx) => item === b[idx])
 );
+
+// Catalog reorder is vertical-only; locking X prevents visible sideways jumps while dragging.
+const restrictVerticalDrag: Modifier = ({ transform }) => ({
+    ...transform,
+    x: 0,
+});
 
 // ----------------------------------------------------------------------
 // 1. Sortable Catalog Node (Inside a Subgroup)
@@ -114,7 +122,7 @@ function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => vo
     } = useSortable({ id });
 
     const style = {
-        transform: CSS.Transform.toString(transform),
+        transform: CSS.Transform.toString(transform ? { ...transform, x: 0 } : null),
         transition,
         zIndex: isDragging ? 20 : 1,
     };
@@ -123,24 +131,27 @@ function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => vo
         <div
             ref={setNodeRef}
             style={style}
-            className={`flex items-center gap-3 p-2.5 bg-muted/50 border rounded-lg mb-2 group/cat transition-all duration-200 
-                ${isDragging ? "opacity-30 border-blue-500/50 bg-blue-500/5 border-dashed z-50 shadow-none scale-[0.98]" : "border-border hover:border-border/80 hover:bg-muted/80 shadow-sm"}`}
+            className={`flex items-center gap-3 p-2.5 border rounded-md mb-2 group/cat transition-all duration-150
+                ${isDragging ? "opacity-30 border-border/80 bg-muted/60 border-dashed z-50 shadow-none scale-[0.99]" : "bg-background/80 border-border/60 hover:border-border/90 hover:bg-background/95 shadow-sm"}`}
         >
             <button
                 {...attributes}
                 {...listeners}
-                className={`cursor-grab shrink-0 p-2 rounded-md transition-colors select-none ${isDragging ? "text-blue-500" : "text-foreground/70 hover:text-foreground hover:bg-muted/80"}`}
+                className={`cursor-grab shrink-0 p-2 rounded-md transition-colors select-none ${isDragging ? "text-foreground/75" : "text-foreground/60 hover:text-foreground hover:bg-muted/70"}`}
                 style={{ touchAction: 'none' }}
             >
                 <GripVertical className="h-5 w-5" />
             </button>
 
             <div className="flex-1 min-w-0 pr-2 flex items-center gap-2">
-                <p className="text-sm truncate font-semibold tracking-tight text-foreground">
+                <p className="text-sm min-w-0 flex-1 truncate font-semibold tracking-tight text-foreground">
                     {displayName}
                 </p>
                 {displayName !== id && (
-                    <span className="hidden sm:inline-block text-[10px] text-foreground/70 font-mono bg-muted px-1.5 py-0.5 rounded-sm border border-border opacity-0 group-hover/cat:opacity-100 transition-opacity truncate max-w-[120px]">
+                    <span
+                        title={id}
+                        className="hidden sm:inline-block text-xs text-foreground/60 font-mono bg-background/70 px-1.5 py-0.5 rounded-sm border border-border/70 opacity-0 group-hover/cat:opacity-100 transition-opacity truncate max-w-[min(42vw,24rem)]"
+                    >
                         {id}
                     </span>
                 )}
@@ -195,7 +206,6 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
     const [urlInput, setUrlInput] = useState(imageUrl);
     const [isRenaming, setIsRenaming] = useState(false);
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
-    const [activeCatalogId, setActiveCatalogId] = useState<string | null>(null);
     const [catalogSearch, setCatalogSearch] = useState("");
 
     const customNames: Record<string, string> = React.useMemo(() => currentValues["custom_catalog_names"] || {}, [currentValues]);
@@ -284,13 +294,8 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
-    const handleCatalogDragStart = (event: any) => {
-        setActiveCatalogId(event.active.id);
-    };
-
-    const handleCatalogDragEnd = (event: any) => {
+    const handleCatalogDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
-        setActiveCatalogId(null);
         if (over && active.id !== over.id) {
             const oldIndex = subgroupCatalogs.indexOf(active.id as string);
             const newIndex = subgroupCatalogs.indexOf(over.id as string);
@@ -376,13 +381,13 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                 </div>
                             )}
                             <div className="flex-1 space-y-1">
-                                <Label className="text-[11px] uppercase font-bold tracking-widest text-foreground/70">Poster Image URL</Label>
+                                <Label className="text-xs uppercase font-bold tracking-widest text-foreground/70">Poster Image URL</Label>
                                 <Input
                                     placeholder="https://..."
                                     value={urlInput}
                                     onChange={e => setUrlInput(e.target.value)}
                                     onBlur={handleUrlBlur}
-                                    className="h-10 sm:h-8 text-base sm:text-xs bg-background border-border focus-visible:ring-1 focus-visible:ring-blue-500 shadow-inner transition-colors font-mono"
+                                    className="h-10 sm:h-8 text-base sm:text-sm bg-background border-border focus-visible:ring-1 focus-visible:ring-blue-500 shadow-inner transition-colors font-mono"
                                 />
                             </div>
                         </div>
@@ -412,22 +417,25 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                     </div>
 
                     {/* Inner Sortable Catalogs */}
-                    <div>
+                    <div className="rounded-xl border border-border/70 bg-background/35 shadow-inner p-3 sm:p-3.5">
                         <div className="flex items-center justify-between mb-3">
-                            <h5 className="text-[11px] font-bold text-foreground/70 uppercase tracking-widest">Linked Catalogs</h5>
-                            <span className="text-[11px] font-medium text-foreground/70 bg-muted px-2 py-0.5 rounded-full border border-border">{subgroupCatalogs.length}</span>
+                            <h5 className="inline-flex items-center gap-2 text-xs font-bold text-foreground/80 uppercase tracking-widest">
+                                <LinkIcon className="h-3.5 w-3.5 text-foreground/60" />
+                                Linked Catalogs
+                            </h5>
+                            <span className="text-xs font-semibold text-foreground/70 bg-muted px-2 py-0.5 rounded-full border border-border">{subgroupCatalogs.length}</span>
                         </div>
 
                         {subgroupCatalogs.length === 0 ? (
-                            <div className="text-center py-6 border border-dashed border-border/60 rounded-lg bg-background/30">
-                                <p className="text-xs text-foreground/70 font-medium">No catalogs in this subgroup yet.</p>
+                            <div className="text-center py-6 border border-dashed border-border/60 rounded-lg bg-background/25">
+                                <p className="text-xs text-foreground/65 font-medium">No linked catalogs in this subgroup yet.</p>
                             </div>
                         ) : (
                             <div className="space-y-0.5">
                                 <DndContext 
                                     sensors={sensors} 
                                     collisionDetection={closestCenter} 
-                                    onDragStart={handleCatalogDragStart}
+                                    modifiers={[restrictVerticalDrag]}
                                     onDragEnd={handleCatalogDragEnd}
                                 >
                                     <SortableContext items={subgroupCatalogs} strategy={verticalListSortingStrategy}>
@@ -443,26 +451,6 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                             />
                                         ))}
                                     </SortableContext>
-                                    <DragOverlay dropAnimation={{
-                                        sideEffects: defaultDropAnimationSideEffects({
-                                            styles: {
-                                                active: {
-                                                    opacity: '0.4',
-                                                },
-                                            },
-                                        }),
-                                    }}>
-                                        {activeCatalogId ? (
-                                            <div className="flex items-center gap-3 p-2.5 bg-card border border-blue-500/50 rounded-lg shadow-2xl scale-[1.02] opacity-95 backdrop-blur-xl ring-1 ring-blue-500/20">
-                                                <GripVertical className="h-5 w-5 text-blue-500" />
-                                                <div className="flex-1 min-w-0 pr-2">
-                                                    <p className="text-sm truncate font-bold tracking-tight text-foreground">
-                                                        {resolveCatalogName(activeCatalogId, currentValues.custom_catalog_names || {})}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        ) : null}
-                                    </DragOverlay>
                                 </DndContext>
                             </div>
                         )}
@@ -474,30 +462,30 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                 if (!open) setCatalogSearch("");
                             }}>
                                 <DropdownMenuTrigger asChild>
-                                    <Button size="sm" variant="outline" className="w-full justify-start text-xs border border-dashed border-border/60 bg-background/30 text-foreground/70 hover:text-foreground hover:bg-muted/80 hover:border-border transition-colors">
+                                    <Button size="sm" variant="outline" className="w-full justify-start text-xs border border-dashed border-border/60 bg-background/35 text-foreground/70 hover:text-foreground hover:bg-background/65 hover:border-border transition-colors">
                                         <Plus className="w-3.5 h-3.5 mr-2" /> Add Catalog...
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-80 bg-card border-border text-foreground shadow-2xl p-0">
-                                    <div className="p-3 border-b border-border bg-card space-y-2">
-                                        <h4 className="text-[10px] uppercase font-bold text-foreground/70 flex justify-between">
+                                <DropdownMenuContent className="w-[30rem] max-w-[92vw] rounded-xl border-border/80 bg-card/95 text-popover-foreground shadow-2xl backdrop-blur-xl p-0 overflow-hidden">
+                                    <div className="p-3 border-b border-border/60 bg-card/95 space-y-2">
+                                        <h4 className="text-xs uppercase font-bold text-foreground/65 flex justify-between tracking-[0.14em]">
                                             <span>Select Catalog</span>
-                                            <span className="text-[11px] text-foreground/70">{filteredCatalogs.length} available</span>
+                                            <span className="text-xs text-foreground/60">{filteredCatalogs.length} available</span>
                                         </h4>
                                         <div className="relative">
-                                            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-foreground/70" />
+                                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-foreground/60" />
                                             <Input
                                                 placeholder="Search by name or ID..."
                                                 value={catalogSearch}
                                                 onChange={e => setCatalogSearch(e.target.value)}
-                                                className="h-7 text-[11px] pl-7 bg-card border-border focus-visible:ring-blue-600"
+                                                className="h-10 sm:h-9 text-base sm:text-sm pl-8 bg-background/70 border-border/80 focus-visible:ring-blue-600"
                                                 onKeyDown={e => e.stopPropagation()}
                                             />
                                         </div>
                                     </div>
-                                    <div className="max-h-[320px] overflow-y-auto p-1 pt-0 custom-scrollbar bg-transparent">
+                                    <div className="max-h-[340px] overflow-y-auto p-2 pt-0 custom-scrollbar bg-card">
                                         {filteredCatalogs.length === 0 ? (
-                                            <p className="text-[10px] text-foreground/70 p-4 text-center">No catalogs found.</p>
+                                            <p className="text-xs text-foreground/70 p-4 text-center">No catalogs found.</p>
                                         ) : (
                                             (() => {
                                                 const groups: Record<string, typeof filteredCatalogs> = {
@@ -525,20 +513,20 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
 
                                                 return sortedCategories.map(category => (
                                                     <div key={category} className="mb-2 last:mb-0">
-                                                        <div className="sticky top-0 bg-background py-1.5 px-3 z-[60] border-b border-border/80 mb-1">
-                                                            <h5 className="text-[11px] font-bold text-blue-400 uppercase tracking-wider">{category}</h5>
+                                                        <div className="sticky top-0 bg-card py-2 px-2.5 z-[60] border-b border-border/60 mb-1">
+                                                            <h5 className="text-xs font-bold text-foreground/45 uppercase tracking-[0.18em]">{category}</h5>
                                                         </div>
-                                                        <div className="flex flex-col gap-0.5 px-1">
+                                                        <div className="flex flex-col gap-0.5">
                                                             {groups[category].map(c => (
                                                                 <DropdownMenuItem
                                                                     key={c.id}
                                                                     onSelect={(e) => handleAddCatalog(e, c.id)}
-                                                                    className="flex items-start gap-2 p-2 rounded cursor-pointer focus:bg-blue-500/10 focus:text-blue-400"
+                                                                    className="group flex items-center gap-3 px-2.5 py-2 rounded-md cursor-pointer data-[highlighted]:bg-muted/70 data-[highlighted]:text-foreground"
                                                                 >
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <p className="text-base font-medium truncate">{c.name}</p>
-                                                                        <p className="text-[10px] text-foreground/70 font-mono truncate">{c.id}</p>
-                                                                    </div>
+                                                                    <p className="flex-1 min-w-0 text-sm font-medium truncate text-foreground">{c.name}</p>
+                                                                    <p className="max-w-[40%] shrink-0 text-xs font-mono text-foreground/30 group-data-[highlighted]:text-foreground/45 truncate text-right" title={c.id}>
+                                                                        {c.id}
+                                                                    </p>
                                                                 </DropdownMenuItem>
                                                             ))}
                                                         </div>
@@ -668,7 +656,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                     <AccordionTrigger className="flex-1 hover:no-underline text-foreground px-4 py-4 hover:bg-muted/30 transition-colors group/trigger">
                         <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             <div className="flex flex-col items-start gap-1 min-w-0">
-                                <span className="font-bold text-[15px] text-foreground group-hover/trigger:text-blue-400 transition-colors">
+                                <span className="font-bold text-base text-foreground group-hover/trigger:text-blue-400 transition-colors">
                                     {formatDisplayName(name)}
                                 </span>
                                 <div className="text-xs text-foreground/50 font-medium leading-none flex items-center gap-2">
@@ -679,18 +667,18 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                             {/* Tags pushed to the right */}
                             <div className="flex items-center gap-1 shrink-0 flex-wrap sm:justify-end mr-2">
                                 {posterSize !== "Default" && (
-                                    <Badge variant="outline" className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30">
+                                    <Badge variant="outline" className="text-xs font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30">
                                         {posterSize}
                                     </Badge>
                                 )}
                                 {posterType === "Poster" && (
-                                    <Badge className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20">Poster</Badge>
+                                    <Badge className="text-xs font-bold px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20">Poster</Badge>
                                 )}
                                 {posterType === "Square" && (
-                                    <Badge className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">Square</Badge>
+                                    <Badge className="text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">Square</Badge>
                                 )}
                                 {posterType === "Landscape" && (
-                                    <Badge className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-orange-500/10 text-orange-700 dark:text-orange-400 border border-orange-500/20">Landscape</Badge>
+                                    <Badge className="text-xs font-bold px-2 py-0.5 rounded-md bg-orange-500/10 text-orange-700 dark:text-orange-400 border border-orange-500/20">Landscape</Badge>
                                 )}
                             </div>
                         </div>
@@ -702,7 +690,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                         <div className="flex w-full sm:w-auto items-center gap-1.5 sm:gap-2 bg-background/50 border border-border rounded-lg p-1.5 sm:p-1">
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-8 shrink-0 text-[11px] sm:text-xs text-foreground/70 hover:text-foreground hover:bg-muted font-medium tracking-tight px-2">
+                                    <Button variant="ghost" size="sm" className="h-8 shrink-0 text-xs sm:text-sm text-foreground/70 hover:text-foreground hover:bg-muted font-medium tracking-tight px-2">
                                         <span className="hidden sm:inline">Layout:</span> <span className="text-foreground sm:ml-1 font-bold">
                                             {posterType}
                                             <span className="hidden sm:inline"> / {posterSize}</span>
@@ -713,7 +701,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent className="bg-card border-border text-foreground">
-                                    <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-foreground/70 font-bold">Poster Shape</DropdownMenuLabel>
+                                    <DropdownMenuLabel className="text-xs uppercase tracking-widest text-foreground/70 font-bold">Poster Shape</DropdownMenuLabel>
                                     <DropdownMenuItem onClick={() => updateValue(["main_catalog_groups", uuid, "posterType"], "Poster")} className={`text-xs ${posterType === "Poster" ? "bg-blue-500/20 text-blue-400" : ""}`}>
                                         Poster {posterType === "Poster" && "✓"}
                                     </DropdownMenuItem>
@@ -724,7 +712,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                         Landscape {posterType === "Landscape" && "✓"}
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator className="bg-border" />
-                                    <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-foreground/70 font-bold">Poster Size</DropdownMenuLabel>
+                                    <DropdownMenuLabel className="text-xs uppercase tracking-widest text-foreground/70 font-bold">Poster Size</DropdownMenuLabel>
                                     <DropdownMenuItem
                                         onClick={() => updateValue(["main_catalog_groups", uuid, "posterSize"], "Default")}
                                         className={`text-xs ${posterSize === "Default" ? "bg-blue-500/20 text-blue-400" : ""}`}
@@ -747,7 +735,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => setIsRenaming(true)}
-                                    className="h-8 shrink-0 text-[11px] sm:text-xs text-foreground/70 hover:text-foreground hover:bg-muted font-medium tracking-tight px-2"
+                                    className="h-8 shrink-0 text-xs sm:text-sm text-foreground/70 hover:text-foreground hover:bg-muted font-medium tracking-tight px-2"
                                 >
                                     <Pencil className="w-3.5 h-3.5 sm:hidden" />
                                     <span className="hidden sm:inline">Rename</span>
@@ -758,17 +746,17 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            className="h-8 shrink-0 text-[11px] sm:text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 font-medium tracking-tight px-2"
+                                            className="h-8 shrink-0 text-xs sm:text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 font-medium tracking-tight px-2"
                                         >
                                             <Trash2 className="w-3.5 h-3.5 sm:hidden" />
-                                            <span className="hidden sm:inline">Disable</span>
+                                            <span className="hidden sm:inline">Delete</span>
                                         </Button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent className="bg-card border-border text-foreground">
                                         <AlertDialogHeader>
-                                            <AlertDialogTitle>Disable Main Group?</AlertDialogTitle>
+                                            <AlertDialogTitle>Delete Main Group?</AlertDialogTitle>
                                             <AlertDialogDescription className="text-foreground/70">
-                                                This will hide the group <span className="text-foreground font-bold">"{formatDisplayName(name)}"</span> and all its subgroups. You can restore them anytime from the Recycle Bin at the bottom.
+                                                This will remove the group <span className="text-foreground font-bold">"{formatDisplayName(name)}"</span> and all its subgroups. You can restore them anytime from the Recycle Bin at the bottom.
                                             </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
@@ -777,7 +765,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                                 onClick={() => removeMainCatalogGroup(uuid)}
                                                 className="bg-red-600 text-white hover:bg-red-700 font-bold"
                                             >
-                                                Disable Group
+                                                Delete Group
                                             </AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
@@ -788,7 +776,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => onAddSubgroup?.(uuid)}
-                                    className="h-8 shrink-0 text-[11px] sm:text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition-all flex items-center gap-1.5 px-2.5 rounded-lg font-bold"
+                                    className="h-8 shrink-0 text-xs sm:text-sm text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition-all flex items-center gap-1.5 px-2.5 rounded-lg font-bold"
                                 >
                                     <Plus className="w-4 h-4" />
                                     <span className="hidden sm:inline">New Subgroup</span>
@@ -976,7 +964,7 @@ function UnassignedSubgroupRow({
     };
 
     return (
-        <div className="flex flex-col bg-muted/40 border border-border rounded-lg overflow-hidden transition-all hover:border-border/80 w-full mb-3">
+        <div className="flex flex-col bg-card border border-border rounded-lg overflow-hidden transition-all hover:border-border/80 w-full mb-3">
             <div className="flex items-center justify-between p-3 gap-4">
                 {/* Left: Name */}
                 <div className="flex-1 min-w-0 pr-2">
@@ -994,7 +982,7 @@ function UnassignedSubgroupRow({
                             <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-7 px-2 text-[10px] font-semibold uppercase tracking-tight text-foreground/70 border-border/50 hover:bg-muted hover:text-foreground flex items-center gap-1 transition-colors"
+                                className="h-7 px-2 text-xs font-semibold uppercase tracking-tight text-foreground/70 border-border/50 hover:bg-muted hover:text-foreground flex items-center gap-1 transition-colors"
                             >
                                 Assign To... <ChevronDown className="w-3 h-3" />
                             </Button>
@@ -1012,7 +1000,7 @@ function UnassignedSubgroupRow({
                                     <DropdownMenuSeparator className="bg-border" />
                                 </>
                             )}
-                            <DropdownMenuLabel className="text-[10px] uppercase text-foreground/70 font-bold">Select Main Group</DropdownMenuLabel>
+                            <DropdownMenuLabel className="text-xs uppercase text-foreground/70 font-bold">Select Main Group</DropdownMenuLabel>
                             {mainGroupOrder.length === 0 ? (
                                 <DropdownMenuItem disabled className="text-xs text-foreground/70/50">No Main Groups</DropdownMenuItem>
                             ) : (
@@ -1036,7 +1024,7 @@ function UnassignedSubgroupRow({
                         variant="ghost"
                         size="sm"
                         onClick={() => setIsExpanded(!isExpanded)}
-                        className={`h-7 px-2 text-[10px] font-semibold uppercase tracking-tight flex items-center gap-1 rounded-md transition-colors ${isExpanded ? 'bg-muted text-foreground' : 'text-foreground/70 hover:text-foreground hover:bg-muted'}`}
+                        className={`h-7 px-2 text-xs font-semibold uppercase tracking-tight flex items-center gap-1 rounded-md transition-colors ${isExpanded ? 'bg-muted text-foreground' : 'text-foreground/70 hover:text-foreground hover:bg-muted'}`}
                     >
                         <Layout className="w-3.5 h-3.5" />
                         <span className="hidden md:inline">Edit</span>
@@ -1071,102 +1059,116 @@ function UnassignedSubgroupRow({
 
             {isExpanded && (
                 <div className="p-4 border-t border-border bg-background">
-                    <div className="space-y-1 mb-4">
-                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleInternalDragEnd}>
-                            <SortableContext items={subgroupCatalogsProp} strategy={verticalListSortingStrategy}>
-                                {subgroupCatalogsProp.map(catId => (
-                                    <SortableCatalogNode
-                                        key={catId}
-                                        id={catId}
-                                        onRemove={() => handleRemoveCatalog(catId)}
-                                    />
-                                ))}
-                            </SortableContext>
-                        </DndContext>
-                    </div>
-
-                    {/* Add New Catalog Dropdown Menu */}
-                    <div className="mt-3">
-                        <DropdownMenu open={isAddMenuOpen} onOpenChange={open => {
-                            setIsAddMenuOpen(open);
-                            if (!open) setCatalogSearch("");
-                        }}>
-                            <DropdownMenuTrigger asChild>
-                                <Button size="sm" variant="outline" className="w-full justify-start text-xs border border-dashed border-border/60 bg-background/30 text-foreground/70 hover:text-foreground hover:bg-muted/80 hover:border-border transition-colors">
-                                    <Plus className="w-3.5 h-3.5 mr-2" /> Add Catalog...
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-80 bg-popover border-border text-popover-foreground shadow-2xl p-0">
-                                <div className="p-3 border-b border-border bg-card space-y-2">
-                                    <h4 className="text-[10px] uppercase font-bold text-foreground/70 flex justify-between">
-                                        <span>Select Catalog</span>
-                                        <span className="text-foreground/70/80">{filteredCatalogs.length} available</span>
-                                    </h4>
-                                    <div className="relative">
-                                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-foreground/70" />
-                                        <Input
-                                            placeholder="Search by name or ID..."
-                                            value={catalogSearch}
-                                            onChange={e => setCatalogSearch(e.target.value)}
-                                            className="h-10 sm:h-7 text-base sm:text-[11px] pl-7 bg-background border-border focus-visible:ring-blue-600"
-                                            onKeyDown={e => e.stopPropagation()}
+                    <div className="rounded-xl border border-border/70 bg-background/35 shadow-inner p-3 sm:p-3.5 mb-4">
+                        <div className="flex items-center justify-between mb-3">
+                            <h5 className="inline-flex items-center gap-2 text-xs font-bold text-foreground/80 uppercase tracking-widest">
+                                <LinkIcon className="h-3.5 w-3.5 text-foreground/60" />
+                                Linked Catalogs
+                            </h5>
+                            <span className="text-xs font-semibold text-foreground/70 bg-muted px-2 py-0.5 rounded-full border border-border">{subgroupCatalogsProp.length}</span>
+                        </div>
+                        <div className="space-y-1 mb-0">
+                            <DndContext
+                                sensors={sensors}
+                                collisionDetection={closestCenter}
+                                modifiers={[restrictVerticalDrag]}
+                                onDragEnd={handleInternalDragEnd}
+                            >
+                                <SortableContext items={subgroupCatalogsProp} strategy={verticalListSortingStrategy}>
+                                    {subgroupCatalogsProp.map(catId => (
+                                        <SortableCatalogNode
+                                            key={catId}
+                                            id={catId}
+                                            onRemove={() => handleRemoveCatalog(catId)}
                                         />
+                                    ))}
+                                </SortableContext>
+                            </DndContext>
+                        </div>
+
+                        {/* Add New Catalog Dropdown Menu */}
+                        <div className="mt-3">
+                            <DropdownMenu open={isAddMenuOpen} onOpenChange={open => {
+                                setIsAddMenuOpen(open);
+                                if (!open) setCatalogSearch("");
+                            }}>
+                                <DropdownMenuTrigger asChild>
+                                    <Button size="sm" variant="outline" className="w-full justify-start text-xs border border-dashed border-border/60 bg-background/35 text-foreground/70 hover:text-foreground hover:bg-background/65 hover:border-border transition-colors">
+                                        <Plus className="w-3.5 h-3.5 mr-2" /> Add Catalog...
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-[30rem] max-w-[92vw] rounded-xl border-border/80 bg-card/95 text-popover-foreground shadow-2xl backdrop-blur-xl p-0 overflow-hidden">
+                                    <div className="p-3 border-b border-border/60 bg-card/95 space-y-2">
+                                        <h4 className="text-xs uppercase font-bold text-foreground/65 flex justify-between tracking-[0.14em]">
+                                            <span>Select Catalog</span>
+                                            <span className="text-xs text-foreground/60">{filteredCatalogs.length} available</span>
+                                        </h4>
+                                        <div className="relative">
+                                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-foreground/60" />
+                                            <Input
+                                                placeholder="Search by name or ID..."
+                                                value={catalogSearch}
+                                                onChange={e => setCatalogSearch(e.target.value)}
+                                                className="h-10 sm:h-9 text-base sm:text-sm pl-8 bg-background/70 border-border/80 focus-visible:ring-blue-600"
+                                                onKeyDown={e => e.stopPropagation()}
+                                            />
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="max-h-[320px] overflow-y-auto p-1 pt-0 custom-scrollbar">
-                                    {filteredCatalogs.length === 0 ? (
-                                        <p className="text-[10px] text-foreground/70 p-4 text-center">No catalogs found.</p>
-                                    ) : (
-                                        (() => {
-                                            const groups: Record<string, typeof filteredCatalogs> = {
-                                                "Other": []
-                                            };
-                                            filteredCatalogs.forEach(c => {
-                                                const match = c.name.match(/^\[(.*?)\]\s*(.*)$/);
-                                                if (match) {
-                                                    const category = match[1];
-                                                    const cleanName = match[2];
-                                                    if (!groups[category]) groups[category] = [];
-                                                    groups[category].push({ ...c, name: cleanName });
-                                                } else {
-                                                    groups["Other"].push(c);
+                                    <div className="max-h-[340px] overflow-y-auto p-2 pt-0 custom-scrollbar bg-card">
+                                        {filteredCatalogs.length === 0 ? (
+                                            <p className="text-xs text-foreground/70 p-4 text-center">No catalogs found.</p>
+                                        ) : (
+                                            (() => {
+                                                const groups: Record<string, typeof filteredCatalogs> = {
+                                                    "Other": []
+                                                };
+                                                filteredCatalogs.forEach(c => {
+                                                    const match = c.name.match(/^\[(.*?)\]\s*(.*)$/);
+                                                    if (match) {
+                                                        const category = match[1];
+                                                        const cleanName = match[2];
+                                                        if (!groups[category]) groups[category] = [];
+                                                        groups[category].push({ ...c, name: cleanName });
+                                                    } else {
+                                                        groups["Other"].push(c);
+                                                    }
+                                                });
+
+                                                const sortedCategories = Object.keys(groups)
+                                                    .filter(k => k !== "Other")
+                                                    .sort((a, b) => a.localeCompare(b));
+
+                                                if (groups["Other"].length > 0) {
+                                                    sortedCategories.push("Other");
                                                 }
-                                            });
 
-                                            const sortedCategories = Object.keys(groups)
-                                                .filter(k => k !== "Other")
-                                                .sort((a, b) => a.localeCompare(b));
-
-                                            if (groups["Other"].length > 0) {
-                                                sortedCategories.push("Other");
-                                            }
-
-                                            return sortedCategories.map(category => (
-                                                <div key={category} className="mb-2 last:mb-0">
-                                                    <div className="sticky top-0 bg-popover py-1.5 px-3 z-[60] border-b border-border/80 mb-1 -mx-1">
-                                                        <h5 className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider">{category}</h5>
+                                                return sortedCategories.map(category => (
+                                                    <div key={category} className="mb-2 last:mb-0">
+                                                        <div className="sticky top-0 bg-card py-2 px-2.5 z-[60] border-b border-border/60 mb-1">
+                                                            <h5 className="text-xs font-bold text-foreground/45 uppercase tracking-[0.18em]">{category}</h5>
+                                                        </div>
+                                                        <div className="flex flex-col gap-0.5">
+                                                            {groups[category].map(c => (
+                                                                <DropdownMenuItem
+                                                                    key={c.id}
+                                                                    onSelect={(e) => handleAddCatalog(e, c.id)}
+                                                                    className="group flex items-center gap-3 px-2.5 py-2 rounded-md cursor-pointer data-[highlighted]:bg-muted/70 data-[highlighted]:text-foreground"
+                                                                >
+                                                                    <p className="flex-1 min-w-0 text-sm font-medium truncate text-foreground">{c.name}</p>
+                                                                    <p className="max-w-[40%] shrink-0 text-xs font-mono text-foreground/30 group-data-[highlighted]:text-foreground/45 truncate text-right" title={c.id}>
+                                                                        {c.id}
+                                                                    </p>
+                                                                </DropdownMenuItem>
+                                                            ))}
+                                                        </div>
                                                     </div>
-                                                    <div className="flex flex-col gap-0.5 px-1">
-                                                        {groups[category].map(c => (
-                                                            <DropdownMenuItem
-                                                                key={c.id}
-                                                                onSelect={(e: any) => handleAddCatalog(e, c.id)}
-                                                                className="flex items-start gap-2 p-2 rounded cursor-pointer focus:bg-blue-500/10 focus:text-blue-400"
-                                                            >
-                                                                <div className="flex-1 min-w-0">
-                                                                    <p className="text-sm font-medium truncate">{c.name}</p>
-                                                                    <p className="text-[9px] text-foreground/70 font-mono truncate">{c.id}</p>
-                                                                </div>
-                                                            </DropdownMenuItem>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            ));
-                                        })()
-                                    )}
-                                </div>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                                                ));
+                                            })()
+                                        )}
+                                    </div>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
                     </div>
 
                 </div>
@@ -1274,7 +1276,7 @@ export function UnifiedSubgroupEditor() {
                         onClick={() => setIsAddToGroupModalOpen(true)}
                         variant="outline"
                         size="sm"
-                        className="h-9 sm:h-8 text-sm sm:text-xs border-border/60 hover:bg-muted text-foreground/70 hover:text-foreground transition-all px-3 font-medium whitespace-nowrap justify-center sm:justify-start"
+                        className="h-9 sm:h-8 text-sm sm:text-sm border-border/60 hover:bg-muted text-foreground/70 hover:text-foreground transition-all px-3 font-medium whitespace-nowrap justify-center sm:justify-start"
                     >
                         <FolderPlus className="w-4 h-4 mr-1.5" /> Add to Group
                     </Button>
@@ -1282,7 +1284,7 @@ export function UnifiedSubgroupEditor() {
                         onClick={() => setIsImportModalOpen(true)}
                         variant="outline"
                         size="sm"
-                        className="h-9 sm:h-8 text-sm sm:text-xs border-border/60 hover:bg-muted text-foreground/70 hover:text-foreground transition-all px-3 font-medium whitespace-nowrap justify-center sm:justify-start"
+                        className="h-9 sm:h-8 text-sm sm:text-sm border-border/60 hover:bg-muted text-foreground/70 hover:text-foreground transition-all px-3 font-medium whitespace-nowrap justify-center sm:justify-start"
                     >
                         <UploadCloud className="w-4 h-4 mr-1.5" />
                         <span className="sm:hidden">Update</span>
@@ -1367,33 +1369,45 @@ export function UnifiedSubgroupEditor() {
             )}
 
             {unassignedGroups.length > 0 && (
-                <div className="mt-12 border-t border-border pt-8 pb-4">
-                    <div className="mb-6">
-                        <h3 className="text-lg font-bold text-amber-500">Unassigned Subgroups</h3>
-                        <p className="text-sm text-foreground/70">Subgroups that are defined but not yet linked to any main group.</p>
-                    </div>
-                    <div className="flex flex-col">
-                        {unassignedGroups.map(name => {
-                            const restoreParentUuid = recentUnassigns[name];
-                            const restoreParentName = restoreParentUuid ? (mainCatalogGroups[restoreParentUuid]?.name || "Original Group") : undefined;
+                <div className="mt-8 border border-border rounded-xl bg-card/20 overflow-hidden shadow-inner animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className="p-4 sm:p-5 bg-muted/5">
+                        <div className="mb-4 flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-amber-500/10 p-2 rounded-lg border border-amber-500/25">
+                                    <AlertTriangle className="w-5 h-5 text-amber-400" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-foreground">Unassigned Subgroups</h3>
+                                    <p className="text-sm text-foreground/70">Subgroups that are defined but not linked to any main group yet.</p>
+                                </div>
+                            </div>
+                            <span className="inline-flex h-7 items-center rounded-full border border-border bg-muted px-2.5 text-xs font-semibold text-foreground/70">
+                                {unassignedGroups.length}
+                            </span>
+                        </div>
+                        <div className="flex flex-col">
+                            {unassignedGroups.map(name => {
+                                const restoreParentUuid = recentUnassigns[name];
+                                const restoreParentName = restoreParentUuid ? (mainCatalogGroups[restoreParentUuid]?.name || "Original Group") : undefined;
 
-                            return (
-                                <UnassignedSubgroupRow
-                                    key={name}
-                                    groupName={name}
-                                    catalogs={catalogGroups[name] || []}
-                                    onRestore={restoreParentUuid ? () => {
-                                        assignCatalogGroup(name, restoreParentUuid);
-                                        setRecentUnassigns(prev => {
-                                            const next = { ...prev };
-                                            delete next[name];
-                                            return next;
-                                        });
-                                    } : undefined}
-                                    restoreParentName={restoreParentName}
-                                />
-                            );
-                        })}
+                                return (
+                                    <UnassignedSubgroupRow
+                                        key={name}
+                                        groupName={name}
+                                        catalogs={catalogGroups[name] || []}
+                                        onRestore={restoreParentUuid ? () => {
+                                            assignCatalogGroup(name, restoreParentUuid);
+                                            setRecentUnassigns(prev => {
+                                                const next = { ...prev };
+                                                delete next[name];
+                                                return next;
+                                            });
+                                        } : undefined}
+                                        restoreParentName={restoreParentName}
+                                    />
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
             )}

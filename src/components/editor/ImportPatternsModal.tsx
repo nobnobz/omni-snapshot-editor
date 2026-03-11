@@ -17,6 +17,8 @@ import { Input } from "@/components/ui/input";
 import { decodeConfig } from "@/lib/config-utils";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { editorAction, editorLayout, editorNoticeTone, editorToneBadge } from "@/components/editor/ui/style-contract";
 
 interface ImportPatternsModalProps {
     isOpen: boolean;
@@ -262,20 +264,20 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                         {p.customName}
                     </label>
                     <p
-                        className={`text-[10px] font-mono mt-0.5 block overflow-hidden text-ellipsis whitespace-nowrap max-w-full ${isSynced ? 'text-foreground/30' : 'text-foreground/50'}`}
+                        className={`text-xs font-mono mt-0.5 block overflow-hidden text-ellipsis whitespace-nowrap max-w-full ${isSynced ? 'text-foreground/30' : 'text-foreground/50'}`}
                         title={p.regex}
                     >
                         {p.regex}
                     </p>
-                    <div className="flex gap-1.5 mt-2 flex-wrap text-[9px]">
+                    <div className="flex gap-1.5 mt-2 flex-wrap text-xs">
                         {p.existsInCurrent ? (
                             p.hasChanges ? (
-                                <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20 px-1.5 py-0">Update</Badge>
+                                <Badge variant="outline" className={cn("px-1.5 py-0", editorToneBadge.info)}>Update</Badge>
                             ) : (
-                                <Badge variant="outline" className="bg-muted/50 text-foreground/40 border-border/50 px-1.5 py-0">Synced</Badge>
+                                <Badge variant="outline" className={cn("px-1.5 py-0", editorToneBadge.neutral)}>Synced</Badge>
                             )
                         ) : (
-                            <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20 px-1.5 py-0">New</Badge>
+                            <Badge variant="outline" className={cn("px-1.5 py-0", editorToneBadge.info)}>New</Badge>
                         )}
                     </div>
                 </div>
@@ -287,7 +289,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
             <DialogContent
                 onOpenAutoFocus={(e) => e.preventDefault()}
-                className="fixed left-1/2 top-1/2 w-[96vw] max-w-[calc(100%-1rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card p-4 sm:p-6 shadow-2xl backdrop-blur-xl border-border focus:outline-none z-50 h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] max-h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] sm:h-auto sm:max-h-[92dvh] flex flex-col overflow-hidden sm:max-w-2xl"
+                className={cn(editorLayout.dialogContent, "sm:max-w-2xl")}
             >
                 <DialogHeader className="shrink-0">
                     <DialogTitle>Import Patterns & Regex</DialogTitle>
@@ -303,12 +305,12 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                                 <h3 className="font-semibold text-sm text-foreground/90">Load from Template</h3>
                                 <div className="flex flex-col gap-3">
                                     <Select value={selectedVersion} onValueChange={setSelectedVersion}>
-                                        <SelectTrigger className="w-full bg-background border-input text-xs font-mono">
+                                        <SelectTrigger className="w-full h-10 sm:h-9 bg-background border-input text-base sm:text-sm font-mono">
                                             <SelectValue placeholder="Select version" />
                                         </SelectTrigger>
                                         <SelectContent className="bg-popover border-border text-popover-foreground">
                                             {templates.map(t => (
-                                                <SelectItem key={t.label} value={t.label} className="text-xs font-mono cursor-pointer focus:bg-accent focus:text-accent-foreground">
+                                                <SelectItem key={t.label} value={t.label} className="text-sm sm:text-xs font-mono cursor-pointer focus:bg-accent focus:text-accent-foreground">
                                                     {t.label}
                                                 </SelectItem>
                                             ))}
@@ -334,7 +336,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                                             }
                                         }}
                                         disabled={templateLoading}
-                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-10 transition-all"
+                                        className="w-full h-10 sm:h-9 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-500/20 transition-all"
                                     >
                                         {templateLoading ? "Loading..." : "Fetch Template"}
                                     </Button>
@@ -343,7 +345,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
 
                             <div className="flex items-center gap-3">
                                 <div className="flex-1 h-px bg-border/40"></div>
-                                <span className="text-[10px] text-foreground/40 uppercase font-bold tracking-widest">or upload manually</span>
+                                <span className="text-xs text-foreground/40 uppercase font-bold tracking-widest">or upload manually</span>
                                 <div className="flex-1 h-px bg-border/40"></div>
                             </div>
 
@@ -378,7 +380,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                                             variant="ghost"
                                             size="sm"
                                             onClick={selectAllChanged}
-                                            className="h-7 px-2 text-[11px] font-semibold text-foreground/70 hover:text-foreground hover:bg-muted/50"
+                                            className="h-7 px-2 text-xs font-semibold text-foreground/70 hover:text-foreground hover:bg-muted/50"
                                         >
                                             Select All
                                         </Button>
@@ -386,7 +388,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                                             variant="ghost"
                                             size="sm"
                                             onClick={selectAllNew}
-                                            className="h-7 px-2 text-[11px] font-semibold text-blue-500 hover:text-blue-400 hover:bg-blue-500/10"
+                                            className="h-7 px-2 text-xs font-semibold text-blue-500 hover:text-blue-400 hover:bg-blue-500/10"
                                         >
                                             New Only
                                         </Button>
@@ -395,7 +397,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                                         variant="ghost"
                                         size="sm"
                                         onClick={deselectAll}
-                                        className="h-7 px-2 text-[11px] font-semibold text-foreground/50 hover:text-foreground/70 hover:bg-muted/50"
+                                        className="h-7 px-2 text-xs font-semibold text-foreground/50 hover:text-foreground/70 hover:bg-muted/50"
                                     >
                                         Clear
                                     </Button>
@@ -404,7 +406,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                                 <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar">
                                     {newPatterns.length > 0 && (
                                         <>
-                                            <div className="px-3 py-2 bg-card text-[10px] font-bold text-foreground/50 uppercase tracking-widest border-b border-border/30 sticky top-0 z-10">
+                                            <div className="px-3 py-2 bg-card text-xs font-bold text-foreground/50 uppercase tracking-widest border-b border-border/30 sticky top-0 z-10">
                                                 New ({newPatterns.length})
                                             </div>
                                             {newPatterns.map(renderPatternRow)}
@@ -412,7 +414,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                                     )}
                                     {updatedPatterns.length > 0 && (
                                         <>
-                                            <div className="px-3 py-2 bg-card text-[10px] font-bold text-foreground/50 uppercase tracking-widest border-y border-border/30 sticky top-0 z-10">
+                                            <div className="px-3 py-2 bg-card text-xs font-bold text-foreground/50 uppercase tracking-widest border-y border-border/30 sticky top-0 z-10">
                                                 Updates ({updatedPatterns.length})
                                             </div>
                                             {updatedPatterns.map(renderPatternRow)}
@@ -420,7 +422,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                                     )}
                                     {unchangedPatterns.length > 0 && (
                                         <>
-                                            <div className="px-3 py-2 bg-card text-[10px] font-bold text-foreground/50 uppercase tracking-widest border-y border-border/30 sticky top-0 z-10">
+                                            <div className="px-3 py-2 bg-card text-xs font-bold text-foreground/50 uppercase tracking-widest border-y border-border/30 sticky top-0 z-10">
                                                 Synced ({unchangedPatterns.length})
                                             </div>
                                             {unchangedPatterns.map(renderPatternRow)}
@@ -438,7 +440,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                 </div>
 
                 {error && (
-                    <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-3 text-red-400 text-sm animate-in fade-in slide-in-from-bottom-2 shrink-0">
+                    <div className={cn("mt-3 p-3 border rounded-lg flex items-center gap-3 text-sm animate-in fade-in slide-in-from-bottom-2 shrink-0", editorNoticeTone.danger)}>
                         <AlertTriangle className="w-4 h-4 shrink-0" />
                         <p>{error}</p>
                     </div>
@@ -452,7 +454,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                         <Button
                             onClick={handleImport}
                             disabled={selectedPatterns.size === 0}
-                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 h-10"
+                            className={cn(editorAction.primary, "px-6 font-bold")}
                         >
                             Import ({selectedPatterns.size})
                         </Button>

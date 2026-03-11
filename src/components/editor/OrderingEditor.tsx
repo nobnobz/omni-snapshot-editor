@@ -118,8 +118,8 @@ function SortableItem({
                         onClick={() => setIsEditing(true)}
                         title="Click to rename"
                     >
-                        <p className={`text-[15px] truncate font-medium ${!isEnabled ? "text-foreground/70 line-through" : "text-foreground"}`}>{displayName}</p>
-                        {displayName === id && <p className="text-[11px] text-foreground/70 truncate font-mono">{id}</p>}
+                        <p className={`text-base truncate font-medium ${!isEnabled ? "text-foreground/70 line-through" : "text-foreground"}`}>{displayName}</p>
+                        {displayName === id && <p className="text-xs text-foreground/70 truncate font-mono">{id}</p>}
                     </div>
                 )}
             </div>
@@ -230,8 +230,8 @@ function SortableList({
                     <ArrowUpZA className="w-4 h-4 mr-2" /> Z-A
                 </Button>
                 <div className="w-px h-5 bg-muted mx-2" />
-                <Button variant="ghost" size="sm" onClick={enableAll} className="h-8 text-[13px] text-blue-400 hover:text-blue-300">Enable All</Button>
-                <Button variant="ghost" size="sm" onClick={disableAll} className="h-8 text-[13px] text-foreground/70 hover:text-foreground/70">Disable All</Button>
+                <Button variant="ghost" size="sm" onClick={enableAll} className="h-8 text-sm text-blue-400 hover:text-blue-300">Enable All</Button>
+                <Button variant="ghost" size="sm" onClick={disableAll} className="h-8 text-sm text-foreground/70 hover:text-foreground/70">Disable All</Button>
             </div>
 
             <DndContext 
@@ -269,10 +269,10 @@ function SortableList({
                         <div className="flex items-center gap-3 p-3 bg-muted border border-blue-500 rounded-lg shadow-2xl scale-[1.02] opacity-90">
                             <GripVertical className="h-4 w-4 text-blue-500" />
                             <div className="flex-1 min-w-0">
-                                <p className="text-[15px] truncate font-medium text-foreground">
+                                <p className="text-base truncate font-medium text-foreground">
                                     {resolveCatalogName(activeId, customNames)}
                                 </p>
-                                {resolveCatalogName(activeId, customNames) === activeId && <p className="text-[11px] text-foreground/70 truncate font-mono">{activeId}</p>}
+                                {resolveCatalogName(activeId, customNames) === activeId && <p className="text-xs text-foreground/70 truncate font-mono">{activeId}</p>}
                             </div>
                         </div>
                     ) : null}
@@ -366,7 +366,7 @@ export function OrderingEditor({ configKey }: { configKey: string }) {
                                 <AccordionTrigger className="hover:no-underline text-foreground">
                                     <div className="flex flex-col items-start gap-1 py-1">
                                         <span className="font-semibold text-base">{groupName}</span>
-                                        <span className="text-[11px] text-foreground/70 font-mono font-normal">{itemsList.length} items</span>
+                                        <span className="text-xs text-foreground/70 font-mono font-normal">{itemsList.length} items</span>
                                     </div>
                                 </AccordionTrigger>
                                 <AccordionContent className="border-t border-border pt-4">

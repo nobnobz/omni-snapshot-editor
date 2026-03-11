@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useConfig } from "@/context/ConfigContext";
 import { AlertCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { editorAction, editorLayout, editorNoticeTone } from "@/components/editor/ui/style-contract";
 
 interface RenameGroupModalProps {
     isOpen: boolean;
@@ -53,7 +55,7 @@ export function RenameGroupModal({ isOpen, onClose, oldName, isMainGroup = false
         <Dialog open={isOpen} onOpenChange={handleOpenChange}>
             <DialogContent 
                 onOpenAutoFocus={() => setNewName(oldName)}
-                className="fixed left-1/2 top-1/2 w-[96vw] max-w-[calc(100%-1rem)] sm:max-w-[425px] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card p-4 sm:p-6 shadow-2xl backdrop-blur-xl border-border focus:outline-none z-50"
+                className={cn(editorLayout.dialogContent, "sm:max-w-[425px]")}
             >
                 <DialogHeader>
                     <DialogTitle>Rename {isMainGroup ? "Main Group" : "Group"}</DialogTitle>
@@ -69,7 +71,7 @@ export function RenameGroupModal({ isOpen, onClose, oldName, isMainGroup = false
                         />
                     </div>
 
-                    <div className="bg-muted/50 p-3 rounded-lg border border-border text-sm flex items-start gap-3">
+                    <div className={cn("p-3 rounded-lg border text-sm flex items-start gap-3", editorNoticeTone.info)}>
                         <AlertCircle className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
                         <div>
                             <p className="text-foreground/70">This group is referenced in <strong className="text-foreground">{refCount}</strong> places.</p>
@@ -78,7 +80,7 @@ export function RenameGroupModal({ isOpen, onClose, oldName, isMainGroup = false
                     </div>
 
                     {newNameExists && (
-                        <div className="bg-yellow-500/10 p-3 rounded-lg border border-yellow-500/20 text-sm flex items-start gap-3">
+                        <div className={cn("p-3 rounded-lg border text-sm flex items-start gap-3", editorNoticeTone.warning)}>
                             <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
                             <div>
                                 <p className="text-yellow-500 font-medium">Merge Warning</p>
@@ -89,7 +91,7 @@ export function RenameGroupModal({ isOpen, onClose, oldName, isMainGroup = false
 
                     <DialogFooter className="mt-6">
                         <Button type="button" variant="ghost" onClick={onClose} className="hover:bg-muted text-foreground border border-transparent">Cancel</Button>
-                        <Button type="submit" className={newNameExists ? "bg-yellow-600 hover:bg-yellow-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}>
+                        <Button type="submit" className={newNameExists ? cn(editorAction.secondary, "h-10 sm:h-9 editor-tone-warning") : editorAction.primary}>
                             {newNameExists ? "Merge Groups" : "Rename"}
                         </Button>
                     </DialogFooter>

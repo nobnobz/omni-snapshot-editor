@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useConfig } from '../../context/ConfigContext';
-import { formatDisplayName } from '@/lib/utils';
+import { cn, formatDisplayName } from '@/lib/utils';
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 
 import { Checkbox } from "../ui/checkbox";
 import { Search } from 'lucide-react';
+import { editorAction, editorLayout } from "./ui/style-contract";
 
 export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
     const { currentValues, assignCatalogGroup, unassignCatalogGroup } = useConfig();
@@ -79,7 +80,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <DialogContent className="fixed left-1/2 top-1/2 w-[96vw] max-w-[calc(100%-1rem)] sm:max-w-[425px] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card p-4 sm:p-6 shadow-2xl backdrop-blur-xl border-border focus:outline-none z-50 h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] max-h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] sm:h-auto sm:max-h-[90dvh] flex flex-col overflow-hidden">
+            <DialogContent className={cn(editorLayout.dialogContent, "sm:max-w-[425px] sm:max-h-[90dvh]")}>
                 <DialogHeader className="shrink-0">
                     <DialogTitle>Add to Existing Group</DialogTitle>
                     <DialogDescription className="text-foreground/60">
@@ -160,7 +161,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                         if (items.length > 0) {
                                             categoryElements.push(
                                                 <div key={`header-${cat}`} className="sticky top-0 bg-card/95 backdrop-blur-sm py-2.5 z-20 mb-2 border-b border-border/40 -mx-4 px-4 mt-4 first:mt-0">
-                                                    <h5 className="text-[11px] font-bold text-foreground/50 uppercase tracking-[0.2em]">{cat}</h5>
+                                                    <h5 className="text-xs font-bold text-foreground/50 uppercase tracking-[0.2em]">{cat}</h5>
                                                 </div>
                                             );
 
@@ -211,8 +212,8 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                         {selectedSubgroups.size} subgroup(s) checked
                     </p>
                     <div className="flex w-full sm:w-auto gap-2 sm:order-2">
-                        <Button variant="outline" onClick={handleClose} className="flex-1 sm:flex-none bg-muted border-border text-foreground hover:bg-accent hover:text-white">Cancel</Button>
-                        <Button onClick={handleAssign} disabled={!targetMainGroupUuid} className="flex-1 sm:flex-none bg-blue-600 text-white hover:bg-blue-700">Save Changes</Button>
+                        <Button variant="outline" onClick={handleClose} className="flex-1 sm:flex-none bg-muted border-border text-foreground hover:bg-accent">Cancel</Button>
+                        <Button onClick={handleAssign} disabled={!targetMainGroupUuid} className={cn("flex-1 sm:flex-none", editorAction.primary)}>Save Changes</Button>
                     </div>
                 </DialogFooter>
             </DialogContent >

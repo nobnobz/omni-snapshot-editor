@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { editorAction, editorLayout, editorToneBadge, editorNoticeTone } from "@/components/editor/ui/style-contract";
 
 interface ImportSetupModalProps {
     isOpen: boolean;
@@ -69,6 +70,13 @@ const getSubgroupCategory = (name: string) => {
     if (name.includes("[Streaming Services]")) return "Streaming Services";
     return "Other";
 };
+
+const importSetupTone = {
+    warningAction: "border-orange-500/20 bg-orange-500/10 text-orange-700 dark:text-orange-400 hover:bg-orange-500/16 hover:border-orange-500/35",
+    infoAction: "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-400 hover:bg-blue-500/16 hover:border-blue-500/45",
+    warningBadge: "border-orange-500/20 bg-orange-500/10 text-orange-700 dark:text-orange-400",
+    infoBadge: "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-400",
+} as const;
 
 export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
     const { currentValues, importGroups, manifest, fetchManifest } = useConfig();
@@ -500,10 +508,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <DialogContent className={cn(
-                "fixed left-1/2 top-1/2 w-[96vw] max-w-[calc(100%-1rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card p-4 sm:p-6 shadow-2xl backdrop-blur-xl border-border focus:outline-none z-50 transition-all duration-300 h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] max-h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] sm:h-auto sm:max-h-[92dvh] flex flex-col overflow-hidden",
-                "sm:max-w-2xl"
-            )}>
+            <DialogContent className={cn(editorLayout.dialogContent, "sm:max-w-2xl")}>
                 <DialogHeader className="shrink-0">
                     <DialogTitle>Add From Existing Setup</DialogTitle>
                     <DialogDescription className="text-foreground/70">
@@ -518,7 +523,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                             <h3 className="font-semibold text-sm text-foreground mb-3">Load Unified Media Experience Template</h3>
                             <div className="flex items-center gap-3">
                                 <Select value={selectedVersion} onValueChange={setSelectedVersion}>
-                                    <SelectTrigger className="flex-1 h-10 rounded-md border border-border bg-background/50 text-[12px] sm:text-xs text-foreground font-medium sm:font-mono focus:ring-1 focus:ring-blue-500 shadow-inner overflow-hidden">
+                                    <SelectTrigger className="flex-1 h-10 sm:h-9 rounded-md border border-border bg-background/50 text-base sm:text-sm text-foreground font-medium sm:font-mono shadow-inner overflow-hidden">
                                         <SelectValue placeholder="Select template version" />
                                     </SelectTrigger>
                                     <SelectContent className="bg-popover border-border text-popover-foreground">
@@ -549,7 +554,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                         }
                                     }}
                                     disabled={templateLoading}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold h-10 px-5"
+                                    className={cn(editorAction.primary, "px-5")}
                                 >
                                     {templateLoading ? "Loading..." : "Load"}
                                 </Button>
@@ -558,7 +563,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
 
                         <div className="flex items-center gap-3">
                             <div className="flex-1 h-px bg-border"></div>
-                            <span className="text-[10px] text-foreground/70 uppercase font-bold tracking-wider">or upload file</span>
+                            <span className="text-xs text-foreground/70 uppercase font-bold tracking-wider">or upload file</span>
                             <div className="flex-1 h-px bg-border"></div>
                         </div>
 
@@ -582,7 +587,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                         </div>
 
                         {error && (
-                            <div className="flex items-center text-red-400 text-sm bg-red-500/10 px-3 py-2 rounded">
+                            <div className={cn("flex items-center border text-sm px-3 py-2 rounded", editorNoticeTone.danger)}>
                                 <AlertTriangle className="w-4 h-4 mr-2" />
                                 {error}
                             </div>
@@ -615,8 +620,8 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                     ) : (
                                         <div className="flex flex-col divide-y divide-border/50">
                                             <div className="px-3 py-2 bg-card border-b border-border/60 flex items-center gap-2">
-                                                <Button variant="outline" size="sm" onClick={selectAllMain} className="h-8 text-xs bg-background/50 border-border text-foreground/80 hover:bg-muted">Select All New</Button>
-                                                <Button variant="ghost" size="sm" onClick={deselectAllMain} className="h-8 text-xs text-foreground/70 hover:text-foreground hover:bg-muted/50">Deselect All</Button>
+                                                <Button variant="outline" size="sm" onClick={selectAllMain} className="h-10 sm:h-8 text-sm sm:text-xs bg-background/50 border-border text-foreground/80 hover:bg-muted">Select All New</Button>
+                                                <Button variant="ghost" size="sm" onClick={deselectAllMain} className="h-10 sm:h-8 text-sm sm:text-xs text-foreground/70 hover:text-foreground hover:bg-muted/50">Deselect All</Button>
                                             </div>
                                             {parsedMainGroups.map(mg => {
                                                 const isFullyImported = mg.isDuplicate && !mg.hasChanges;
@@ -637,9 +642,9 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                                             <label htmlFor={`mg-${mg.originalUuid}`} className={`font-semibold block ${isFullyImported ? '' : 'cursor-pointer'}`}>
                                                                 {formatDisplayName(mg.name)}
                                                                 {isFullyImported ? (
-                                                                    <Badge variant="outline" className="ml-2 bg-muted border-border text-foreground/70 text-[9px] uppercase">Imported</Badge>
+                                                                    <Badge variant="outline" className={cn("ml-2 text-xs uppercase", editorToneBadge.neutral)}>Imported</Badge>
                                                                 ) : mg.isDuplicate ? (
-                                                                    <Badge variant="outline" className="ml-2 bg-amber-500/10 border-amber-500/30 text-amber-400 text-[9px] uppercase">Update Links</Badge>
+                                                                    <Badge variant="outline" className={cn("ml-2 text-xs uppercase", importSetupTone.warningBadge)}>Update Links</Badge>
                                                                 ) : null}
                                                             </label>
 
@@ -651,7 +656,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                                                         return (
                                                                             <div key={sg} className="flex items-center text-xs text-foreground/70">
                                                                                 <span className={`truncate ${isSgDup ? 'line-through opacity-70' : ''}`}>{formatDisplayName(sg)}</span>
-                                                                                {isSgDup && <span className="ml-2 text-[10px] text-foreground/70/70">(Will use existing)</span>}
+                                                                                {isSgDup && <span className="ml-2 text-xs text-foreground/70/70">(Will use existing)</span>}
                                                                             </div>
                                                                         );
                                                                     })}
@@ -681,7 +686,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                                         variant="outline" 
                                                         size="sm" 
                                                         onClick={selectAllSubgroups} 
-                                                        className="flex-1 h-10 sm:h-9 text-[11px] sm:text-xs bg-background/50 border-border hover:bg-muted text-foreground/80 font-semibold transition-all justify-center"
+                                                        className="flex-1 h-10 sm:h-9 text-xs sm:text-sm bg-background/50 border-border hover:bg-muted text-foreground/80 font-semibold justify-center"
                                                     >
                                                         <CheckSquare className="w-3.5 h-3.5 mr-2 opacity-70" />
                                                         Select All
@@ -690,7 +695,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                                         variant="outline" 
                                                         size="sm" 
                                                         onClick={deselectAllSubgroups} 
-                                                        className="flex-1 h-10 sm:h-9 text-[11px] sm:text-xs bg-background/50 border-border hover:bg-muted text-foreground/70 font-semibold transition-all justify-center"
+                                                        className="flex-1 h-10 sm:h-9 text-xs sm:text-sm bg-background/50 border-border hover:bg-muted text-foreground/70 font-semibold justify-center"
                                                     >
                                                         <Square className="w-3.5 h-3.5 mr-2 opacity-70" />
                                                         Deselect All
@@ -699,18 +704,18 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                                         variant="outline" 
                                                         size="sm" 
                                                         onClick={selectCatalogUpdates} 
-                                                        className="flex-1 h-10 sm:h-9 text-[11px] sm:text-xs bg-amber-500/5 text-amber-500 hover:bg-amber-500/10 border-amber-500/20 font-semibold transition-all justify-center"
+                                                        className={cn("flex-1 h-10 sm:h-9 text-xs sm:text-sm font-semibold justify-center", importSetupTone.warningAction)}
                                                     >
-                                                        <RefreshCw className="w-3.5 h-3.5 mr-2 opacity-70" />
+                                                        <RefreshCw className="w-3.5 h-3.5 mr-2 opacity-90" />
                                                         Update Catalogs
                                                     </Button>
                                                     <Button 
                                                         variant="outline" 
                                                         size="sm" 
                                                         onClick={selectImageUpdates} 
-                                                        className="flex-1 h-10 sm:h-9 text-[11px] sm:text-xs bg-blue-500/5 text-blue-400 hover:bg-blue-500/10 border-blue-500/20 font-semibold transition-all justify-center"
+                                                        className={cn("flex-1 h-10 sm:h-9 text-xs sm:text-sm font-semibold justify-center", importSetupTone.infoAction)}
                                                     >
-                                                        <ImageIcon className="w-3.5 h-3.5 mr-2 opacity-70" />
+                                                        <ImageIcon className="w-3.5 h-3.5 mr-2 opacity-90" />
                                                         Update Images
                                                     </Button>
                                                 </div>
@@ -740,12 +745,12 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                                             <div className="ml-3 flex-1 min-w-0 pr-4">
                                                                 <label htmlFor={`sg-${sg.name}`} className={`font-semibold text-sm block truncate ${isDisabled ? '' : 'cursor-pointer'}`}>
                                                                     {formatDisplayName(sg.name)}
-                                                                    {sg.isDuplicate && sg.hasNewCatalogs && <Badge variant="default" className="ml-2 bg-amber-600/20 text-amber-500 border border-amber-500/30 text-[9px] uppercase hover:bg-amber-600/30">Replace Catalogs</Badge>}
-                                                                    {sg.isDuplicate && !sg.hasNewCatalogs && !sg.hasNewImage && <Badge variant="outline" className="ml-2 bg-muted border-border text-foreground/70 text-[9px] uppercase">Existing</Badge>}
-                                                                    {sg.hasNewImage && <Badge variant="default" className="ml-2 bg-purple-600/20 text-purple-400 border border-purple-500/30 text-[9px] uppercase hover:bg-purple-600/30">Update Image</Badge>}
-                                                                    {includedInMain && !sg.isDuplicate && <Badge className="ml-2 bg-blue-900/40 text-blue-400 border-blue-900 text-[9px] uppercase">Included w/ Main</Badge>}
+                                                                    {sg.isDuplicate && sg.hasNewCatalogs && <Badge variant="outline" className={cn("ml-2 text-xs uppercase", importSetupTone.warningBadge)}>Replace Catalogs</Badge>}
+                                                                    {sg.isDuplicate && !sg.hasNewCatalogs && !sg.hasNewImage && <Badge variant="outline" className={cn("ml-2 text-xs uppercase", editorToneBadge.neutral)}>Existing</Badge>}
+                                                                    {sg.hasNewImage && <Badge variant="outline" className={cn("ml-2 text-xs uppercase", importSetupTone.infoBadge)}>Update Image</Badge>}
+                                                                    {includedInMain && !sg.isDuplicate && <Badge variant="outline" className={cn("ml-2 text-xs uppercase", importSetupTone.infoBadge)}>Included w/ Main</Badge>}
                                                                 </label>
-                                                                <div className="text-[10px] text-foreground/70 mt-0.5">{sg.catalogs.length} {sg.catalogs.length === 1 ? 'Catalog' : 'Catalogs'}</div>
+                                                                <div className="text-xs text-foreground/70 mt-0.5">{sg.catalogs.length} {sg.catalogs.length === 1 ? 'Catalog' : 'Catalogs'}</div>
                                                             </div>
 
                                                             {isSelected && !isDisabled && !sg.isDuplicate && (
@@ -765,7 +770,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                                                         >
                                                                             None (Unassigned)
                                                                         </DropdownMenuItem>
-                                                                        <DropdownMenuLabel className="text-[10px] uppercase text-foreground/70 font-bold mt-2">Assign to Current Match</DropdownMenuLabel>
+                                                                        <DropdownMenuLabel className="text-xs uppercase text-foreground/70 font-bold mt-2">Assign to Current Match</DropdownMenuLabel>
                                                                         {currentMainGroupOrder.map((uuid: string) => (
                                                                             <DropdownMenuItem
                                                                                 key={uuid}
@@ -817,7 +822,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                                                         if (catSgs.length === 0) return null;
                                                                         return (
                                                                             <React.Fragment key={cat}>
-                                                                                <div className="px-4 py-1.5 bg-background/80 text-[10px] font-bold text-foreground/70 uppercase tracking-widest border-b border-border flex items-center gap-2">
+                                                                                <div className="px-4 py-1.5 bg-background/80 text-xs font-bold text-foreground/70 uppercase tracking-widest border-b border-border flex items-center gap-2">
                                                                                     <div className="w-1 h-3 bg-blue-500/50 rounded-full" />
                                                                                     {cat}
                                                                                 </div>
@@ -856,7 +861,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                         <Button
                             onClick={handleImport}
                             disabled={totalSelectedToImport === 0}
-                            className="h-10 bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                            className={cn(editorAction.primary, "font-bold")}
                         >
                             Import ({totalSelectedToImport})
                         </Button>

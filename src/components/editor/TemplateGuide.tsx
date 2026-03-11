@@ -7,6 +7,7 @@ import {
     DialogTitle,
     DialogDescription,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import {
     ExternalLink,
     Settings,
@@ -28,6 +29,8 @@ import {
     MousePointer2
 } from "lucide-react";
 import { useConfig } from "@/context/ConfigContext";
+import { cn } from "@/lib/utils";
+import { editorAction, editorLayout } from "@/components/editor/ui/style-contract";
 
 export function TemplateGuide() {
     const { manifest } = useConfig();
@@ -71,7 +74,7 @@ export function TemplateGuide() {
         }
     ];
     return (
-        <DialogContent className="sm:max-w-5xl max-h-[95vh] overflow-y-auto bg-background border-border text-foreground scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-transparent">
+        <DialogContent className={cn(editorLayout.dialogContent, "sm:max-w-5xl max-h-[95vh] overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-transparent")}>
             {/* MATCHING HEADER FROM DOCUMENTATION.tsx */}
             <DialogHeader className="border-b border-border pb-8 mb-8">
                 <DialogTitle className="text-3xl font-extrabold flex items-center gap-4 bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
@@ -119,7 +122,7 @@ export function TemplateGuide() {
                                 <div className="space-y-2.5">
                                     {group.links.map((link, j) => (
                                         <a key={j} href={link.url} target="_blank" rel="noopener noreferrer"
-                                            className="flex items-center justify-between p-3.5 rounded-xl bg-background/40 hover:bg-blue-500/10 border border-border/50 text-[13px] font-bold text-foreground/80 hover:text-blue-400 transition-all group">
+                                            className="flex items-center justify-between p-3.5 rounded-xl bg-background/40 hover:bg-blue-500/10 border border-border/50 text-sm font-bold text-foreground/80 hover:text-blue-400 transition-all group">
                                             {link.text}
                                             <ChevronRight className="w-4 h-4 opacity-20 group-hover:opacity-100" />
                                         </a>
@@ -142,13 +145,14 @@ export function TemplateGuide() {
                         </p>
                         <div className="flex flex-wrap gap-2.5">
                             {templates.map((item, i) => (
-                                <button
+                                <Button
                                     key={i}
                                     onClick={() => handleDownload(item.url, item.filename)}
-                                    className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-background border border-border text-[13px] font-black text-foreground/60 uppercase tracking-tight hover:bg-blue-500/10 hover:text-blue-400 hover:border-blue-500/30 transition-all cursor-pointer"
+                                    variant="outline"
+                                    className={cn("flex items-center gap-2.5 px-4 rounded-xl text-sm font-black text-foreground/70 uppercase tracking-tight hover:bg-accent hover:text-foreground transition-all", editorAction.secondary)}
                                 >
                                     <FileJson className="w-3.5 h-3.5 text-blue-400" /> {item.name}
-                                </button>
+                                </Button>
                             ))}
                         </div>
                     </div>
@@ -242,7 +246,7 @@ export function TemplateGuide() {
                             <div className="space-y-5">
                                 <div className="space-y-2">
                                     <p className="text-sm text-foreground/70">Move the JSON file to:</p>
-                                    <div className="bg-blue-50 dark:bg-background/80 px-4 py-3 rounded-2xl text-blue-600 dark:text-blue-400 font-mono text-[13px] border border-blue-100 dark:border-border/50 shadow-inner flex items-center gap-3">
+                                    <div className="bg-blue-50 dark:bg-background/80 px-4 py-3 rounded-2xl text-blue-600 dark:text-blue-400 font-mono text-sm border border-blue-100 dark:border-border/50 shadow-inner flex items-center gap-3">
                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-500/50" />
                                         Files › On my iPhone › Omni › Backups
                                     </div>
@@ -250,7 +254,7 @@ export function TemplateGuide() {
 
                                 <div className="p-5 bg-amber-500/5 border border-amber-500/10 rounded-2xl flex items-start gap-4 transition-all">
                                     <AlertCircle className="w-5 h-5 text-amber-500/70 shrink-0 mt-0.5" />
-                                    <p className="text-[13px] leading-relaxed text-foreground/60 italic">
+                                    <p className="text-sm leading-relaxed text-foreground/60 italic">
                                         Force close Omni completely and restart for the snapshot to appear.
                                     </p>
                                 </div>
@@ -271,7 +275,7 @@ export function TemplateGuide() {
                                 </p>
                                 <div className="p-5 bg-blue-500/5 border border-blue-500/10 rounded-2xl flex items-center gap-4">
                                     <CheckCircle2 className="w-5 h-5 text-blue-400/70 shrink-0" />
-                                    <p className="text-[13px] text-foreground/60 italic">Automated cloud transfer</p>
+                                    <p className="text-sm text-foreground/60 italic">Automated cloud transfer</p>
                                 </div>
                             </div>
                         </div>

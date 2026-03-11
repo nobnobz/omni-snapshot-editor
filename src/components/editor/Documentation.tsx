@@ -39,6 +39,9 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { editorAction, editorLayout } from "@/components/editor/ui/style-contract";
 
 export function Documentation() {
     const { manifest } = useConfig();
@@ -88,7 +91,7 @@ export function Documentation() {
         }
     ];
     return (
-        <DialogContent className="sm:max-w-5xl max-h-[95vh] overflow-y-auto bg-background border-border text-foreground scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-transparent">
+        <DialogContent className={cn(editorLayout.dialogContent, "sm:max-w-5xl max-h-[95vh] overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-transparent")}>
             <DialogHeader className="border-b border-border pb-8 mb-8">
                 <DialogTitle className="text-3xl font-extrabold flex items-center gap-4 bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
                     <BookOpen className="w-10 h-10 text-blue-500" />
@@ -124,7 +127,7 @@ export function Documentation() {
                                 <Upload className="w-4 h-4" />
                                 Custom Import
                             </h4>
-                            <p className="text-[13px] text-foreground/70 leading-relaxed">
+                            <p className="text-sm text-foreground/70 leading-relaxed">
                                 Upload your existing <strong>.json</strong> configuration file. This is the best way to continue working on your own setup or to modify a template.
                             </p>
                         </div>
@@ -133,7 +136,7 @@ export function Documentation() {
                                 <ExternalLink className="w-4 h-4" />
                                 From GitHub
                             </h4>
-                            <p className="text-[13px] text-foreground/70 leading-relaxed">
+                            <p className="text-sm text-foreground/70 leading-relaxed">
                                 Enter a URL to a <strong>raw .json file</strong> on GitHub. This is perfect for loading public templates or configurations hosted online like my own.
                             </p>
                         </div>
@@ -142,7 +145,7 @@ export function Documentation() {
                                 <PlusCircle className="w-4 h-4" />
                                 Start Fresh
                             </h4>
-                            <p className="text-[13px] text-foreground/70 leading-relaxed">
+                            <p className="text-sm text-foreground/70 leading-relaxed">
                                 Begin with a completely empty configuration. Use this if you want to build your setup from scratch without any pre-existing groups or catalogs.
                             </p>
                         </div>
@@ -164,10 +167,10 @@ export function Documentation() {
                                 <AlertCircle className="w-5 h-5" />
                                 Why is this needed?
                             </h4>
-                            <p className="text-[14px] text-foreground/70 leading-relaxed">
+                            <p className="text-sm text-foreground/70 leading-relaxed">
                                 Omni doesn’t store the names of your AIOMetadata catalogs directly. Instead, it only saves the MDBList ID. My AIOMetadata catalogs are included as a fallback by default, so the correct catalog names are still displayed.
                             </p>
-                            <p className="text-[14px] text-foreground/70 leading-relaxed">
+                            <p className="text-sm text-foreground/70 leading-relaxed">
                                 If you want to use your <strong>own custom catalogs</strong> or personal AIOMetadata setup, you should upload your specific mapping here.
                             </p>
                         </div>
@@ -203,7 +206,7 @@ export function Documentation() {
                                     <PlusCircle className="w-4 h-4" />
                                     Create New Group
                                 </h4>
-                                <p className="text-[13px] text-foreground/70 leading-relaxed">
+                                <p className="text-sm text-foreground/70 leading-relaxed">
                                     Adds a fresh <strong>Main Group</strong> to your setup. You can name it and immediately assign existing subgroups to it.
                                 </p>
                             </div>
@@ -212,7 +215,7 @@ export function Documentation() {
                                     <LayoutGrid className="w-4 h-4" />
                                     Add to Group
                                 </h4>
-                                <p className="text-[13px] text-foreground/70 leading-relaxed">
+                                <p className="text-sm text-foreground/70 leading-relaxed">
                                     Lets you pick from your <strong>Unassigned Subgroups</strong> and move them into a specific Main Group.
                                 </p>
                             </div>
@@ -221,7 +224,7 @@ export function Documentation() {
                                     <RefreshCcw className="w-4 h-4" />
                                     Update from Template
                                 </h4>
-                                <p className="text-[13px] text-foreground/70 leading-relaxed">
+                                <p className="text-sm text-foreground/70 leading-relaxed">
                                     Syncs groups from a template while keeping your custom groups intact. Use it to import groups from another setup or update existing ones.
                                 </p>
                             </div>
@@ -408,13 +411,13 @@ export function Documentation() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 relative z-10">
                             <div className="bg-emerald-500/10 p-5 rounded-2xl border border-emerald-500/20">
                                 <h5 className="text-sm font-bold text-emerald-400 mb-2">Full Export</h5>
-                                <p className="text-[13px] text-foreground/70">Downloads your entire configuration as a single <strong>.json</strong> file.</p>
+                                <p className="text-sm text-foreground/70">Downloads your entire configuration as a single <strong>.json</strong> file.</p>
                             </div>
                             <div className="bg-blue-500/10 p-5 rounded-2xl border border-blue-500/20">
                                 <h5 className="text-sm font-bold text-blue-400 mb-2 flex items-center gap-2">
                                     Partial Exports
                                 </h5>
-                                <p className="text-[13px] text-foreground/70">You can also export <strong>only specific sections</strong> (e.g. just Groups or just Patterns) if you want to import them into your existing setup.</p>
+                                <p className="text-sm text-foreground/70">You can also export <strong>only specific sections</strong> (e.g. just Groups or just Patterns) if you want to import them into your existing setup.</p>
                             </div>
                         </div>
 
@@ -448,21 +451,22 @@ export function Documentation() {
                                     const subtitle = parts[1] ? `(${parts[1]}` : null;
 
                                     return (
-                                        <button
+                                        <Button
                                             key={i}
                                             onClick={() => handleDownload(item.url, item.filename)}
-                                            className="flex items-center gap-3 px-5 py-3 rounded-xl bg-background border border-border text-foreground/60 uppercase tracking-tight hover:bg-blue-500/10 hover:text-blue-400 hover:border-blue-500/30 transition-all cursor-pointer group"
+                                            variant="outline"
+                                            className={cn("flex items-center gap-3 px-5 py-3 rounded-xl uppercase tracking-tight text-foreground/70 hover:bg-accent hover:text-foreground transition-all group", editorAction.secondary)}
                                         >
                                             <FileJson className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform shrink-0" /> 
                                             <div className="flex flex-col items-start gap-0.5">
-                                                <span className="text-[13px] font-black leading-none">{mainTitle}</span>
+                                                <span className="text-sm font-black leading-none">{mainTitle}</span>
                                                 {subtitle && (
-                                                    <span className="text-[10px] font-bold text-foreground/40 lowercase tracking-normal">
+                                                    <span className="text-xs font-bold text-foreground/40 lowercase tracking-normal">
                                                         {subtitle.toLowerCase()}
                                                     </span>
                                                 )}
                                             </div>
-                                        </button>
+                                        </Button>
                                     );
                                 })}
                         </div>
@@ -488,7 +492,7 @@ export function Documentation() {
                                             <span className="w-1.5 h-1.5 rounded-full bg-blue-500/50 mt-1.5" />
                                             <span>Copy the <strong>.json</strong> file into the folder:</span>
                                         </div>
-                                        <div className="bg-blue-50 dark:bg-background/80 px-4 py-3 rounded-2xl text-blue-600 dark:text-blue-400 font-mono text-[11px] border border-blue-100 dark:border-border/50 shadow-inner flex items-center gap-3 ml-4">
+                                        <div className="bg-blue-50 dark:bg-background/80 px-4 py-3 rounded-2xl text-blue-600 dark:text-blue-400 font-mono text-xs border border-blue-100 dark:border-border/50 shadow-inner flex items-center gap-3 ml-4">
                                             <span className="w-1.5 h-1.5 rounded-full bg-blue-500/50" />
                                             Files › On my iPhone › Omni › Backups
                                         </div>
@@ -501,7 +505,7 @@ export function Documentation() {
 
                                 <div className="p-5 bg-amber-500/5 border border-amber-500/10 rounded-2xl flex items-start gap-4 transition-all">
                                     <AlertCircle className="w-5 h-5 text-amber-500/70 shrink-0 mt-0.5" />
-                                    <p className="text-[13px] leading-relaxed text-foreground/60 italic">
+                                    <p className="text-sm leading-relaxed text-foreground/60 italic">
                                         <strong>Important:</strong> Force close Omni completely and restart for the snapshot to appear.
                                     </p>
                                 </div>
@@ -521,7 +525,7 @@ export function Documentation() {
                                 </p>
                                 <div className="p-5 bg-blue-500/5 border border-blue-500/10 rounded-2xl flex items-center gap-4">
                                     <CheckCircle2 className="w-5 h-5 text-blue-400/70 shrink-0" />
-                                    <p className="text-[13px] text-foreground/60 italic">Seamless cloud transfer</p>
+                                    <p className="text-sm text-foreground/60 italic">Seamless cloud transfer</p>
                                 </div>
                             </div>
                         </div>

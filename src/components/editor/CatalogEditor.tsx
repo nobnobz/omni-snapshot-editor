@@ -22,6 +22,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
     Dialog,
     DialogContent,
@@ -48,8 +49,9 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { CATALOG_FALLBACKS } from "@/lib/catalog-fallbacks";
-import { resolveCatalogName } from "@/lib/utils";
-import { GripVertical, Eye, EyeOff, Trash2, ArrowDownAZ, ArrowUpZA, Search, Settings2, Shuffle, LayoutGrid, Star, ChevronDown, ChevronUp, Plus, Maximize, Pencil, ListX, Pin, Check } from "lucide-react";
+import { resolveCatalogName, cn } from "@/lib/utils";
+import { GripVertical, Eye, EyeOff, Trash2, ArrowDownAZ, ArrowUpZA, Search, Settings2, Shuffle, LayoutGrid, Star, ChevronDown, ChevronUp, Plus, Maximize, Pencil, ListX, Pin } from "lucide-react";
+import { editorAction, editorLayout, editorToneBadge } from "@/components/editor/ui/style-contract";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 interface ManifestCatalog {
@@ -66,6 +68,16 @@ interface ManifestCatalog {
     [key: string]: any;
 }
 
+const stripCatalogCategoryPrefix = (name: string) =>
+    name.replace(/^(\[[^\]]+\]\s*)+/, "").trim();
+
+const catalogManagerBadgeTone = {
+    blue: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30",
+    amber: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30",
+    emerald: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
+    orange: "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20",
+} as const;
+
 // ─── Sortable Item ───────────────────────────────────────────────────────────
 function SortableCatalogItem({
     catalog,
@@ -74,6 +86,9 @@ function SortableCatalogItem({
     isSmallTopRow,
     isRandom,
     isPinned,
+    isEditingName,
+    onStartEditingName,
+    onStopEditingName,
     onUpdateField,
     onUpdateLandscape,
     onUpdateSmall,
@@ -88,6 +103,9 @@ function SortableCatalogItem({
     isSmallTopRow: boolean;
     isRandom: boolean;
     isPinned: boolean;
+    isEditingName: boolean;
+    onStartEditingName: () => void;
+    onStopEditingName: () => void;
     onUpdateField: (patch: Record<string, any>) => void;
     onUpdateLandscape: (v: boolean) => void;
     onUpdateSmall: (v: boolean) => void;
@@ -105,14 +123,24 @@ function SortableCatalogItem({
 
     const style = { transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 20 : 1 };
 
-    const [isEditingName, setIsEditingName] = useState(false);
     const [editName, setEditName] = useState(catalog.name || catalog.id);
 
+    useEffect(() => {
+        if (!isEditingName) {
+            setEditName(catalog.name || catalog.id);
+        }
+    }, [catalog.name, catalog.id, isEditingName]);
+
     const submitName = () => {
-        setIsEditingName(false);
+        onStopEditingName();
         const t = editName.trim();
         if (t && t !== catalog.name) onUpdateField({ name: t });
         else setEditName(catalog.name || catalog.id);
+    };
+
+    const cancelNameEdit = () => {
+        setEditName(catalog.name || catalog.id);
+        onStopEditingName();
     };
 
     const itemCount = catalog.metadata?.itemCount;
@@ -145,20 +173,24 @@ function SortableCatalogItem({
                             value={editName}
                             onChange={e => setEditName(e.target.value)}
                             onBlur={submitName}
-                            onKeyDown={e => e.key === 'Enter' && submitName()}
-                            className="h-10 sm:h-8 text-base sm:text-sm bg-background border-blue-500 font-bold"
+                            onKeyDown={e => {
+                                if (e.key === 'Enter') submitName();
+                                if (e.key === 'Escape') cancelNameEdit();
+                            }}
+                            autoFocus
+                            className="h-10 sm:h-9 text-base sm:text-sm bg-background border-ring font-bold"
                         />
                     ) : (
                         <div className="flex flex-col min-w-0">
                             <h4
                                 className={`text-sm font-bold flex items-center gap-1.5 cursor-pointer hover:underline underline-offset-4 decoration-blue-500/40 max-w-full group/name ${isActive ? "text-foreground" : "text-foreground/70"}`}
-                                onClick={() => setIsEditingName(true)}
+                                onClick={onStartEditingName}
                             >
                                 <span className="truncate">{catalog.name || catalog.id}</span>
                                 {catalog.showInHome && <Star className="w-3 h-3 text-amber-500 shrink-0" />}
-                                <Pencil className="w-3 h-3 text-blue-400 opacity-0 group-hover/name:opacity-100 transition-opacity shrink-0" />
+                                <Pencil className="w-3 h-3 text-foreground/45 opacity-0 group-hover/name:opacity-90 transition-opacity shrink-0" />
                             </h4>
-                            <p className="text-[11px] text-foreground/70 truncate font-mono mt-0.5">{catalog.id}</p>
+                            <p className="text-xs text-foreground/70 truncate font-mono mt-0.5">{catalog.id}</p>
                         </div>
                     )}
                 </div>
@@ -166,33 +198,39 @@ function SortableCatalogItem({
                 {/* Badges */}
                 <div className="flex items-center gap-1 shrink-0 flex-wrap sm:justify-end">
                     {!catalog.enabled && (
-                        <Badge variant="outline" className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-background text-foreground/70 border-border">Hidden</Badge>
+                        <Badge variant="outline" className={cn("text-xs font-bold px-2 py-0.5 rounded-md", editorToneBadge.neutral)}>Hidden</Badge>
                     )}
                     {isPinned && (
-                        <Badge className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">Header</Badge>
+                        <Badge variant="outline" className={cn("text-xs font-bold px-2 py-0.5 rounded-md", catalogManagerBadgeTone.emerald)}>Header</Badge>
                     )}
                     
                     {/* Top Row Group */}
                     <div className="flex items-center gap-1">
                         {isSmall && (
-                            <Badge className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20">Small</Badge>
+                            <Badge variant="outline" className={cn("text-xs font-bold px-2 py-0.5 rounded-md", catalogManagerBadgeTone.blue)}>Small</Badge>
                         )}
                         {catalog.showInHome && (
-                            <Badge className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${isSmallTopRow ? 'bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/20' : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'}`}>
+                            <Badge
+                                variant="outline"
+                                className={cn(
+                                    "text-xs font-bold px-2 py-0.5 rounded-md",
+                                    catalogManagerBadgeTone.amber
+                                )}
+                            >
                                 {isSmallTopRow ? 'Top Row (small)' : 'Top Row'}
                             </Badge>
                         )}
                         {itemCount && catalog.showInHome && (
-                            <Badge variant="secondary" className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-muted text-foreground/70 border-none">{itemCount}</Badge>
+                            <Badge variant="outline" className="text-xs font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30">{itemCount}</Badge>
                         )}
                     </div>
 
                     {/* Shelf Specifics */}
                     {isLandscape && (
-                        <Badge className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-orange-500/10 text-orange-700 dark:text-orange-400 border border-orange-500/20">Wide</Badge>
+                        <Badge variant="outline" className={cn("text-xs font-bold px-2 py-0.5 rounded-md", catalogManagerBadgeTone.orange)}>Wide</Badge>
                     )}
                     {isRandom && (
-                        <Badge variant="secondary" className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-muted text-foreground/70 border-none">Rand</Badge>
+                        <Badge variant="secondary" className="text-xs font-bold px-2 py-0.5 rounded-md bg-muted text-foreground/70 border-none">Rand</Badge>
                     )}
                 </div>
             </div>
@@ -206,7 +244,7 @@ function SortableCatalogItem({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-64 bg-popover border-border text-popover-foreground shadow-2xl">
 
-                    <DropdownMenuLabel className="text-[10px] uppercase text-foreground/70 font-bold">Visibility</DropdownMenuLabel>
+                    <DropdownMenuLabel className="text-xs uppercase text-foreground/70 font-bold">Visibility</DropdownMenuLabel>
 
                     <DropdownMenuCheckboxItem
                         checked={catalog.enabled}
@@ -230,7 +268,7 @@ function SortableCatalogItem({
                         onSelect={(e) => e.preventDefault()}
                         className="text-xs"
                     >
-                        <Star className="w-3.5 h-3.5 mr-2 text-amber-400" />
+                        <Star className="w-3.5 h-3.5 mr-2 text-amber-500" />
                         Show in Top Row
                     </DropdownMenuCheckboxItem>
 
@@ -245,7 +283,7 @@ function SortableCatalogItem({
                     </DropdownMenuCheckboxItem>
 
                     <DropdownMenuSeparator className="bg-muted" />
-                    <DropdownMenuLabel className="text-[10px] uppercase text-foreground/70 font-bold">Layout</DropdownMenuLabel>
+                    <DropdownMenuLabel className="text-xs uppercase text-foreground/70 font-bold">Layout</DropdownMenuLabel>
 
                     <DropdownMenuCheckboxItem
                         checked={isLandscape}
@@ -280,30 +318,30 @@ function SortableCatalogItem({
                     {catalog.showInHome && (
                         <>
                             <DropdownMenuSeparator className="bg-muted" />
-                            <DropdownMenuLabel className="text-[10px] uppercase text-foreground/70 font-bold">Top Row Options</DropdownMenuLabel>
+                            <DropdownMenuLabel className="text-xs uppercase text-foreground/70 font-bold">Top Row Options</DropdownMenuLabel>
                             <DropdownMenuCheckboxItem
                                 checked={isSmallTopRow}
                                 onCheckedChange={onUpdateSmallTopRow}
                                 onSelect={(e) => e.preventDefault()}
                                 className="text-xs"
                             >
-                                <LayoutGrid className="w-3.5 h-3.5 mr-2 text-amber-500" />
+                                <LayoutGrid className="w-3.5 h-3.5 mr-2 text-emerald-400" />
                                 Small Top Row
                             </DropdownMenuCheckboxItem>
                             <div className="px-2 py-1.5 flex items-center justify-between">
-                                <span className="text-[10px] text-foreground/70 font-medium flex items-center gap-1">
-                                    <Star className="w-3 h-3 text-amber-400" /> Top Row Limit
+                                <span className="text-xs text-foreground/70 font-medium flex items-center gap-1">
+                                    <Star className="w-3 h-3 text-amber-500" /> Top Row Limit
                                 </span>
                                 <Select
                                     value={itemCount ? String(itemCount) : ""}
                                     onValueChange={val => onUpdateField({ metadata: { ...(catalog.metadata || {}), itemCount: parseInt(val, 10) } })}
                                 >
-                                    <SelectTrigger className="h-6 w-16 text-[10px] bg-background border-border focus:ring-0 px-1">
+                                    <SelectTrigger className="h-6 w-16 text-xs bg-background border-border focus:ring-0 px-1">
                                         <SelectValue placeholder="–" />
                                     </SelectTrigger>
                                     <SelectContent className="bg-popover border-border text-popover-foreground">
                                         {[10, 20, 30, 50].map(opt => (
-                                            <SelectItem key={opt} value={String(opt)} className="text-[10px] focus:bg-accent">{opt}</SelectItem>
+                                            <SelectItem key={opt} value={String(opt)} className="text-xs focus:bg-accent">{opt}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
@@ -341,23 +379,17 @@ export function CatalogEditor() {
 
     // Local state for UI
     const [showDisabled, setShowDisabled] = useState(false);
-    const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [addSearch, setAddSearch] = useState("");
     const [pendingAddSelections, setPendingAddSelections] = useState<Set<string>>(new Set());
-    const [isMobileView, setIsMobileView] = useState(false);
+    const [editingCatalogId, setEditingCatalogId] = useState<string | null>(null);
 
     useEffect(() => {
-        const media = window.matchMedia("(max-width: 639px)");
-        const handleMediaChange = () => setIsMobileView(media.matches);
-        handleMediaChange();
-        if (typeof media.addEventListener === "function") {
-            media.addEventListener("change", handleMediaChange);
-            return () => media.removeEventListener("change", handleMediaChange);
+        if (!editingCatalogId) return;
+        if (!catalogs.some(c => c.id === editingCatalogId)) {
+            setEditingCatalogId(null);
         }
-        media.addListener(handleMediaChange);
-        return () => media.removeListener(handleMediaChange);
-    }, []);
+    }, [catalogs, editingCatalogId]);
 
     // Landscape is stored in currentValues.landscape_catalogs (side-array)
     const landscapeList: string[] = useMemo(() => currentValues["landscape_catalogs"] || [], [currentValues]);
@@ -541,15 +573,27 @@ export function CatalogEditor() {
     };
 
     const handleAddCatalog = (cat: (typeof addCandidates)[number]) => {
+        const cleanName = stripCatalogCategoryPrefix(cat.name || "");
+
         if (cat.action === 'reenable') {
-            updateCatalogField(cat.id, {
+            const patch: Record<string, any> = {
                 enabled: true,
                 showInHome: true,
                 // Restore any original metadata if we stashed it
                 metadata: { ...(cat.originalCatalog?.metadata || {}) }
-            });
+            };
+
+            if (cleanName && cleanName !== (cat.originalCatalog?.name || cat.name)) {
+                patch.name = cleanName;
+            }
+
+            updateCatalogField(cat.id, patch);
         } else {
-            addManifestCatalog({ id: cat.id, name: cat.name, enabled: true });
+            addManifestCatalog({ id: cat.id, name: cleanName || cat.name, enabled: true });
+        }
+
+        if (cleanName && cleanName !== cat.id) {
+            updateValue(["custom_catalog_names", cat.id], cleanName);
         }
     };
 
@@ -563,7 +607,6 @@ export function CatalogEditor() {
         });
 
         setIsAddDialogOpen(false);
-        setIsAddMenuOpen(false);
         resetAddSelectionUi();
     };
 
@@ -573,224 +616,112 @@ export function CatalogEditor() {
                 {/* Unified Toolbar */}
                 <div className="sticky top-0 z-20 flex flex-wrap items-center gap-2 bg-card/95 backdrop-blur-md p-3 border-b border-border/80 shadow-sm">
                     {/* Add Catalog */}
-                    {isMobileView ? (
-                        <Dialog
-                            open={isAddDialogOpen}
-                            onOpenChange={(open) => {
-                                setIsAddDialogOpen(open);
-                                if (!open) resetAddSelectionUi();
-                            }}
-                        >
-                            <DialogTrigger asChild>
-                                <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-8 px-3 shadow-lg shadow-blue-500/20">
-                                    <Plus className="w-4 h-4 mr-1.5" /> Add Catalog
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent
-                                onOpenAutoFocus={(e) => e.preventDefault()}
-                                className="sm:hidden fixed left-1/2 top-1/2 w-[96vw] max-w-[calc(100%-1rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card p-0 shadow-2xl border-border z-50 h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] max-h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] flex flex-col overflow-hidden"
-                            >
-                                <DialogHeader className="shrink-0 border-b border-border/60 p-4 pb-3">
-                                    <DialogTitle className="text-base">Add Catalog</DialogTitle>
-                                    <DialogDescription className="text-xs text-foreground/60">
-                                        {filteredAddCandidates.length} available
-                                    </DialogDescription>
-                                    <div className="relative mt-2">
-                                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-foreground/70" />
-                                        <Input
-                                            placeholder="Search by name or ID..."
-                                            value={addSearch}
-                                            onChange={e => setAddSearch(e.target.value)}
-                                            className="h-10 text-base pl-8 bg-background border-border focus-visible:ring-blue-600"
-                                        />
-                                    </div>
-                                </DialogHeader>
-
-                                <div className="flex-1 overflow-y-auto custom-scrollbar overscroll-contain px-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
-                                    {groupedAddCandidates.length === 0 ? (
-                                        <p className="text-[11px] text-foreground/70 p-4 text-center">No catalogs found.</p>
-                                    ) : (
-                                        groupedAddCandidates.map(group => (
-                                            <div key={group.category} className="mb-2 last:mb-0">
-                                                <div className="sticky top-0 bg-card/95 backdrop-blur-sm py-2 px-3 z-[60] border-b border-border/80 mb-1">
-                                                    <h5 className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">{group.category}</h5>
-                                                </div>
-                                                <div className="flex flex-col gap-1 px-1">
-                                                    {group.items.map(c => (
-                                                        <button
-                                                            key={c.id}
-                                                            type="button"
-                                                            onClick={() => togglePendingSelection(c.id)}
-                                                            className={`w-full text-left flex items-start gap-2 p-2.5 rounded-md border transition-colors ${
-                                                                pendingAddSelections.has(c.id)
-                                                                    ? "border-blue-500/40 bg-blue-500/10"
-                                                                    : "border-transparent hover:border-border/60 hover:bg-muted/60"
-                                                            }`}
-                                                        >
-                                                            <div className="flex-1 min-w-0">
-                                                                <p className="text-sm font-medium truncate">{c.name}</p>
-                                                                <p className="text-[10px] text-foreground/70 font-mono truncate mt-0.5">{c.id}</p>
-                                                            </div>
-                                                            <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
-                                                                pendingAddSelections.has(c.id)
-                                                                    ? "border-blue-500 bg-blue-600 text-white"
-                                                                    : "border-border bg-background"
-                                                            }`}>
-                                                                {pendingAddSelections.has(c.id) && <Check className="w-3 h-3" />}
-                                                            </div>
-                                                            {c.action === 'reenable' && (
-                                                                <Badge variant="outline" className="text-[8px] h-4 px-1 border-border text-foreground/70 shrink-0 self-center">disabled</Badge>
-                                                            )}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-
-                                <DialogFooter className="shrink-0 border-t border-border/60 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] flex-row justify-between gap-2">
-                                    <Button
-                                        variant="ghost"
-                                        onClick={() => setPendingAddSelections(new Set())}
-                                        disabled={pendingAddSelections.size === 0}
-                                        className="h-10 px-3 text-foreground/70"
-                                    >
-                                        Clear
-                                    </Button>
-                                    <div className="flex items-center gap-2">
-                                        <Button
-                                            variant="outline"
-                                            onClick={() => {
-                                                setIsAddDialogOpen(false);
-                                                resetAddSelectionUi();
-                                            }}
-                                            className="h-10"
-                                        >
-                                            Cancel
-                                        </Button>
-                                        <Button
-                                            onClick={handleBatchImport}
-                                            disabled={pendingAddSelections.size === 0}
-                                            className="h-10 bg-blue-600 hover:bg-blue-700 text-white font-bold"
-                                        >
-                                            Import ({pendingAddSelections.size})
-                                        </Button>
-                                    </div>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
-                    ) : (
-                        <DropdownMenu open={isAddMenuOpen} onOpenChange={open => {
-                            setIsAddMenuOpen(open);
+                    <Dialog
+                        open={isAddDialogOpen}
+                        onOpenChange={(open) => {
+                            setIsAddDialogOpen(open);
                             if (!open) resetAddSelectionUi();
-                        }}>
-                            <DropdownMenuTrigger asChild>
-                                <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-8 px-3 shadow-lg shadow-blue-500/20">
-                                    <Plus className="w-4 h-4 mr-1.5" /> Add Catalog
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                                align="end"
-                                className="w-80 bg-popover border-border text-popover-foreground shadow-2xl p-0 max-h-[70vh] flex flex-col overflow-hidden"
+                        }}
+                    >
+                        <DialogTrigger asChild>
+                            <Button
+                                size="sm"
+                                className="h-9 px-3 font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20"
                             >
-                                <div className="p-3 border-b border-border bg-card space-y-2 shrink-0">
-                                    <h4 className="text-[10px] uppercase font-bold text-foreground/70 flex justify-between">
-                                        <span>Add Catalog</span>
-                                        <span className="text-foreground/70/80">{filteredAddCandidates.length} available</span>
-                                    </h4>
-                                    <div className="relative">
-                                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-foreground/70" />
-                                        <Input
-                                            placeholder="Search by name or ID..."
-                                            value={addSearch}
-                                            onChange={e => setAddSearch(e.target.value)}
-                                            className="h-7 text-[11px] pl-7 bg-background border-border focus-visible:ring-blue-600"
-                                            onKeyDown={e => e.stopPropagation()}
-                                        />
-                                    </div>
+                                <Plus className="w-4 h-4 mr-1.5" /> Add Catalog
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent
+                            onOpenAutoFocus={(e) => e.preventDefault()}
+                            className={cn(editorLayout.dialogContent, "p-0 sm:max-w-[520px] sm:max-h-[90dvh]")}
+                        >
+                            <DialogHeader className="shrink-0 border-b border-border/60 p-4 pb-3">
+                                <DialogTitle>Add Catalog</DialogTitle>
+                                <DialogDescription className="text-sm text-foreground/60">
+                                    Select one or more catalogs to import.
+                                </DialogDescription>
+                                <div className="relative mt-2">
+                                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground/70" />
+                                    <Input
+                                        placeholder="Search by name or ID..."
+                                        value={addSearch}
+                                        onChange={e => setAddSearch(e.target.value)}
+                                        className="pl-8 h-10 sm:h-8 text-base sm:text-sm bg-background border-input focus-visible:ring-blue-500"
+                                    />
                                 </div>
-                                <div className="flex-1 overflow-y-auto custom-scrollbar overscroll-contain pb-4">
-                                    {groupedAddCandidates.length === 0 ? (
-                                        <p className="text-[10px] text-foreground/70 p-4 text-center">No catalogs found.</p>
-                                    ) : (
-                                        groupedAddCandidates.map(group => (
-                                            <div key={group.category} className="mb-2 last:mb-0">
-                                                <div className="sticky top-0 bg-popover/95 backdrop-blur-sm py-1.5 px-3 z-[60] border-b border-border/80 mb-1 -mx-0">
-                                                    <h5 className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">{group.category}</h5>
+                            </DialogHeader>
+
+                            <div className="flex-1 overflow-y-auto rounded-md border-y border-border/50 bg-transparent px-4 pb-4 min-h-[180px]">
+                                {groupedAddCandidates.length === 0 ? (
+                                    <p className="text-sm text-foreground/70 italic p-4">No catalogs found.</p>
+                                ) : (
+                                    <div className="space-y-1 pr-1 pb-2 pt-4">
+                                        {groupedAddCandidates.map(group => (
+                                            <div key={group.category}>
+                                                <div className="sticky top-0 bg-card/95 backdrop-blur-sm py-2.5 z-20 mb-2 border-b border-border/40 -mx-4 px-4">
+                                                    <h5 className="text-xs font-bold text-foreground/50 uppercase tracking-[0.2em]">{group.category}</h5>
                                                 </div>
-                                                <div className="flex flex-col gap-0.5 px-1">
-                                                    {group.items.map(c => (
-                                                        <button
-                                                            key={c.id}
-                                                            type="button"
-                                                            onClick={() => togglePendingSelection(c.id)}
-                                                            className={`w-full text-left flex items-start gap-2 p-2 rounded transition-colors ${
-                                                                pendingAddSelections.has(c.id)
-                                                                    ? "bg-blue-500/10 text-blue-400"
-                                                                    : "hover:bg-blue-500/10 hover:text-blue-400"
-                                                            }`}
+                                                {group.items.map(c => (
+                                                    <div
+                                                        key={c.id}
+                                                        className="flex items-center gap-2 pl-2 py-1.5 hover:bg-muted/50 rounded-sm group/candidate"
+                                                    >
+                                                        <Checkbox
+                                                            id={`add-cat-${c.id}`}
+                                                            checked={pendingAddSelections.has(c.id)}
+                                                            onCheckedChange={() => togglePendingSelection(c.id)}
+                                                            className="border-border data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 h-4 w-4 shrink-0"
+                                                        />
+                                                        <label
+                                                            htmlFor={`add-cat-${c.id}`}
+                                                            className="flex-1 min-w-0 cursor-pointer select-none grid grid-cols-[minmax(0,1fr)_minmax(120px,34%)] items-center gap-2.5"
                                                         >
-                                                            <div className="flex-1 min-w-0">
-                                                                <p className="text-sm font-medium truncate">{c.name}</p>
-                                                                <p className="text-[9px] text-foreground/70 font-mono truncate">{c.id}</p>
-                                                            </div>
-                                                            <div className={`mt-0.5 w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0 ${
-                                                                pendingAddSelections.has(c.id)
-                                                                    ? "border-blue-500 bg-blue-600 text-white"
-                                                                    : "border-border bg-background"
-                                                            }`}>
-                                                                {pendingAddSelections.has(c.id) && <Check className="w-2.5 h-2.5" />}
-                                                            </div>
-                                                            {c.action === 'reenable' && (
-                                                                <Badge variant="outline" className="text-[8px] h-4 px-1 border-border text-foreground/70 shrink-0 self-center">disabled</Badge>
-                                                            )}
-                                                        </button>
-                                                    ))}
-                                                </div>
+                                                            <p className={`text-sm leading-none transition-colors truncate min-w-0 ${pendingAddSelections.has(c.id) ? "text-blue-600 dark:text-blue-400 font-semibold" : "text-foreground"}`}>
+                                                                {c.name}
+                                                            </p>
+                                                            <p className={`text-xs font-mono font-normal tracking-tight truncate text-right min-w-0 ${pendingAddSelections.has(c.id) ? "text-blue-400/32 dark:text-blue-300/32" : "text-foreground/24"}`}>
+                                                                {c.id}
+                                                            </p>
+                                                        </label>
+                                                        {c.action === 'reenable' && (
+                                                            <Badge variant="outline" className="text-xs h-5 px-1.5 border-border text-foreground/70 shrink-0 self-center">
+                                                                disabled
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                ))}
                                             </div>
-                                        ))
-                                    )}
-                                </div>
-                                <div className="shrink-0 border-t border-border/60 p-2.5 flex items-center justify-between gap-2 bg-card">
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => setPendingAddSelections(new Set())}
-                                        disabled={pendingAddSelections.size === 0}
-                                        className="h-8 px-2 text-xs text-foreground/70"
-                                    >
-                                        Clear
-                                    </Button>
-                                    <div className="flex items-center gap-1.5">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="h-8 text-xs"
-                                            onClick={() => {
-                                                setIsAddMenuOpen(false);
-                                                resetAddSelectionUi();
-                                            }}
-                                        >
-                                            Cancel
-                                        </Button>
-                                        <Button
-                                            size="sm"
-                                            className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white"
-                                            onClick={handleBatchImport}
-                                            disabled={pendingAddSelections.size === 0}
-                                        >
-                                            Import ({pendingAddSelections.size})
-                                        </Button>
+                                        ))}
                                     </div>
+                                )}
+                            </div>
+
+                            <DialogFooter className="mt-0 shrink-0 flex flex-col gap-3 border-t border-border/50 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between">
+                                <p className="text-xs text-foreground/70 sm:order-1">
+                                    {pendingAddSelections.size} selected
+                                </p>
+                                <div className="flex w-full sm:w-auto gap-2 sm:order-2">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => {
+                                            setIsAddDialogOpen(false);
+                                            resetAddSelectionUi();
+                                        }}
+                                        className="flex-1 sm:flex-none bg-muted border-border text-foreground hover:bg-accent"
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        onClick={handleBatchImport}
+                                        disabled={pendingAddSelections.size === 0}
+                                        className={cn("flex-1 sm:flex-none", editorAction.primary)}
+                                    >
+                                        Import ({pendingAddSelections.size})
+                                    </Button>
                                 </div>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    )}
-                    {/*
-                        The mobile and desktop add flows intentionally keep selected rows visible
-                        until the user confirms with Import (x).
-                    */}
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
 
                     <div className="w-px h-5 bg-border mx-1" />
                     <Button variant="outline" size="sm" onClick={handleSortAZ} className="h-8 text-xs border-border hover:bg-muted text-foreground/70 hover:text-foreground">
@@ -803,7 +734,12 @@ export function CatalogEditor() {
 
                 <div className="p-3">
                     {/* Sortable list */}
-                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragStart={() => setEditingCatalogId(null)}
+                        onDragEnd={handleDragEnd}
+                    >
                         <SortableContext items={enabledIds} strategy={verticalListSortingStrategy}>
                             <div className="space-y-1 max-h-[700px] overflow-y-auto pr-1 custom-scrollbar">
                                 {enabledCatalogs.length === 0 ? (
@@ -828,6 +764,9 @@ export function CatalogEditor() {
                                             isSmallTopRow={smallTopRowList.includes(cat.id)}
                                             isRandom={randomizedList.includes(cat.id)}
                                             isPinned={pinnedList.includes(cat.id)}
+                                            isEditingName={editingCatalogId === cat.id}
+                                            onStartEditingName={() => setEditingCatalogId(cat.id)}
+                                            onStopEditingName={() => setEditingCatalogId(prev => (prev === cat.id ? null : prev))}
                                             onUpdateField={patch => updateCatalogField(cat.id, patch)}
                                             onUpdateLandscape={v => handleUpdateLandscape(cat.id, v)}
                                             onUpdateSmall={v => handleUpdateSmall(cat.id, v)}
@@ -860,7 +799,7 @@ export function CatalogEditor() {
                                 <div key={cat.id} className="flex items-center gap-3 p-2.5 bg-card/50 border border-border border-dashed rounded-lg">
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm text-foreground/70 truncate">{cat.name || cat.id}</p>
-                                        <p className="text-[11px] text-foreground font-mono truncate">{cat.id}</p>
+                                        <p className="text-xs text-foreground font-mono truncate">{cat.id}</p>
                                     </div>
                                     <Button
                                         variant="outline" size="sm"

@@ -49,6 +49,8 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { APP_VERSION } from "@/lib/constants";
+import { cn } from "@/lib/utils";
+import { editorAction, editorNoticeTone } from "@/components/editor/ui/style-contract";
 
 type UiNotice = {
     tone: "success" | "error" | "info";
@@ -331,7 +333,7 @@ export function MainEditor() {
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="leading-none text-foreground">Omni Snapshot</span>
-                                    <span className="text-[11px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-widest mt-0.5">Manager</span>
+                                    <span className="text-xs text-blue-600 dark:text-blue-400 font-bold uppercase tracking-widest mt-0.5">Manager</span>
                                 </div>
                             </h1>
                         </div>
@@ -387,7 +389,7 @@ export function MainEditor() {
                 <div className="p-4 border-t border-border bg-card flex flex-col gap-2">
                     <div className="bg-background/40 rounded-lg p-2.5 border border-border/60 mb-1">
                         <div className="flex justify-between items-center mb-1.5">
-                            <div className="text-[11px] font-bold uppercase tracking-wide text-foreground/70 flex items-center gap-1.5 leading-none">
+                            <div className="text-xs font-bold uppercase tracking-wide text-foreground/70 flex items-center gap-1.5 leading-none">
                                 <FileJson className="w-3 h-3 text-foreground/70" />
                                 Selected File
                             </div>
@@ -408,7 +410,7 @@ export function MainEditor() {
                     <div className="hidden lg:flex flex-col gap-2">
                         <Button
                             onClick={handleDownloadClick}
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 shadow-lg shadow-blue-500/10"
+                            className="w-full font-bold h-10 sm:h-9 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20"
                         >
                             <Download className="w-4 h-4 mr-2.5" />
                             Download JSON
@@ -434,10 +436,10 @@ export function MainEditor() {
                             </div>
                         </div>
                         <div className="flex items-center justify-between">
-                            <div className="text-[10px] text-foreground/40 font-medium">
+                            <div className="text-xs text-foreground/40 font-medium leading-none scale-95 origin-left">
                                 Made by Bot-Bid-Raiser
                             </div>
-                            <div className="text-[10px] text-foreground/40 font-mono">
+                            <div className="text-xs text-foreground/40 font-mono leading-none scale-95 origin-right">
                                 v{APP_VERSION}
                             </div>
                         </div>
@@ -459,7 +461,7 @@ export function MainEditor() {
                                 value={setupName}
                                 onChange={(e) => setSetupName(e.target.value)}
                                 placeholder="E.g., My Awesome Setup"
-                                className="h-10 sm:h-9 text-base sm:text-xs bg-background border-border focus-visible:ring-blue-500"
+                                className="h-10 sm:h-9 text-base sm:text-sm bg-background border-border focus-visible:ring-blue-500"
                             />
                             <p className="text-xs text-foreground/70">
                                 The export will include a new timestamp automatically.
@@ -470,7 +472,7 @@ export function MainEditor() {
                         <Button variant="ghost" onClick={() => setIsExportModalOpen(false)} className="hover:bg-accent hover:text-accent-foreground border border-transparent">
                             Cancel
                         </Button>
-                        <Button onClick={confirmDownload} className="bg-blue-600 hover:bg-blue-700">
+                        <Button onClick={confirmDownload} className={editorAction.primary}>
                             Confirm & Download
                         </Button>
                     </DialogFooter>
@@ -520,8 +522,8 @@ export function MainEditor() {
                             <img src="/omni-snapshot-editor/clown.png" alt="Logo" className="w-full h-full object-contain relative z-10 scale-125" />
                         </div>
                         <div className="flex flex-col">
-                            <span className="leading-none text-foreground font-bold text-[13px] sm:text-sm">Omni Snapshot</span>
-                            <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wide mt-0.5">Manager</span>
+                            <span className="leading-none text-foreground font-bold text-sm sm:text-sm">Omni Snapshot</span>
+                            <span className="text-xs text-blue-400 font-bold uppercase tracking-wide mt-0.5">Manager</span>
                         </div>
                     </div>
 
@@ -531,7 +533,7 @@ export function MainEditor() {
                         <Button
                             onClick={handleDownloadClick}
                             size="sm"
-                            className="bg-blue-600 hover:bg-blue-700 h-9 text-white shadow-lg shadow-blue-500/20 px-2.5 sm:px-4 flex items-center justify-center font-bold"
+                            className="h-9 px-2.5 sm:px-4 flex items-center justify-center font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20"
                         >
                             <Download className="w-4 h-4 sm:mr-2" />
                             <span className="hidden sm:inline">Download</span>
@@ -571,12 +573,14 @@ export function MainEditor() {
                 <div className="max-w-5xl mx-auto px-4 py-8 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:p-10 space-y-10">
                     {uiNotice && (
                         <div
-                            className={`rounded-xl border px-4 py-3 text-sm leading-relaxed ${uiNotice.tone === "error"
-                                ? "border-red-500/30 bg-red-500/10 text-red-200"
-                                : uiNotice.tone === "success"
-                                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
-                                    : "border-blue-500/30 bg-blue-500/10 text-blue-200"
-                                }`}
+                            className={cn(
+                                "rounded-xl border px-4 py-3 text-sm leading-relaxed",
+                                uiNotice.tone === "error"
+                                    ? editorNoticeTone.danger
+                                    : uiNotice.tone === "success"
+                                        ? editorNoticeTone.success
+                                        : editorNoticeTone.info
+                            )}
                             role="status"
                             aria-live="polite"
                         >
@@ -635,10 +639,10 @@ export function MainEditor() {
                                                 <p className="text-sm text-foreground/70 leading-relaxed">
                                                     Import your catalogs by uploading an AIOMetadata config file or pasting the JSON. To export your catalogs in AIOMetadata, go to Catalogs &gt; Share Setup.
                                                 </p>
-                                                <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-xl p-4 text-[13px] text-blue-700 dark:text-blue-400 flex gap-4 items-start mt-4 shadow-sm">
+                                                <div className={cn("rounded-xl p-4 text-sm flex gap-4 items-start mt-4 shadow-sm border", editorNoticeTone.info)}>
                                                     <Info className="w-5 h-5 shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" />
-                                                    <p className="leading-relaxed text-blue-800 dark:text-blue-400/90">
-                                                        <span className="font-bold text-blue-700 dark:text-blue-400">Note:</span> You can skip this step if you don’t want to import additional catalogs from your AIOMetadata setup.
+                                                    <p className="leading-relaxed">
+                                                        <span className="font-bold">Note:</span> You can skip this step if you don’t want to import additional catalogs from your AIOMetadata setup.
                                                     </p>
                                                 </div>
                                                 {Object.keys(customFallbacks).length > 0 && (
@@ -666,7 +670,7 @@ export function MainEditor() {
                                                         <div>
                                                             <h4 className="text-sm font-medium text-foreground mb-0.5">Upload File</h4>
                                                             <p className="text-xs text-foreground/70 leading-relaxed">
-                                                                Import from your <code className="text-[10px] bg-white/5 border border-white/10 px-1 py-0.5 rounded text-foreground">aiometadata-config.json</code>
+                                                                Import from your <code className="text-xs bg-white/5 border border-white/10 px-1 py-0.5 rounded text-foreground">aiometadata-config.json</code>
                                                             </p>
                                                         </div>
                                                     </div>
@@ -677,7 +681,7 @@ export function MainEditor() {
                                                             className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-border/60 hover:border-blue-500/40 rounded-lg mb-3 bg-muted/5 transition-colors cursor-pointer group/drop min-h-[96px]"
                                                         >
                                                             <UploadCloud className="w-5 h-5 mb-1.5 opacity-40 group-hover/drop:opacity-70 group-hover/drop:text-blue-500 transition-all" />
-                                                            <span className="text-[11px] font-medium opacity-40 group-hover/drop:opacity-70 group-hover/drop:text-blue-500 transition-all">Select file to upload</span>
+                                                            <span className="text-xs font-medium opacity-40 group-hover/drop:opacity-70 group-hover/drop:text-blue-500 transition-all">Select file to upload</span>
                                                         </label>
                                                         <input
                                                             type="file"
@@ -754,7 +758,7 @@ export function MainEditor() {
                                         <div className="space-y-5">
                                             <div className="bg-amber-500/10 border border-amber-500/20 p-3.5 rounded-xl flex items-start gap-3 shadow-sm mt-2">
                                                 <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                                                <p className="text-[12px] text-amber-600 dark:text-amber-500/90 leading-relaxed font-medium">
+                                                <p className="text-sm text-amber-600 dark:text-amber-500/90 leading-relaxed font-medium">
                                                     Only edit the patterns if you fully understand how they work. Import from template to safely get the latest visual tags.
                                                 </p>
                                             </div>
@@ -831,7 +835,8 @@ export function MainEditor() {
                         </AlertDialogCancel>
                         <AlertDialogAction
                             onClick={confirmBackToStart}
-                            className="bg-red-600 hover:bg-red-700 text-white border-none"
+                            variant="destructive"
+                            className="h-9 border-none"
                         >
                             Yes, Discard Changes
                         </AlertDialogAction>
@@ -854,7 +859,8 @@ export function MainEditor() {
                         </AlertDialogCancel>
                         <AlertDialogAction
                             onClick={confirmResetCatalogNames}
-                            className="bg-red-600 hover:bg-red-700 text-white border-none"
+                            variant="destructive"
+                            className="h-9 border-none"
                         >
                             Yes, Reset All
                         </AlertDialogAction>

@@ -61,11 +61,19 @@ Should you want to run the project locally:
 
 ---
 
+## Editor UI Conventions
+- Use `src/components/editor/ui/style-contract.ts` for shared editor classes (`dialogContent`, actions, tone-based badges/notices).
+- Prefer semantic tone classes (`editor-tone-info|success|warning|danger`) over hard-coded feature colors.
+- Keep editor typography on the shared scale: `text-xs`, `text-sm`, `text-base`, `text-lg`, `text-xl`.
+- Form fields should stay `text-base` on mobile and only downscale to `sm:text-sm`.
+- Use `Button` for interactive controls; native `<button>` is reserved for drag handles and explicit full-row toggle interactions.
+
+---
+
 ## 💖 Support the Project
 If this tool makes your Omni management easier, please consider supporting the continued development.
 
 [<img src="https://cdn.prod.website-files.com/5c14e387dab576fe667689cf/670f5a02fcf48af59c591185_support_me_on_kofi_dark.png" width="230" alt="Support my work at Ko-fi">](https://ko-fi.com/botbidraiser)
 
 ---
-
 
