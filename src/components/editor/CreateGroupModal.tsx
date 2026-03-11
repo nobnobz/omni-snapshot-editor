@@ -114,7 +114,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <DialogContent className="fixed left-1/2 top-1/2 w-[96vw] max-w-[calc(100%-1rem)] sm:max-w-[425px] md:max-w-3xl -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card p-4 sm:p-6 shadow-2xl backdrop-blur-xl border-border focus:outline-none z-50">
+            <DialogContent className="fixed left-1/2 top-1/2 w-[96vw] max-w-[calc(100%-1rem)] sm:max-w-[425px] md:max-w-3xl -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card p-4 sm:p-6 shadow-2xl backdrop-blur-xl border-border focus:outline-none z-50 max-h-[95vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Create New Group</DialogTitle>
                     <DialogDescription className="text-foreground/70">
@@ -122,13 +122,13 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                     </DialogDescription>
                 </DialogHeader>
 
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 bg-muted p-1 rounded-md mb-4">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col flex-1 min-h-0">
+                    <TabsList className="grid w-full grid-cols-2 bg-muted p-1 rounded-md mb-4 shrink-0">
                         <TabsTrigger value="sub" className="data-[state=active]:bg-background data-[state=active]:text-foreground text-foreground/70">Subgroup</TabsTrigger>
                         <TabsTrigger value="main" className="data-[state=active]:bg-background data-[state=active]:text-foreground text-foreground/70">Main Group</TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="main" className="space-y-4">
+                    <TabsContent value="main" className="space-y-4 flex-1 flex flex-col min-h-0 data-[state=inactive]:hidden">
                         <div className="space-y-2">
                             <Label htmlFor="main-name" className="text-foreground">Name</Label>
                             <Input
@@ -193,7 +193,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                         </DialogFooter>
                     </TabsContent>
 
-                    <TabsContent value="sub" className="space-y-6">
+                    <TabsContent value="sub" className="space-y-6 flex-1 flex flex-col min-h-0 data-[state=inactive]:hidden overflow-hidden">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-4">
                                 <div className="space-y-2">
@@ -309,8 +309,8 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
 
                                                 return sortedCategories.map(category => (
                                                     <div key={category} className="space-y-2">
-                                                        <div className="sticky top-0 bg-background py-2.5 z-[60] mb-2 border-b border-border/40">
-                                                            <h5 className="text-[11px] font-bold text-blue-500 uppercase tracking-[0.2em]">{category}</h5>
+                                                        <div className="sticky top-0 bg-card/95 backdrop-blur-sm py-2.5 z-[60] mb-2 border-b border-border/40 -mx-4 px-4">
+                                                            <h5 className="text-[11px] font-bold text-foreground/50 uppercase tracking-[0.2em]">{category}</h5>
                                                         </div>
                                                         <div className="space-y-3 pt-1">
                                                             {groups[category].map(cat => (

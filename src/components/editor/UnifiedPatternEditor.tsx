@@ -136,8 +136,13 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                     <AccordionTrigger className="pr-4 py-4 flex-1 hover:no-underline flex items-center justify-between [&>svg]:hidden">
                         <div className="flex items-center gap-3">
                             <ChevronRight className="w-4 h-4 shrink-0 text-foreground/70 transition-transform duration-200 group-data-[state=open]/item:rotate-90" />
-                            <span className={`font-bold text-sm tracking-tight transition-colors text-left ${!isTagEnabled ? "text-foreground/70" : "text-foreground"}`}>
-                                {customName || <span className={`font-mono text-[11px] inline-block break-all bg-background/50 px-2 py-0.5 rounded border border-border ${!isTagEnabled ? "text-foreground/70" : "text-blue-400"}`}>{regex}</span>}
+                            <span className={`font-bold text-sm tracking-tight transition-colors text-left flex items-center flex-wrap gap-2 ${!isTagEnabled ? "text-foreground/50 line-through decoration-foreground/30" : "text-foreground"}`}>
+                                {customName || <span className={`font-mono text-[11px] inline-block break-all bg-background/50 px-2 py-0.5 rounded border border-border ${!isTagEnabled ? "text-foreground/50 line-through decoration-foreground/30" : "text-blue-400"}`}>{regex}</span>}
+                                {!isTagEnabled && (
+                                    <Badge variant="outline" className="text-[9px] uppercase tracking-widest bg-foreground/5 text-foreground/60 border-foreground/10 font-bold px-1.5 py-0 shrink-0">
+                                        Disabled
+                                    </Badge>
+                                )}
                             </span>
                         </div>
                     </AccordionTrigger>
@@ -175,7 +180,6 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                                     }
                                     if (e.key === 'Escape') handleCancelEdit(e as any);
                                 }}
-                                autoFocus
                                 rows={1}
                                 className="min-h-[unset] py-2 text-base sm:text-xs font-mono bg-background/80 border-blue-500/50 focus-visible:ring-1 focus-visible:ring-blue-500 text-blue-300 flex-1 shadow-inner resize-none"
                             />
@@ -608,7 +612,6 @@ export function UnifiedPatternEditor() {
                                 onKeyDown={(e) => e.key === 'Enter' && handleConfirmAddPattern()}
                                 placeholder="e.g. 4K Movies, TrueHD, etc."
                                 className="h-11 text-base sm:text-sm bg-background/50 border-border focus:ring-purple-500 focus:border-purple-500 text-foreground"
-                                autoFocus
                             />
                         </div>
                     </div>

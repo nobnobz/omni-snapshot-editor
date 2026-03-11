@@ -11,8 +11,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useConfig } from "@/context/ConfigContext";
-import { formatDisplayName } from "@/lib/utils";
-import { UploadCloud, CheckCircle2, AlertTriangle, FileJson, ChevronDown } from "lucide-react";
+import { formatDisplayName, cn } from "@/lib/utils";
+import { UploadCloud, CheckCircle2, AlertTriangle, FileJson, ChevronDown, CheckSquare, Square, RefreshCw, Image as ImageIcon, Info } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -26,6 +26,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ImportSetupModalProps {
     isOpen: boolean;
@@ -81,27 +82,24 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
         }
     }, [isOpen, fetchManifest]);
 
-    const omniTemplate = manifest?.templates.find(t => t.id === 'ume-main');
-
-    const templates: { label: string; url: string }[] = omniTemplate ? [
-        {
-            label: omniTemplate.name,
-            url: omniTemplate.url
-        }
-    ] : [
-        {
-            label: "UME Omni Template",
-            url: "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/Older%20Versions/v1.7.1/omni-snapshot-unified-media-experience-v1.7.1-2026-03-02.json"
-        },
-    ];
+    const templates: { label: string; url: string }[] = manifest?.templates?.length ?
+        manifest.templates
+            .filter(t => t.id.startsWith('ume-') && t.id !== 'ume-catalogs' && t.url)
+            .map(t => ({ label: t.name, url: t.url })) : [
+            {
+                label: "UME Omni Template",
+                url: "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/Older%20Versions/v1.7.1/omni-snapshot-unified-media-experience-v1.7.1-2026-03-02.json"
+            },
+        ];
 
     const [selectedVersion, setSelectedVersion] = useState(templates[0].label);
 
     useEffect(() => {
-        if (omniTemplate) {
-            setSelectedVersion(omniTemplate.name);
+        const defaultTemplate = manifest?.templates?.find(t => t.id === 'ume-main' || t.isDefault);
+        if (defaultTemplate) {
+            setSelectedVersion(defaultTemplate.name);
         }
-    }, [omniTemplate]);
+    }, [manifest]);
 
     const [templateLoading, setTemplateLoading] = useState(false);
 
@@ -504,7 +502,10 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <DialogContent className="fixed left-1/2 top-1/2 w-[96vw] max-w-[calc(100%-1rem)] sm:max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card p-4 sm:p-6 shadow-2xl backdrop-blur-xl border-border focus:outline-none z-50">
+            <DialogContent className={cn(
+                "fixed left-1/2 top-1/2 w-[96vw] max-w-[calc(100%-1rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card p-4 sm:p-6 shadow-2xl backdrop-blur-xl border-border focus:outline-none z-50 transition-all duration-300",
+                "sm:max-w-2xl"
+            )}>
                 <DialogHeader>
                     <DialogTitle>Add From Existing Setup</DialogTitle>
                     <DialogDescription className="text-foreground/70">
@@ -518,15 +519,18 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                         <div className="p-5 border border-border rounded-lg bg-muted/50">
                             <h3 className="font-semibold text-sm text-foreground mb-3">Load Unified Media Experience Template</h3>
                             <div className="flex items-center gap-3">
-                                <select
-                                    value={selectedVersion}
-                                    onChange={(e) => setSelectedVersion(e.target.value)}
-                                    className="flex-1 h-10 rounded-md border border-border bg-background/50 px-3 text-xs text-foreground font-mono transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                                >
-                                    {templates.map(t => (
-                                        <option key={t.label} value={t.label}>{t.label}</option>
-                                    ))}
-                                </select>
+                                <Select value={selectedVersion} onValueChange={setSelectedVersion}>
+                                    <SelectTrigger className="flex-1 h-10 rounded-md border border-border bg-background/50 text-xs text-foreground font-mono focus:ring-1 focus:ring-blue-500 shadow-inner overflow-hidden">
+                                        <SelectValue placeholder="Select template version" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-popover border-border text-popover-foreground">
+                                        {templates.map(t => (
+                                            <SelectItem key={t.label} value={t.label} className="text-xs font-mono focus:bg-accent focus:text-accent-foreground">
+                                                {t.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                                 <Button
                                     onClick={async () => {
                                         const t = templates.find(t => t.label === selectedVersion);
@@ -606,7 +610,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                         </TabsList>
 
                         <div className="mt-4 border border-border rounded-md bg-background">
-                            <ScrollArea className="h-[40vh]">
+                            <ScrollArea className="h-[58vh]">
                                 <TabsContent value="main" className="p-0 m-0">
                                     {parsedMainGroups.length === 0 ? (
                                         <div className="p-8 text-center text-foreground/70 italic">No Main Groups found in this file.</div>
@@ -668,25 +672,47 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                         <div className="p-8 text-center text-foreground/70 italic">No Subgroups found in this file.</div>
                                     ) : (
                                         <div className="flex flex-col divide-y divide-border/50">
-                                            <div className="p-3 bg-blue-900/10 border-b border-border text-xs text-blue-300 px-4">
-                                                Select subgroups you want to import independent of Main Groups. You can assign them to your <strong>existing</strong> main groups below.
+                                            <div className="px-5 py-3 border-b border-border/40">
+                                                    <p className="text-xs text-foreground/70 italic leading-relaxed">
+                                                        Select subgroups you want to import. You can assign them to your existing main groups below.
+                                                    </p>
                                             </div>
-                                            <div className="p-2 bg-muted/50 border-b border-border flex flex-col gap-2">
-                                                {/* Selection Row */}
-                                                <div className="flex gap-2">
-                                                    <Button variant="secondary" size="sm" onClick={selectAllSubgroups} className="flex-1 h-8 text-xs bg-muted hover:bg-muted/80 text-foreground font-semibold">
+                                            <div className="p-3 bg-muted/30 border-b border-border">
+                                                <div className="flex flex-col sm:flex-row gap-2">
+                                                    <Button 
+                                                        variant="outline" 
+                                                        size="sm" 
+                                                        onClick={selectAllSubgroups} 
+                                                        className="flex-1 h-9 text-xs bg-background/50 border-border hover:bg-muted text-foreground/80 font-semibold transition-all"
+                                                    >
+                                                        <CheckSquare className="w-3.5 h-3.5 mr-2 opacity-70" />
                                                         Select All
                                                     </Button>
-                                                    <Button variant="ghost" size="sm" onClick={deselectAllSubgroups} className="flex-1 h-8 text-xs text-foreground/70 hover:text-foreground border border-border/50 font-semibold">
+                                                    <Button 
+                                                        variant="outline" 
+                                                        size="sm" 
+                                                        onClick={deselectAllSubgroups} 
+                                                        className="flex-1 h-9 text-xs bg-background/50 border-border hover:bg-muted text-foreground/70 font-semibold transition-all"
+                                                    >
+                                                        <Square className="w-3.5 h-3.5 mr-2 opacity-70" />
                                                         Deselect All
                                                     </Button>
-                                                </div>
-                                                {/* Update Row */}
-                                                <div className="flex gap-2">
-                                                    <Button variant="secondary" size="sm" onClick={selectCatalogUpdates} className="flex-1 h-8 text-xs bg-amber-600/10 text-amber-500 hover:bg-amber-600/20 border border-amber-500/20 font-semibold px-2">
+                                                    <Button 
+                                                        variant="outline" 
+                                                        size="sm" 
+                                                        onClick={selectCatalogUpdates} 
+                                                        className="flex-1 h-9 text-xs bg-amber-500/5 text-amber-500 hover:bg-amber-500/10 border-amber-500/20 font-semibold transition-all"
+                                                    >
+                                                        <RefreshCw className="w-3.5 h-3.5 mr-2 opacity-70" />
                                                         Update Catalogs
                                                     </Button>
-                                                    <Button variant="secondary" size="sm" onClick={selectImageUpdates} className="flex-1 h-8 text-xs bg-purple-600/10 text-purple-400 hover:bg-purple-600/20 border border-purple-500/20 font-semibold px-2">
+                                                    <Button 
+                                                        variant="outline" 
+                                                        size="sm" 
+                                                        onClick={selectImageUpdates} 
+                                                        className="flex-1 h-9 text-xs bg-purple-500/5 text-purple-400 hover:bg-purple-500/10 border-purple-500/20 font-semibold transition-all"
+                                                    >
+                                                        <ImageIcon className="w-3.5 h-3.5 mr-2 opacity-70" />
                                                         Update Images
                                                     </Button>
                                                 </div>

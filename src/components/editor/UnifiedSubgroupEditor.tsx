@@ -486,7 +486,6 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                                 value={catalogSearch}
                                                 onChange={e => setCatalogSearch(e.target.value)}
                                                 className="h-7 text-[11px] pl-7 bg-card border-border focus-visible:ring-blue-600"
-                                                autoFocus
                                                 onKeyDown={e => e.stopPropagation()}
                                             />
                                         </div>
@@ -647,37 +646,53 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
     };
 
     return (
-        <div ref={setNodeRef} style={style} className={`border border-border/60 rounded-lg overflow-hidden bg-card/80 shadow-sm transition-all hover:border-border hover:shadow-md group/main ${isDragging ? "opacity-50 border-blue-500 scale-[1.01] shadow-2xl" : ""}`}>
+        <div ref={setNodeRef} style={style} className={`bg-card border rounded-xl mb-2 transition-colors ${isDragging ? "opacity-50 border-blue-500 shadow-xl scale-[1.01] z-50" : "border-border hover:border-border/80"} overflow-hidden group/main`}>
             <AccordionItem value={uuid} className="border-none">
-                <AccordionTrigger className="w-full justify-between items-center p-3 hover:bg-muted/40 hover:no-underline flex text-sm transition-colors group">
-                    <div className="flex flex-1 items-center gap-3 text-left">
-                        <div
-                            {...attributes}
-                            {...listeners}
-                            className="cursor-grab text-foreground/70 hover:text-foreground shrink-0 p-2 rounded-md hover:bg-muted transition-colors pointer-events-auto select-none"
-                            style={{ touchAction: 'none' }}
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <GripVertical className="h-5 w-5" />
-                        </div>
-                        <div>
-                            <div className="font-bold text-sm tracking-tight text-foreground flex items-center gap-2">
-                                {formatDisplayName(name)}
+                <div className="flex items-center">
+                    {/* Consistent Drag Handle outside trigger to avoid collapse on drag start */}
+                    <div
+                        {...attributes}
+                        {...listeners}
+                        className="cursor-grab text-foreground/40 hover:text-foreground/80 shrink-0 p-3 transition-colors select-none"
+                        style={{ touchAction: 'none' }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <GripVertical className="h-5 w-5" />
+                    </div>
+
+                    <AccordionTrigger className="flex-1 hover:no-underline text-foreground px-4 py-4 hover:bg-muted/30 transition-colors group/trigger">
+                        <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div className="flex flex-col items-start gap-1 min-w-0">
+                                <span className="font-bold text-[15px] text-foreground group-hover/trigger:text-blue-400 transition-colors">
+                                    {formatDisplayName(name)}
+                                </span>
+                                <div className="text-xs text-foreground/50 font-medium leading-none flex items-center gap-2">
+                                    <span>{subgroupNames.length} Subgroups</span>
+                                </div>
+                            </div>
+                            
+                            {/* Tags pushed to the right */}
+                            <div className="flex items-center gap-1 shrink-0 flex-wrap sm:justify-end mr-2">
                                 {posterSize !== "Default" && (
-                                    <Badge variant="outline" className="text-[10px] uppercase tracking-widest bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30">
+                                    <Badge variant="outline" className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30">
                                         {posterSize}
                                     </Badge>
                                 )}
-                            </div>
-                            <div className="text-[11px] text-foreground/70 font-medium mt-0.5 flex items-center gap-2">
-                                <span>{subgroupNames.length} Subgroups</span>
+                                {posterType === "Poster" && (
+                                    <Badge className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20">Poster</Badge>
+                                )}
+                                {posterType === "Square" && (
+                                    <Badge className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">Square</Badge>
+                                )}
+                                {posterType === "Landscape" && (
+                                    <Badge className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-orange-500/10 text-orange-700 dark:text-orange-400 border border-orange-500/20">Landscape</Badge>
+                                )}
                             </div>
                         </div>
-                    </div>
-                    {/* Exclude from accordion Trigger's default chevron logic by wrapping in standard div layout */}
-                </AccordionTrigger>
+                    </AccordionTrigger>
+                </div>
 
-                <AccordionContent className="p-5 border-t border-border/50 bg-muted/20">
+                <AccordionContent className="p-5 border-t border-border/40 bg-background/20">
                     <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
                         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 bg-background/50 border border-border rounded-lg p-1.5 sm:p-1 w-full sm:w-auto">
                             <DropdownMenu>
@@ -1089,7 +1104,6 @@ function UnassignedSubgroupRow({
                                             value={catalogSearch}
                                             onChange={e => setCatalogSearch(e.target.value)}
                                             className="h-10 sm:h-7 text-base sm:text-[11px] pl-7 bg-background border-border focus-visible:ring-blue-600"
-                                            autoFocus
                                             onKeyDown={e => e.stopPropagation()}
                                         />
                                     </div>
@@ -1125,7 +1139,7 @@ function UnassignedSubgroupRow({
                                             return sortedCategories.map(category => (
                                                 <div key={category} className="mb-2 last:mb-0">
                                                     <div className="sticky top-0 bg-popover py-1.5 px-3 z-[60] border-b border-border/80 mb-1 -mx-1">
-                                                        <h5 className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">{category}</h5>
+                                                        <h5 className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider">{category}</h5>
                                                     </div>
                                                     <div className="flex flex-col gap-0.5 px-1">
                                                         {groups[category].map(c => (
@@ -1241,34 +1255,84 @@ export function UnifiedSubgroupEditor() {
 
     return (
         <div className="space-y-4">
-            <div className="flex justify-between items-center mb-6">
-                <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 w-full">
+            <div className="border border-border rounded-xl bg-card/20 overflow-hidden shadow-inner">
+                {/* Unified Sticky Toolbar */}
+                <div className="sticky top-0 z-30 flex flex-wrap items-center gap-2 bg-card/95 backdrop-blur-md p-3 border-b border-border/80 shadow-sm">
                     <Button
                         onClick={() => setIsCreateModalOpen(true)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-semibold h-10 px-3 sm:px-4"
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-8 px-3 shadow-lg shadow-blue-500/20"
                     >
-                        <Plus className="w-5 h-5 mr-1.5 sm:mr-2" />
-                        <span className="hidden sm:inline">Create New Group</span>
-                        <span className="sm:hidden">New Group</span>
+                        <Plus className="w-4 h-4 mr-1.5" /> Create New Group
                     </Button>
                     <Button
                         onClick={() => setIsAddToGroupModalOpen(true)}
-                        className="bg-muted hover:bg-muted/80 text-foreground border border-border shadow-sm h-10 px-3 sm:px-4"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-xs border-border/60 hover:bg-muted text-foreground/70 hover:text-foreground transition-all px-3 font-medium"
                     >
-                        <FolderPlus className="w-5 h-5 mr-1.5 sm:mr-2" />
-                        <span className="hidden sm:inline">Add to Group</span>
-                        <span className="sm:hidden">Add Group</span>
+                        <FolderPlus className="w-4 h-4 mr-1.5" /> Add to Group
                     </Button>
                     <Button
                         onClick={() => setIsImportModalOpen(true)}
-                        className="bg-muted hover:bg-muted/80 text-foreground border border-border shadow-sm h-10 px-3 sm:px-4 col-span-2 sm:col-auto"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-xs border-border/60 hover:bg-muted text-foreground/70 hover:text-foreground transition-all px-3 font-medium"
                     >
-                        <UploadCloud className="w-5 h-5 mr-1.5 sm:mr-2" />
-                        Update from Template
+                        <UploadCloud className="w-4 h-4 mr-1.5" /> Update from Template
                     </Button>
                 </div>
-            </div>
 
+                <div className="p-4 bg-muted/5">
+                    <DndContext 
+                        sensors={sensors} 
+                        collisionDetection={closestCenter} 
+                        onDragStart={handleMainDragStart}
+                        onDragEnd={handleMainDragEnd}
+                    >
+                        <SortableContext items={mainGroupOrder} strategy={verticalListSortingStrategy}>
+                            <Accordion type="single" collapsible className="w-full space-y-0">
+                                {mainGroupOrder.map(uuid => {
+                                    const name = mainCatalogGroups[uuid]?.name || `Group ${uuid.slice(0, 4)}`;
+                                    const subgroupNames = subgroupOrder[uuid] || [];
+                                    return (
+                                        <MainGroupNode
+                                            key={uuid}
+                                            uuid={uuid}
+                                            name={name}
+                                            subgroupNames={subgroupNames}
+                                            onUnassignSubgroup={handleUnassignSubgroup}
+                                            onAddSubgroup={(id) => {
+                                                setCreateParentUUID(id);
+                                                setIsCreateModalOpen(true);
+                                            }}
+                                        />
+                                    );
+                                })}
+                            </Accordion>
+                        </SortableContext>
+
+                        <DragOverlay dropAnimation={{
+                            sideEffects: defaultDropAnimationSideEffects({
+                                styles: {
+                                    active: {
+                                        opacity: '0.4',
+                                    },
+                                },
+                            }),
+                        }}>
+                            {activeMainGroupId ? (
+                                <div className="border border-blue-500 rounded-xl overflow-hidden bg-card shadow-2xl scale-[1.02] opacity-95 p-4 flex items-center gap-4">
+                                    <GripVertical className="h-5 w-5 text-blue-500" />
+                                    <div className="font-bold text-lg tracking-tight text-foreground">
+                                        {formatDisplayName(mainCatalogGroups[activeMainGroupId]?.name || "Moving Group...")}
+                                    </div>
+                                </div>
+                            ) : null}
+                        </DragOverlay>
+                    </DndContext>
+                </div>
+            </div>
 
             <CreateGroupModal
                 isOpen={isCreateModalOpen}
@@ -1294,53 +1358,6 @@ export function UnifiedSubgroupEditor() {
                     </div>
                 </div>
             )}
-
-            <DndContext 
-                sensors={sensors} 
-                collisionDetection={closestCenter} 
-                onDragStart={handleMainDragStart}
-                onDragEnd={handleMainDragEnd}
-            >
-                <SortableContext items={mainGroupOrder} strategy={verticalListSortingStrategy}>
-                    <Accordion type="single" collapsible className="w-full space-y-4">
-                        {mainGroupOrder.map(uuid => {
-                            const name = mainCatalogGroups[uuid]?.name || `Group ${uuid.slice(0, 4)}`;
-                            const subgroupNames = subgroupOrder[uuid] || [];
-                            return (
-                                <MainGroupNode
-                                    key={uuid}
-                                    uuid={uuid}
-                                    name={name}
-                                    subgroupNames={subgroupNames}
-                                    onUnassignSubgroup={handleUnassignSubgroup}
-                                    onAddSubgroup={(id) => {
-                                        setCreateParentUUID(id);
-                                        setIsCreateModalOpen(true);
-                                    }}
-                                />
-                            );
-                        })}
-                    </Accordion>
-                </SortableContext>
-                <DragOverlay dropAnimation={{
-                    sideEffects: defaultDropAnimationSideEffects({
-                        styles: {
-                            active: {
-                                opacity: '0.4',
-                            },
-                        },
-                    }),
-                }}>
-                    {activeMainGroupId ? (
-                        <div className="border border-blue-500 rounded-xl overflow-hidden bg-card shadow-2xl scale-[1.02] opacity-90 p-4 flex items-center gap-4">
-                            <GripVertical className="h-5 w-5 text-blue-500" />
-                            <div className="font-bold text-lg tracking-tight text-foreground">
-                                {formatDisplayName(mainCatalogGroups[activeMainGroupId]?.name || "Moving Group...")}
-                            </div>
-                        </div>
-                    ) : null}
-                </DragOverlay>
-            </DndContext>
 
             {unassignedGroups.length > 0 && (
                 <div className="mt-12 border-t border-border pt-8 pb-4">

@@ -519,7 +519,7 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
         // Do not use a wrapper if it's the root to avoid double boxing
         if (!currentKey) {
             return (
-                <div className="space-y-4">
+                <div className="space-y-2">
                     {Object.entries(objectData).map(([key, val]) => (
                         <GenericRenderer key={key} data={val} path={[...path, key]} searchQuery={searchQuery} />
                     ))}

@@ -79,7 +79,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <DialogContent className="fixed left-1/2 top-1/2 w-[96vw] max-w-[calc(100%-1rem)] sm:max-w-[425px] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card p-4 sm:p-6 shadow-2xl backdrop-blur-xl border-border focus:outline-none z-50">
+            <DialogContent className="fixed left-1/2 top-1/2 w-[96vw] max-w-[calc(100%-1rem)] sm:max-w-[425px] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card p-4 sm:p-6 shadow-2xl backdrop-blur-xl border-border focus:outline-none z-50 max-h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Add to Existing Group</DialogTitle>
                     <DialogDescription className="text-foreground/60">
@@ -176,7 +176,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                                 />
                                                 <label
                                                     htmlFor={`add-assigned-${name}`}
-                                                    className="flex-1 text-sm font-medium leading-none cursor-pointer select-none transition-colors text-blue-300"
+                                                    className="flex-1 text-sm font-medium leading-none cursor-pointer select-none transition-colors text-blue-600 dark:text-blue-400"
                                                 >
                                                     {formatDisplayName(name)}
                                                 </label>
@@ -189,8 +189,8 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                     for (const [cat, items] of categories.entries()) {
                                         if (items.length > 0) {
                                             unassignedElements.push(
-                                                <div key={`header-${cat}`} className="sticky top-0 bg-background py-2.5 z-20 mb-2 border-b border-border/40">
-                                                    <h5 className="text-[11px] font-bold text-blue-500 uppercase tracking-[0.2em]">{cat}</h5>
+                                                <div key={`header-${cat}`} className="sticky top-0 bg-card/95 backdrop-blur-sm py-2.5 z-20 mb-2 border-b border-border/40 -mx-4 px-4">
+                                                    <h5 className="text-[11px] font-bold text-foreground/50 uppercase tracking-[0.2em]">{cat}</h5>
                                                 </div>
                                             );
 
@@ -228,7 +228,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                         <div className="space-y-1 pr-3 pb-2 pt-4">
                                             {assignedNodes.length > 0 && (
                                                 <div className="mb-6 space-y-1">
-                                                    <div className="sticky top-0 bg-background py-2.5 z-20 mb-2 border-b border-border/40">
+                                                    <div className="sticky top-0 bg-card/95 backdrop-blur-sm py-2.5 z-20 mb-2 border-b border-border/40 -mx-4 px-4">
                                                         <h5 className="text-[11px] font-bold text-foreground/50 uppercase tracking-[0.2em]">Assigned</h5>
                                                     </div>
                                                     {assignedNodes}
@@ -237,7 +237,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                             {unassignedElements.length > 0 && (
                                                 <div className="space-y-1">
                                                     {assignedNodes.length > 0 && (
-                                                        <div className="sticky top-0 bg-background py-2.5 z-20 mb-2 border-b border-border/40 mt-4">
+                                                        <div className="sticky top-0 bg-card/95 backdrop-blur-sm py-2.5 z-20 mb-2 border-b border-border/40 mt-4 -mx-4 px-4">
                                                             <h5 className="text-[11px] font-bold text-foreground/50 uppercase tracking-[0.2em]">Unassigned</h5>
                                                         </div>
                                                     )}

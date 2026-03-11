@@ -138,7 +138,6 @@ function SortableCatalogItem({
                             onChange={e => setEditName(e.target.value)}
                             onBlur={submitName}
                             onKeyDown={e => e.key === 'Enter' && submitName()}
-                            autoFocus
                             className="h-10 sm:h-8 text-base sm:text-sm bg-background border-blue-500 font-bold"
                         />
                     ) : (
@@ -159,36 +158,36 @@ function SortableCatalogItem({
                 {/* Badges */}
                 <div className="flex items-center gap-1 shrink-0 flex-wrap sm:justify-end">
                     {!catalog.enabled && (
-                        <Badge variant="outline" className="text-[10px] h-4 px-1 bg-background text-foreground/70 border-border">Hidden</Badge>
+                        <Badge variant="outline" className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-background text-foreground/70 border-border">Hidden</Badge>
                     )}
                     {!isActive && (
-                        <Badge variant="outline" className="text-[10px] h-4 px-1 bg-background text-foreground/70 border-border border-dashed">Disabled</Badge>
+                        <Badge variant="outline" className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-background text-foreground/70 border-border border-dashed">Disabled</Badge>
                     )}
                     {isPinned && (
-                        <Badge className="text-[10px] h-4 px-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">Header</Badge>
+                        <Badge className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">Header</Badge>
                     )}
                     
                     {/* Top Row Group */}
                     <div className="flex items-center gap-1">
                         {isSmall && (
-                            <Badge className="text-[10px] h-4 px-1 bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20">Small</Badge>
+                            <Badge className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20">Small</Badge>
                         )}
                         {catalog.showInHome && (
-                            <Badge className={`text-[10px] h-4 px-1 border ${isSmallTopRow ? 'bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/20' : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'}`}>
+                            <Badge className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${isSmallTopRow ? 'bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/20' : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'}`}>
                                 {isSmallTopRow ? 'Top Row (small)' : 'Top Row'}
                             </Badge>
                         )}
                         {itemCount && catalog.showInHome && (
-                            <Badge variant="secondary" className="text-[10px] h-4 px-1 bg-muted text-foreground/70 border-none">{itemCount}</Badge>
+                            <Badge variant="secondary" className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-muted text-foreground/70 border-none">{itemCount}</Badge>
                         )}
                     </div>
 
                     {/* Shelf Specifics */}
                     {isLandscape && (
-                        <Badge className="text-[10px] h-4 px-1 bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20">Wide</Badge>
+                        <Badge className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-orange-500/10 text-orange-700 dark:text-orange-400 border border-orange-500/20">Wide</Badge>
                     )}
                     {isRandom && (
-                        <Badge variant="secondary" className="text-[10px] h-4 px-1 bg-muted text-foreground/70 border-none">Rand</Badge>
+                        <Badge variant="secondary" className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-muted text-foreground/70 border-none">Rand</Badge>
                     )}
                 </div>
             </div>
@@ -489,145 +488,146 @@ export function CatalogEditor() {
 
     return (
         <div className="space-y-4 max-w-full overflow-x-hidden">
-            {/* Toolbar */}
-            <div className="flex flex-wrap items-center gap-2 bg-muted/50 p-2 rounded-lg border border-border">
-                <div className="flex-1" />
-                <Button variant="outline" size="sm" onClick={handleSortAZ} className="h-8 text-xs border-border hover:bg-muted text-foreground/70 hover:text-foreground">
-                    <ArrowDownAZ className="w-4 h-4 mr-1" /> A-Z
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleSortZA} className="h-8 text-xs border-border hover:bg-muted text-foreground/70 hover:text-foreground">
-                    <ArrowUpZA className="w-4 h-4 mr-1" /> Z-A
-                </Button>
-                <div className="w-px h-5 bg-border" />
-
-                {/* Add Catalog */}
-                <DropdownMenu open={isAddMenuOpen} onOpenChange={open => {
-                    setIsAddMenuOpen(open);
-                    if (!open) setAddSearch("");
-                }}>
-                    <DropdownMenuTrigger asChild>
-                        <Button size="sm" className="h-8 text-xs bg-blue-600 hover:bg-blue-500 text-white border-none shadow shadow-blue-500/20">
-                            <Plus className="w-4 h-4 mr-1" /> Add Catalog
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-[84vw] sm:w-80 bg-popover border-border text-popover-foreground shadow-2xl p-0">
-                        <div className="p-3 border-b border-border bg-card space-y-2">
-                            <h4 className="text-[10px] uppercase font-bold text-foreground/70 flex justify-between">
-                                <span>Add Catalog</span>
-                                <span className="text-foreground/70/80">{filteredAddCandidates.length} available</span>
-                            </h4>
-                            <div className="relative">
-                                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-foreground/70" />
-                                <Input
-                                    placeholder="Search by name or ID..."
-                                    value={addSearch}
-                                    onChange={e => setAddSearch(e.target.value)}
-                                    className="h-9 sm:h-7 text-base sm:text-[11px] pl-7 bg-background border-border focus-visible:ring-blue-600"
-                                    autoFocus
-                                    onKeyDown={e => e.stopPropagation()}
-                                />
+            <div className="border border-border rounded-xl bg-card/20 overflow-hidden">
+                {/* Unified Toolbar */}
+                <div className="sticky top-0 z-20 flex flex-wrap items-center gap-2 bg-card/95 backdrop-blur-md p-3 border-b border-border/80 shadow-sm">
+                    {/* Add Catalog */}
+                    <DropdownMenu open={isAddMenuOpen} onOpenChange={open => {
+                        setIsAddMenuOpen(open);
+                        if (!open) setAddSearch("");
+                    }}>
+                        <DropdownMenuTrigger asChild>
+                            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-8 px-3 shadow-lg shadow-blue-500/20">
+                                <Plus className="w-4 h-4 mr-1.5" /> Add Catalog
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-[84vw] sm:w-80 bg-popover border-border text-popover-foreground shadow-2xl p-0 max-h-[70vh] flex flex-col overflow-hidden">
+                            <div className="p-3 border-b border-border bg-card space-y-2 shrink-0">
+                                <h4 className="text-[10px] uppercase font-bold text-foreground/70 flex justify-between">
+                                    <span>Add Catalog</span>
+                                    <span className="text-foreground/70/80">{filteredAddCandidates.length} available</span>
+                                </h4>
+                                <div className="relative">
+                                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-foreground/70" />
+                                    <Input
+                                        placeholder="Search by name or ID..."
+                                        value={addSearch}
+                                        onChange={e => setAddSearch(e.target.value)}
+                                        className="h-9 sm:h-7 text-base sm:text-[11px] pl-7 bg-background border-border focus-visible:ring-blue-600"
+                                        onKeyDown={e => e.stopPropagation()}
+                                    />
+                                </div>
                             </div>
-                        </div>
-                        <div className="flex-1 overflow-x-hidden overflow-y-auto custom-scrollbar overscroll-contain pb-4">
-                            {filteredAddCandidates.length === 0 ? (
-                                <p className="text-[10px] text-foreground/70 p-4 text-center">No catalogs found.</p>
-                            ) : (
-                                (() => {
-                                    const groups: Record<string, typeof filteredAddCandidates> = {
-                                        "Other": []
-                                    };
-                                    filteredAddCandidates.forEach(c => {
-                                        const match = c.name.match(/^\[(.*?)\]\s*(.*)$/);
-                                        if (match) {
-                                            const category = match[1];
-                                            const cleanName = match[2];
-                                            if (!groups[category]) groups[category] = [];
-                                            // Provide the cleaned name for display
-                                            groups[category].push({ ...c, name: cleanName });
-                                        } else {
-                                            groups["Other"].push(c);
+                            <div className="flex-1 overflow-y-auto custom-scrollbar overscroll-contain pb-4">
+                                {filteredAddCandidates.length === 0 ? (
+                                    <p className="text-[10px] text-foreground/70 p-4 text-center">No catalogs found.</p>
+                                ) : (
+                                    (() => {
+                                        const groups: Record<string, typeof filteredAddCandidates> = {
+                                            "Other": []
+                                        };
+                                        filteredAddCandidates.forEach(c => {
+                                            const match = c.name.match(/^\[(.*?)\]\s*(.*)$/);
+                                            if (match) {
+                                                const category = match[1];
+                                                const cleanName = match[2];
+                                                if (!groups[category]) groups[category] = [];
+                                                // Provide the cleaned name for display
+                                                groups[category].push({ ...c, name: cleanName });
+                                            } else {
+                                                groups["Other"].push(c);
+                                            }
+                                        });
+
+                                        const sortedCategories = Object.keys(groups)
+                                            .filter(k => k !== "Other")
+                                            .sort((a, b) => a.localeCompare(b));
+
+                                        if (groups["Other"].length > 0) {
+                                            sortedCategories.push("Other");
                                         }
-                                    });
 
-                                    const sortedCategories = Object.keys(groups)
-                                        .filter(k => k !== "Other")
-                                        .sort((a, b) => a.localeCompare(b));
-
-                                    if (groups["Other"].length > 0) {
-                                        sortedCategories.push("Other");
-                                    }
-
-                                    return sortedCategories.map(category => (
-                                        <div key={category} className="mb-2 last:mb-0">
-                                            <div className="sticky top-0 bg-popover py-1.5 px-3 z-[60] border-b border-border/80 mb-1 -mx-1">
-                                                <h5 className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">{category}</h5>
+                                        return sortedCategories.map(category => (
+                                            <div key={category} className="mb-2 last:mb-0">
+                                                 <div className="sticky top-0 bg-popover/95 backdrop-blur-sm py-1.5 px-3 z-[60] border-b border-border/80 mb-1 -mx-0">
+                                                     <h5 className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">{category}</h5>
+                                                 </div>
+                                                <div className="flex flex-col gap-0.5 px-1">
+                                                    {groups[category].map(c => (
+                                                        <DropdownMenuItem
+                                                            key={c.id}
+                                                            onSelect={(e) => handleAddCatalog(e, c)}
+                                                            className="flex items-start gap-2 p-2 rounded cursor-pointer focus:bg-blue-500/10 focus:text-blue-400"
+                                                        >
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-sm font-medium truncate">{c.name}</p>
+                                                                <p className="text-[9px] text-foreground/70 font-mono truncate">{c.id}</p>
+                                                            </div>
+                                                            {c.action === 'reenable' && (
+                                                                <Badge variant="outline" className="text-[8px] h-4 px-1 border-border text-foreground/70 shrink-0 self-center">disabled</Badge>
+                                                            )}
+                                                        </DropdownMenuItem>
+                                                    ))}
+                                                </div>
                                             </div>
-                                            <div className="flex flex-col gap-0.5 px-1">
-                                                {groups[category].map(c => (
-                                                    <DropdownMenuItem
-                                                        key={c.id}
-                                                        onSelect={(e) => handleAddCatalog(e, c)}
-                                                        className="flex items-start gap-2 p-2 rounded cursor-pointer focus:bg-blue-500/10 focus:text-blue-400"
-                                                    >
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-sm font-medium truncate">{c.name}</p>
-                                                            <p className="text-[9px] text-foreground/70 font-mono truncate">{c.id}</p>
-                                                        </div>
-                                                        {c.action === 'reenable' && (
-                                                            <Badge variant="outline" className="text-[8px] h-4 px-1 border-border text-foreground/70 shrink-0 self-center">disabled</Badge>
-                                                        )}
-                                                    </DropdownMenuItem>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    ));
-                                })()
-                            )}
-                        </div>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
-
-
-            {/* Sortable list */}
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={enabledIds} strategy={verticalListSortingStrategy}>
-                    <div className="space-y-0.5 max-h-[700px] overflow-y-auto pr-1 custom-scrollbar">
-                        {enabledCatalogs.length === 0 ? (
-                            <div className="text-center py-10 border border-dashed border-border/80 rounded-2xl bg-background/20 flex flex-col items-center justify-center gap-3">
-                                <div className="p-4 bg-blue-500/10 rounded-full border border-blue-500/20">
-                                    <ListX className="w-8 h-8 text-blue-500/60" />
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-sm font-bold text-foreground">No Enabled Catalogs</p>
-                                    <p className="text-xs text-foreground/70 max-w-[280px] leading-relaxed mx-auto">
-                                        Add a catalog using the button above or enable existing ones.
-                                    </p>
-                                </div>
+                                        ));
+                                    })()
+                                )}
                             </div>
-                        ) : (
-                            enabledCatalogs.map(cat => (
-                                <SortableCatalogItem
-                                    key={cat.id}
-                                    catalog={cat}
-                                    isLandscape={landscapeList.includes(cat.id)}
-                                    isSmall={smallList.includes(cat.id)}
-                                    isSmallTopRow={smallTopRowList.includes(cat.id)}
-                                    isRandom={randomizedList.includes(cat.id)}
-                                    isPinned={pinnedList.includes(cat.id)}
-                                    onUpdateField={patch => updateCatalogField(cat.id, patch)}
-                                    onUpdateLandscape={v => handleUpdateLandscape(cat.id, v)}
-                                    onUpdateSmall={v => handleUpdateSmall(cat.id, v)}
-                                    onUpdateSmallTopRow={v => handleUpdateSmallTopRow(cat.id, v)}
-                                    onUpdateRandom={v => handleUpdateRandomize(cat.id, v)}
-                                    onUpdatePinned={v => handleUpdatePinned(cat.id, v)}
-                                    onRemove={() => removeManifestCatalog(cat.id)}
-                                />
-                            ))
-                        )}
-                    </div>
-                </SortableContext>
-            </DndContext>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <div className="w-px h-5 bg-border mx-1" />
+                    <Button variant="outline" size="sm" onClick={handleSortAZ} className="h-8 text-xs border-border hover:bg-muted text-foreground/70 hover:text-foreground">
+                        <ArrowDownAZ className="w-4 h-4 mr-1" /> A-Z
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleSortZA} className="h-8 text-xs border-border hover:bg-muted text-foreground/70 hover:text-foreground">
+                        <ArrowUpZA className="w-4 h-4 mr-1" /> Z-A
+                    </Button>
+                </div>
+
+                <div className="p-3">
+                    {/* Sortable list */}
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                        <SortableContext items={enabledIds} strategy={verticalListSortingStrategy}>
+                            <div className="space-y-1 max-h-[700px] overflow-y-auto pr-1 custom-scrollbar">
+                                {enabledCatalogs.length === 0 ? (
+                                    <div className="text-center py-10 border border-dashed border-border/80 rounded-2xl bg-background/20 flex flex-col items-center justify-center gap-3">
+                                        <div className="p-4 bg-blue-500/10 rounded-full border border-blue-500/20">
+                                            <ListX className="w-8 h-8 text-blue-500/60" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-sm font-bold text-foreground">No Enabled Catalogs</p>
+                                            <p className="text-xs text-foreground/70 max-w-[280px] leading-relaxed mx-auto">
+                                                Add a catalog using the button above or enable existing ones.
+                                            </p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    enabledCatalogs.map(cat => (
+                                        <SortableCatalogItem
+                                            key={cat.id}
+                                            catalog={cat}
+                                            isLandscape={landscapeList.includes(cat.id)}
+                                            isSmall={smallList.includes(cat.id)}
+                                            isSmallTopRow={smallTopRowList.includes(cat.id)}
+                                            isRandom={randomizedList.includes(cat.id)}
+                                            isPinned={pinnedList.includes(cat.id)}
+                                            onUpdateField={patch => updateCatalogField(cat.id, patch)}
+                                            onUpdateLandscape={v => handleUpdateLandscape(cat.id, v)}
+                                            onUpdateSmall={v => handleUpdateSmall(cat.id, v)}
+                                            onUpdateSmallTopRow={v => handleUpdateSmallTopRow(cat.id, v)}
+                                            onUpdateRandom={v => handleUpdateRandomize(cat.id, v)}
+                                            onUpdatePinned={v => handleUpdatePinned(cat.id, v)}
+                                            onRemove={() => removeManifestCatalog(cat.id)}
+                                        />
+                                    ))
+                                )}
+                            </div>
+                        </SortableContext>
+                    </DndContext>
+                </div>
+            </div>
 
             {/* Disabled section */}
             {disabledCatalogs.length > 0 && (

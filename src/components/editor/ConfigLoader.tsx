@@ -240,13 +240,13 @@ export function ConfigLoader() {
     return (
         <div className="min-h-[100dvh] relative font-sans text-foreground selection:bg-blue-500/30 overflow-x-hidden">
             {/* Robust Background Stack - Guaranteed to cover full viewport including notch/safe areas */}
-            <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
+            <div className="fixed -inset-[100px] -z-10 pointer-events-none overflow-hidden">
                 {/* 1. Base solid background */}
                 <div className="absolute inset-0 bg-background" />
 
                 {/* 2. Grid pattern - extended even further for super-robust coverage */}
                 <div 
-                    className="absolute inset-x-0 -top-[300px] -bottom-[300px]" 
+                    className="absolute inset-0" 
                     style={{ 
                         backgroundImage: `linear-gradient(to right, #80808012 1px, transparent 1px), linear-gradient(to bottom, #80808012 1px, transparent 1px)`,
                         backgroundSize: '24px 24px'
@@ -263,21 +263,21 @@ export function ConfigLoader() {
                 <ThemeToggle />
             </div>
 
-            <div className="w-full min-h-[100dvh] flex items-center justify-center relative z-10 px-4 py-8 pt-[max(2rem,env(safe-area-inset-top))]">
+            <div className="w-full min-h-[100dvh] flex items-center justify-center relative z-10 px-4 pt-safe pb-8">
                 {/* Content Wrapper */}
-            <div className="relative z-10 w-full max-w-4xl mx-auto px-4 py-8 sm:py-12 pt-safe-top">
-                <div className="text-center mb-6 space-y-3">
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center mb-2 mx-auto">
+            <div className="relative z-10 w-full max-w-4xl mx-auto px-4 py-6 sm:py-8">
+                <div className="text-center mb-4 space-y-3">
+                    <div className="w-20 h-20 sm:w-28 sm:h-28 flex items-center justify-center mb-0 mx-auto">
                         <img src="/omni-snapshot-editor/clown.png" alt="Logo" className="w-full h-full object-contain" />
                     </div>
-                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground drop-shadow-sm dark:drop-shadow-md">
                         Omni Snapshot Manager
                     </h1>
                     <p className="text-sm sm:text-base text-foreground/70 max-w-lg mx-auto leading-relaxed">
                         Import an Omni snapshot from GitHub or your local disk, or create a new setup from scratch.
                     </p>
 
-                    <div className="pt-8 flex flex-col items-center gap-4">
+                    <div className="pt-6 flex flex-col items-center gap-4">
                         {/* Row 1: UME Templates (Centered & Prominent) */}
                         <div className="flex justify-center w-full">
                             {/* 1. UME Templates */}
@@ -285,10 +285,10 @@ export function ConfigLoader() {
                                 <DropdownMenuTrigger asChild>
                                     <button
                                         type="button"
-                                        className="group flex w-full max-w-[292px] items-center justify-center gap-2.5 rounded-xl border border-blue-500/20 bg-blue-500/10 px-6 py-3 text-blue-400 backdrop-blur-xl transition-all duration-300 shadow-lg hover:-translate-y-0.5 hover:bg-blue-500/20 hover:shadow-blue-500/10 sm:min-w-[292px] sm:w-auto"
+                                        className="group flex w-full max-w-[292px] items-center justify-center gap-2.5 rounded-xl border border-blue-500/30 bg-blue-500/10 dark:bg-blue-500/15 px-6 py-3 text-blue-600 dark:text-blue-400 backdrop-blur-xl transition-all duration-300 shadow-lg hover:-translate-y-0.5 hover:bg-blue-500/20 hover:shadow-blue-500/10 sm:min-w-[292px] sm:w-auto"
                                     >
                                         <div className="p-1.5 bg-blue-500/20 rounded-lg group-hover:scale-110 transition-transform">
-                                            <FileDown className="h-4 w-4 text-blue-400" />
+                                            <FileDown className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                                         </div>
                                         <span className="text-[13px] font-bold tracking-tight">Download UME Templates</span>
                                         <ChevronDown className="h-4 w-4 opacity-50 group-hover:opacity-100 transition-opacity" />
@@ -395,17 +395,17 @@ export function ConfigLoader() {
                             </DropdownMenu>
                         </div>
 
-                        {/* Row 2: Secondary Resources */}
-                        <div className="flex w-full flex-row items-center justify-center gap-2 sm:gap-3">
+                        {/* Row 2: Secondary Resources - Aligned to match Row 1 width (292px) */}
+                        <div className="flex w-full max-w-[292px] items-center justify-center gap-2 sm:gap-3">
                             {/* 2. Documentation */}
                             <Dialog>
                                 <DialogTrigger asChild>
                                     <button
                                         type="button"
-                                        className="group flex items-center justify-center gap-2 rounded-xl border border-indigo-500/20 bg-indigo-500/10 px-4 py-2 text-center text-indigo-400 backdrop-blur-md transition-all duration-300 shadow-sm hover:-translate-y-0.5 hover:bg-indigo-500/20 w-fit min-w-[120px]"
+                                        className="group flex flex-1 items-center justify-center gap-2 rounded-xl border border-indigo-500/30 bg-indigo-500/15 px-4 py-2 text-center text-indigo-700 dark:text-indigo-300 backdrop-blur-md transition-all duration-300 shadow-sm hover:-translate-y-0.5 hover:bg-indigo-500/25 hover:shadow-indigo-500/10"
                                     >
-                                        <BookOpen className="h-3.5 w-3.5 text-indigo-400/80 group-hover:text-indigo-400 transition-all" />
-                                        <span className="text-[10px] sm:text-[11px] font-bold tracking-tight">Documentation</span>
+                                        <BookOpen className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform" />
+                                        <span className="text-[10px] sm:text-[11px] font-bold tracking-wide">Documentation</span>
                                     </button>
                                 </DialogTrigger>
                                 <Documentation />
@@ -416,10 +416,10 @@ export function ConfigLoader() {
                                 href="https://ko-fi.com/botbidraiser"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="group flex items-center justify-center gap-2 rounded-xl border border-pink-500/20 bg-pink-500/10 px-4 py-2 text-center text-pink-400 backdrop-blur-md transition-all duration-300 shadow-sm hover:-translate-y-0.5 hover:bg-pink-500/20 hover:text-pink-400 w-fit min-w-[120px]"
+                                className="group flex flex-1 items-center justify-center gap-2 rounded-xl border border-pink-500/30 bg-pink-500/15 px-4 py-2 text-center text-pink-700 dark:text-pink-300 backdrop-blur-md transition-all duration-300 shadow-sm hover:-translate-y-0.5 hover:bg-pink-500/25 hover:shadow-pink-500/10"
                             >
-                                <Heart className="h-3.5 w-3.5 text-pink-400/80 group-hover:text-pink-400 group-hover:fill-pink-400/10 transition-all" />
-                                <span className="text-[10px] sm:text-[11px] font-bold tracking-tight">Support Me</span>
+                                <Heart className="h-3.5 w-3.5 text-pink-600 dark:text-pink-400 group-hover:scale-110 group-hover:fill-pink-500/20 transition-transform" />
+                                <span className="text-[10px] sm:text-[11px] font-bold tracking-wide">Support Me</span>
                             </a>
                         </div>
                     </div>
@@ -432,7 +432,7 @@ export function ConfigLoader() {
                     </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch mt-10">
                     {/* 1. Local File Section */}
                     <Card className="bg-card/90 dark:bg-card/60 border-border/80 dark:border-border/60 backdrop-blur-xl shadow-lg dark:shadow-2xl flex flex-col h-full transition-all duration-300 hover:border-foreground/20 dark:hover:border-border/80 hover:bg-card hover:shadow-xl dark:hover:bg-card/80 overflow-hidden group">
                         <div className="h-1 w-full bg-gradient-to-r from-emerald-500 to-teal-500"></div>
@@ -566,12 +566,12 @@ export function ConfigLoader() {
                     </Card>
                 </div>
 
-                <div className="mt-8 text-center pb-safe">
-                    <p className="text-[10px] text-foreground/70 font-bold uppercase tracking-widest leading-relaxed">
-                        v0.2.19 • Built with Antigravity by Bot-Bid-Raiser
+                <div className="mt-16 text-center pb-4">
+                    <p className="text-[10px] text-foreground/40 font-semibold uppercase tracking-[0.2em] leading-relaxed">
+                        v{APP_VERSION} • Built with Antigravity by Bot-Bid-Raiser
                     </p>
                 </div>
-                </div>
+            </div>
             </div>
         </div>
     );

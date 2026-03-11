@@ -66,7 +66,6 @@ export function RenameGroupModal({ isOpen, onClose, oldName, isMainGroup = false
                             value={newName}
                             onChange={e => setNewName(e.target.value)}
                             className="h-10 text-base sm:text-sm bg-background border-input focus-visible:ring-blue-500"
-                            autoFocus
                         />
                     </div>
 

@@ -105,14 +105,13 @@ function SortableItem({
             </button>
             <div className="flex-1 min-w-0">
                 {isEditing && !isGroup ? (
-                    <Input
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onBlur={() => handleKeyDown({ key: 'Enter' } as any)}
-                        onKeyDown={handleKeyDown}
-                        autoFocus
-                        className="h-8 text-sm bg-background border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500"
-                    />
+                        <Input
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onBlur={() => handleKeyDown({ key: 'Enter' } as any)}
+                            onKeyDown={handleKeyDown}
+                            className="h-8 text-sm bg-background border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500"
+                        />
                 ) : (
                     <div
                         className="flex-1 min-w-0 cursor-pointer p-1.5 -ml-1.5 rounded hover:bg-muted/80 transition-colors border border-transparent hover:border-border"

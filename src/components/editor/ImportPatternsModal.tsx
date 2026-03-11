@@ -62,31 +62,24 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
         }
     }, [isOpen, fetchManifest]);
 
-    const templates: { label: string; url: string }[] = [];
-    if (manifest) {
-        const omni = manifest.templates.find(t => t.id === 'ume-main');
-        const aiometadata = manifest.templates.find(t => t.id === 'aiometadata');
-        const aiostreams = manifest.templates.find(t => t.id === 'aiostreams');
-
-        if (omni) templates.push({ label: omni.name, url: omni.url });
-        if (aiometadata) templates.push({ label: aiometadata.name, url: aiometadata.url });
-        if (aiostreams) templates.push({ label: aiostreams.name, url: aiostreams.url });
-    }
-
-    if (templates.length === 0) {
-        templates.push({
-            label: "UME Omni Template",
-            url: "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/Older%20Versions/v1.7.1/omni-snapshot-unified-media-experience-v1.7.1-2026-03-02.json"
-        });
-    }
+    const templates: { label: string; url: string }[] = manifest?.templates?.length ?
+        manifest.templates
+            .filter(t => t.id.startsWith('ume-') && t.id !== 'ume-catalogs' && t.url)
+            .map(t => ({ label: t.name, url: t.url })) : [
+            {
+                label: "UME Omni Template",
+                url: "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/Older%20Versions/v1.7.1/omni-snapshot-unified-media-experience-v1.7.1-2026-03-02.json"
+            },
+        ];
 
     const [selectedVersion, setSelectedVersion] = useState(templates[0].label);
 
     useEffect(() => {
-        if (manifest && templates.length > 0) {
-            setSelectedVersion(templates[0].label);
+        const defaultTemplate = manifest?.templates?.find(t => t.id === 'ume-main' || t.isDefault);
+        if (defaultTemplate) {
+            setSelectedVersion(defaultTemplate.name);
         }
-    }, [manifest, templates.length, templates[0]?.label]);
+    }, [manifest]);
 
     const [templateLoading, setTemplateLoading] = useState(false);
 

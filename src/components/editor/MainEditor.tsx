@@ -300,9 +300,9 @@ export function MainEditor() {
     return (
         <div className="relative flex h-[100dvh] overflow-x-hidden overflow-y-hidden bg-background text-foreground font-sans">
             {/* Background Grid Pattern - Visual Continuity from Home */}
-            <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+            <div className="absolute -inset-[100px] z-0 pointer-events-none overflow-hidden">
                 <div 
-                    className="absolute inset-[0%] w-full h-full opacity-[0.15] dark:opacity-[0.25]"
+                    className="absolute inset-0 opacity-[0.15] dark:opacity-[0.25]"
                     style={{
                         backgroundImage: `linear-gradient(to right, oklch(0.60 0 0 / 0.2) 1px, transparent 1px), linear-gradient(to bottom, oklch(0.60 0 0 / 0.2) 1px, transparent 1px)`,
                         backgroundSize: '40px 40px',
@@ -334,7 +334,7 @@ export function MainEditor() {
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="leading-none text-foreground">Omni Snapshot</span>
-                                    <span className="text-[11px] text-blue-400 font-bold uppercase tracking-widest mt-0.5">Manager</span>
+                                    <span className="text-[11px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-widest mt-0.5">Manager</span>
                                 </div>
                             </h1>
                         </div>
@@ -366,7 +366,7 @@ export function MainEditor() {
                             <DialogTrigger asChild>
                                 <Button
                                     variant="ghost"
-                                    className="w-full justify-start gap-3 h-10 px-3 text-sm text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 font-medium"
+                                    className="w-full justify-start gap-3 h-10 px-3 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-500/10 font-medium"
                                 >
                                     <BookOpen className="w-4 h-4" />
                                     Documentation
@@ -377,7 +377,7 @@ export function MainEditor() {
                         <Button
                             asChild
                             variant="ghost"
-                            className="w-full justify-start gap-3 h-10 px-3 text-sm text-pink-500 hover:text-pink-400 hover:bg-pink-500/10 font-medium"
+                            className="w-full justify-start gap-3 h-10 px-3 text-sm text-pink-600 dark:text-pink-500 hover:text-pink-700 dark:hover:text-pink-400 hover:bg-pink-500/10 font-medium"
                         >
                             <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer">
                                 <Heart className="w-4 h-4" />
@@ -426,24 +426,22 @@ export function MainEditor() {
                         </Button>
                     </div>
 
-                    <div className="mt-3 hidden lg:block">
-                        <div className="flex flex-col gap-2.5 pt-3 pb-2 border-t border-border/40">
-                            <div className="flex items-center justify-between">
-                                <a href="https://github.com/nobnobz/omni-snapshot-editor" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-foreground/70 hover:text-foreground transition-colors font-medium">
-                                    <Github className="w-3.5 h-3.5" />
-                                    GitHub
-                                </a>
-                                <div className="scale-[0.80] origin-right -my-1">
-                                    <ThemeToggle />
-                                </div>
+                    <div className="flex flex-col gap-2.5 pt-3 pb-2 border-t border-border/40">
+                        <div className="flex items-center justify-between">
+                            <a href="https://github.com/nobnobz/omni-snapshot-editor" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-foreground/70 hover:text-foreground transition-colors font-medium">
+                                <Github className="w-3.5 h-3.5" />
+                                GitHub
+                            </a>
+                            <div className="scale-[0.80] origin-right -my-1">
+                                <ThemeToggle />
                             </div>
-                            <div className="flex items-center justify-between">
-                                <div className="text-xs text-foreground/70 font-medium">
-                                    Made by Bot-Bid-Raiser
-                                </div>
-                                <div className="text-xs text-foreground/70 font-medium">
-                                    v{APP_VERSION}
-                                </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <div className="text-[10px] text-foreground/40 font-medium">
+                                Made by Bot-Bid-Raiser
+                            </div>
+                            <div className="text-[10px] text-foreground/40 font-mono">
+                                v{APP_VERSION}
                             </div>
                         </div>
                     </div>
@@ -505,7 +503,7 @@ export function MainEditor() {
                 </div>
 
                 <header
-                className={`sticky top-0 z-50 w-full border-b border-border/50 bg-card/80 backdrop-blur-md transition-all duration-300 transform pt-safe-top flex items-center px-4 h-16
+                className={`sticky top-0 z-50 w-full border-b border-border/50 bg-card/80 backdrop-blur-md transition-all duration-300 transform pt-safe-top flex items-center px-4 h-16 lg:hidden
                     ${isHeaderVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"}
                 `}
             >
@@ -572,7 +570,7 @@ export function MainEditor() {
                     </div>
                 </header>
 
-                <div className="max-w-5xl mx-auto px-4 py-8 sm:p-10 space-y-16">
+                <div className="max-w-5xl mx-auto px-4 py-8 sm:p-10 space-y-10">
                     {uiNotice && (
                         <div
                             className={`rounded-xl border px-4 py-3 text-sm leading-relaxed ${uiNotice.tone === "error"
@@ -616,7 +614,7 @@ export function MainEditor() {
                         if (keysToRender.length === 0 && !["aiometadata", "catalogs", "groups", "patterns"].includes(section.id)) return null;
 
                         return (
-                            <section key={section.id} id={section.id} className="scroll-mt-8 pb-12 border-b border-border/20 last:border-0 last:pb-0">
+                            <section key={section.id} id={section.id} className="scroll-mt-8 pb-8 border-b border-border/20 last:border-0 last:pb-0">
                                 <div className="flex items-center justify-between mb-5">
                                     <h3 className="text-xl font-bold text-foreground tracking-tight">{section.title}</h3>
                                     {["groups", "catalogs", "patterns"].includes(section.id) && (
@@ -776,7 +774,7 @@ export function MainEditor() {
                                         </div>
                                     ) : section.id === "settings" ? (
                                         <div className="space-y-6">
-                                            <div className="space-y-6">
+                                            <div className="space-y-4">
                                                 {keysToRender.map(key => (
                                                     <GenericRenderer
                                                         key={key}
@@ -789,23 +787,27 @@ export function MainEditor() {
                                         </div>
                                     ) : section.id === "ordering" ? (
                                         <div className="space-y-6">
-                                            {keysToRender.map(key => (
-                                                <OrderingEditor
-                                                    key={key}
-                                                    configKey={key}
-                                                />
-                                            ))}
+                                            <div className="space-y-4">
+                                                {keysToRender.map(key => (
+                                                    <OrderingEditor
+                                                        key={key}
+                                                        configKey={key}
+                                                    />
+                                                ))}
+                                            </div>
                                         </div>
                                     ) : (
                                         <div className="space-y-6">
-                                            {keysToRender.map(key => (
-                                                <GenericRenderer
-                                                    key={key}
-                                                    data={currentValues[key]}
-                                                    path={[key]}
-                                                    searchQuery={searchTerm}
-                                                />
-                                            ))}
+                                            <div className="space-y-4">
+                                                {keysToRender.map(key => (
+                                                    <GenericRenderer
+                                                        key={key}
+                                                        data={currentValues[key]}
+                                                        path={[key]}
+                                                        searchQuery={searchTerm}
+                                                    />
+                                                ))}
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -813,33 +815,6 @@ export function MainEditor() {
                         );
                     })}
 
-                    {/* Mobile Specific Footer - Fills the "dead zone" at bottom */}
-                    <footer className="lg:hidden mt-16 pt-10 pb-20 border-t border-border/30 px-4">
-                        <div className="flex flex-col items-center gap-6">
-                            <div className="flex items-center gap-8">
-                                <a href="https://github.com/nobnobz/omni-snapshot-editor" target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 text-foreground/60 hover:text-foreground transition-colors">
-                                    <Github className="w-6 h-6" />
-                                    <span className="text-[10px] font-bold uppercase tracking-widest">GitHub</span>
-                                </a>
-                                <div className="w-px h-8 bg-border/40" />
-                                <div className="flex flex-col items-center gap-2">
-                                    <ThemeToggle />
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/60">Theme</span>
-                                </div>
-                            </div>
-
-                            <div className="text-center space-y-1">
-                                <p className="text-[11px] font-bold text-foreground/50 uppercase tracking-tighter">
-                                    Omni Snapshot Manager
-                                </p>
-                                <p className="text-[10px] text-foreground/40 font-medium tracking-tight">
-                                    Made by Bot-Bid-Raiser • v{APP_VERSION}
-                                </p>
-                            </div>
-
-                            <div className="pb-safe-bottom" />
-                        </div>
-                    </footer>
                 </div>
             </main>
 
