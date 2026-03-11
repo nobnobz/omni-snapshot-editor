@@ -307,7 +307,7 @@ export function MainEditor() {
     };
 
     return (
-        <div className="relative flex min-h-screen lg:h-[100dvh] overflow-x-hidden lg:overflow-y-hidden bg-background text-foreground font-sans">
+        <div className="relative flex min-h-screen lg:h-[100dvh] w-full max-w-[100vw] overflow-x-hidden lg:overflow-y-hidden bg-background text-foreground font-sans">
             {/* Background Grid Pattern - Visual Continuity from Home */}
             <div className="fixed -inset-[100px] z-0 pointer-events-none overflow-hidden">
                 <div className="absolute -inset-[100px] bg-background" />
@@ -492,7 +492,7 @@ export function MainEditor() {
             {/* Main Content */}
             <main 
                 ref={scrollContainerRef}
-                className="flex-1 lg:overflow-x-hidden lg:overflow-y-auto scroll-smooth relative z-10 pb-safe-bottom"
+                className="flex-1 overflow-x-hidden lg:overflow-y-auto scroll-smooth relative z-10 pb-safe-bottom"
             >
                 {/* Desktop Static Header (Not Sticky) */}
                 <div className="hidden lg:flex items-center justify-between px-8 py-10 border-b border-border bg-gradient-to-b from-card to-transparent">

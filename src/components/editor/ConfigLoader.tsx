@@ -361,8 +361,6 @@ export function ConfigLoader() {
                                                         setSelectedVersion(template.name);
                                                         setUrl(template.url);
                                                         handleDownloadTemplate(template.url, template.name);
-                                                        // Scroll to GitHub section
-                                                        document.querySelector('.grid')?.children[1].scrollIntoView({ behavior: 'smooth' });
                                                     }}
                                                     className="cursor-pointer focus:bg-blue-500/15 focus:text-blue-400 flex items-center gap-3 px-3 py-2.5 rounded-lg group transition-colors"
                                                 >

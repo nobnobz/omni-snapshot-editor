@@ -542,74 +542,116 @@ export function CatalogEditor() {
                 {/* Unified Toolbar */}
                 <div className="sticky top-0 z-20 flex flex-wrap items-center gap-2 bg-card/95 backdrop-blur-md p-3 border-b border-border/80 shadow-sm">
                     {/* Add Catalog */}
-                    <DropdownMenu open={isAddMenuOpen} onOpenChange={open => {
-                        setIsAddMenuOpen(open);
-                        if (!open) setAddSearch("");
-                    }}>
-                        <DropdownMenuTrigger asChild>
-                            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-8 px-3 shadow-lg shadow-blue-500/20">
-                                <Plus className="w-4 h-4 mr-1.5" /> Add Catalog
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                            align="end"
-                            className="w-[min(92vw,28rem)] sm:w-80 bg-popover border-border text-popover-foreground shadow-2xl p-0 flex flex-col overflow-hidden"
-                            style={{
-                                maxHeight: "calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 5rem)",
+                    {isMobileView ? (
+                        <Dialog
+                            open={isAddDialogOpen}
+                            onOpenChange={(open) => {
+                                setIsAddDialogOpen(open);
+                                if (!open) setAddSearch("");
                             }}
                         >
-                            <div className="p-3 border-b border-border bg-card space-y-2 shrink-0">
-                                <h4 className="text-[10px] uppercase font-bold text-foreground/70 flex justify-between">
-                                    <span>Add Catalog</span>
-                                    <span className="text-foreground/70/80">{filteredAddCandidates.length} available</span>
-                                </h4>
-                                <div className="relative">
-                                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-foreground/70" />
-                                    <Input
-                                        placeholder="Search by name or ID..."
-                                        value={addSearch}
-                                        onChange={e => setAddSearch(e.target.value)}
-                                        className="h-9 sm:h-7 text-base sm:text-[11px] pl-7 bg-background border-border focus-visible:ring-blue-600"
-                                        onKeyDown={e => e.stopPropagation()}
-                                    />
+                            <DialogTrigger asChild>
+                                <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-8 px-3 shadow-lg shadow-blue-500/20">
+                                    <Plus className="w-4 h-4 mr-1.5" /> Add Catalog
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:hidden fixed left-1/2 top-1/2 w-[96vw] max-w-[calc(100%-1rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card p-0 shadow-2xl border-border z-50 h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] max-h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] flex flex-col overflow-hidden">
+                                <DialogHeader className="shrink-0 border-b border-border/60 p-4 pb-3">
+                                    <DialogTitle className="text-base">Add Catalog</DialogTitle>
+                                    <DialogDescription className="text-xs text-foreground/60">
+                                        {filteredAddCandidates.length} available
+                                    </DialogDescription>
+                                    <div className="relative mt-2">
+                                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-foreground/70" />
+                                        <Input
+                                            placeholder="Search by name or ID..."
+                                            value={addSearch}
+                                            onChange={e => setAddSearch(e.target.value)}
+                                            className="h-10 text-base pl-8 bg-background border-border focus-visible:ring-blue-600"
+                                        />
+                                    </div>
+                                </DialogHeader>
+
+                                <div className="flex-1 overflow-y-auto custom-scrollbar overscroll-contain px-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+                                    {groupedAddCandidates.length === 0 ? (
+                                        <p className="text-[11px] text-foreground/70 p-4 text-center">No catalogs found.</p>
+                                    ) : (
+                                        groupedAddCandidates.map(group => (
+                                            <div key={group.category} className="mb-2 last:mb-0">
+                                                <div className="sticky top-0 bg-card/95 backdrop-blur-sm py-2 px-3 z-[60] border-b border-border/80 mb-1">
+                                                    <h5 className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">{group.category}</h5>
+                                                </div>
+                                                <div className="flex flex-col gap-1 px-1">
+                                                    {group.items.map(c => (
+                                                        <button
+                                                            key={c.id}
+                                                            type="button"
+                                                            onClick={() => handleAddCatalog(c)}
+                                                            className="w-full text-left flex items-start gap-2 p-2.5 rounded-md border border-transparent hover:border-border/60 hover:bg-muted/60 transition-colors"
+                                                        >
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-sm font-medium truncate">{c.name}</p>
+                                                                <p className="text-[10px] text-foreground/70 font-mono truncate mt-0.5">{c.id}</p>
+                                                            </div>
+                                                            {c.action === 'reenable' && (
+                                                                <Badge variant="outline" className="text-[8px] h-4 px-1 border-border text-foreground/70 shrink-0 self-center">disabled</Badge>
+                                                            )}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
-                            </div>
-                            <div className="flex-1 overflow-y-auto custom-scrollbar overscroll-contain pb-[calc(1rem+env(safe-area-inset-bottom))]">
-                                {filteredAddCandidates.length === 0 ? (
-                                    <p className="text-[10px] text-foreground/70 p-4 text-center">No catalogs found.</p>
-                                ) : (
-                                    (() => {
-                                        const groups: Record<string, typeof filteredAddCandidates> = {
-                                            "Other": []
-                                        };
-                                        filteredAddCandidates.forEach(c => {
-                                            const match = c.name.match(/^\[(.*?)\]\s*(.*)$/);
-                                            if (match) {
-                                                const category = match[1];
-                                                const cleanName = match[2];
-                                                if (!groups[category]) groups[category] = [];
-                                                // Provide the cleaned name for display
-                                                groups[category].push({ ...c, name: cleanName });
-                                            } else {
-                                                groups["Other"].push(c);
-                                            }
-                                        });
 
-                                        const sortedCategories = Object.keys(groups)
-                                            .filter(k => k !== "Other")
-                                            .sort((a, b) => a.localeCompare(b));
-
-                                        if (groups["Other"].length > 0) {
-                                            sortedCategories.push("Other");
-                                        }
-
-                                        return sortedCategories.map(category => (
-                                            <div key={category} className="mb-2 last:mb-0">
-                                                 <div className="sticky top-0 bg-popover/95 backdrop-blur-sm py-1.5 px-3 z-[60] border-b border-border/80 mb-1 -mx-0">
-                                                     <h5 className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">{category}</h5>
-                                                 </div>
+                                <DialogFooter className="shrink-0 border-t border-border/60 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+                                    <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} className="w-full">
+                                        Done
+                                    </Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
+                    ) : (
+                        <DropdownMenu open={isAddMenuOpen} onOpenChange={open => {
+                            setIsAddMenuOpen(open);
+                            if (!open) setAddSearch("");
+                        }}>
+                            <DropdownMenuTrigger asChild>
+                                <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-8 px-3 shadow-lg shadow-blue-500/20">
+                                    <Plus className="w-4 h-4 mr-1.5" /> Add Catalog
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                                align="end"
+                                className="w-80 bg-popover border-border text-popover-foreground shadow-2xl p-0 max-h-[70vh] flex flex-col overflow-hidden"
+                            >
+                                <div className="p-3 border-b border-border bg-card space-y-2 shrink-0">
+                                    <h4 className="text-[10px] uppercase font-bold text-foreground/70 flex justify-between">
+                                        <span>Add Catalog</span>
+                                        <span className="text-foreground/70/80">{filteredAddCandidates.length} available</span>
+                                    </h4>
+                                    <div className="relative">
+                                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-foreground/70" />
+                                        <Input
+                                            placeholder="Search by name or ID..."
+                                            value={addSearch}
+                                            onChange={e => setAddSearch(e.target.value)}
+                                            className="h-7 text-[11px] pl-7 bg-background border-border focus-visible:ring-blue-600"
+                                            onKeyDown={e => e.stopPropagation()}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex-1 overflow-y-auto custom-scrollbar overscroll-contain pb-4">
+                                    {groupedAddCandidates.length === 0 ? (
+                                        <p className="text-[10px] text-foreground/70 p-4 text-center">No catalogs found.</p>
+                                    ) : (
+                                        groupedAddCandidates.map(group => (
+                                            <div key={group.category} className="mb-2 last:mb-0">
+                                                <div className="sticky top-0 bg-popover/95 backdrop-blur-sm py-1.5 px-3 z-[60] border-b border-border/80 mb-1 -mx-0">
+                                                    <h5 className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">{group.category}</h5>
+                                                </div>
                                                 <div className="flex flex-col gap-0.5 px-1">
-                                                    {groups[category].map(c => (
+                                                    {group.items.map(c => (
                                                         <DropdownMenuItem
                                                             key={c.id}
                                                             onSelect={() => handleAddCatalog(c)}
@@ -626,12 +668,12 @@ export function CatalogEditor() {
                                                     ))}
                                                 </div>
                                             </div>
-                                        ));
-                                    })()
-                                )}
-                            </div>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                                        ))
+                                    )}
+                                </div>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    )}
 
                     <div className="w-px h-5 bg-border mx-1" />
                     <Button variant="outline" size="sm" onClick={handleSortAZ} className="h-8 text-xs border-border hover:bg-muted text-foreground/70 hover:text-foreground">
