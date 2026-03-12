@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useConfig } from "@/context/ConfigContext";
 import {
     DropdownMenu,
@@ -500,18 +501,18 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                             />
                                         ))}
                                     </SortableContext>
-                                    <DragOverlay
-                                        dropAnimation={{
-                                            sideEffects: defaultDropAnimationSideEffects({
-                                                styles: {
-                                                    active: {
-                                                        opacity: "0.15",
+                                    {activeCatalogId && typeof document !== 'undefined' ? createPortal(
+                                        <DragOverlay
+                                            dropAnimation={{
+                                                sideEffects: defaultDropAnimationSideEffects({
+                                                    styles: {
+                                                        active: {
+                                                            opacity: "0.15",
+                                                        },
                                                     },
-                                                },
-                                            }),
-                                        }}
-                                    >
-                                        {activeCatalogId ? (
+                                                }),
+                                            }}
+                                        >
                                             <div className="flex items-center gap-3 rounded-lg border border-blue-500/70 bg-card px-3 py-2.5 shadow-2xl opacity-95">
                                                 <GripVertical className="h-4 w-4 text-blue-500" />
                                                 <div className="min-w-0 flex-1">
@@ -525,8 +526,9 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                                     ) : null}
                                                 </div>
                                             </div>
-                                        ) : null}
-                                    </DragOverlay>
+                                        </DragOverlay>,
+                                        document.body
+                                    ) : null}
                                 </DndContext>
                             </div>
                         )}
@@ -864,6 +866,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                             <DndContext 
                                 sensors={sensors} 
                                 collisionDetection={closestCenter} 
+                                modifiers={[restrictVerticalDrag]}
                                 onDragStart={handleSubgroupDragStart}
                                 onDragEnd={handleSubgroupDragEnd}
                             >
@@ -879,24 +882,25 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                         />
                                     ))}
                                 </SortableContext>
-                                <DragOverlay dropAnimation={{
-                                    sideEffects: defaultDropAnimationSideEffects({
-                                        styles: {
-                                            active: {
-                                                opacity: '0.4',
+                                {activeSubgroupId && typeof document !== 'undefined' ? createPortal(
+                                    <DragOverlay dropAnimation={{
+                                        sideEffects: defaultDropAnimationSideEffects({
+                                            styles: {
+                                                active: {
+                                                    opacity: '0.4',
+                                                },
                                             },
-                                        },
-                                    }),
-                                }}>
-                                    {activeSubgroupId ? (
+                                        }),
+                                    }}>
                                         <div className="border border-blue-500 rounded-xl overflow-hidden bg-card shadow-2xl scale-[1.02] opacity-90 p-4 flex items-center gap-4">
                                             <GripVertical className="h-4 w-4 text-blue-500" />
                                             <div className="font-semibold text-sm text-foreground">
                                                 {formatDisplayName(activeSubgroupId)}
                                             </div>
                                         </div>
-                                    ) : null}
-                                </DragOverlay>
+                                    </DragOverlay>,
+                                    document.body
+                                ) : null}
                             </DndContext>
                         </div>
                     )}
@@ -1166,18 +1170,18 @@ function UnassignedSubgroupRow({
                                         />
                                     ))}
                                 </SortableContext>
-                                <DragOverlay
-                                    dropAnimation={{
-                                        sideEffects: defaultDropAnimationSideEffects({
-                                            styles: {
-                                                active: {
-                                                    opacity: "0.15",
+                                {activeCatalogId && typeof document !== 'undefined' ? createPortal(
+                                    <DragOverlay
+                                        dropAnimation={{
+                                            sideEffects: defaultDropAnimationSideEffects({
+                                                styles: {
+                                                    active: {
+                                                        opacity: "0.15",
+                                                    },
                                                 },
-                                            },
-                                        }),
-                                    }}
-                                >
-                                    {activeCatalogId ? (
+                                            }),
+                                        }}
+                                    >
                                         <div className="flex items-center gap-3 rounded-lg border border-blue-500/70 bg-card px-3 py-2.5 shadow-2xl opacity-95">
                                             <GripVertical className="h-4 w-4 text-blue-500" />
                                             <div className="min-w-0 flex-1">
@@ -1191,8 +1195,9 @@ function UnassignedSubgroupRow({
                                                 ) : null}
                                             </div>
                                         </div>
-                                    ) : null}
-                                </DragOverlay>
+                                    </DragOverlay>,
+                                    document.body
+                                ) : null}
                             </DndContext>
                         </div>
 
@@ -1421,6 +1426,7 @@ export function UnifiedSubgroupEditor() {
                     <DndContext 
                         sensors={sensors} 
                         collisionDetection={closestCenter} 
+                        modifiers={[restrictVerticalDrag]}
                         onDragStart={handleMainDragStart}
                         onDragEnd={handleMainDragEnd}
                     >
@@ -1446,24 +1452,25 @@ export function UnifiedSubgroupEditor() {
                             </Accordion>
                         </SortableContext>
 
-                        <DragOverlay dropAnimation={{
-                            sideEffects: defaultDropAnimationSideEffects({
-                                styles: {
-                                    active: {
-                                        opacity: '0.4',
+                        {activeMainGroupId && typeof document !== 'undefined' ? createPortal(
+                            <DragOverlay dropAnimation={{
+                                sideEffects: defaultDropAnimationSideEffects({
+                                    styles: {
+                                        active: {
+                                            opacity: '0.4',
+                                        },
                                     },
-                                },
-                            }),
-                        }}>
-                            {activeMainGroupId ? (
+                                }),
+                            }}>
                                 <div className="border border-blue-500 rounded-xl overflow-hidden bg-card shadow-2xl scale-[1.02] opacity-95 p-4 flex items-center gap-4">
                                     <GripVertical className="h-5 w-5 text-blue-500" />
                                     <div className="font-bold text-lg tracking-tight text-foreground">
                                         {formatDisplayName(mainCatalogGroups[activeMainGroupId]?.name || "Moving Group...")}
                                     </div>
                                 </div>
-                            ) : null}
-                        </DragOverlay>
+                            </DragOverlay>,
+                            document.body
+                        ) : null}
                     </DndContext>
                 </div>
             </div>
