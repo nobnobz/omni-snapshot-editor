@@ -58,6 +58,46 @@ type ExportableConfig = OmniConfig & {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === "object" && value !== null && !Array.isArray(value);
 
+const CATALOG_ID_LIST_KEYS = [
+    "catalog_ordering",
+    "landscape_catalogs",
+    "pinned_catalogs",
+    "randomized_catalogs",
+    "selected_catalogs",
+    "small_catalogs",
+    "small_toprow_catalogs",
+    "starred_catalogs",
+    "top_row_catalogs",
+] as const;
+
+const normalizeCatalogIdValue = (id: string, customNames: Record<string, string>) =>
+    ensureCatalogPrefix(id, resolveCatalogName(id, customNames));
+
+const normalizeCatalogIdList = (value: unknown, customNames: Record<string, string>): string[] | undefined => {
+    if (!Array.isArray(value)) return undefined;
+
+    const normalized: string[] = [];
+    value.forEach((entry) => {
+        if (typeof entry !== "string") return;
+        const catalogId = normalizeCatalogIdValue(entry, customNames);
+        if (!normalized.includes(catalogId)) {
+            normalized.push(catalogId);
+        }
+    });
+    return normalized;
+};
+
+const normalizeCatalogRecordKeys = <T,>(value: unknown, customNames: Record<string, string>): Record<string, T> | undefined => {
+    if (!isRecord(value)) return undefined;
+
+    const normalized: Record<string, T> = {};
+    Object.entries(value).forEach(([key, entry]) => {
+        const targetKey = key.startsWith("_") ? key : normalizeCatalogIdValue(key, customNames);
+        normalized[targetKey] = entry as T;
+    });
+    return normalized;
+};
+
 export interface TemplateManifest {
     version: string;
     lastUpdated: string;
@@ -202,6 +242,35 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         // Force-inject new settings that might be missing from older configs
         if (decodedValues.hide_addon_info_in_catalog_names === undefined) {
             decodedValues.hide_addon_info_in_catalog_names = true;
+        }
+
+        const rawCustomNames = isRecord(decodedValues.custom_catalog_names)
+            ? (decodedValues.custom_catalog_names as Record<string, string>)
+            : {};
+
+        CATALOG_ID_LIST_KEYS.forEach((key) => {
+            const normalizedList = normalizeCatalogIdList(decodedValues[key], rawCustomNames);
+            if (normalizedList) {
+                decodedValues[key] = normalizedList;
+            }
+        });
+
+        if (isRecord(decodedValues.catalog_groups)) {
+            const normalizedGroups: Record<string, string[]> = {};
+            Object.entries(decodedValues.catalog_groups).forEach(([groupName, catalogIds]) => {
+                normalizedGroups[groupName] = normalizeCatalogIdList(catalogIds, rawCustomNames) || [];
+            });
+            decodedValues.catalog_groups = normalizedGroups;
+        }
+
+        const normalizedCustomNames = normalizeCatalogRecordKeys<string>(decodedValues.custom_catalog_names, rawCustomNames);
+        if (normalizedCustomNames) {
+            decodedValues.custom_catalog_names = normalizedCustomNames;
+        }
+
+        const normalizedTopRowLimits = normalizeCatalogRecordKeys<number>(decodedValues.top_row_item_limits, rawCustomNames);
+        if (normalizedTopRowLimits) {
+            decodedValues.top_row_item_limits = normalizedTopRowLimits;
         }
 
         // Extract catalogs if it's a manifest format (config.catalogs[])
@@ -436,22 +505,24 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
             // Sync the manifest-style catalogs state so Catalog Manager sees the new items
             // We scan all IDs from the newly merged state
             const allIds = getAllCatalogIds(next);
-            const customNames = next.custom_catalog_names || {};
+            const customNames = (next.custom_catalog_names || {}) as Record<string, string>;
             
             setCatalogs(prevCats => {
-                const existingIds = new Set(prevCats.map(c => c.id));
+                const existingIds = new Set(prevCats.map(c => normalizeCatalogIdValue(c.id, customNames)));
                 const newCats = [...prevCats];
                 
                 allIds.forEach((id: string) => {
-                    if (!existingIds.has(id)) {
-                        const name = resolveCatalogName(id, customNames);
+                    const normalizedId = normalizeCatalogIdValue(id, customNames);
+                    if (!existingIds.has(normalizedId)) {
+                        const name = resolveCatalogName(normalizedId, customNames);
                         newCats.push({
-                            id,
-                            name: name === id ? id : name,
+                            id: normalizedId,
+                            name: name === normalizedId ? normalizedId : name,
                             enabled: true,
                             showInHome: false,
                             _synthetic: isSyntheticSession
                         });
+                        existingIds.add(normalizedId);
                     }
                 });
                 return newCats;
@@ -611,7 +682,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
 
             // Also merge any side-array changes from currentValues (e.g. landscape_catalogs added by editor)
             // These live in currentValues but aren't catalog objects
-            const sideArrayKeys = ['landscape_catalogs', 'small_catalogs', 'small_top_row_catalogs', 'pinned_catalogs', 'starred_catalogs', 'custom_catalog_names', 'top_row_item_limits'];
+            const sideArrayKeys = ['landscape_catalogs', 'small_catalogs', 'small_toprow_catalogs', 'pinned_catalogs', 'starred_catalogs', 'custom_catalog_names', 'top_row_item_limits'];
             const mergedConfig: ConfigValues = { ...((originalConfig.config || {}) as ConfigValues) };
             for (const key of sideArrayKeys) {
                 if (currentValues[key] !== undefined) {

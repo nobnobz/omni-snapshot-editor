@@ -469,13 +469,6 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
             }
         });
 
-        console.log('[IMPORT DEBUG] payload:', {
-            mainGroups: payloadMainGroups,
-            subgroups: Object.keys(payloadSubgroups),
-            subgroupCount: Object.keys(payloadSubgroups).length,
-            standaloneAssignments: standaloneAssignments,
-        });
-
         importGroups({
             mainGroups: payloadMainGroups,
             subgroups: payloadSubgroups,

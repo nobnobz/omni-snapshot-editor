@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { PlusSquare, Share, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -42,14 +42,12 @@ function isDismissed(): boolean {
 }
 
 export function IosInstallHint() {
-    const [visible, setVisible] = useState(false);
-
-    useEffect(() => {
-        if (!isIosPhoneSafari()) return;
-        if (isStandaloneMode()) return;
-        if (isDismissed()) return;
-        setVisible(true);
-    }, []);
+    const [visible, setVisible] = useState(() => {
+        if (typeof window === "undefined" || typeof navigator === "undefined") {
+            return false;
+        }
+        return isIosPhoneSafari() && !isStandaloneMode() && !isDismissed();
+    });
 
     const dismiss = () => {
         try {

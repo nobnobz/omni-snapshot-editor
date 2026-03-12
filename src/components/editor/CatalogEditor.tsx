@@ -71,6 +71,21 @@ interface ManifestCatalog {
 const stripCatalogCategoryPrefix = (name: string) =>
     name.replace(/^(\[[^\]]+\]\s*)+/, "").trim();
 
+const stripCatalogTypePrefix = (id: string) =>
+    id.replace(/^(movie:|series:|anime:)/, "");
+
+const catalogIdsMatch = (left: string, right: string) =>
+    stripCatalogTypePrefix(left) === stripCatalogTypePrefix(right);
+
+const catalogListHasId = (list: string[], catalogId: string) =>
+    list.some(id => catalogIdsMatch(id, catalogId));
+
+const updateCatalogFlagList = (list: string[], catalogId: string, isEnabled: boolean) => {
+    const next = list.filter(id => !catalogIdsMatch(id, catalogId));
+    if (isEnabled) next.push(catalogId);
+    return next;
+};
+
 const catalogManagerBadgeTone = {
     blue: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30",
     amber: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30",
@@ -473,7 +488,7 @@ export function CatalogEditor() {
     const landscapeList: string[] = useMemo(() => currentValues["landscape_catalogs"] || [], [currentValues]);
     const handleUpdateLandscape = (catalogId: string, v: boolean) => {
         const current: string[] = Array.isArray(currentValues["landscape_catalogs"]) ? currentValues["landscape_catalogs"] : [];
-        const next = v ? [...new Set([...current, catalogId])] : current.filter(id => id !== catalogId);
+        const next = updateCatalogFlagList(current, catalogId, v);
         updateValue(["landscape_catalogs"], next);
     };
 
@@ -481,7 +496,7 @@ export function CatalogEditor() {
     const smallList: string[] = useMemo(() => currentValues["small_catalogs"] || [], [currentValues]);
     const handleUpdateSmall = (catalogId: string, v: boolean) => {
         const current: string[] = Array.isArray(currentValues["small_catalogs"]) ? currentValues["small_catalogs"] : [];
-        const next = v ? [...new Set([...current, catalogId])] : current.filter(id => id !== catalogId);
+        const next = updateCatalogFlagList(current, catalogId, v);
         updateValue(["small_catalogs"], next);
     };
 
@@ -489,14 +504,14 @@ export function CatalogEditor() {
     const smallTopRowList: string[] = useMemo(() => currentValues["small_toprow_catalogs"] || [], [currentValues]);
     const handleUpdateSmallTopRow = (catalogId: string, v: boolean) => {
         const current: string[] = Array.isArray(currentValues["small_toprow_catalogs"]) ? currentValues["small_toprow_catalogs"] : [];
-        const next = v ? [...new Set([...current, catalogId])] : current.filter(id => id !== catalogId);
+        const next = updateCatalogFlagList(current, catalogId, v);
         updateValue(["small_toprow_catalogs"], next);
     };
 
     const randomizedList: string[] = useMemo(() => currentValues["randomized_catalogs"] || [], [currentValues]);
     const handleUpdateRandomize = (catalogId: string, v: boolean) => {
         const current: string[] = Array.isArray(currentValues["randomized_catalogs"]) ? currentValues["randomized_catalogs"] : [];
-        const next = v ? [...new Set([...current, catalogId])] : current.filter(id => id !== catalogId);
+        const next = updateCatalogFlagList(current, catalogId, v);
         updateValue(["randomized_catalogs"], next);
     };
 
@@ -504,7 +519,7 @@ export function CatalogEditor() {
     const pinnedList: string[] = useMemo(() => currentValues["starred_catalogs"] || [], [currentValues]);
     const handleUpdatePinned = (catalogId: string, v: boolean) => {
         const current: string[] = Array.isArray(currentValues["starred_catalogs"]) ? currentValues["starred_catalogs"] : [];
-        const next = v ? [...new Set([...current, catalogId])] : current.filter(id => id !== catalogId);
+        const next = updateCatalogFlagList(current, catalogId, v);
         updateValue(["starred_catalogs"], next);
     };
 
@@ -520,8 +535,14 @@ export function CatalogEditor() {
     );
 
     // Split catalogs: active if enabled in shelf OR shown in home OR pinned (header)
-    const enabledCatalogs = useMemo(() => catalogs.filter(c => c.enabled !== false || c.showInHome === true || pinnedList.includes(c.id)), [catalogs, pinnedList]);
-    const disabledCatalogs = useMemo(() => catalogs.filter(c => c.enabled === false && c.showInHome !== true && !pinnedList.includes(c.id)), [catalogs, pinnedList]);
+    const enabledCatalogs = useMemo(
+        () => catalogs.filter(c => c.enabled !== false || c.showInHome === true || catalogListHasId(pinnedList, c.id)),
+        [catalogs, pinnedList]
+    );
+    const disabledCatalogs = useMemo(
+        () => catalogs.filter(c => c.enabled === false && c.showInHome !== true && !catalogListHasId(pinnedList, c.id)),
+        [catalogs, pinnedList]
+    );
 
 
 
@@ -561,12 +582,12 @@ export function CatalogEditor() {
 
         // 2. Entirely new catalogs from CATALOG_FALLBACKS not already present
         // Strip out 'movie:' or 'series:' from existing IDs for accurate duplicate checking
-        const existingBaseIds = new Set(Array.from(existingIds).map(id => id.replace(/^(movie:|series:)/, '')));
+        const existingBaseIds = new Set(Array.from(existingIds).map(stripCatalogTypePrefix));
 
         const allFallbacks = { ...CATALOG_FALLBACKS, ...customFallbacks };
 
         const fromFallbacks = Object.entries(allFallbacks)
-            .filter(([id]) => !existingBaseIds.has(id.replace(/^(movie:|series:)/, '')))
+            .filter(([id]) => !existingBaseIds.has(stripCatalogTypePrefix(id)))
             .map(([id, name]) => {
                 const displayName = customNames[id] || name;
 
@@ -843,11 +864,11 @@ export function CatalogEditor() {
                                             key={cat.id}
                                             catalog={cat}
                                             currentValues={currentValues}
-                                            isLandscape={landscapeList.includes(cat.id)}
-                                            isSmall={smallList.includes(cat.id)}
-                                            isSmallTopRow={smallTopRowList.includes(cat.id)}
-                                            isRandom={randomizedList.includes(cat.id)}
-                                            isPinned={pinnedList.includes(cat.id)}
+                                            isLandscape={catalogListHasId(landscapeList, cat.id)}
+                                            isSmall={catalogListHasId(smallList, cat.id)}
+                                            isSmallTopRow={catalogListHasId(smallTopRowList, cat.id)}
+                                            isRandom={catalogListHasId(randomizedList, cat.id)}
+                                            isPinned={catalogListHasId(pinnedList, cat.id)}
                                             isEditingName={activeEditingCatalogId === cat.id}
                                             onStartEditingName={() => setEditingCatalogId(cat.id)}
                                             onStopEditingName={() => setEditingCatalogId(prev => (prev === cat.id ? null : prev))}
