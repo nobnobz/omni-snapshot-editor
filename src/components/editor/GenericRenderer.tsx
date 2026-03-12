@@ -174,8 +174,8 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
 
         return (
             <div className={`p-4 sm:p-5 rounded-xl bg-card/60 backdrop-blur-md border shadow-sm transition-all duration-300 ${displayChecked ? "border-white/[0.08] bg-card/90 shadow-[0_4px_20px_rgb(0,0,0,0.1)]" : "border-border/40"}`}>
-                <div className={`flex items-center justify-between ${hasVisibleChildren ? "mb-4 pb-4 border-b border-border/40" : ""}`}>
-                    <div className={`flex flex-col gap-0.5 transition-opacity duration-300 ${isFaded ? "opacity-60" : "opacity-100"}`}>
+                <div className={`flex items-start justify-between gap-3 sm:items-center ${hasVisibleChildren ? "mb-4 pb-4 border-b border-border/40" : ""}`}>
+                    <div className={`min-w-0 flex-1 flex flex-col gap-0.5 transition-opacity duration-300 ${isFaded ? "opacity-60" : "opacity-100"}`}>
                         <span className="text-base font-semibold tracking-tight text-foreground">
                             {formatKeyToTitle(currentKey)}
                         </span>
@@ -186,15 +186,15 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                         )}
                     </div>
                     {!hideToggle && (
-                        <div className="flex items-center gap-3 shrink-0">
-                            <Label htmlFor={`toggle-${pathString}`} className="text-xs font-bold uppercase tracking-wider text-muted-foreground cursor-pointer select-none transition-colors hover:text-muted-foreground">
+                        <div className="flex shrink-0 items-center gap-2 self-start sm:self-center">
+                            <Label htmlFor={`toggle-${pathString}`} className="hidden text-xs font-bold uppercase tracking-wider text-muted-foreground cursor-pointer select-none transition-colors hover:text-muted-foreground sm:inline-flex">
                                 {displayChecked ? "On" : "Off"}
                             </Label>
                             <Switch
                                 id={`toggle-${pathString}`}
                                 checked={displayChecked}
                                 onCheckedChange={handleToggle}
-                                className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-accent scale-90 sm:scale-100 transition-all origin-right"
+                                className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-accent transition-all"
                             />
                         </div>
                     )}
