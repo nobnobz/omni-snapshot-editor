@@ -1,6 +1,6 @@
 {
   "name": "omni-config-editor",
-  "version": "0.2.60",
+  "version": "0.3.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
