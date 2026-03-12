@@ -128,7 +128,7 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                     <button
                         {...attributes}
                         {...listeners}
-                        className={`cursor-grab shrink-0 p-4 -ml-2 rounded-md transition-colors ${isTagEnabled ? "text-foreground/70 hover:text-foreground hover:bg-muted" : "text-foreground/40 pointer-events-none"}`}
+                        className={`cursor-grab shrink-0 p-4 -ml-2 rounded-md transition-colors ${isTagEnabled ? "text-foreground/70 hover:text-foreground hover:bg-muted" : "text-foreground/40 hover:text-foreground/70 hover:bg-muted/40"}`}
                         style={{ touchAction: 'none' }}
                     >
                         <GripVertical className="h-5 w-5" />
@@ -488,7 +488,7 @@ export function UnifiedPatternEditor() {
 
     return (
         <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="patterns-root" className="bg-card/60 backdrop-blur-md border border-white/[0.08] shadow-[0_4px_20px_rgb(0,0,0,0.1)] rounded-xl overflow-hidden transition-all hover:bg-card/80">
+            <AccordionItem value="patterns-root" className="!border-b-0 bg-card/60 backdrop-blur-md border border-border/70 dark:border-white/[0.08] shadow-sm rounded-xl overflow-hidden transition-all hover:bg-card/80">
                 <AccordionTrigger className="px-5 py-4 hover:no-underline flex justify-between items-center group transition-colors">
                     <div className="flex items-center gap-3">
                         <WandSparkles className="w-5 h-5 text-purple-400 group-hover:text-purple-300 transition-colors" />

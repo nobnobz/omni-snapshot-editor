@@ -335,13 +335,13 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
 
                 {/* Action Buttons: Desktop Header, Mobile hidden here (moved to layout section below) */}
                 <div className="hidden sm:flex items-center gap-1 opacity-80 hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" onClick={() => setIsRenaming(true)} className="h-9 w-9 text-foreground/70 hover:text-foreground hover:bg-muted transition-colors rounded-md border border-transparent hover:border-border/50" title="Rename Subgroup" aria-label="Rename subgroup">
+                    <Button variant="ghost" size="icon" onClick={() => setIsRenaming(true)} className="h-9 w-9 text-foreground/70 hover:text-foreground hover:bg-muted transition-colors rounded-md border border-transparent hover:border-border/50" title="Rename" aria-label="Rename subgroup">
                         <Pencil className="h-3.5 w-3.5" />
                     </Button>
                     <Button variant="ghost" size="icon" onClick={() => {
                         unassignCatalogGroup(subgroupName);
                         if (onUnassign) onUnassign(subgroupName, parentUUID);
-                    }} className="h-9 w-9 text-foreground/70 hover:text-red-400 hover:bg-red-500/10 transition-colors rounded-md border border-transparent hover:border-red-500/30" title="Unassign Subgroup" aria-label="Unassign subgroup">
+                    }} className="h-9 w-9 text-foreground/70 hover:text-red-400 hover:bg-red-500/10 transition-colors rounded-md border border-transparent hover:border-red-500/30" title="Delete" aria-label="Delete subgroup">
                         <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                 </div>
@@ -400,7 +400,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                 onClick={() => setIsRenaming(true)}
                                 className="flex-1 h-9 text-xs text-foreground/70 hover:text-foreground bg-background/50 border-border/80"
                             >
-                                <Pencil className="w-3.5 h-3.5 mr-2" /> Rename Subgroup
+                                <Pencil className="w-3.5 h-3.5 mr-2" /> Rename
                             </Button>
                             <Button
                                 variant="outline"
@@ -411,7 +411,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                 }}
                                 className="flex-1 h-9 text-xs text-red-400 hover:text-red-300 bg-background/50 border-border/80"
                             >
-                                <Trash2 className="w-3.5 h-3.5 mr-2" /> Unassign
+                                <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
                             </Button>
                         </div>
                     </div>
@@ -690,18 +690,17 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                         <div className="flex w-full sm:w-auto items-center gap-1.5 sm:gap-2 bg-background/50 border border-border rounded-lg p-1.5 sm:p-1">
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-8 shrink-0 text-xs sm:text-sm text-foreground/70 hover:text-foreground hover:bg-muted font-medium tracking-tight px-2">
-                                        <span className="hidden sm:inline">Layout:</span> <span className="text-foreground sm:ml-1 font-bold">
-                                            {posterType}
-                                            <span className="hidden sm:inline"> / {posterSize}</span>
-                                            <span className="sm:hidden">
-                                                {posterSize !== "Default" && posterSize !== "Small" ? ` / ${posterSize}` : ""}
-                                            </span>
-                                        </span> <ChevronDown className="w-3.5 h-3.5 ml-1 opacity-50" />
+                                    <Button variant="ghost" size="sm" className="h-8 min-w-0 max-w-[48vw] sm:max-w-none text-xs sm:text-sm text-foreground/70 hover:text-foreground hover:bg-muted font-medium tracking-tight px-2">
+                                        <span className="hidden sm:inline">Layout:</span>
+                                        <span className="text-foreground sm:ml-1 font-bold min-w-0 truncate">
+                                            <span className="hidden sm:inline">{posterType} / {posterSize}</span>
+                                            <span className="sm:hidden">{posterType} · {posterSize}</span>
+                                        </span>
+                                        <ChevronDown className="w-3.5 h-3.5 ml-1 opacity-50 shrink-0" />
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent className="bg-card border-border text-foreground">
-                                    <DropdownMenuLabel className="text-xs uppercase tracking-widest text-foreground/70 font-bold">Poster Shape</DropdownMenuLabel>
+                                    <DropdownMenuLabel className="px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-foreground/55 font-semibold">Poster Shape</DropdownMenuLabel>
                                     <DropdownMenuItem onClick={() => updateValue(["main_catalog_groups", uuid, "posterType"], "Poster")} className={`text-xs ${posterType === "Poster" ? "bg-blue-500/20 text-blue-400" : ""}`}>
                                         Poster {posterType === "Poster" && "✓"}
                                     </DropdownMenuItem>
@@ -712,7 +711,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                         Landscape {posterType === "Landscape" && "✓"}
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator className="bg-border" />
-                                    <DropdownMenuLabel className="text-xs uppercase tracking-widest text-foreground/70 font-bold">Poster Size</DropdownMenuLabel>
+                                    <DropdownMenuLabel className="px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-foreground/55 font-semibold">Poster Size</DropdownMenuLabel>
                                     <DropdownMenuItem
                                         onClick={() => updateValue(["main_catalog_groups", uuid, "posterSize"], "Default")}
                                         className={`text-xs ${posterSize === "Default" ? "bg-blue-500/20 text-blue-400" : ""}`}

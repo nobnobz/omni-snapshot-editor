@@ -765,7 +765,7 @@ export function MainEditor() {
                                             <div className="flex flex-wrap gap-2 items-center">
                                                 <Button
                                                     onClick={() => setIsImportPatternsOpen(true)}
-                                                    className="bg-muted hover:bg-accent text-foreground border border-border shadow-sm mt-3"
+                                                    className="mt-3 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20"
                                                 >
                                                     <UploadCloud className="w-5 h-5 mr-2" />
                                                     Import from Template

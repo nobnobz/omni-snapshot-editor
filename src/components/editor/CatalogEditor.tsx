@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useConfig } from "@/context/ConfigContext";
 import {
     DndContext,
@@ -124,6 +124,10 @@ function SortableCatalogItem({
     const style = { transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 20 : 1 };
 
     const [editName, setEditName] = useState(catalog.name || catalog.id);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const settingsTouchStartRef = useRef<{ x: number; y: number } | null>(null);
+    const settingsTouchMovedRef = useRef(false);
+    const settingsIgnoreClickRef = useRef(false);
 
     useEffect(() => {
         if (!isEditingName) {
@@ -144,6 +148,54 @@ function SortableCatalogItem({
     };
 
     const itemCount = catalog.metadata?.itemCount;
+
+    const handleSettingsPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+        // Radix opens dropdowns on pointer-down; block that path for touch so scroll gestures don't open it.
+        if (e.pointerType === "touch") {
+            e.preventDefault();
+        }
+    };
+
+    const handleSettingsTouchStart = (e: React.TouchEvent<HTMLButtonElement>) => {
+        const t = e.touches[0];
+        settingsTouchStartRef.current = { x: t.clientX, y: t.clientY };
+        settingsTouchMovedRef.current = false;
+    };
+
+    const handleSettingsTouchMove = (e: React.TouchEvent<HTMLButtonElement>) => {
+        const start = settingsTouchStartRef.current;
+        if (!start) return;
+        const t = e.touches[0];
+        const movedX = Math.abs(t.clientX - start.x);
+        const movedY = Math.abs(t.clientY - start.y);
+        if (movedX > 8 || movedY > 8) {
+            settingsTouchMovedRef.current = true;
+        }
+    };
+
+    const handleSettingsTouchEnd = () => {
+        settingsIgnoreClickRef.current = true;
+        if (!settingsTouchMovedRef.current) {
+            setIsSettingsOpen(true);
+        }
+        settingsTouchStartRef.current = null;
+        settingsTouchMovedRef.current = false;
+    };
+
+    const handleSettingsTouchCancel = () => {
+        settingsIgnoreClickRef.current = true;
+        settingsTouchStartRef.current = null;
+        settingsTouchMovedRef.current = false;
+    };
+
+    const handleSettingsClick = () => {
+        // Touch opens via touch-end handler above; ignore synthetic click that follows touch events.
+        if (settingsIgnoreClickRef.current) {
+            settingsIgnoreClickRef.current = false;
+            return;
+        }
+        setIsSettingsOpen(true);
+    };
 
     return (
         <div
@@ -236,9 +288,19 @@ function SortableCatalogItem({
             </div>
 
             {/* Settings */}
-            <DropdownMenu>
+            <DropdownMenu open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-foreground/70 hover:text-foreground hover:bg-muted shrink-0">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-foreground/70 hover:text-foreground hover:bg-muted shrink-0"
+                        onPointerDown={handleSettingsPointerDown}
+                        onTouchStart={handleSettingsTouchStart}
+                        onTouchMove={handleSettingsTouchMove}
+                        onTouchEnd={handleSettingsTouchEnd}
+                        onTouchCancel={handleSettingsTouchCancel}
+                        onClick={handleSettingsClick}
+                    >
                         <Settings2 className="w-4 h-4" />
                     </Button>
                 </DropdownMenuTrigger>
@@ -664,7 +726,7 @@ export function CatalogEditor() {
                                                 {group.items.map(c => (
                                                     <div
                                                         key={c.id}
-                                                        className="flex items-center gap-2 pl-2 py-1.5 hover:bg-muted/50 rounded-sm group/candidate"
+                                                        className="flex items-center gap-2.5 pl-2 py-2 sm:py-1.5 hover:bg-muted/50 rounded-sm group/candidate"
                                                     >
                                                         <Checkbox
                                                             id={`add-cat-${c.id}`}
@@ -674,12 +736,12 @@ export function CatalogEditor() {
                                                         />
                                                         <label
                                                             htmlFor={`add-cat-${c.id}`}
-                                                            className="flex-1 min-w-0 cursor-pointer select-none grid grid-cols-[minmax(0,1fr)_minmax(120px,34%)] items-center gap-2.5"
+                                                            className="flex-1 min-w-0 cursor-pointer select-none flex flex-col gap-0.5 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(120px,34%)] sm:items-center sm:gap-2.5"
                                                         >
-                                                            <p className={`text-sm leading-none transition-colors truncate min-w-0 ${pendingAddSelections.has(c.id) ? "text-blue-600 dark:text-blue-400 font-semibold" : "text-foreground"}`}>
+                                                            <p className={`text-sm leading-snug transition-colors truncate min-w-0 ${pendingAddSelections.has(c.id) ? "text-blue-600 dark:text-blue-400 font-semibold" : "text-foreground"}`}>
                                                                 {c.name}
                                                             </p>
-                                                            <p className={`text-xs font-mono font-normal tracking-tight truncate text-right min-w-0 ${pendingAddSelections.has(c.id) ? "text-blue-400/32 dark:text-blue-300/32" : "text-foreground/24"}`}>
+                                                            <p className={`text-[11px] sm:text-xs font-mono font-normal tracking-tight truncate text-left sm:text-right min-w-0 ${pendingAddSelections.has(c.id) ? "text-blue-400/70 dark:text-blue-300/70" : "text-foreground/45 sm:text-foreground/24"}`}>
                                                                 {c.id}
                                                             </p>
                                                         </label>

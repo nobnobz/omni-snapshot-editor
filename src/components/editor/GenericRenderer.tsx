@@ -175,12 +175,12 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
         return (
             <div className={`p-4 sm:p-5 rounded-xl bg-card/60 backdrop-blur-md border shadow-sm transition-all duration-300 ${displayChecked ? "border-white/[0.08] bg-card/90 shadow-[0_4px_20px_rgb(0,0,0,0.1)]" : "border-border/40"}`}>
                 <div className={`flex items-start justify-between gap-3 sm:items-center ${hasVisibleChildren ? "mb-4 pb-4 border-b border-border/40" : ""}`}>
-                    <div className={`min-w-0 flex-1 flex flex-col gap-0.5 transition-opacity duration-300 ${isFaded ? "opacity-60" : "opacity-100"}`}>
+                    <div className={`min-w-0 flex-1 flex flex-col gap-1 transition-opacity duration-300 ${isFaded ? "opacity-60" : "opacity-100"}`}>
                         <span className="text-base font-semibold tracking-tight text-foreground">
                             {formatKeyToTitle(currentKey)}
                         </span>
                         {description && (
-                            <span className="text-sm text-foreground/70 leading-snug">
+                            <span className="text-xs sm:text-sm text-foreground/60 sm:text-foreground/65 leading-relaxed">
                                 {description}
                             </span>
                         )}

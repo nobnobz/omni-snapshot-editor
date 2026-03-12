@@ -510,7 +510,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
             <DialogContent className={cn(editorLayout.dialogContent, "sm:max-w-2xl")}>
                 <DialogHeader className="shrink-0">
-                    <DialogTitle>Add From Existing Setup</DialogTitle>
+                    <DialogTitle>Update From Existing Setup</DialogTitle>
                     <DialogDescription className="text-foreground/70">
                         {step === 1 ? "Upload a Omni .json configuration to extract groups." : `Review and select groups from ${fileName}`}
                     </DialogDescription>
@@ -521,19 +521,24 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                         {/* Template Loader */}
                         <div className="p-5 border border-border rounded-lg bg-muted/50">
                             <h3 className="font-semibold text-sm text-foreground mb-3">Load Unified Media Experience Template</h3>
-                            <div className="flex items-center gap-3">
-                                <Select value={selectedVersion} onValueChange={setSelectedVersion}>
-                                    <SelectTrigger className="flex-1 h-10 sm:h-9 rounded-md border border-border bg-background/50 text-base sm:text-sm text-foreground font-medium sm:font-mono shadow-inner overflow-hidden">
-                                        <SelectValue placeholder="Select template version" />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-popover border-border text-popover-foreground">
-                                        {templates.map(t => (
-                                            <SelectItem key={t.label} value={t.label} className="text-xs font-mono focus:bg-accent focus:text-accent-foreground">
-                                                {t.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                                <div className="min-w-0 flex-1">
+                                    <Select value={selectedVersion} onValueChange={setSelectedVersion}>
+                                        <SelectTrigger
+                                            className="w-full h-10 sm:h-9 rounded-md border border-border bg-background/50 px-2.5 sm:px-3 text-sm text-foreground font-medium shadow-inner overflow-hidden"
+                                            title={selectedVersion}
+                                        >
+                                            <SelectValue className="truncate" placeholder="Select template version" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-popover border-border text-popover-foreground">
+                                            {templates.map(t => (
+                                                <SelectItem key={t.label} value={t.label} className="text-xs font-mono focus:bg-accent focus:text-accent-foreground">
+                                                    {t.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                                 <Button
                                     onClick={async () => {
                                         const t = templates.find(t => t.label === selectedVersion);
@@ -554,7 +559,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                         }
                                     }}
                                     disabled={templateLoading}
-                                    className={cn(editorAction.primary, "px-5")}
+                                    className="h-10 sm:h-9 w-full sm:w-auto px-4 sm:px-5 bg-blue-600 hover:bg-blue-700 text-white"
                                 >
                                     {templateLoading ? "Loading..." : "Load"}
                                 </Button>

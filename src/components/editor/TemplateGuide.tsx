@@ -30,24 +30,15 @@ import {
 } from "lucide-react";
 import { useConfig } from "@/context/ConfigContext";
 import { cn } from "@/lib/utils";
-import { editorAction, editorLayout } from "@/components/editor/ui/style-contract";
+import { downloadTemplateFile } from "@/lib/template-download";
+import { editorLayout } from "@/components/editor/ui/style-contract";
 
 export function TemplateGuide() {
     const { manifest } = useConfig();
 
-    const handleDownload = async (url: string, defaultFilename: string) => {
+    const handleDownload = async (url: string, templateName: string) => {
         try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error("Failed to fetch file");
-            const blob = await response.blob();
-            const blobUrl = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = blobUrl;
-            a.download = defaultFilename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(blobUrl);
+            await downloadTemplateFile(url, templateName);
         } catch (err) {
             console.error("Download failed:", err);
         }
@@ -57,19 +48,16 @@ export function TemplateGuide() {
         {
             name: "Omni Snapshot",
             id: "ume-main",
-            filename: "omni-snapshot-ume.json",
             url: manifest?.templates?.find(t => t.id === 'ume-main')?.url || "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/fusion-template-bot-bid-raiser-v1.6.2.json"
         },
         {
             name: "AIOMetadata",
             id: "aiometadata",
-            filename: "aiometadata-template.json",
             url: manifest?.templates?.find(t => t.id === 'aiometadata')?.url || "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/aiometadata-patterns-v1.json"
         },
         {
             name: "AIOStreams",
             id: "aiostreams",
-            filename: "aiostreams-template.json",
             url: manifest?.templates?.find(t => t.id === 'aiostreams')?.url || "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/aiostreams-patterns-v1.json"
         }
     ];
@@ -147,11 +135,14 @@ export function TemplateGuide() {
                             {templates.map((item, i) => (
                                 <Button
                                     key={i}
-                                    onClick={() => handleDownload(item.url, item.filename)}
+                                    onClick={() => handleDownload(item.url, manifest?.templates?.find(t => t.id === item.id)?.name || item.name)}
                                     variant="outline"
-                                    className={cn("flex items-center gap-2.5 px-4 rounded-xl text-sm font-black text-foreground/70 uppercase tracking-tight hover:bg-accent hover:text-foreground transition-all", editorAction.secondary)}
+                                    className="group h-auto min-h-11 items-center gap-2.5 rounded-xl border border-blue-200/80 bg-white/80 px-4 py-2 text-left text-foreground shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50/80 dark:border-blue-500/25 dark:bg-background/35 dark:hover:border-blue-400/45 dark:hover:bg-blue-500/10"
                                 >
-                                    <FileJson className="w-3.5 h-3.5 text-blue-400" /> {item.name}
+                                    <div className="flex h-6.5 w-6.5 shrink-0 items-center justify-center rounded-md bg-blue-500/10 ring-1 ring-inset ring-blue-500/25 transition-colors group-hover:bg-blue-500/15">
+                                        <FileJson className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400" />
+                                    </div>
+                                    <span className="text-sm font-bold tracking-tight">{item.name}</span>
                                 </Button>
                             ))}
                         </div>

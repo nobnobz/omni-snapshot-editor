@@ -94,6 +94,9 @@
   --editor-danger-bg: oklch(0.965 0.03 25 / 55%);
   --editor-danger-fg: oklch(0.53 0.17 25);
   --editor-danger-border: oklch(0.8 0.11 25 / 70%);
+  --page-blob-info: oklch(0.84 0.075 240 / 24%);
+  --page-blob-success: oklch(0.85 0.08 155 / 22%);
+  --page-blob-warning: oklch(0.86 0.09 88 / 22%);
 }
 
 .dark {
@@ -140,6 +143,9 @@
   --editor-danger-bg: oklch(0.33 0.09 25 / 45%);
   --editor-danger-fg: oklch(0.84 0.12 25);
   --editor-danger-border: oklch(0.66 0.12 25 / 60%);
+  --page-blob-info: oklch(0.34 0.05 246 / 45%);
+  --page-blob-success: oklch(0.34 0.07 155 / 45%);
+  --page-blob-warning: oklch(0.35 0.07 88 / 45%);
 }
 
 @layer base {

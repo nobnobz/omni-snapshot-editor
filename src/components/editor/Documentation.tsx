@@ -41,24 +41,15 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { editorAction, editorLayout } from "@/components/editor/ui/style-contract";
+import { downloadTemplateFile } from "@/lib/template-download";
+import { editorLayout } from "@/components/editor/ui/style-contract";
 
 export function Documentation() {
     const { manifest } = useConfig();
 
-    const handleDownload = async (url: string, defaultFilename: string) => {
+    const handleDownload = async (url: string, templateName: string) => {
         try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error("Failed to fetch file");
-            const blob = await response.blob();
-            const blobUrl = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = blobUrl;
-            a.download = defaultFilename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(blobUrl);
+            await downloadTemplateFile(url, templateName);
         } catch (err) {
             console.error("Download failed:", err);
         }
@@ -68,25 +59,21 @@ export function Documentation() {
         {
             name: "Omni Snapshot",
             id: "ume-main",
-            filename: "omni-snapshot-ume.json",
             url: manifest?.templates?.find(t => t.id === 'ume-main')?.url || "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/fusion-template-bot-bid-raiser-v1.6.2.json"
         },
         {
             name: "AIOMetadata",
             id: "aiometadata",
-            filename: "aiometadata-template.json",
             url: manifest?.templates?.find(t => t.id === 'aiometadata')?.url || "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/aiometadata-patterns-v1.json"
         },
         {
             name: "AIOMetadata (Catalogs Only)",
             id: "ume-catalogs",
-            filename: "aiometadata-catalogs.json",
             url: manifest?.templates?.find(t => t.id === 'ume-catalogs')?.url || "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/catalogs-only-template.json"
         },
         {
             name: "AIOStreams",
             id: "aiostreams",
-            filename: "aiostreams-template.json",
             url: manifest?.templates?.find(t => t.id === 'aiostreams')?.url || "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/aiostreams-patterns-v1.json"
         }
     ];
@@ -453,15 +440,17 @@ export function Documentation() {
                                     return (
                                         <Button
                                             key={i}
-                                            onClick={() => handleDownload(item.url, item.filename)}
+                                            onClick={() => handleDownload(item.url, manifest?.templates?.find(t => t.id === item.id)?.name || item.name)}
                                             variant="outline"
-                                            className={cn("flex items-center gap-3 px-5 py-3 rounded-xl uppercase tracking-tight text-foreground/70 hover:bg-accent hover:text-foreground transition-all group", editorAction.secondary)}
+                                            className="group h-auto min-h-12 items-center gap-3 rounded-xl border border-blue-200/80 bg-white/80 px-4 py-2.5 text-left text-foreground shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50/80 dark:border-blue-500/25 dark:bg-background/35 dark:hover:border-blue-400/45 dark:hover:bg-blue-500/10"
                                         >
-                                            <FileJson className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform shrink-0" /> 
+                                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-blue-500/10 ring-1 ring-inset ring-blue-500/25 transition-colors group-hover:bg-blue-500/15">
+                                                <FileJson className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+                                            </div>
                                             <div className="flex flex-col items-start gap-0.5">
-                                                <span className="text-sm font-black leading-none">{mainTitle}</span>
+                                                <span className="text-sm font-extrabold leading-none tracking-tight">{mainTitle}</span>
                                                 {subtitle && (
-                                                    <span className="text-xs font-bold text-foreground/40 lowercase tracking-normal">
+                                                    <span className="text-[11px] font-semibold text-foreground/55 lowercase tracking-normal">
                                                         {subtitle.toLowerCase()}
                                                     </span>
                                                 )}
