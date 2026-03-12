@@ -68,6 +68,23 @@ const restrictVerticalDrag: Modifier = ({ transform }) => ({
     x: 0,
 });
 
+const subgroupCountBadgeClass =
+    "ml-2 inline-flex h-6 min-w-[1.65rem] items-center justify-center rounded-full border border-white/10 bg-gradient-to-b from-background/95 via-background/90 to-muted/80 px-2 text-[11px] font-bold tabular-nums leading-none text-foreground/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_6px_18px_rgba(0,0,0,0.22)] ring-1 ring-black/20";
+
+const subgroupCountInlineClass =
+    "inline-flex h-6 min-w-[1.65rem] items-center justify-center rounded-full border border-white/10 bg-gradient-to-b from-background/90 to-muted/75 px-2 text-[11px] font-bold tabular-nums leading-none text-foreground/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_4px_14px_rgba(0,0,0,0.18)]";
+
+const focusSearchInput = (input: HTMLInputElement | null) => {
+    if (!input) return;
+    input.focus({ preventScroll: true });
+    const cursorPosition = input.value.length;
+    try {
+        input.setSelectionRange(cursorPosition, cursorPosition);
+    } catch {
+        // Some browsers may reject selection updates for specific input modes.
+    }
+};
+
 // ----------------------------------------------------------------------
 // 1. Sortable Catalog Node (Inside a Subgroup)
 // ----------------------------------------------------------------------
@@ -132,8 +149,8 @@ function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => vo
         <div
             ref={setNodeRef}
             style={style}
-            className={`flex items-center gap-3 p-2.5 border rounded-md mb-2 group/cat transition-all duration-150
-                ${isDragging ? "opacity-30 border-border/80 bg-muted/60 border-dashed z-50 shadow-none scale-[0.99]" : "bg-background/80 border-border/60 hover:border-border/90 hover:bg-background/95 shadow-sm"}`}
+            className={`flex items-center gap-3 p-2.5 border rounded-md mb-2 group/cat transition-[background-color,border-color,opacity,box-shadow] duration-150
+                ${isDragging ? "opacity-15 border-border/70 bg-muted/45 border-dashed shadow-none" : "bg-background/80 border-border/60 hover:border-border/90 hover:bg-background/95 shadow-sm"}`}
         >
             <button
                 {...attributes}
@@ -208,11 +225,12 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
     const [isRenaming, setIsRenaming] = useState(false);
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
     const [catalogSearch, setCatalogSearch] = useState("");
+    const [activeCatalogId, setActiveCatalogId] = useState<string | null>(null);
     const addCatalogSearchInputRef = useRef<HTMLInputElement>(null);
 
     React.useEffect(() => {
         if (!isAddMenuOpen) return;
-        const focusSearch = () => addCatalogSearchInputRef.current?.focus();
+        const focusSearch = () => focusSearchInput(addCatalogSearchInputRef.current);
         const rafId = requestAnimationFrame(focusSearch);
         const timeoutId = window.setTimeout(focusSearch, 60);
         return () => {
@@ -309,6 +327,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
 
     const handleCatalogDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
+        setActiveCatalogId(null);
         if (over && active.id !== over.id) {
             const oldIndex = subgroupCatalogs.indexOf(active.id as string);
             const newIndex = subgroupCatalogs.indexOf(over.id as string);
@@ -317,6 +336,14 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
             updateValue(["catalog_groups", subgroupName], newArray);
         }
     };
+
+    const handleCatalogDragStart = (event: DragStartEvent) => {
+        setActiveCatalogId(String(event.active.id));
+    };
+
+    const activeCatalogName = activeCatalogId
+        ? resolveCatalogName(activeCatalogId, currentValues.custom_catalog_names || {})
+        : "";
 
     const handleAddCatalog = (e: Event, catalogId: string) => {
         e.preventDefault();
@@ -346,7 +373,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                     <span className="truncate">{formatDisplayName(subgroupName)}</span>
                     <Badge
                         variant="outline"
-                        className="ml-2 h-5 min-w-5 px-0 inline-flex items-center justify-center rounded-full text-[10px] leading-none font-semibold text-foreground/65 bg-background/50 border-border/70"
+                        className={subgroupCountBadgeClass}
                     >
                         {subgroupCatalogs.length}
                     </Badge>
@@ -443,7 +470,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                 <LinkIcon className="h-3.5 w-3.5 text-foreground/60" />
                                 Linked Catalogs
                             </h5>
-                            <span className="text-xs font-semibold text-foreground/70 bg-muted px-2 py-0.5 rounded-full border border-border">{subgroupCatalogs.length}</span>
+                            <span className={subgroupCountInlineClass}>{subgroupCatalogs.length}</span>
                         </div>
 
                         {subgroupCatalogs.length === 0 ? (
@@ -456,6 +483,8 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                     sensors={sensors} 
                                     collisionDetection={closestCenter} 
                                     modifiers={[restrictVerticalDrag]}
+                                    onDragStart={handleCatalogDragStart}
+                                    onDragCancel={() => setActiveCatalogId(null)}
                                     onDragEnd={handleCatalogDragEnd}
                                 >
                                     <SortableContext items={subgroupCatalogs} strategy={verticalListSortingStrategy}>
@@ -471,6 +500,33 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                             />
                                         ))}
                                     </SortableContext>
+                                    <DragOverlay
+                                        dropAnimation={{
+                                            sideEffects: defaultDropAnimationSideEffects({
+                                                styles: {
+                                                    active: {
+                                                        opacity: "0.15",
+                                                    },
+                                                },
+                                            }),
+                                        }}
+                                    >
+                                        {activeCatalogId ? (
+                                            <div className="flex items-center gap-3 rounded-lg border border-blue-500/70 bg-card px-3 py-2.5 shadow-2xl opacity-95">
+                                                <GripVertical className="h-4 w-4 text-blue-500" />
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="truncate text-sm font-semibold tracking-tight text-foreground">
+                                                        {activeCatalogName}
+                                                    </p>
+                                                    {activeCatalogName !== activeCatalogId ? (
+                                                        <p className="truncate text-xs font-mono text-foreground/45">
+                                                            {activeCatalogId}
+                                                        </p>
+                                                    ) : null}
+                                                </div>
+                                            </div>
+                                        ) : null}
+                                    </DragOverlay>
                                 </DndContext>
                             </div>
                         )}
@@ -496,6 +552,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-foreground/60" />
                                             <Input
                                                 ref={addCatalogSearchInputRef}
+                                                autoFocus
                                                 placeholder="Search by name or ID..."
                                                 value={catalogSearch}
                                                 onChange={e => setCatalogSearch(e.target.value)}
@@ -871,11 +928,12 @@ function UnassignedSubgroupRow({
 
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
     const [catalogSearch, setCatalogSearch] = useState("");
+    const [activeCatalogId, setActiveCatalogId] = useState<string | null>(null);
     const addCatalogSearchInputRef = useRef<HTMLInputElement>(null);
 
     React.useEffect(() => {
         if (!isAddMenuOpen) return;
-        const focusSearch = () => addCatalogSearchInputRef.current?.focus();
+        const focusSearch = () => focusSearchInput(addCatalogSearchInputRef.current);
         const rafId = requestAnimationFrame(focusSearch);
         const timeoutId = window.setTimeout(focusSearch, 60);
         return () => {
@@ -968,6 +1026,7 @@ function UnassignedSubgroupRow({
 
     const handleInternalDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
+        setActiveCatalogId(null);
         if (over && active.id !== over.id) {
             const activeId = String(active.id);
             const overId = String(over.id);
@@ -976,6 +1035,14 @@ function UnassignedSubgroupRow({
             handleReorderCatalogs(arrayMove(subgroupCatalogsProp, oldIndex, newIndex));
         }
     };
+
+    const handleInternalDragStart = (event: DragStartEvent) => {
+        setActiveCatalogId(String(event.active.id));
+    };
+
+    const activeCatalogName = activeCatalogId
+        ? resolveCatalogName(activeCatalogId, currentValues.custom_catalog_names || {})
+        : "";
 
     return (
         <div className="flex flex-col bg-card border border-border rounded-lg overflow-hidden transition-all hover:border-border/80 w-full mb-3">
@@ -1079,13 +1146,15 @@ function UnassignedSubgroupRow({
                                 <LinkIcon className="h-3.5 w-3.5 text-foreground/60" />
                                 Linked Catalogs
                             </h5>
-                            <span className="text-xs font-semibold text-foreground/70 bg-muted px-2 py-0.5 rounded-full border border-border">{subgroupCatalogsProp.length}</span>
+                            <span className={subgroupCountInlineClass}>{subgroupCatalogsProp.length}</span>
                         </div>
                         <div className="space-y-1 mb-0">
                             <DndContext
                                 sensors={sensors}
                                 collisionDetection={closestCenter}
                                 modifiers={[restrictVerticalDrag]}
+                                onDragStart={handleInternalDragStart}
+                                onDragCancel={() => setActiveCatalogId(null)}
                                 onDragEnd={handleInternalDragEnd}
                             >
                                 <SortableContext items={subgroupCatalogsProp} strategy={verticalListSortingStrategy}>
@@ -1097,6 +1166,33 @@ function UnassignedSubgroupRow({
                                         />
                                     ))}
                                 </SortableContext>
+                                <DragOverlay
+                                    dropAnimation={{
+                                        sideEffects: defaultDropAnimationSideEffects({
+                                            styles: {
+                                                active: {
+                                                    opacity: "0.15",
+                                                },
+                                            },
+                                        }),
+                                    }}
+                                >
+                                    {activeCatalogId ? (
+                                        <div className="flex items-center gap-3 rounded-lg border border-blue-500/70 bg-card px-3 py-2.5 shadow-2xl opacity-95">
+                                            <GripVertical className="h-4 w-4 text-blue-500" />
+                                            <div className="min-w-0 flex-1">
+                                                <p className="truncate text-sm font-semibold tracking-tight text-foreground">
+                                                    {activeCatalogName}
+                                                </p>
+                                                {activeCatalogName !== activeCatalogId ? (
+                                                    <p className="truncate text-xs font-mono text-foreground/45">
+                                                        {activeCatalogId}
+                                                    </p>
+                                                ) : null}
+                                            </div>
+                                        </div>
+                                    ) : null}
+                                </DragOverlay>
                             </DndContext>
                         </div>
 
@@ -1121,6 +1217,7 @@ function UnassignedSubgroupRow({
                                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-foreground/60" />
                                             <Input
                                                 ref={addCatalogSearchInputRef}
+                                                autoFocus
                                                 placeholder="Search by name or ID..."
                                                 value={catalogSearch}
                                                 onChange={e => setCatalogSearch(e.target.value)}

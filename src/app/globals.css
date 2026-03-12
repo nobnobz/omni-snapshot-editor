@@ -49,6 +49,7 @@
 
 :root {
   --radius: 0.625rem;
+  --app-screen-height: 100vh;
   --safe-area-top: env(safe-area-inset-top, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --background: oklch(0.975 0 0);
@@ -97,6 +98,7 @@
   --page-blob-info: oklch(0.84 0.075 240 / 24%);
   --page-blob-success: oklch(0.85 0.08 155 / 22%);
   --page-blob-warning: oklch(0.86 0.09 88 / 22%);
+  --page-grid-line: oklch(0.6 0 0 / 0.11);
 }
 
 .dark {
@@ -146,13 +148,32 @@
   --page-blob-info: oklch(0.3 0.028 246 / 26%);
   --page-blob-success: oklch(0.3 0.034 155 / 26%);
   --page-blob-warning: oklch(0.31 0.034 88 / 26%);
+  --page-grid-line: oklch(0.6 0 0 / 0.095);
+}
+
+@supports (height: 100svh) {
+  :root {
+    --app-screen-height: 100svh;
+  }
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --app-screen-height: 100dvh;
+  }
 }
 
 @layer base {
-  html,
-  body {
+  html {
+    height: 100%;
+    height: -webkit-fill-available;
     min-height: 100%;
-    background: transparent;
+    background-color: var(--background);
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
   }
 
   * {
@@ -161,12 +182,32 @@
 
   body {
     @apply text-foreground;
+    min-height: 100%;
+    min-height: -webkit-fill-available;
+    min-height: var(--app-screen-height);
+    background-color: var(--background);
+    background-image:
+      linear-gradient(to right, var(--page-grid-line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--page-grid-line) 1px, transparent 1px);
+    background-size: 32px 32px;
+    background-position: top left;
     overflow-x: hidden;
     overscroll-behavior-y: auto;
   }
 }
 
 @layer utilities {
+  .min-h-app-screen {
+    min-height: 100%;
+    min-height: 100vh;
+    min-height: var(--app-screen-height);
+  }
+
+  .h-app-screen {
+    height: 100vh;
+    height: var(--app-screen-height);
+  }
+
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
     height: 6px;

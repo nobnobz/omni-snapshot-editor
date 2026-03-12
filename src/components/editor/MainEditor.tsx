@@ -78,27 +78,38 @@ export function MainEditor() {
     const [isScrolled, setIsScrolled] = useState(false);
     const lastScrollY = useRef(0);
     const scrollContainerRef = useRef<HTMLElement>(null);
-    const scrollThreshold = 10; // min px to trigger hide/show
+    const scrollThreshold = 6; // keep this small so mobile upward scroll reveals the top bar quickly
 
     useEffect(() => {
         const handleScroll = () => {
             // On mobile we scroll the window/body, on desktop we scroll the ref container
-            const currentScrollY = window.innerWidth < 1024 
-                ? window.scrollY 
+            const isMobileViewport = window.innerWidth < 1024;
+            const currentScrollY = isMobileViewport
+                ? window.scrollY
                 : scrollContainerRef.current?.scrollTop || 0;
+            const clampedScrollY = Math.max(0, currentScrollY);
+            const delta = clampedScrollY - lastScrollY.current;
 
-            setIsScrolled(currentScrollY > 8);
-            
-            if (Math.abs(currentScrollY - lastScrollY.current) < scrollThreshold) {
+            setIsScrolled(clampedScrollY > 8);
+
+            if (Math.abs(delta) < scrollThreshold) {
                 return;
             }
 
-            if (currentScrollY > lastScrollY.current && currentScrollY > 60) {
-                setIsHeaderVisible(false);
-            } else if (currentScrollY < lastScrollY.current || currentScrollY <= 10) {
-                setIsHeaderVisible(true);
+            if (isMobileViewport) {
+                if (delta > 0 && clampedScrollY > 72) {
+                    setIsHeaderVisible(false);
+                } else if (delta < 0 || clampedScrollY <= 12) {
+                    setIsHeaderVisible(true);
+                }
+            } else {
+                if (delta > 0 && clampedScrollY > 60) {
+                    setIsHeaderVisible(false);
+                } else if (delta < 0 || clampedScrollY <= 10) {
+                    setIsHeaderVisible(true);
+                }
             }
-            lastScrollY.current = currentScrollY;
+            lastScrollY.current = clampedScrollY;
         };
 
         const container = scrollContainerRef.current;

@@ -253,7 +253,7 @@ export function ConfigLoader() {
     };
 
     return (
-        <div className="min-h-[100dvh] relative font-sans text-foreground selection:bg-blue-500/30 overflow-x-hidden">
+        <div className="min-h-app-screen relative font-sans text-foreground selection:bg-blue-500/30 overflow-x-hidden">
 
             <div
                 className="absolute z-50"
@@ -265,7 +265,7 @@ export function ConfigLoader() {
                 <ThemeToggle />
             </div>
 
-            <div className="w-full min-h-[100dvh] flex items-start sm:items-center justify-center relative z-10 px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+            <div className="w-full min-h-app-screen flex items-start sm:items-center justify-center relative z-10 px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
                 {/* Content Wrapper */}
                 <div className="relative z-10 w-full max-w-4xl mx-auto px-4 py-6 sm:py-8">
                     <div className="text-center mb-4 space-y-3">
@@ -335,7 +335,7 @@ export function ConfigLoader() {
                                                         </div>
                                                         <div className="min-w-0 flex-1">
                                                             <span className="block truncate text-sm font-semibold text-foreground">{baseName}</span>
-                                                            {v && <span className="block text-[11px] leading-tight text-foreground/55 font-medium">{v}</span>}
+                                                            {v && <span className="block text-[10px] leading-tight text-foreground/40 font-normal tracking-[0.01em]">{v}</span>}
                                                         </div>
                                                         <div className="ml-auto flex size-6 shrink-0 items-center justify-center rounded-md border border-blue-500/20 bg-blue-500/10 text-blue-300/70 opacity-80 transition-all group-hover/item:opacity-100 group-hover/item:border-blue-500/35 group-hover/item:bg-blue-500/15">
                                                             <FileDown className="h-3 w-3" />
@@ -585,8 +585,8 @@ export function ConfigLoader() {
 
                     <div className="mt-16 text-center pb-4">
                         <p className="text-[10px] sm:text-[11px] text-foreground/30 font-medium uppercase tracking-[0.16em] leading-none scale-[0.88] origin-center">
-                            <span className="block">v{APP_VERSION} • Built with Antigravity</span>
-                            <span className="mt-1 block">By Bot-Bid-Raiser</span>
+                            <span className="block">v{APP_VERSION} • By Bot-Bid-Raiser</span>
+                            <span className="mt-1 block">Built with Antigravity</span>
                         </p>
                     </div>
                 </div>

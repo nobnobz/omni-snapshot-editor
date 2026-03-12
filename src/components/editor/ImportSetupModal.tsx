@@ -891,7 +891,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                         <Button
                             onClick={handleImport}
                             disabled={totalSelectedToImport === 0}
-                            className={cn(editorAction.primary, "font-bold")}
+                            className={cn(editorAction.primary, "font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20")}
                         >
                             Import ({totalSelectedToImport})
                         </Button>

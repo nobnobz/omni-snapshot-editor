@@ -78,6 +78,17 @@ const catalogManagerBadgeTone = {
     orange: "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20",
 } as const;
 
+const focusSearchInput = (input: HTMLInputElement | null) => {
+    if (!input) return;
+    input.focus({ preventScroll: true });
+    const cursorPosition = input.value.length;
+    try {
+        input.setSelectionRange(cursorPosition, cursorPosition);
+    } catch {
+        // Some browsers may reject selection updates for specific input modes.
+    }
+};
+
 // ─── Sortable Item ───────────────────────────────────────────────────────────
 function SortableCatalogItem({
     catalog,
@@ -444,6 +455,7 @@ export function CatalogEditor() {
     const [addSearch, setAddSearch] = useState("");
     const [pendingAddSelections, setPendingAddSelections] = useState<Set<string>>(new Set());
     const [editingCatalogId, setEditingCatalogId] = useState<string | null>(null);
+    const addSearchInputRef = useRef<HTMLInputElement>(null);
 
     const activeEditingCatalogId = useMemo(() => {
         if (!editingCatalogId) return null;
@@ -691,7 +703,11 @@ export function CatalogEditor() {
                             </Button>
                         </DialogTrigger>
                         <DialogContent
-                            onOpenAutoFocus={(e) => e.preventDefault()}
+                            onOpenAutoFocus={(e) => {
+                                e.preventDefault();
+                                focusSearchInput(addSearchInputRef.current);
+                                window.setTimeout(() => focusSearchInput(addSearchInputRef.current), 50);
+                            }}
                             className={cn(editorLayout.dialogContent, "p-0 sm:max-w-[520px] sm:max-h-[90dvh]")}
                         >
                             <DialogHeader className="shrink-0 border-b border-border/60 p-4 pb-3">
@@ -702,6 +718,7 @@ export function CatalogEditor() {
                                 <div className="relative mt-2">
                                     <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground/70" />
                                     <Input
+                                        ref={addSearchInputRef}
                                         placeholder="Search by name or ID..."
                                         value={addSearch}
                                         onChange={e => setAddSearch(e.target.value)}

@@ -1,4 +1,5 @@
 import { ConfigProvider } from "@/context/ConfigContext";
+import { ThemeChromeSync } from "@/components/theme-chrome-sync";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
@@ -12,8 +13,14 @@ export const metadata = {
   },
   manifest: "/omni-snapshot-editor/manifest.json",
   icons: {
-    icon: "/omni-snapshot-editor/clown.png",
-    apple: "/omni-snapshot-editor/clown.png",
+    icon: [
+      { url: "/omni-snapshot-editor/omni-icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/omni-snapshot-editor/omni-icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/omni-snapshot-editor/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+    shortcut: "/omni-snapshot-editor/omni-icon-192.png",
   },
 };
 
@@ -21,6 +28,10 @@ export const viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#202a39" },
+    { media: "(prefers-color-scheme: dark)", color: "#090d14" },
+  ],
 };
 
 export default function RootLayout({
@@ -37,18 +48,19 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <ThemeChromeSync />
           {/* Robust Global Background Stack */}
           <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden isolate">
             {/* 1. Base solid background */}
             <div className="absolute inset-0 bg-background" />
 
             {/* 2. Grid pattern - extended even further for super-robust coverage */}
-            <div 
-              className="absolute inset-[-100px] opacity-[0.11] dark:opacity-[0.095]" 
-              style={{ 
+            <div
+              className="absolute inset-[-100px] opacity-[0.11] dark:opacity-[0.095]"
+              style={{
                 backgroundImage: `linear-gradient(to right, oklch(0.60 0 0 / 0.15) 1px, transparent 1px), linear-gradient(to bottom, oklch(0.60 0 0 / 0.15) 1px, transparent 1px)`,
-                backgroundSize: '32px 32px'
-              }} 
+                backgroundSize: "32px 32px"
+              }}
             />
 
             {/* 3. Decorative Blobs */}
