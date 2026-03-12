@@ -2,12 +2,14 @@
 
 import React, { useState } from "react";
 import { ArrowLeft, ArrowRight, BookOpen, RefreshCcw, Sparkles, UploadCloud } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Documentation } from "@/components/editor/Documentation";
 import { TemplateGuide } from "@/components/editor/TemplateGuide";
+import { UpdateGuide } from "@/components/editor/UpdateGuide";
 import { cn } from "@/lib/utils";
-import { editorLayout } from "@/components/editor/ui/style-contract";
+import { GuideHeader } from "@/components/editor/GuideHeader";
+import { GuideBody, GuideDialog } from "@/components/editor/GuidePrimitives";
 
 type GuideId = "menu" | "install" | "update" | "use";
 
@@ -18,32 +20,50 @@ type DocumentationDialogProps = {
 const cards = [
     {
         id: "install" as const,
-        title: "How to install",
+        title: "How to Install",
         subtitle: "Setup and import",
-        description: "Use the full install guide for templates and Omni setup.",
+        description: "Step-by-step setup from template download to Omni import.",
         icon: UploadCloud,
-        tone: "border-sky-500/35 hover:border-sky-400 bg-sky-500/6",
-        iconTone: "text-sky-500",
+        tone: "blue" as const,
     },
     {
         id: "update" as const,
-        title: "How to update",
-        subtitle: "Coming soon",
-        description: "Placeholder for migration and upgrade steps.",
+        title: "How to Update",
+        subtitle: "Update flow",
+        description: "Upgrade strategy for existing setups.",
         icon: RefreshCcw,
-        tone: "border-amber-500/35 hover:border-amber-400 bg-amber-500/6",
-        iconTone: "text-amber-500",
+        tone: "amber" as const,
     },
     {
         id: "use" as const,
-        title: "How to use",
+        title: "How to Use",
         subtitle: "Master guide",
-        description: "Open the complete editor manual.",
+        description: "Complete editor reference for groups, catalogs and patterns.",
         icon: BookOpen,
-        tone: "border-indigo-500/35 hover:border-indigo-400 bg-indigo-500/6",
-        iconTone: "text-indigo-500",
+        tone: "indigo" as const,
     },
 ];
+
+const cardToneClasses = {
+    blue: {
+        shell: "border-sky-500/24 bg-sky-500/7 hover:border-sky-400/45 hover:bg-sky-500/10",
+        icon: "border-sky-500/20 bg-sky-500/10 text-sky-500",
+        badge: "border-sky-500/20 bg-sky-500/10 text-sky-600 dark:text-sky-300",
+        arrow: "border-sky-500/18 bg-background/60 text-sky-500",
+    },
+    amber: {
+        shell: "border-amber-500/24 bg-amber-500/7 hover:border-amber-400/45 hover:bg-amber-500/10",
+        icon: "border-amber-500/20 bg-amber-500/10 text-amber-500",
+        badge: "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+        arrow: "border-amber-500/18 bg-background/60 text-amber-500",
+    },
+    indigo: {
+        shell: "border-indigo-500/24 bg-indigo-500/7 hover:border-indigo-400/45 hover:bg-indigo-500/10",
+        icon: "border-indigo-500/20 bg-indigo-500/10 text-indigo-500",
+        badge: "border-indigo-500/20 bg-indigo-500/10 text-indigo-600 dark:text-indigo-300",
+        arrow: "border-indigo-500/18 bg-background/60 text-indigo-500",
+    },
+};
 
 function BackButton({ onBack }: { onBack: () => void }) {
     return (
@@ -54,85 +74,89 @@ function BackButton({ onBack }: { onBack: () => void }) {
     );
 }
 
-function UpdatePlaceholder({ onBack }: { onBack: () => void }) {
+function MenuGuideCard({
+    card,
+    index,
+    onSelect,
+}: {
+    card: (typeof cards)[number];
+    index: number;
+    onSelect: (id: GuideId) => void;
+}) {
+    const Icon = card.icon;
+    const tone = cardToneClasses[card.tone];
+
     return (
-        <DialogContent className={cn(editorLayout.dialogContent, "sm:max-w-3xl max-h-[95vh] overflow-y-auto")}>
-            <DialogHeader className="border-b border-border pb-7 mb-7">
-                <div className="flex items-start justify-between gap-4">
-                    <div>
-                        <DialogTitle className="text-3xl font-extrabold flex items-center gap-4 bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
-                            <RefreshCcw className="w-10 h-10 text-amber-500" />
-                            How to update
-                        </DialogTitle>
-                        <p className="text-foreground/70 text-sm mt-3">This guide is being prepared.</p>
-                    </div>
-                    <BackButton onBack={onBack} />
+        <button
+            type="button"
+            onClick={() => onSelect(card.id)}
+            className={cn(
+                "group rounded-2xl border p-4 text-left transition-all duration-200 hover:-translate-y-0.5 sm:rounded-3xl sm:p-5",
+                tone.shell
+            )}
+        >
+            <div className="flex items-start gap-3 lg:hidden">
+                <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border", tone.icon)}>
+                    <Icon className="h-4 w-4" />
                 </div>
-            </DialogHeader>
-            <div className="space-y-5 pb-4">
-                <div className="rounded-2xl border border-amber-500/20 bg-amber-500/8 p-5 text-sm text-foreground/80 leading-relaxed">
-                    Placeholder active. This section will include safe update steps for existing setups, template changes, and validation checks.
+                <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-foreground/45">{card.subtitle}</p>
+                            <h3 className="mt-1 text-lg font-black tracking-tight text-foreground">{card.title}</h3>
+                        </div>
+                        <span className={cn("inline-flex h-7 min-w-7 shrink-0 items-center justify-center rounded-full border px-2 text-[11px] font-bold", tone.badge)}>
+                            0{index + 1}
+                        </span>
+                    </div>
+                </div>
+                <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-full border", tone.arrow)}>
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </div>
             </div>
-        </DialogContent>
+
+            <div className="hidden lg:block">
+                <div className="flex items-start justify-between gap-3">
+                    <div className={cn("flex h-11 w-11 items-center justify-center rounded-2xl border", tone.icon)}>
+                        <Icon className="h-5 w-5" />
+                    </div>
+                    <span className={cn("inline-flex h-8 min-w-8 items-center justify-center rounded-full border px-2.5 text-[11px] font-bold", tone.badge)}>
+                        0{index + 1}
+                    </span>
+                </div>
+                <div className="mt-5">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-foreground/45">{card.subtitle}</p>
+                    <h3 className="mt-1 text-xl font-black tracking-tight text-foreground">{card.title}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-foreground/68">{card.description}</p>
+                </div>
+                <div className="mt-5 inline-flex items-center text-sm font-semibold text-foreground/84">
+                    Open guide
+                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                </div>
+            </div>
+        </button>
     );
 }
 
 function Menu({ onSelect }: { onSelect: (id: GuideId) => void }) {
     return (
-        <DialogContent className={cn(editorLayout.dialogContent, "sm:max-w-4xl p-0 overflow-hidden")}>
-            <div className="relative h-full">
-                <div className="absolute inset-x-0 top-0 h-52 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.22),transparent_55%),radial-gradient(circle_at_top_right,rgba(99,102,241,0.18),transparent_48%)] pointer-events-none" />
-                <div className="relative border-b border-border/70 px-6 py-8 sm:px-8">
-                    <DialogHeader className="text-left gap-3">
-                        <div className="inline-flex w-fit items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-blue-700 dark:text-blue-200">
-                            <Sparkles className="w-3.5 h-3.5" />
-                            Documentation Center
-                        </div>
-                        <DialogTitle className="text-3xl font-black tracking-tight">Choose your guide</DialogTitle>
-                        <DialogDescription className="text-sm text-foreground/70 leading-relaxed">
-                            Open the guide you need right now.
-                        </DialogDescription>
-                    </DialogHeader>
-                </div>
-                <div className="relative px-6 py-6 sm:px-8 sm:py-8 overflow-y-auto">
-                    <div className="grid gap-4 md:grid-cols-3">
-                        {cards.map((card, idx) => {
-                            const Icon = card.icon;
-                            return (
-                                <button
-                                    key={card.id}
-                                    type="button"
-                                    onClick={() => onSelect(card.id)}
-                                    className={cn(
-                                        "group rounded-3xl border p-5 text-left transition-all hover:-translate-y-0.5",
-                                        card.tone
-                                    )}
-                                >
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="h-11 w-11 rounded-2xl border border-border/70 bg-background/70 flex items-center justify-center">
-                                            <Icon className={cn("w-5 h-5", card.iconTone)} />
-                                        </div>
-                                        <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-foreground/45">
-                                            0{idx + 1}
-                                        </span>
-                                    </div>
-                                    <div className="mt-5">
-                                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-foreground/45">{card.subtitle}</p>
-                                        <h3 className="text-xl font-black tracking-tight mt-1">{card.title}</h3>
-                                        <p className="mt-2 text-sm text-foreground/70 leading-relaxed">{card.description}</p>
-                                    </div>
-                                    <div className="mt-5 inline-flex items-center text-sm font-semibold text-foreground/85">
-                                        Open guide
-                                        <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-0.5" />
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
+        <GuideDialog className="h-auto max-h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] sm:max-w-5xl p-0 overflow-hidden">
+            <div className="relative bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.14),transparent_58%),radial-gradient(circle_at_top_right,rgba(99,102,241,0.16),transparent_45%)] px-4 py-4 sm:px-8 sm:py-8">
+                <GuideHeader
+                    badge="Documentation"
+                    title="Choose your guide"
+                    icon={Sparkles}
+                    tone="indigo"
+                />
             </div>
-        </DialogContent>
+            <GuideBody className="px-4 sm:px-8">
+                <div className="grid gap-4 lg:grid-cols-3">
+                    {cards.map((card, idx) => (
+                        <MenuGuideCard key={card.id} card={card} index={idx} onSelect={onSelect} />
+                    ))}
+                </div>
+            </GuideBody>
+        </GuideDialog>
     );
 }
 
@@ -150,8 +174,13 @@ export function DocumentationDialog({ trigger }: DocumentationDialogProps) {
             <DialogTrigger asChild>{trigger}</DialogTrigger>
             {activeGuide === "menu" && <Menu onSelect={setActiveGuide} />}
             {activeGuide === "install" && <TemplateGuide headerAction={<BackButton onBack={() => setActiveGuide("menu")} />} />}
-            {activeGuide === "use" && <Documentation headerAction={<BackButton onBack={() => setActiveGuide("menu")} />} />}
-            {activeGuide === "update" && <UpdatePlaceholder onBack={() => setActiveGuide("menu")} />}
+            {activeGuide === "use" && (
+                <Documentation
+                    headerAction={<BackButton onBack={() => setActiveGuide("menu")} />}
+                    onOpenInstallGuide={() => setActiveGuide("install")}
+                />
+            )}
+            {activeGuide === "update" && <UpdateGuide headerAction={<BackButton onBack={() => setActiveGuide("menu")} />} />}
         </Dialog>
     );
 }

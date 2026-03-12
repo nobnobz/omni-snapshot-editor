@@ -759,7 +759,7 @@ export function MainEditor() {
                                                         <div>
                                                             <h4 className="text-sm font-medium text-foreground mb-0.5">Upload File</h4>
                                                             <p className="text-xs text-foreground/70 leading-relaxed">
-                                                                Import from your <code className="text-xs bg-white/5 border border-white/10 px-1 py-0.5 rounded text-foreground">aiometadata-config.json</code>
+                                                                Import from your <code className="text-xs bg-white/5 border border-white/10 px-1 py-0.5 rounded text-foreground">aiometadata-setup.json</code>
                                                             </p>
                                                         </div>
                                                     </div>

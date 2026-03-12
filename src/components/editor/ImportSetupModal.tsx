@@ -758,7 +758,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                                                 {isFullyImported ? (
                                                                     <Badge variant="outline" className={cn("ml-2 text-xs uppercase", editorToneBadge.neutral)}>Imported</Badge>
                                                                 ) : mg.isDuplicate ? (
-                                                                    <Badge variant="outline" className={cn("ml-2 text-xs uppercase", importSetupTone.warningBadge)}>Update Links</Badge>
+                                                                    <Badge variant="outline" className={cn("ml-2 text-xs uppercase", importSetupTone.warningBadge)}>Update</Badge>
                                                                 ) : null}
                                                             </label>
 
@@ -767,10 +767,16 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                                                     {mg.subgroupNames.map(sg => {
                                                                         const parsedSg = parsedSubgroups.find(p => p.name === sg);
                                                                         const isSgDup = parsedSg?.isDuplicate;
+                                                                        const hasSgCatalogUpdate = !!parsedSg?.hasNewCatalogs;
+                                                                        const hasSgImageUpdate = !!parsedSg?.hasNewImage;
+                                                                        const hasSgUpdate = hasSgCatalogUpdate || hasSgImageUpdate;
                                                                         return (
                                                                             <div key={sg} className="flex items-center text-xs text-foreground/70">
-                                                                                <span className={`truncate ${isSgDup ? 'line-through opacity-70' : ''}`}>{formatDisplayName(sg)}</span>
-                                                                                {isSgDup && <span className="ml-2 text-xs text-foreground/70/70">(Will use existing)</span>}
+                                                                                <span className={`truncate ${isSgDup && !hasSgUpdate ? 'line-through opacity-70' : ''}`}>{formatDisplayName(sg)}</span>
+                                                                                {isSgDup && !hasSgUpdate && <span className="ml-2 text-xs text-foreground/70/70">(Will use existing)</span>}
+                                                                                {isSgDup && hasSgCatalogUpdate && !hasSgImageUpdate && <span className="ml-2 text-xs text-orange-400/90">(Update catalogs)</span>}
+                                                                                {isSgDup && !hasSgCatalogUpdate && hasSgImageUpdate && <span className="ml-2 text-xs text-blue-400/90">(Update image)</span>}
+                                                                                {isSgDup && hasSgCatalogUpdate && hasSgImageUpdate && <span className="ml-2 text-xs text-orange-400/90">(Update catalogs + image)</span>}
                                                                             </div>
                                                                         );
                                                                     })}
