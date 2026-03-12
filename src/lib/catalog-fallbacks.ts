@@ -85,7 +85,7 @@ export const CATALOG_FALLBACKS: Record<string, string> = {
   "mdblist.143675": "[Actor] Lily Collins Movies",
   "mdblist.143677": "[Actor] Emma Stone Movies",
   "mdblist.143678": "[Actor] Sydney Sweeney Movies",
-  "mdblist.143680": "[Actor] Michael "Bully" Herbig Movies",
+  "mdblist.143680": "[Actor] Michael \"Bully\" Herbig Movies",
   "mdblist.143681": "[Actor] Nicole Kidman Movies",
   "mdblist.143682": "[Actor] Robin Williams Movies",
   "mdblist.143685": "[Actor] Tom Holland Movies",
