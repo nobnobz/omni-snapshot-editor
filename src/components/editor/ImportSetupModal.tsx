@@ -88,6 +88,32 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
         }
     }, [isOpen, fetchManifest]);
 
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const preventNavigationOnDrop: EventListener = (event) => {
+            const dragEvent = event as DragEvent;
+            if (!dragEvent.dataTransfer) return;
+            dragEvent.preventDefault();
+            dragEvent.dataTransfer.dropEffect = "copy";
+        };
+
+        const targets: EventTarget[] = [window, document, document.documentElement, document.body];
+        targets.forEach((target) => {
+            target.addEventListener("dragenter", preventNavigationOnDrop, true);
+            target.addEventListener("dragover", preventNavigationOnDrop, true);
+            target.addEventListener("drop", preventNavigationOnDrop, true);
+        });
+
+        return () => {
+            targets.forEach((target) => {
+                target.removeEventListener("dragenter", preventNavigationOnDrop, true);
+                target.removeEventListener("dragover", preventNavigationOnDrop, true);
+                target.removeEventListener("drop", preventNavigationOnDrop, true);
+            });
+        };
+    }, [isOpen]);
+
     const templates: { label: string; url: string }[] = manifest?.templates?.length ?
         manifest.templates
             .filter(t => t.id.startsWith('ume-') && t.id !== 'ume-catalogs' && t.url)
@@ -108,6 +134,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
     }, [manifest]);
 
     const [templateLoading, setTemplateLoading] = useState(false);
+    const [isFileDropActive, setIsFileDropActive] = useState(false);
 
     const [step, setStep] = useState<1 | 2>(1);
     const [fileName, setFileName] = useState("");
@@ -309,6 +336,19 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
         const file = e.target.files?.[0];
         if (!file) return;
 
+        if (!isJsonFile(file)) {
+            setError("Please drop a valid JSON file.");
+            e.target.value = "";
+            return;
+        }
+
+        processFile(file);
+        e.target.value = "";
+    };
+
+    const isJsonFile = (file: File) => file.name.toLowerCase().endsWith(".json") || file.type === "application/json";
+
+    const processFile = (file: File) => {
         setFileName(file.name);
         const reader = new FileReader();
         reader.onload = (event) => {
@@ -316,6 +356,22 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
             processUploadedJson(content);
         };
         reader.readAsText(file);
+    };
+
+    const handleFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsFileDropActive(false);
+
+        const file = e.dataTransfer.files?.[0];
+        if (!file) return;
+
+        if (!isJsonFile(file)) {
+            setError("Please drop a valid JSON file.");
+            return;
+        }
+
+        processFile(file);
     };
 
     const handleImport = () => {
@@ -598,14 +654,42 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                         </div>
 
                         {/* File Upload */}
-                        <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-border rounded-lg hover:border-blue-500/50 hover:bg-blue-500/5 transition-all text-center">
+                        <div
+                            onDragEnter={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setIsFileDropActive(true);
+                            }}
+                            onDragOver={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setIsFileDropActive(true);
+                                if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+                            }}
+                            onDragLeave={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+                                setIsFileDropActive(false);
+                            }}
+                            onDrop={handleFileDrop}
+                            className={cn(
+                                "flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg transition-all text-center",
+                                isFileDropActive
+                                    ? "border-blue-500 bg-blue-500/10"
+                                    : "border-border hover:border-blue-500/50 hover:bg-blue-500/5"
+                            )}
+                        >
                             <UploadCloud className="w-10 h-10 text-foreground/70 mb-3" />
                             <h3 className="font-medium text-sm text-foreground mb-1">Upload configuration file</h3>
                             <p className="text-xs text-foreground/70 mb-4 max-w-sm">
                                 Paste your AIOMetadata <strong>Share Setup</strong> JSON or drop the exported <code>.json</code> file below.
                             </p>
+                            <div className={cn("mb-4 text-xs font-semibold transition-colors", isFileDropActive ? "text-blue-500" : "text-foreground/65")}>
+                                Drop JSON file here
+                            </div>
                             <Button onClick={() => fileInputRef.current?.click()} variant="outline" className="bg-muted border-border hover:bg-muted/80 text-foreground text-xs font-semibold">
-                                Select File
+                                Select JSON File
                             </Button>
                             <input
                                 type="file"

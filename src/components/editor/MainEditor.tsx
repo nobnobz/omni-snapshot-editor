@@ -12,7 +12,7 @@ import { ImportPatternsModal } from "@/components/editor/ImportPatternsModal";
 import { OrderingEditor } from "@/components/editor/OrderingEditor";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Textarea } from "@/components/ui/textarea";
-import { Documentation } from "@/components/editor/Documentation";
+import { DocumentationDialog } from "@/components/editor/DocumentationDialog";
 import {
     Download,
     Copy,
@@ -35,7 +35,6 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
     DialogFooter
 } from "@/components/ui/dialog";
 import {
@@ -61,6 +60,7 @@ export function MainEditor() {
     const { originalConfig, currentValues, fileName, exportConfig, exportPartialConfig, customFallbacks, setCustomFallbacks, unloadConfig } = useConfig();
     const searchTerm = "";
     const exportSetupNameId = useId();
+    const fallbackFileInputRef = useRef<HTMLInputElement>(null);
 
     // Export Modal State
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -76,6 +76,7 @@ export function MainEditor() {
     const [uiNotice, setUiNotice] = useState<UiNotice | null>(null);
     const [isHeaderVisible, setIsHeaderVisible] = useState(true);
     const [isScrolled, setIsScrolled] = useState(false);
+    const [isFallbackDropActive, setIsFallbackDropActive] = useState(false);
     const lastScrollY = useRef(0);
     const scrollContainerRef = useRef<HTMLElement>(null);
     const scrollThreshold = 6; // keep this small so mobile upward scroll reveals the top bar quickly
@@ -122,6 +123,30 @@ export function MainEditor() {
         return () => {
             window.removeEventListener("scroll", handleScroll);
             container?.removeEventListener("scroll", handleScroll);
+        };
+    }, []);
+
+    useEffect(() => {
+        const preventNavigationOnDrop: EventListener = (event) => {
+            const dragEvent = event as DragEvent;
+            if (!dragEvent.dataTransfer) return;
+            dragEvent.preventDefault();
+            dragEvent.dataTransfer.dropEffect = "copy";
+        };
+
+        const targets: EventTarget[] = [window, document, document.documentElement, document.body];
+        targets.forEach((target) => {
+            target.addEventListener("dragenter", preventNavigationOnDrop, true);
+            target.addEventListener("dragover", preventNavigationOnDrop, true);
+            target.addEventListener("drop", preventNavigationOnDrop, true);
+        });
+
+        return () => {
+            targets.forEach((target) => {
+                target.removeEventListener("dragenter", preventNavigationOnDrop, true);
+                target.removeEventListener("dragover", preventNavigationOnDrop, true);
+                target.removeEventListener("drop", preventNavigationOnDrop, true);
+            });
         };
     }, []);
 
@@ -315,9 +340,13 @@ export function MainEditor() {
         }
     };
 
-    const handleUploadFallbacks = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+    const isJsonFile = (file: File) => file.name.toLowerCase().endsWith(".json") || file.type === "application/json";
+
+    const processFallbackFile = (file: File) => {
+        if (!isJsonFile(file)) {
+            showNotice("error", "Please drop a valid JSON file.");
+            return;
+        }
 
         const reader = new FileReader();
         reader.onload = (event) => {
@@ -326,7 +355,24 @@ export function MainEditor() {
             });
         };
         reader.readAsText(file);
+    };
+
+    const handleUploadFallbacks = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        processFallbackFile(file);
         e.target.value = '';
+    };
+
+    const handleFallbackDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsFallbackDropActive(false);
+
+        const file = e.dataTransfer.files?.[0];
+        if (!file) return;
+        processFallbackFile(file);
     };
 
     const handlePasteImport = () => {
@@ -404,8 +450,8 @@ export function MainEditor() {
                         </a>
                     ))}
                     <div className="pt-4 mt-4 border-t border-border space-y-2">
-                        <Dialog>
-                            <DialogTrigger asChild>
+                        <DocumentationDialog
+                            trigger={
                                 <Button
                                     variant="ghost"
                                     className="w-full justify-start gap-3 h-10 px-3 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-500/10 font-medium"
@@ -413,9 +459,8 @@ export function MainEditor() {
                                     <BookOpen className="w-4 h-4" />
                                     Documentation
                                 </Button>
-                            </DialogTrigger>
-                            <Documentation />
-                        </Dialog>
+                            }
+                        />
                         <Button
                             asChild
                             variant="ghost"
@@ -720,18 +765,49 @@ export function MainEditor() {
                                                     </div>
 
                                                     <div className="mt-4 flex-1 flex flex-col justify-end relative z-10">
-                                                        <label
-                                                            htmlFor="main-fallback-upload"
-                                                            className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-border/60 hover:border-blue-500/40 rounded-lg mb-3 bg-muted/5 transition-colors cursor-pointer group/drop min-h-[96px]"
+                                                        <div
+                                                            role="button"
+                                                            tabIndex={0}
+                                                            onClick={() => fallbackFileInputRef.current?.click()}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === "Enter" || e.key === " ") {
+                                                                    e.preventDefault();
+                                                                    fallbackFileInputRef.current?.click();
+                                                                }
+                                                            }}
+                                                            onDragEnter={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                setIsFallbackDropActive(true);
+                                                            }}
+                                                            onDragOver={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                setIsFallbackDropActive(true);
+                                                            }}
+                                                            onDragLeave={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+                                                                setIsFallbackDropActive(false);
+                                                            }}
+                                                            onDrop={handleFallbackDrop}
+                                                            className={cn(
+                                                                "flex-1 flex flex-col items-center justify-center border-2 border-dashed rounded-lg mb-3 bg-muted/5 transition-colors cursor-pointer group/drop min-h-[96px]",
+                                                                isFallbackDropActive
+                                                                    ? "border-blue-500 bg-blue-500/10"
+                                                                    : "border-border/60 hover:border-blue-500/40"
+                                                            )}
                                                         >
-                                                            <UploadCloud className="w-5 h-5 mb-1.5 opacity-40 group-hover/drop:opacity-70 group-hover/drop:text-blue-500 transition-all" />
-                                                            <span className="text-xs font-medium opacity-40 group-hover/drop:opacity-70 group-hover/drop:text-blue-500 transition-all">Select file to upload</span>
-                                                        </label>
+                                                            <UploadCloud className={cn("w-5 h-5 mb-1.5 transition-all", isFallbackDropActive ? "text-blue-500 opacity-100" : "opacity-40 group-hover/drop:opacity-70 group-hover/drop:text-blue-500")} />
+                                                            <span className={cn("text-xs font-medium transition-all", isFallbackDropActive ? "text-blue-500 opacity-100" : "opacity-40 group-hover/drop:opacity-70 group-hover/drop:text-blue-500")}>Drop JSON file here</span>
+                                                        </div>
                                                         <input
                                                             type="file"
                                                             id="main-fallback-upload"
                                                             accept=".json"
                                                             className="hidden"
+                                                            ref={fallbackFileInputRef}
                                                             onChange={handleUploadFallbacks}
                                                         />
                                                         <label

@@ -69,10 +69,10 @@ const restrictVerticalDrag: Modifier = ({ transform }) => ({
 });
 
 const subgroupCountBadgeClass =
-    "ml-2 inline-flex h-6 min-w-[1.65rem] items-center justify-center rounded-full border border-white/10 bg-gradient-to-b from-background/95 via-background/90 to-muted/80 px-2 text-[11px] font-bold tabular-nums leading-none text-foreground/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_6px_18px_rgba(0,0,0,0.22)] ring-1 ring-black/20";
+    "ml-2 inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded-full border border-border/70 bg-muted/70 px-1.5 text-[10px] font-semibold tabular-nums leading-none text-foreground/65 shadow-sm transition-colors group-hover/subgroup:border-blue-500/25 group-hover/subgroup:bg-blue-500/8 group-hover/subgroup:text-blue-700 dark:group-hover/subgroup:text-blue-300";
 
 const subgroupCountInlineClass =
-    "inline-flex h-6 min-w-[1.65rem] items-center justify-center rounded-full border border-white/10 bg-gradient-to-b from-background/90 to-muted/75 px-2 text-[11px] font-bold tabular-nums leading-none text-foreground/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_4px_14px_rgba(0,0,0,0.18)]";
+    "inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded-full border border-border/60 bg-muted/60 px-1.5 text-[10px] font-semibold tabular-nums leading-none text-foreground/60 shadow-sm";
 
 const focusSearchInput = (input: HTMLInputElement | null) => {
     if (!input) return;

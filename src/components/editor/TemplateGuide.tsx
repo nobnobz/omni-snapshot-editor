@@ -28,7 +28,11 @@ import { cn } from "@/lib/utils";
 import { downloadTemplateFile } from "@/lib/template-download";
 import { editorLayout } from "@/components/editor/ui/style-contract";
 
-export function TemplateGuide() {
+type TemplateGuideProps = {
+    headerAction?: React.ReactNode;
+};
+
+export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
     const { manifest } = useConfig();
 
     const handleDownload = async (url: string, templateName: string) => {
@@ -60,11 +64,16 @@ export function TemplateGuide() {
         <DialogContent className={cn(editorLayout.dialogContent, "sm:max-w-5xl max-h-[95vh] overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-transparent")}>
             {/* MATCHING HEADER FROM DOCUMENTATION.tsx */}
             <DialogHeader className="border-b border-border pb-8 mb-8">
-                <DialogTitle className="text-3xl font-extrabold flex items-center gap-4 bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
-                    <UploadCloud className="w-10 h-10 text-blue-500" />
-                    How to Install - Guide
-                </DialogTitle>
-                <p className="text-foreground/70 text-sm mt-3 uppercase tracking-[0.2em] font-bold">Unified Media Experience (UME)</p>
+                <div className="flex items-start justify-between gap-4">
+                    <div>
+                        <DialogTitle className="text-3xl font-extrabold flex items-center gap-4 bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
+                            <UploadCloud className="w-10 h-10 text-blue-500" />
+                            How to Install - Guide
+                        </DialogTitle>
+                        <p className="text-foreground/70 text-sm mt-3 uppercase tracking-[0.2em] font-bold">Unified Media Experience (UME)</p>
+                    </div>
+                    {headerAction}
+                </div>
             </DialogHeader>
 
             <div className="space-y-16 pb-12">

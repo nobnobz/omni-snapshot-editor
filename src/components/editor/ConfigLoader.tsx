@@ -19,7 +19,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { Documentation } from "@/components/editor/Documentation";
+import { DocumentationDialog } from "@/components/editor/DocumentationDialog";
 import { TemplateGuide } from "@/components/editor/TemplateGuide";
 import { APP_VERSION } from "@/lib/constants";
 import type { OmniConfig } from "@/lib/types";
@@ -76,14 +76,30 @@ export function ConfigLoader() {
 
     const [selectedVersion, setSelectedVersion] = useState(templates[0].label);
     const [url, setUrl] = useState(templates[0].url);
+    const [isFileDropActive, setIsFileDropActive] = useState(false);
 
     useEffect(() => {
-        const defaultTemplate = manifest?.templates?.find(t => t.id === 'ume-main' || t.isDefault);
-        if (defaultTemplate) {
-            setSelectedVersion(defaultTemplate.name);
-            setUrl(defaultTemplate.url);
-        }
-    }, [manifest]);
+        const preventNavigationOnDrop = (event: DragEvent) => {
+            if (!event.dataTransfer) return;
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "copy";
+        };
+
+        const targets = [window, document, document.documentElement, document.body];
+        targets.forEach((target) => {
+            target.addEventListener("dragenter", preventNavigationOnDrop as EventListener, true);
+            target.addEventListener("dragover", preventNavigationOnDrop as EventListener, true);
+            target.addEventListener("drop", preventNavigationOnDrop as EventListener, true);
+        });
+
+        return () => {
+            targets.forEach((target) => {
+                target.removeEventListener("dragenter", preventNavigationOnDrop as EventListener, true);
+                target.removeEventListener("dragover", preventNavigationOnDrop as EventListener, true);
+                target.removeEventListener("drop", preventNavigationOnDrop as EventListener, true);
+            });
+        };
+    }, []);
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -138,14 +154,18 @@ export function ConfigLoader() {
         }
     };
 
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+    const isJsonFile = (file: File) => file.name.toLowerCase().endsWith(".json") || file.type === "application/json";
 
+    const processFile = (file: File) => {
         // Size Limit: 5MB
         const MAX_SIZE = 5 * 1024 * 1024; // 5MB in bytes
         if (file.size > MAX_SIZE) {
             setError("The file is too large. Maximum allowed size is 5MB.");
+            return;
+        }
+
+        if (!isJsonFile(file)) {
+            setError("Please upload a valid JSON file.");
             return;
         }
 
@@ -171,6 +191,23 @@ export function ConfigLoader() {
             }
         };
         reader.readAsText(file, "UTF-8");
+    };
+
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        processFile(file);
+        e.target.value = "";
+    };
+
+    const handleFileDrop = (e: React.DragEvent<HTMLElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsFileDropActive(false);
+
+        const file = e.dataTransfer.files?.[0];
+        if (!file) return;
+        processFile(file);
     };
 
     const handleCreateBlank = () => {
@@ -407,8 +444,8 @@ export function ConfigLoader() {
                             {/* Row 2: Secondary Resources */}
                             <div className="mx-auto grid w-full max-w-[460px] grid-cols-2 gap-2">
                                 {/* 2. Documentation */}
-                                <Dialog>
-                                    <DialogTrigger asChild>
+                                <DocumentationDialog
+                                    trigger={
                                         <Button
                                             type="button"
                                             variant="outline"
@@ -417,9 +454,8 @@ export function ConfigLoader() {
                                             <BookOpen className="h-[0.9rem] w-[0.9rem] text-indigo-600 dark:text-indigo-300" strokeWidth={2.2} />
                                             <span className="text-[0.88rem] font-medium tracking-tight">Documentation</span>
                                         </Button>
-                                    </DialogTrigger>
-                                    <Documentation />
-                                </Dialog>
+                                    }
+                                />
 
                                 {/* 3. Support Me */}
                                 <Button
@@ -466,7 +502,30 @@ export function ConfigLoader() {
                                 <div className="flex-1 flex flex-col justify-center min-h-[180px] mb-4">
                                     <Label
                                         htmlFor="file-upload"
-                                        className="flex flex-col items-center justify-center w-full h-full px-4 transition-all duration-300 bg-background/40 border border-border border-dashed rounded-xl cursor-pointer hover:border-emerald-500/50 hover:bg-emerald-950/10 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                        onDragEnter={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setIsFileDropActive(true);
+                                        }}
+                                        onDragOver={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setIsFileDropActive(true);
+                                            e.dataTransfer.dropEffect = "copy";
+                                        }}
+                                        onDragLeave={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+                                            setIsFileDropActive(false);
+                                        }}
+                                        onDrop={handleFileDrop}
+                                        className={cn(
+                                            "flex flex-col items-center justify-center w-full h-full px-4 transition-all duration-300 bg-background/40 border-2 border-dashed rounded-xl cursor-pointer hover:border-emerald-500/50 hover:bg-emerald-950/10 focus:outline-none focus:ring-1 focus:ring-emerald-500",
+                                            isFileDropActive 
+                                                ? "border-emerald-500 bg-emerald-500/10" 
+                                                : "border-border"
+                                        )}
                                     >
                                         <div className="pointer-events-none flex flex-col items-center justify-center space-y-3">
                                             <div className="p-3 bg-card rounded-full group-hover:scale-110 transition-transform duration-300 shadow-lg border border-border">
@@ -474,7 +533,7 @@ export function ConfigLoader() {
                                             </div>
                                             <div className="text-center space-y-1">
                                                 <p className="text-sm font-semibold text-foreground group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                                                    Drop .json file here
+                                                    {isFileDropActive ? "Release to import" : "Drop .json file here"}
                                                 </p>
                                             </div>
                                         </div>
