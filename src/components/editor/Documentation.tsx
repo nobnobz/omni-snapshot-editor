@@ -4,7 +4,6 @@ import React from "react";
 import {
     AlertCircle,
     BookOpen,
-    CheckCircle2,
     Database,
     Download,
     ExternalLink,

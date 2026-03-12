@@ -10,7 +10,6 @@ import {
     Info,
     KeyRound,
     Link2,
-    Monitor,
     MousePointer2,
     Search,
     Settings,
