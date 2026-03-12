@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, ReactNode } from "react";
 import { OmniConfig } from "../lib/types";
 import { resolveCatalogName, ensureCatalogPrefix } from '@/lib/utils';
 import { decodeConfig, encodeConfig, pruneDisabledCatalogs, pruneDisabledKeys } from "../lib/config-utils";
-import { renameGroup, renameMainGroup, disableGroup, disableMainGroup, disableCatalog, validateAndFix, countGroupReferences, countMainGroupReferences, unassignSubgroup, assignSubgroup, createMainGroup, createSubgroup, importGroups } from "../lib/mutations";
+import { renameGroup, renameMainGroup, disableGroup, disableMainGroup, disableCatalog, validateAndFix, countGroupReferences, countMainGroupReferences, unassignSubgroup, assignSubgroup, createMainGroup, createSubgroup, importGroups, getAllCatalogIds } from "../lib/mutations";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Omni configs are user-defined dynamic JSON blobs.
 type LooseAny = any;
@@ -435,7 +435,6 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
             
             // Sync the manifest-style catalogs state so Catalog Manager sees the new items
             // We scan all IDs from the newly merged state
-            const { getAllCatalogIds } = require("../lib/mutations");
             const allIds = getAllCatalogIds(next);
             const customNames = next.custom_catalog_names || {};
             

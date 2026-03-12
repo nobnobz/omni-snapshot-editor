@@ -125,7 +125,7 @@ function SortableCatalogItem({
     onUpdateRandom: (v: boolean) => void;
     onUpdatePinned: (v: boolean) => void;
     onRemove: () => void;
-    currentValues: Record<string, any>;
+    currentValues: Record<string, unknown>;
 }) {
     const isActive = catalog.enabled !== false || catalog.showInHome === true || isPinned;
 
