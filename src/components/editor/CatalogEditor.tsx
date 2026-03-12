@@ -160,6 +160,7 @@ function SortableCatalogItem({
     };
 
     const itemCount = catalog.metadata?.itemCount;
+    const customCatalogNames = (currentValues["custom_catalog_names"] ?? {}) as Record<string, string>;
 
     const handleSettingsPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
         // Radix opens dropdowns on pointer-down; block that path for touch so scroll gestures don't open it.
@@ -253,7 +254,7 @@ function SortableCatalogItem({
                                 <span className="truncate">
                                     {catalog.name && catalog.name !== catalog.id 
                                         ? catalog.name 
-                                        : resolveCatalogName(catalog.id, currentValues.custom_catalog_names || {})}
+                                        : resolveCatalogName(catalog.id, (currentValues.custom_catalog_names as Record<string, string>) || {})}
                                 </span>
                                 {catalog.showInHome && <Star className="w-3 h-3 text-amber-500 shrink-0" />}
                                 <Pencil className="w-3 h-3 text-foreground/45 opacity-0 group-hover/name:opacity-90 transition-opacity shrink-0" />
