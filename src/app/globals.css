@@ -152,6 +152,7 @@
   html,
   body {
     min-height: 100%;
+    background: transparent;
   }
 
   * {
@@ -159,7 +160,7 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
     overflow-x: hidden;
     overscroll-behavior-y: auto;
   }

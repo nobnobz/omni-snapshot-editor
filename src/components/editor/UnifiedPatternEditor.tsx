@@ -496,7 +496,7 @@ export function UnifiedPatternEditor() {
 
     return (
         <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="patterns-root" className="!border-b-0 bg-card/60 backdrop-blur-md border border-border/70 dark:border-white/[0.08] shadow-sm rounded-xl overflow-hidden transition-all hover:bg-card/80">
+            <AccordionItem value="patterns-root" className="!border-b-0 rounded-xl overflow-hidden border border-border/85 bg-card/80 shadow-sm ring-1 ring-inset ring-white/5 transition-colors hover:bg-card/85 dark:ring-white/[0.06]">
                 <AccordionTrigger className="px-5 py-4 hover:no-underline flex justify-between items-center group transition-colors">
                     <div className="flex items-center gap-3">
                         <WandSparkles className="w-5 h-5 text-purple-400 group-hover:text-purple-300 transition-colors" />

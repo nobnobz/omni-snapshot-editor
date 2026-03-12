@@ -168,6 +168,30 @@ export function MainEditor() {
         setUiNotice({ tone, message });
     };
 
+    const preserveScrollPosition = (work: () => void) => {
+        const isMobileViewport = window.innerWidth < 1024;
+        const desktopContainer = scrollContainerRef.current;
+        const previousY = isMobileViewport ? window.scrollY : desktopContainer?.scrollTop ?? 0;
+
+        work();
+
+        const restore = () => {
+            if (isMobileViewport) {
+                window.scrollTo({ top: previousY, behavior: "auto" });
+                return;
+            }
+            if (desktopContainer) {
+                desktopContainer.scrollTop = previousY;
+            }
+        };
+
+        requestAnimationFrame(() => {
+            restore();
+            requestAnimationFrame(restore);
+            setTimeout(restore, 120);
+        });
+    };
+
     const handleDownloadClick = () => {
         setSetupName(originalConfig?.name || "");
         setIsExportModalOpen(true);
@@ -286,7 +310,9 @@ export function MainEditor() {
 
         const reader = new FileReader();
         reader.onload = (event) => {
-            processAIOMetadata(event.target?.result as string);
+            preserveScrollPosition(() => {
+                processAIOMetadata(event.target?.result as string);
+            });
         };
         reader.readAsText(file);
         e.target.value = '';
@@ -294,7 +320,12 @@ export function MainEditor() {
 
     const handlePasteImport = () => {
         if (!pastedJson.trim()) return;
-        processAIOMetadata(pastedJson);
+        if (document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+        }
+        preserveScrollPosition(() => {
+            processAIOMetadata(pastedJson);
+        });
     };
 
     const handleResetCatalogNames = () => {
@@ -725,6 +756,7 @@ export function MainEditor() {
                                                             onChange={(e) => setPastedJson(e.target.value)}
                                                         />
                                                         <Button
+                                                            type="button"
                                                             size="sm"
                                                             variant="secondary"
                                                             className="w-full text-sm h-9 bg-blue-600 hover:bg-blue-500 text-white border-none rounded-lg shadow-[0_0_15px_rgba(37,99,235,0.2)] transition-all duration-200"
@@ -838,7 +870,7 @@ export function MainEditor() {
                         <AlertDialogAction
                             onClick={confirmBackToStart}
                             variant="destructive"
-                            className="h-9 border-none"
+                            className="h-9 border-none bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 font-bold"
                         >
                             Yes, Discard Changes
                         </AlertDialogAction>
@@ -862,7 +894,7 @@ export function MainEditor() {
                         <AlertDialogAction
                             onClick={confirmResetCatalogNames}
                             variant="destructive"
-                            className="h-9 border-none"
+                            className="h-9 border-none bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 font-bold"
                         >
                             Yes, Reset All
                         </AlertDialogAction>

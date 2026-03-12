@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { useConfig } from "@/context/ConfigContext";
 import {
     DropdownMenu,
@@ -208,6 +208,18 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
     const [isRenaming, setIsRenaming] = useState(false);
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
     const [catalogSearch, setCatalogSearch] = useState("");
+    const addCatalogSearchInputRef = useRef<HTMLInputElement>(null);
+
+    React.useEffect(() => {
+        if (!isAddMenuOpen) return;
+        const focusSearch = () => addCatalogSearchInputRef.current?.focus();
+        const rafId = requestAnimationFrame(focusSearch);
+        const timeoutId = window.setTimeout(focusSearch, 60);
+        return () => {
+            cancelAnimationFrame(rafId);
+            window.clearTimeout(timeoutId);
+        };
+    }, [isAddMenuOpen]);
 
     const customNames: Record<string, string> = React.useMemo(() => currentValues["custom_catalog_names"] || {}, [currentValues]);
     const catalogOptions = React.useMemo(() => {
@@ -329,9 +341,15 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                 >
                     <GripVertical className="h-5 w-5" />
                 </button>
-                <div className="flex-1 font-bold text-sm text-foreground cursor-pointer flex items-center select-none tracking-tight" onClick={toggleExpanded}>
+                <div className="flex-1 min-w-0 font-bold text-sm text-foreground cursor-pointer flex items-center select-none tracking-tight" onClick={toggleExpanded}>
                     {isExpanded ? <ChevronDown className="w-4 h-4 mr-2 text-foreground/70 group-hover:text-foreground transition-colors" /> : <ChevronRight className="w-4 h-4 mr-2 text-foreground/70 group-hover:text-foreground transition-colors" />}
-                    {formatDisplayName(subgroupName)}
+                    <span className="truncate">{formatDisplayName(subgroupName)}</span>
+                    <Badge
+                        variant="outline"
+                        className="ml-2 h-5 min-w-5 px-0 inline-flex items-center justify-center rounded-full text-[10px] leading-none font-semibold text-foreground/65 bg-background/50 border-border/70"
+                    >
+                        {subgroupCatalogs.length}
+                    </Badge>
                 </div>
 
                 {/* Action Buttons: Desktop Header, Mobile hidden here (moved to layout section below) */}
@@ -477,6 +495,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                         <div className="relative">
                                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-foreground/60" />
                                             <Input
+                                                ref={addCatalogSearchInputRef}
                                                 placeholder="Search by name or ID..."
                                                 value={catalogSearch}
                                                 onChange={e => setCatalogSearch(e.target.value)}
@@ -852,6 +871,18 @@ function UnassignedSubgroupRow({
 
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
     const [catalogSearch, setCatalogSearch] = useState("");
+    const addCatalogSearchInputRef = useRef<HTMLInputElement>(null);
+
+    React.useEffect(() => {
+        if (!isAddMenuOpen) return;
+        const focusSearch = () => addCatalogSearchInputRef.current?.focus();
+        const rafId = requestAnimationFrame(focusSearch);
+        const timeoutId = window.setTimeout(focusSearch, 60);
+        return () => {
+            cancelAnimationFrame(rafId);
+            window.clearTimeout(timeoutId);
+        };
+    }, [isAddMenuOpen]);
 
     const customNames: Record<string, string> = React.useMemo(() => currentValues["custom_catalog_names"] || {}, [currentValues]);
     const catalogOptions = React.useMemo(() => {
@@ -1089,6 +1120,7 @@ function UnassignedSubgroupRow({
                                         <div className="relative">
                                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-foreground/60" />
                                             <Input
+                                                ref={addCatalogSearchInputRef}
                                                 placeholder="Search by name or ID..."
                                                 value={catalogSearch}
                                                 onChange={e => setCatalogSearch(e.target.value)}

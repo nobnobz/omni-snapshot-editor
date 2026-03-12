@@ -21,10 +21,6 @@ export const viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "transparent" },
-    { media: "(prefers-color-scheme: dark)", color: "transparent" },
-  ],
 };
 
 export default function RootLayout({
@@ -34,7 +30,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="antialiased min-h-screen bg-background text-foreground selection:bg-blue-500/30 overflow-x-hidden relative">
+      <body className="antialiased min-h-screen text-foreground selection:bg-blue-500/30 overflow-x-hidden relative">
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

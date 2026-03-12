@@ -5,7 +5,6 @@
   "start_url": "/omni-snapshot-editor/",
   "display": "standalone",
   "background_color": "#fafafa",
-  "theme_color": "#fafafa",
   "icons": [
     {
       "src": "/omni-snapshot-editor/clown.png",
