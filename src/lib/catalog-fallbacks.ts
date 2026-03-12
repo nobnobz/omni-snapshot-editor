@@ -141,7 +141,7 @@ export const CATALOG_FALLBACKS: Record<string, string> = {
   "mdblist.151301": "[Actor] Arnold Schwarzenegger Movies & Shows",
   "mdblist.16826": "[Collection] Rocky / Creed",
   "mdblist.2195": "[Genre] Comedy Movies",
-  "mdblist.2236": "[Header] Movies for Header",
+  "mdblist.16267": "[Header] Movies for Header",
   "mdblist.2407": "[Genre] Action Movies",
   "mdblist.2408": "[Genre] Drama Movies",
   "mdblist.2410": "[Genre] Horror Movies",
