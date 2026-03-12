@@ -64,11 +64,6 @@ export function Documentation() {
             url: manifest?.templates?.find(t => t.id === 'aiometadata')?.url || "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/aiometadata-patterns-v1.json"
         },
         {
-            name: "AIOMetadata (Catalogs Only)",
-            id: "ume-catalogs",
-            url: manifest?.templates?.find(t => t.id === 'ume-catalogs')?.url || "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/catalogs-only-template.json"
-        },
-        {
             name: "AIOStreams",
             id: "aiostreams",
             url: manifest?.templates?.find(t => t.id === 'aiostreams')?.url || "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/aiostreams-patterns-v1.json"
