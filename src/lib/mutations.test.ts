@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { renameGroup, renameMainGroup, disableGroup, disableCatalog, validateAndFix } from './mutations';
+import { renameGroup, disableGroup, disableCatalog, validateAndFix } from './mutations';
 
 describe('Mutations Library', () => {
 

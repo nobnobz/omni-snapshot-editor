@@ -5,19 +5,14 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
-    ExternalLink,
     Settings,
     Smartphone,
-    Tv,
     Info,
     CheckCircle2,
-    BookOpen,
     Download,
-    Key,
     Save,
     ChevronRight,
     Zap,
@@ -281,7 +276,7 @@ export function TemplateGuide() {
 }
 
 // Internal icons not imported from lucide-react in the original list but needed for consistency
-function FileJson(props: any) {
+function FileJson(props: React.SVGProps<SVGSVGElement>) {
     return (
         <svg
             {...props}

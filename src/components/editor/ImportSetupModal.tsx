@@ -52,7 +52,7 @@ interface ParsedSubgroup {
     category?: string;
 }
 
-const isPlaceholderSg = (name: string, catalogs: any) => {
+const isPlaceholderSg = (name: string, catalogs: unknown) => {
     const cats = Array.isArray(catalogs) ? catalogs : [];
     if (cats.length > 0) return false;
     const placeholders = ["[Decades]", "[Actors]", "[Awards]", "[Discover]", "[Collections]", "[Streaming Services]", "[Directors]", "[Genres]"];
@@ -114,7 +114,7 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
     const [error, setError] = useState("");
 
     // State for all imported values (needed for metadata extraction)
-    const [importedValues, setImportedValues] = useState<Record<string, any>>({});
+    const [importedValues, setImportedValues] = useState<Record<string, unknown>>({});
     const [selectedGlobalKeys, setSelectedGlobalKeys] = useState<Set<string>>(new Set());
 
     // Parsed Data
@@ -151,13 +151,13 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
     const processUploadedJson = (jsonString: string) => {
         try {
             const rawData = JSON.parse(jsonString);
-            let imported: Record<string, any> = {};
+            let imported: Record<string, unknown> = {};
 
             // Check if it's an OmniConfig (with `.values`) or a raw decoded JSON
             if (rawData.values) {
                 // Decode it like we do in ConfigContext
                 for (const [key, val] of Object.entries(rawData.values)) {
-                    imported[key] = decodeConfig(val as any);
+                    imported[key] = decodeConfig(val);
                 }
             } else if (rawData.main_catalog_groups || rawData.catalog_groups) {
                 // Already raw decoded
@@ -170,28 +170,41 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
 
             // Current state for duplicate checking
             const currentMainGroupNames = new Set(
-                Object.values(currentValues.main_catalog_groups || {}).map((g: any) => g.name)
+                Object.values(currentValues.main_catalog_groups || {})
+                    .map((group) => {
+                        if (!group || typeof group !== "object") return undefined;
+                        const maybeName = (group as { name?: unknown }).name;
+                        return typeof maybeName === "string" ? maybeName : undefined;
+                    })
+                    .filter((name): name is string => !!name)
             );
             const currentSubgroupNames = new Set(
                 Object.keys(currentValues.catalog_groups || {})
             );
 
             // Parse Main Groups
-            const inMainGroups = imported.main_catalog_groups || {};
-            const inMainGroupOrder = imported.main_group_order || Object.keys(inMainGroups);
-            const inCatalogsGroups = imported.catalog_groups || {};
+            const inMainGroups = (imported.main_catalog_groups || {}) as Record<string, {
+                name?: string;
+                subgroupNames?: string[];
+                posterType?: string;
+                posterSize?: string;
+            }>;
+            const inMainGroupOrder = (imported.main_group_order as string[] | undefined) || Object.keys(inMainGroups);
+            const inCatalogsGroups = (imported.catalog_groups || {}) as Record<string, string[]>;
+            const subgroupOrder = (imported.subgroup_order || {}) as Record<string, string[]>;
 
             const parsedMGs: ParsedMainGroup[] = [];
             for (const uuid of inMainGroupOrder) {
                 const group = inMainGroups[uuid];
                 if (!group) continue;
+                const groupName = group.name || "Unnamed Group";
                 parsedMGs.push({
                     originalUuid: uuid,
-                    name: group.name || "Unnamed Group",
-                    subgroupNames: (imported.subgroup_order?.[uuid] || group.subgroupNames || []).filter((sg: string) => !isPlaceholderSg(sg, inCatalogsGroups[sg])),
+                    name: groupName,
+                    subgroupNames: (subgroupOrder[uuid] || group.subgroupNames || []).filter((sg: string) => !isPlaceholderSg(sg, inCatalogsGroups[sg])),
                     posterType: group.posterType || "Poster",
                     posterSize: group.posterSize || "Default",
-                    isDuplicate: currentMainGroupNames.has(group.name)
+                    isDuplicate: currentMainGroupNames.has(groupName)
                 });
             }
 
@@ -206,8 +219,8 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
             });
 
             // Parse Subgroups
-            const inImageUrls = imported.catalog_group_image_urls || {};
-            const inCatalogGroupOrder = imported.catalog_group_order || Object.keys(inCatalogsGroups);
+            const inImageUrls = (imported.catalog_group_image_urls || {}) as Record<string, string>;
+            const inCatalogGroupOrder = (imported.catalog_group_order as string[] | undefined) || Object.keys(inCatalogsGroups);
             const parsedSGs: ParsedSubgroup[] = [];
 
             for (const sgName of inCatalogGroupOrder) {
@@ -235,8 +248,10 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
             }
 
             const currentMgByName: Record<string, string> = {};
-            Object.entries(currentValues.main_catalog_groups || {}).forEach(([uid, mg]: [string, any]) => {
-                if (mg?.name) currentMgByName[mg.name] = uid;
+            Object.entries(currentValues.main_catalog_groups || {}).forEach(([uid, mg]) => {
+                if (!mg || typeof mg !== "object") return;
+                const maybeName = (mg as { name?: unknown }).name;
+                if (typeof maybeName === "string" && maybeName) currentMgByName[maybeName] = uid;
             });
 
             parsedMGs.forEach(mg => {
@@ -284,9 +299,9 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
             setStep(2);
             setError("");
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Parse error:", err);
-            setError(err.message || "Failed to parse JSON file.");
+            setError(err instanceof Error ? err.message : "Failed to parse JSON file.");
         }
     };
 
@@ -304,9 +319,13 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
     };
 
     const handleImport = () => {
-        const payloadMainGroups: Record<string, any> = {};
+        const payloadMainGroups: Record<string, { name: string; subgroupNames: string[]; posterType: string; posterSize: string }> = {};
         const payloadSubgroups: Record<string, { catalogs: string[], imageUrl?: string }> = {};
-        const associatedMetadata: Record<string, any> = {};
+        const associatedMetadata: {
+            custom_catalog_names?: Record<string, string>;
+            regex_pattern_image_urls?: Record<string, string>;
+            enabled_patterns?: string[];
+        } = {};
 
         // 1. Mark which catalogs we're importing to fetch their metadata later
         const importedCatalogIds = new Set<string>();
@@ -356,32 +375,38 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
 
         // 4. Capture Associated Metadata (Custom Names, Images, Patterns)
         if (importedCatalogIds.size > 0) {
-            associatedMetadata.custom_catalog_names = {};
-            associatedMetadata.regex_pattern_image_urls = {};
-            associatedMetadata.enabled_patterns = new Set<string>();
+            const customCatalogNames: Record<string, string> = {};
+            const regexPatternImageUrls: Record<string, string> = {};
+            const enabledPatterns = new Set<string>();
 
-            const inCustomNames = importedValues.custom_catalog_names || {};
-            const inImageUrls = importedValues.regex_pattern_image_urls || {};
-            const inAutoPlay = importedValues.auto_play_enabled_patterns || [];
-            const inTagEnabled = importedValues.pattern_tag_enabled_patterns || [];
+            const inCustomNames = (importedValues.custom_catalog_names || {}) as Record<string, string>;
+            const inImageUrls = (importedValues.regex_pattern_image_urls || {}) as Record<string, string>;
+            const inAutoPlay = Array.isArray(importedValues.auto_play_enabled_patterns)
+                ? (importedValues.auto_play_enabled_patterns as string[])
+                : [];
+            const inTagEnabled = Array.isArray(importedValues.pattern_tag_enabled_patterns)
+                ? (importedValues.pattern_tag_enabled_patterns as string[])
+                : [];
 
             importedCatalogIds.forEach(id => {
-                if (inCustomNames[id]) associatedMetadata.custom_catalog_names[id] = inCustomNames[id];
-                if (inImageUrls[id]) associatedMetadata.regex_pattern_image_urls[id] = inImageUrls[id];
+                if (inCustomNames[id]) customCatalogNames[id] = inCustomNames[id];
+                if (inImageUrls[id]) regexPatternImageUrls[id] = inImageUrls[id];
 
                 // Regex patterns usually target catalog IDs either directly or via substring in their rules
                 // But for simplicity and safety, we also look for patterns named like the catalogs
                 // and check the enabled lists
-                if (inAutoPlay.includes(id)) associatedMetadata.enabled_patterns.add(id);
-                if (inTagEnabled.includes(id)) associatedMetadata.enabled_patterns.add(id);
+                if (inAutoPlay.includes(id)) enabledPatterns.add(id);
+                if (inTagEnabled.includes(id)) enabledPatterns.add(id);
             });
 
             // Convert set to array for payload
-            associatedMetadata.enabled_patterns = Array.from(associatedMetadata.enabled_patterns);
+            associatedMetadata.custom_catalog_names = customCatalogNames;
+            associatedMetadata.regex_pattern_image_urls = regexPatternImageUrls;
+            associatedMetadata.enabled_patterns = Array.from(enabledPatterns);
         }
 
         // 5. Global Settings
-        const globalSettings: Record<string, any> = {};
+        const globalSettings: Record<string, unknown> = {};
         selectedGlobalKeys.forEach(key => {
             if (importedValues[key] !== undefined) {
                 globalSettings[key] = importedValues[key];
@@ -552,8 +577,8 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
                                             const text = new TextDecoder("utf-8").decode(buffer);
                                             setFileName(`Template ${t.label}`);
                                             processUploadedJson(text);
-                                        } catch (err: any) {
-                                            setError(err.message || "Failed to load template.");
+                                        } catch (err: unknown) {
+                                            setError(err instanceof Error ? err.message : "Failed to load template.");
                                         } finally {
                                             setTemplateLoading(false);
                                         }

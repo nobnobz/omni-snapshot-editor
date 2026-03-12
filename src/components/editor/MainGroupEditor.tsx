@@ -9,6 +9,7 @@ import {
     PointerSensor,
     useSensor,
     useSensors,
+    type DragEndEvent,
 } from '@dnd-kit/core';
 import {
     arrayMove,
@@ -20,12 +21,16 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { GripVertical, AlertCircle, ArrowDownAZ, ArrowUpZA, Edit2, RotateCcw, Star, Eye, EyeOff } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { GripVertical, ArrowDownAZ, ArrowUpZA, Edit2, Star } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { RenameGroupModal } from "./RenameGroupModal";
 import { resolveCatalogName } from "@/lib/utils";
+
+const EMPTY_STRING_ARRAY: string[] = [];
+const stringArraysEqual = (a: string[], b: string[]) => (
+    a.length === b.length && a.every((item, idx) => item === b[idx])
+);
 
 // Individual Sortable Subgroup Component
 function SortableSubgroupItem({
@@ -57,26 +62,10 @@ function SortableSubgroupItem({
     };
 
     const [isEditing, setIsEditing] = useState(false);
-    const [editValue, setEditValue] = useState(displayName);
 
     const handleRenameSubmit = (oldName: string, newName: string) => {
         setIsEditing(false);
         onRename(id, newName);
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter') {
-            setIsEditing(false);
-            if (editValue.trim() !== "" && editValue !== displayName) {
-                onRename(id, editValue.trim());
-            } else {
-                setEditValue(displayName);
-            }
-        }
-        if (e.key === 'Escape') {
-            setEditValue(displayName);
-            setIsEditing(false);
-        }
     };
 
     const { currentValues } = useConfig();
@@ -168,6 +157,12 @@ function SortableSubgroupItem({
 }
 
 // Editor for a single Main Group's subgroups
+type MainGroupData = {
+    name?: string;
+    subgroupNames?: string[];
+    [key: string]: unknown;
+};
+
 function SingleMainGroupEditor({
     groupId,
     groupData,
@@ -178,32 +173,38 @@ function SingleMainGroupEditor({
     onToggleCatalog
 }: {
     groupId: string,
-    groupData: any,
+    groupData: MainGroupData,
     customNames: Record<string, string>,
     disabledCatalogs: Set<string>,
     onUpdateSubgroups: (groupId: string, newSubgroups: string[]) => void,
     onRenameCatalog: (id: string, newName: string) => void,
     onToggleCatalog: (id: string, isEnabled: boolean) => void
 }) {
-    const subgroupNames: string[] = groupData.subgroupNames || [];
+    const subgroupNames = useMemo(
+        () => Array.isArray(groupData.subgroupNames) ? groupData.subgroupNames : EMPTY_STRING_ARRAY,
+        [groupData.subgroupNames]
+    );
 
     // We keep a local state for sorting purely for UI reactivity, but sync it to context
     const [items, setItems] = useState(subgroupNames);
 
     React.useEffect(() => {
-        setItems(subgroupNames);
-    }, [JSON.stringify(subgroupNames)]);
+        setItems(prev => (stringArraysEqual(prev, subgroupNames) ? prev : subgroupNames));
+    }, [subgroupNames]);
 
     const sensors = useSensors(
         useSensor(PointerSensor),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
-    const handleDragEnd = (event: any) => {
+    const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
-        if (active.id !== over.id) {
-            const oldIndex = items.indexOf(active.id);
-            const newIndex = items.indexOf(over.id);
+        if (!over || active.id === over.id) return;
+        const activeId = String(active.id);
+        const overId = String(over.id);
+        if (activeId !== overId) {
+            const oldIndex = items.indexOf(activeId);
+            const newIndex = items.indexOf(overId);
             const newArray = arrayMove(items, oldIndex, newIndex);
 
             setItems(newArray);
@@ -281,7 +282,7 @@ function SortableMainGroupItem({
     onToggleCatalog
 }: {
     groupId: string,
-    groupData: any,
+    groupData: MainGroupData,
     customNames: Record<string, string>,
     disabledCatalogs: Set<string>,
     onUpdateSubgroups: (groupId: string, newSubgroups: string[]) => void,
@@ -354,15 +355,16 @@ export function MainGroupEditor() {
     const { currentValues, updateValue, disabledCatalogs, toggleCatalog, renameCatalogGroup } = useConfig();
 
     const mainGroupsKey = "main_catalog_groups";
-    const mainGroups = currentValues[mainGroupsKey];
-
-    // Fallback if missing
-    if (!mainGroups || typeof mainGroups !== 'object') {
-        return null;
-    }
-
-    const customNames = currentValues["custom_catalog_names"] || {};
-    const mainGroupOrder = currentValues["main_group_order"] || Object.keys(mainGroups);
+    const mainGroupsValue = currentValues[mainGroupsKey];
+    const hasMainGroups = !!mainGroupsValue && typeof mainGroupsValue === "object" && !Array.isArray(mainGroupsValue);
+    const mainGroups = useMemo(
+        () => (hasMainGroups ? mainGroupsValue : {}) as Record<string, { name?: string; subgroupNames?: string[] }>,
+        [hasMainGroups, mainGroupsValue]
+    );
+    const customNames = (currentValues["custom_catalog_names"] || {}) as Record<string, string>;
+    const mainGroupOrder = Array.isArray(currentValues["main_group_order"])
+        ? (currentValues["main_group_order"] as string[])
+        : Object.keys(mainGroups);
 
     // Sync order if new groups were added but not in order yet
     const orderedGroups = useMemo(() => {
@@ -391,15 +393,23 @@ export function MainGroupEditor() {
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
-    const handleDragEnd = (event: any) => {
+    const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
-        if (active.id !== over.id) {
-            const oldIndex = orderedGroups.indexOf(active.id);
-            const newIndex = orderedGroups.indexOf(over.id);
+        if (!over || active.id === over.id) return;
+
+        const activeId = String(active.id);
+        const overId = String(over.id);
+        if (activeId !== overId) {
+            const oldIndex = orderedGroups.indexOf(activeId);
+            const newIndex = orderedGroups.indexOf(overId);
             const newOrder = arrayMove(orderedGroups, oldIndex, newIndex);
             updateValue(["main_group_order"], newOrder);
         }
     };
+
+    if (!hasMainGroups) {
+        return null;
+    }
 
     return (
         <div className="space-y-4">

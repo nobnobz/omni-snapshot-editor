@@ -21,6 +21,7 @@ import {
     DragOverlay,
     defaultDropAnimationSideEffects,
     type DragEndEvent,
+    type DragStartEvent,
     type Modifier,
 } from '@dnd-kit/core';
 import {
@@ -32,8 +33,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { GripVertical, ArrowDownAZ, ArrowUpZA, ImageIcon, LinkIcon, ChevronRight, ChevronDown, RotateCcw, Search, Pin, PinOff, CheckSquare, Square, Layout, Plus, Pencil, Trash2, FolderPlus, UploadCloud, AlertTriangle } from "lucide-react";
+import { GripVertical, ImageIcon, LinkIcon, ChevronRight, ChevronDown, RotateCcw, Search, Layout, Plus, Pencil, Trash2, FolderPlus, UploadCloud, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
@@ -60,6 +60,7 @@ import { Label } from "@/components/ui/label";
 const stringArraysEqual = (a: string[], b: string[]) => (
     a.length === b.length && a.every((item, idx) => item === b[idx])
 );
+const EMPTY_STRING_ARRAY: string[] = [];
 
 // Catalog reorder is vertical-only; locking X prevents visible sideways jumps while dragging.
 const restrictVerticalDrag: Modifier = ({ transform }) => ({
@@ -71,7 +72,7 @@ const restrictVerticalDrag: Modifier = ({ transform }) => ({
 // 1. Sortable Catalog Node (Inside a Subgroup)
 // ----------------------------------------------------------------------
 function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => void }) {
-    const { currentValues, updateValue } = useConfig();
+    const { currentValues } = useConfig();
 
     // Construct effective custom names (Config Custom Names > AIOMetadata > Default)
     const configCustomNames = currentValues["custom_catalog_names"] || {};
@@ -79,7 +80,7 @@ function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => vo
     if (typeof window !== "undefined") {
         try {
             aioFallbacks = JSON.parse(localStorage.getItem("omni_custom_fallbacks") || "{}");
-        } catch (e) { }
+        } catch { }
     }
 
     // Some IDs have prefixes like 'movie:mdblist.12306', AIOMetadata uses 'mdblist.12306'
@@ -178,7 +179,7 @@ function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => vo
 // 2. Sortable Subgroup Node containing Catalogs & URL
 // ----------------------------------------------------------------------
 function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded: propIsExpanded, onToggle }: { subgroupName: string, parentUUID: string, onUnassign?: (name: string, parentId: string) => void, isExpanded?: boolean, onToggle?: () => void }) {
-    const { originalConfig, currentValues, updateValue, renameCatalogGroup, removeCatalogGroup, unassignCatalogGroup, catalogs, customFallbacks, addManifestCatalog } = useConfig();
+    const { currentValues, updateValue, renameCatalogGroup, unassignCatalogGroup, catalogs, customFallbacks } = useConfig();
 
     // Sortable Hook for the subgroup itself
     const {
@@ -198,7 +199,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
 
     // Subgroup state
     const rawCatalogsList = currentValues.catalog_groups?.[subgroupName];
-    const catalogsList: string[] = Array.isArray(rawCatalogsList) ? rawCatalogsList : [];
+    const catalogsList: string[] = Array.isArray(rawCatalogsList) ? rawCatalogsList : EMPTY_STRING_ARRAY;
     const rawImageUrl = currentValues.catalog_group_image_urls?.[subgroupName];
     const imageUrl: string = typeof rawImageUrl === "string" ? rawImageUrl : "";
 
@@ -305,7 +306,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
         }
     };
 
-    const handleAddCatalog = (e: any, catalogId: string) => {
+    const handleAddCatalog = (e: Event, catalogId: string) => {
         e.preventDefault();
         if (!catalogId.trim()) return;
         const name = resolveCatalogName(catalogId.trim(), currentValues.custom_catalog_names || {});
@@ -365,6 +366,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                         <div className="flex items-center gap-3 bg-background/50 p-3 rounded-lg border border-border/60 shadow-inner">
                             {urlInput && urlInput.startsWith("http") ? (
                                 <div className={`${isLandscape ? "h-10 w-16" : "h-14 w-10"} rounded-md shrink-0 overflow-hidden bg-muted border border-border/50 shadow-sm flex items-center justify-center`}>
+                                    {/* eslint-disable-next-line @next/next/no-img-element -- Dynamic subgroup thumbnail preview with imperative error fallback UI. */}
                                     <img
                                         src={urlInput}
                                         alt="Thumb"
@@ -549,7 +551,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
 // 3. Main Group View (Outer)
 // ----------------------------------------------------------------------
 function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSubgroup }: { uuid: string, name: string, subgroupNames: string[], onUnassignSubgroup?: (name: string, parentId: string) => void, onAddSubgroup?: (uuid: string) => void }) {
-    const { initialValues, currentValues, updateValue, renameMainCatalogGroup, removeMainCatalogGroup } = useConfig();
+    const { currentValues, updateValue, renameMainCatalogGroup, removeMainCatalogGroup } = useConfig();
     const [isRenaming, setIsRenaming] = useState(false);
 
     const mainGroupData = currentValues.main_catalog_groups?.[uuid] || {};
@@ -574,7 +576,6 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
 
     // We maintain local subgroup ordering state
     const [subgroups, setSubgroups] = useState(subgroupNames);
-    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const [activeSubgroupId, setActiveSubgroupId] = useState<string | null>(null);
     const [expandedSubgroup, setExpandedSubgroup] = useState<string | null>(null);
 
@@ -597,16 +598,18 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
-    const handleSubgroupDragStart = (event: any) => {
-        setActiveSubgroupId(event.active.id);
+    const handleSubgroupDragStart = (event: DragStartEvent) => {
+        setActiveSubgroupId(String(event.active.id));
     };
 
-    const handleSubgroupDragEnd = (event: any) => {
+    const handleSubgroupDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
         setActiveSubgroupId(null);
         if (over && active.id !== over.id) {
-            const oldIndex = subgroups.indexOf(active.id as string);
-            const newIndex = subgroups.indexOf(over.id as string);
+            const activeId = String(active.id);
+            const overId = String(over.id);
+            const oldIndex = subgroups.indexOf(activeId);
+            const newIndex = subgroups.indexOf(overId);
             const newArray = arrayMove(subgroups, oldIndex, newIndex);
 
             setSubgroups(newArray);
@@ -614,27 +617,6 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
             // We need to update both subgroup_order and main_catalog_groups.subgroupNames
             updateValue(["subgroup_order", uuid], newArray);
             updateValue(["main_catalog_groups", uuid, "subgroupNames"], newArray);
-        }
-    };
-
-    const toggleSort = () => {
-        const nextDir = sortDirection === 'asc' ? 'desc' : 'asc';
-        const sorted = [...subgroups].sort((a, b) => {
-            return nextDir === 'asc' ? a.localeCompare(b) : b.localeCompare(a);
-        });
-        setSubgroups(sorted);
-        setSortDirection(nextDir);
-        updateValue(["subgroup_order", uuid], sorted);
-        updateValue(["main_catalog_groups", uuid, "subgroupNames"], sorted);
-    };
-
-    const restoreOrder = () => {
-        const orig = initialValues?.subgroup_order?.[uuid];
-        if (orig && Array.isArray(orig)) {
-            setSubgroups(orig);
-            setSortDirection('asc'); // Reset direction indicator
-            updateValue(["subgroup_order", uuid], orig);
-            updateValue(["main_catalog_groups", uuid, "subgroupNames"], orig);
         }
     };
 
@@ -755,7 +737,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                         <AlertDialogHeader>
                                             <AlertDialogTitle>Delete Main Group?</AlertDialogTitle>
                                             <AlertDialogDescription className="text-foreground/70">
-                                                This will remove the group <span className="text-foreground font-bold">"{formatDisplayName(name)}"</span> and all its subgroups. You can restore them anytime from the Recycle Bin at the bottom.
+                                                This will remove the group <span className="text-foreground font-bold">&quot;{formatDisplayName(name)}&quot;</span> and all its subgroups. You can restore them anytime from the Recycle Bin at the bottom.
                                             </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
@@ -799,7 +781,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                         <div className="text-center py-8 border border-dashed border-border/80 rounded-xl bg-background/30 flex flex-col items-center justify-center gap-2">
                             <FolderPlus className="w-8 h-8 text-foreground/70" />
                             <p className="text-sm font-medium text-foreground/70">No subgroups exist here.</p>
-                            <p className="text-xs text-foreground/70/80">Add subgroups by clicking "Add to Group" at the top.</p>
+                            <p className="text-xs text-foreground/70/80">Add subgroups by clicking &quot;Add to Group&quot; at the top.</p>
                         </div>
                     ) : (
                         <div className="space-y-1">
@@ -863,7 +845,7 @@ function UnassignedSubgroupRow({
     onRestore?: () => void,
     restoreParentName?: string
 }) {
-    const { updateValue, currentValues, assignCatalogGroup, addManifestCatalog, removeCatalogGroup, catalogs: fullCatalogs, customFallbacks } = useConfig();
+    const { updateValue, currentValues, assignCatalogGroup, removeCatalogGroup, catalogs: fullCatalogs, customFallbacks } = useConfig();
     const mainCatalogGroups = currentValues["main_catalog_groups"] || {};
     const mainGroupOrder = currentValues["main_group_order"] || [];
     const [isExpanded, setIsExpanded] = useState(false);
@@ -919,7 +901,7 @@ function UnassignedSubgroupRow({
         );
     }, [catalogOptions, catalogSearch]);
 
-    const handleAddCatalog = (e: any, catalogId: string) => {
+    const handleAddCatalog = (e: Event, catalogId: string) => {
         e.preventDefault();
         if (!catalogId.trim()) return;
         const name = resolveCatalogName(catalogId.trim(), currentValues.custom_catalog_names || {});
@@ -953,11 +935,13 @@ function UnassignedSubgroupRow({
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
-    const handleInternalDragEnd = (event: any) => {
+    const handleInternalDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
         if (over && active.id !== over.id) {
-            const oldIndex = subgroupCatalogsProp.indexOf(active.id as string);
-            const newIndex = subgroupCatalogsProp.indexOf(over.id as string);
+            const activeId = String(active.id);
+            const overId = String(over.id);
+            const oldIndex = subgroupCatalogsProp.indexOf(activeId);
+            const newIndex = subgroupCatalogsProp.indexOf(overId);
             handleReorderCatalogs(arrayMove(subgroupCatalogsProp, oldIndex, newIndex));
         }
     };
@@ -1039,7 +1023,7 @@ function UnassignedSubgroupRow({
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Delete Subgroup?</AlertDialogTitle>
                                 <AlertDialogDescription className="text-foreground/70">
-                                    This will completely delete <span className="text-foreground font-bold">"{groupName}"</span> from the configuration. This action cannot be undone.
+                                    This will completely delete <span className="text-foreground font-bold">&quot;{groupName}&quot;</span> from the configuration. This action cannot be undone.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -1180,10 +1164,12 @@ function UnassignedSubgroupRow({
 // Unified App Entry Point
 // ----------------------------------------------------------------------
 export function UnifiedSubgroupEditor() {
-    const { currentValues, updateValue, assignCatalogGroup, catalogs: manifestCatalogs, addManifestCatalog } = useConfig();
+    const { currentValues, updateValue, assignCatalogGroup } = useConfig();
     const subgroupOrder = currentValues["subgroup_order"] || {};
     const mainCatalogGroups = currentValues["main_catalog_groups"] || {};
-    const mainGroupOrderFromConfig = currentValues["main_group_order"] || [];
+    const mainGroupOrderFromConfig = Array.isArray(currentValues["main_group_order"])
+        ? (currentValues["main_group_order"] as string[])
+        : EMPTY_STRING_ARRAY;
     const [mainGroupOrder, setMainGroupOrder] = useState<string[]>(mainGroupOrderFromConfig);
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -1216,16 +1202,18 @@ export function UnifiedSubgroupEditor() {
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
-    const handleMainDragStart = (event: any) => {
-        setActiveMainGroupId(event.active.id);
+    const handleMainDragStart = (event: DragStartEvent) => {
+        setActiveMainGroupId(String(event.active.id));
     };
 
-    const handleMainDragEnd = (event: any) => {
+    const handleMainDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
         setActiveMainGroupId(null);
         if (over && active.id !== over.id) {
-            const oldIndex = mainGroupOrder.indexOf(active.id as string);
-            const newIndex = mainGroupOrder.indexOf(over.id as string);
+            const activeId = String(active.id);
+            const overId = String(over.id);
+            const oldIndex = mainGroupOrder.indexOf(activeId);
+            const newIndex = mainGroupOrder.indexOf(overId);
             const newArray = arrayMove(mainGroupOrder, oldIndex, newIndex);
 
             setMainGroupOrder(newArray);
@@ -1238,14 +1226,23 @@ export function UnifiedSubgroupEditor() {
     const assignedGroups = new Set<string>();
 
     // Check subgroup_order (uuid → string[])
-    Object.values(subgroupOrder).forEach((arr: any) => {
-        if (Array.isArray(arr)) arr.forEach((name: string) => assignedGroups.add(name));
+    Object.values(subgroupOrder as Record<string, unknown>).forEach((arr) => {
+        if (Array.isArray(arr)) {
+            arr.forEach((name) => {
+                if (typeof name === "string") assignedGroups.add(name);
+            });
+        }
     });
 
     // Also check main_catalog_groups[uuid].subgroupNames
-    Object.values(mainCatalogGroups).forEach((group: any) => {
-        if (Array.isArray(group?.subgroupNames)) {
-            group.subgroupNames.forEach((name: string) => assignedGroups.add(name));
+    Object.values(mainCatalogGroups as Record<string, unknown>).forEach((group) => {
+        if (group && typeof group === "object") {
+            const subgroupNames = (group as { subgroupNames?: unknown }).subgroupNames;
+            if (Array.isArray(subgroupNames)) {
+                subgroupNames.forEach((name) => {
+                    if (typeof name === "string") assignedGroups.add(name);
+                });
+            }
         }
     });
 

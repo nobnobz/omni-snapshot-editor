@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useConfig } from '../../context/ConfigContext';
 import { cn, formatDisplayName } from '@/lib/utils';
 import { Button } from "../ui/button";
@@ -20,13 +20,30 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
     const [searchQuery, setSearchQuery] = useState("");
 
     // Lookups
-    const catalogGroups = currentValues.catalog_groups || {};
-    const rawOrder: string[] = currentValues.catalog_group_order || Object.keys(catalogGroups);
+    const catalogGroups = useMemo(
+        () => (currentValues.catalog_groups || {}) as Record<string, unknown>,
+        [currentValues.catalog_groups]
+    );
+    const rawOrder: string[] = useMemo(
+        () => Array.isArray(currentValues.catalog_group_order)
+            ? (currentValues.catalog_group_order as string[])
+            : Object.keys(catalogGroups),
+        [currentValues.catalog_group_order, catalogGroups]
+    );
     const allSubgroupNames: string[] = rawOrder.filter((name: string) => catalogGroups[name] !== undefined);
 
-    const mainCatalogGroups = currentValues.main_catalog_groups || {};
-    const mainGroupOrder = currentValues.main_group_order || [];
-    const subgroupOrder = currentValues.subgroup_order || {};
+    const mainCatalogGroups = useMemo(
+        () => (currentValues.main_catalog_groups || {}) as Record<string, { name?: string }>,
+        [currentValues.main_catalog_groups]
+    );
+    const mainGroupOrder = useMemo(
+        () => Array.isArray(currentValues.main_group_order) ? (currentValues.main_group_order as string[]) : [],
+        [currentValues.main_group_order]
+    );
+    const subgroupOrder = useMemo(
+        () => (currentValues.subgroup_order || {}) as Record<string, string[]>,
+        [currentValues.subgroup_order]
+    );
 
     // Preselect first main group if available and not yet set
     React.useEffect(() => {
@@ -42,7 +59,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
             const existingSubgroups = subgroupOrder[targetMainGroupUuid] || [];
             setSelectedSubgroups(new Set(existingSubgroups));
         }
-    }, [isOpen, targetMainGroupUuid, currentValues]);
+    }, [isOpen, targetMainGroupUuid, subgroupOrder]);
 
     const resetState = () => {
         setSelectedSubgroups(new Set());

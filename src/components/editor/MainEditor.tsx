@@ -329,6 +329,7 @@ export function MainEditor() {
                         <div>
                             <h1 className="text-base font-black flex items-center gap-3 text-white tracking-tight">
                                 <div className="w-16 h-16 flex items-center justify-center shrink-0 relative group">
+                                    {/* eslint-disable-next-line @next/next/no-img-element -- Static local logo; preserving existing rendering behavior. */}
                                     <img src="/omni-snapshot-editor/clown.png" alt="Logo" className="w-full h-full object-contain relative z-10 scale-125" />
                                 </div>
                                 <div className="flex flex-col">
@@ -519,6 +520,7 @@ export function MainEditor() {
 
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 flex items-center justify-center shrink-0 relative">
+                            {/* eslint-disable-next-line @next/next/no-img-element -- Static local logo; preserving existing rendering behavior. */}
                             <img src="/omni-snapshot-editor/clown.png" alt="Logo" className="w-full h-full object-contain relative z-10 scale-125" />
                         </div>
                         <div className="flex flex-col">

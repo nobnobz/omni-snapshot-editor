@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { useConfig } from "@/context/ConfigContext";
 import {
     DndContext,
@@ -58,14 +58,14 @@ interface ManifestCatalog {
     id: string;
     name: string;
     type?: string;
-    enabled: boolean;
-    showInHome: boolean;
+    enabled?: boolean;
+    showInHome?: boolean;
     source?: string;
     displayType?: string;
     randomizePerPage?: boolean;
-    metadata?: { itemCount?: number;[k: string]: any };
+    metadata?: { itemCount?: number;[k: string]: unknown };
     _synthetic?: boolean;
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 const stripCatalogCategoryPrefix = (name: string) =>
@@ -106,7 +106,7 @@ function SortableCatalogItem({
     isEditingName: boolean;
     onStartEditingName: () => void;
     onStopEditingName: () => void;
-    onUpdateField: (patch: Record<string, any>) => void;
+    onUpdateField: (patch: Partial<ManifestCatalog>) => void;
     onUpdateLandscape: (v: boolean) => void;
     onUpdateSmall: (v: boolean) => void;
     onUpdateSmallTopRow: (v: boolean) => void;
@@ -129,11 +129,10 @@ function SortableCatalogItem({
     const settingsTouchMovedRef = useRef(false);
     const settingsIgnoreClickRef = useRef(false);
 
-    useEffect(() => {
-        if (!isEditingName) {
-            setEditName(catalog.name || catalog.id);
-        }
-    }, [catalog.name, catalog.id, isEditingName]);
+    const startNameEdit = () => {
+        setEditName(catalog.name || catalog.id);
+        onStartEditingName();
+    };
 
     const submitName = () => {
         onStopEditingName();
@@ -236,7 +235,7 @@ function SortableCatalogItem({
                         <div className="flex flex-col min-w-0">
                             <h4
                                 className={`text-sm font-bold flex items-center gap-1.5 cursor-pointer hover:underline underline-offset-4 decoration-blue-500/40 max-w-full group/name ${isActive ? "text-foreground" : "text-foreground/70"}`}
-                                onClick={onStartEditingName}
+                                onClick={startNameEdit}
                             >
                                 <span className="truncate">{catalog.name || catalog.id}</span>
                                 {catalog.showInHome && <Star className="w-3 h-3 text-amber-500 shrink-0" />}
@@ -446,11 +445,9 @@ export function CatalogEditor() {
     const [pendingAddSelections, setPendingAddSelections] = useState<Set<string>>(new Set());
     const [editingCatalogId, setEditingCatalogId] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (!editingCatalogId) return;
-        if (!catalogs.some(c => c.id === editingCatalogId)) {
-            setEditingCatalogId(null);
-        }
+    const activeEditingCatalogId = useMemo(() => {
+        if (!editingCatalogId) return null;
+        return catalogs.some(c => c.id === editingCatalogId) ? editingCatalogId : null;
     }, [catalogs, editingCatalogId]);
 
     // Landscape is stored in currentValues.landscape_catalogs (side-array)
@@ -638,7 +635,7 @@ export function CatalogEditor() {
         const cleanName = stripCatalogCategoryPrefix(cat.name || "");
 
         if (cat.action === 'reenable') {
-            const patch: Record<string, any> = {
+            const patch: Partial<ManifestCatalog> = {
                 enabled: true,
                 showInHome: true,
                 // Restore any original metadata if we stashed it
@@ -826,7 +823,7 @@ export function CatalogEditor() {
                                             isSmallTopRow={smallTopRowList.includes(cat.id)}
                                             isRandom={randomizedList.includes(cat.id)}
                                             isPinned={pinnedList.includes(cat.id)}
-                                            isEditingName={editingCatalogId === cat.id}
+                                            isEditingName={activeEditingCatalogId === cat.id}
                                             onStartEditingName={() => setEditingCatalogId(cat.id)}
                                             onStopEditingName={() => setEditingCatalogId(prev => (prev === cat.id ? null : prev))}
                                             onUpdateField={patch => updateCatalogField(cat.id, patch)}

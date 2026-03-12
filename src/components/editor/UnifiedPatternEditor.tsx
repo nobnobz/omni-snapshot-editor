@@ -28,7 +28,6 @@ import {
     useSensor,
     useSensors,
     DragEndEvent,
-    DragStartEvent,
 } from '@dnd-kit/core';
 import {
     arrayMove,
@@ -59,6 +58,8 @@ const IMAGE_COLOR_OPTIONS = [
 // Corner radius: Omni stores an index, displayed px = index × 2
 // Observed: index 3 = 6px, 4 = 8px, 6 = 12px → all fit index * 2
 const BORDER_RADIUS_OPTIONS = Array.from({ length: 8 }, (_, i) => ({ index: i, px: i * 2 }));
+type PatternScalar = string | number | boolean;
+type PatternInputValue = PatternScalar | "";
 
 const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename }: { regex: string, onDelete: (r: string) => void, onRename: (oldRegex: string, newRegex: string) => void }) {
     const { currentValues, updateValue, originalConfig } = useConfig();
@@ -99,8 +100,8 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
         setEditingRegex(true);
     };
 
-    const handleConfirmEdit = (e: React.MouseEvent) => {
-        e.stopPropagation();
+    const handleConfirmEdit = (event?: { stopPropagation: () => void }) => {
+        event?.stopPropagation();
         const trimmed = regexDraft.trim();
         if (trimmed && trimmed !== regex) {
             onRename(regex, trimmed);
@@ -108,8 +109,8 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
         setEditingRegex(false);
     };
 
-    const handleCancelEdit = (e: React.MouseEvent) => {
-        e.stopPropagation();
+    const handleCancelEdit = (event?: { stopPropagation: () => void }) => {
+        event?.stopPropagation();
         setRegexDraft(regex);
         setEditingRegex(false);
     };
@@ -145,6 +146,7 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                 <div className="pr-2 shrink-0 flex items-center gap-4">
                     {imageUrl && (
                         <div className={`h-8 w-auto max-w-24 shrink-0 overflow-hidden rounded-md border border-border/50 bg-neutral-900 flex items-center justify-center shadow-inner transition-opacity ${!isTagEnabled ? "opacity-30" : ""}`}>
+                            {/* eslint-disable-next-line @next/next/no-img-element -- Pattern preview accepts dynamic remote URLs and must stay lightweight. */}
                             <img src={imageUrl} alt={customName || regex} className="h-full w-auto object-contain" />
                         </div>
                     )}
@@ -171,9 +173,9 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' && !e.shiftKey) {
                                         e.preventDefault();
-                                        handleConfirmEdit(e as any);
+                                        handleConfirmEdit(e);
                                     }
-                                    if (e.key === 'Escape') handleCancelEdit(e as any);
+                                    if (e.key === 'Escape') handleCancelEdit(e);
                                 }}
                                 rows={1}
                                 className="min-h-[unset] py-2 text-base sm:text-sm font-mono bg-background/80 border-blue-500/50 focus-visible:ring-1 focus-visible:ring-blue-500 text-blue-300 flex-1 shadow-inner resize-none"
@@ -204,11 +206,14 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                         const origVal = originalConfig?.values?.[dictDef.key];
                         const isArrayDict = Array.isArray(dict) || Array.isArray(origVal);
 
-                        let val: any = undefined;
+                        let val: PatternScalar | undefined = undefined;
                         if (isArrayDict) {
                             val = Array.isArray(dict) ? dict.includes(regex) : false;
                         } else if (dict && typeof dict === "object") {
-                            val = dict[regex];
+                            const dictValue = (dict as Record<string, unknown>)[regex];
+                            if (typeof dictValue === "string" || typeof dictValue === "number" || typeof dictValue === "boolean") {
+                                val = dictValue;
+                            }
                         }
 
                         // Infer original type if it doesn't currently exist
@@ -216,7 +221,10 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                         if (isArrayDict) {
                             inferredType = "boolean";
                         } else if (val === undefined) {
-                            const origValItem = origVal?.[regex];
+                            const origDict = origVal && typeof origVal === "object"
+                                ? (origVal as Record<string, unknown>)
+                                : undefined;
+                            const origValItem = origDict?.[regex];
                             if (typeof origValItem === "boolean") inferredType = "boolean";
                             else if (typeof origValItem === "number") inferredType = "number";
                         } else {
@@ -225,13 +233,13 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                         }
 
                         // Determine default empty value for uncontrolled components
-                        const defaultVal = inferredType === "boolean" ? false : inferredType === "number" ? "" : "";
+                        const defaultVal: PatternInputValue = inferredType === "boolean" ? false : inferredType === "number" ? "" : "";
                         const displayVal = val !== undefined ? val : defaultVal;
 
-                        const handleChange = (newVal: any) => {
+                        const handleChange = (newVal: PatternInputValue) => {
                             if (isArrayDict) {
                                 const currentArr = Array.isArray(dict) ? dict : [];
-                                if (newVal) {
+                                if (newVal === true) {
                                     if (!currentArr.includes(regex)) updateValue([dictDef.key], [...currentArr, regex]);
                                 } else {
                                     updateValue([dictDef.key], currentArr.filter((r: string) => r !== regex));
@@ -295,7 +303,7 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                                 ) : inferredType === "number" ? (
                                     <Input
                                         type="number"
-                                        value={displayVal}
+                                        value={typeof displayVal === "number" ? displayVal : ""}
                                         onChange={(e) => handleChange(e.target.value === "" ? "" : Number(e.target.value))}
                                         className="h-10 sm:h-9 text-base sm:text-sm bg-background/80 border-border hover:border-border focus-visible:ring-1 focus-visible:ring-blue-500 shadow-inner font-mono transition-colors w-full"
                                     />
@@ -304,14 +312,14 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                                         <div className="relative w-9 h-9 rounded-md shrink-0 overflow-hidden border border-border/80 bg-background shadow-inner ring-1 ring-black/20">
                                             <input
                                                 type="color"
-                                                value={displayVal || "#000000"}
+                                                value={typeof displayVal === "string" && displayVal ? displayVal : "#000000"}
                                                 onChange={(e) => handleChange(e.target.value)}
                                                 className="absolute inset-0 w-[200%] h-[200%] -translate-x-1/4 -translate-y-1/4 cursor-pointer"
                                             />
                                         </div>
                                         <Input
                                             type="text"
-                                            value={displayVal}
+                                            value={typeof displayVal === "string" ? displayVal : ""}
                                             onChange={(e) => handleChange(e.target.value)}
                                             placeholder="#FFFFFF"
                                             className="h-10 sm:h-9 text-base sm:text-sm font-mono bg-background/80 border-border uppercase focus-visible:ring-1 focus-visible:ring-blue-500 shadow-inner transition-colors"
@@ -320,7 +328,7 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                                 ) : (
                                     <Input
                                         type="text"
-                                        value={displayVal}
+                                        value={typeof displayVal === "string" || typeof displayVal === "number" ? displayVal : ""}
                                         onChange={(e) => handleChange(e.target.value)}
                                         placeholder={`Enter ${dictDef.label}...`}
                                         className="h-10 sm:h-9 text-base sm:text-sm bg-background/80 border-border hover:border-border focus-visible:ring-1 focus-visible:ring-blue-500 shadow-inner transition-colors"

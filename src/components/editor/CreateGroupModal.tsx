@@ -241,6 +241,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                     <div className="flex items-center gap-3 bg-background border border-input p-2 rounded-md">
                                         {subImageUrl && subImageUrl.startsWith("http") ? (
                                             <div className="h-10 w-10 rounded shadow-sm overflow-hidden bg-muted border border-border shrink-0">
+                                                {/* eslint-disable-next-line @next/next/no-img-element -- User-provided preview image with imperative fallback handling. */}
                                                 <img
                                                     src={subImageUrl}
                                                     alt="Preview"

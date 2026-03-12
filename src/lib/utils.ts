@@ -12,7 +12,7 @@ export function formatDisplayName(name: string): string {
     // Fix for UTF-8 bytes misinterpreted as ISO-8859-1 (Mojibake)
     // Common cases: Michael „Bully“ Herbig, Timothée Chalamet
     return decodeURIComponent(escape(name));
-  } catch (e) {
+  } catch {
     // If not valid Mojibake or already correct, return as is
     return name;
   }

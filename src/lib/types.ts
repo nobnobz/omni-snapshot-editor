@@ -4,16 +4,16 @@ export type OmniConfig = {
   date?: string;
   exportedAt?: string;
   includedKeys?: string[];
-  values?: Record<string, any>;
-  config?: Record<string, any>;
-  metadata?: any;
+  values?: Record<string, unknown>;
+  config?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
 };
 
 export type ConfigState = {
   originalConfig: OmniConfig | null;
-  currentValues: Record<string, any>; // Parsed values (base64 decoded)
+  currentValues: Record<string, unknown>; // Parsed values (base64 decoded)
   disabledKeys: Set<string>; // Keys that have been toggled off
-  catalogs: any[]; // Specifically extracted catalogs for easier management
+  catalogs: Array<Record<string, unknown>>; // Specifically extracted catalogs for easier management
   isLoaded: boolean;
   fileName: string;
 };

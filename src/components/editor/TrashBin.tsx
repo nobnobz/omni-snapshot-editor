@@ -12,14 +12,37 @@ import {
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 
+type DeletedMainGroupItem = {
+    uuid: string;
+    name: string;
+    subgroupNames?: string[];
+    deletedAt: string;
+    imageUrl?: string;
+    type: "Main Group";
+};
+
+type DeletedSubgroupItem = {
+    name: string;
+    parentName?: string;
+    catalogs?: string[];
+    deletedAt: string;
+    imageUrl?: string;
+    type: "Subgroup";
+};
+
+type DeletedItem = DeletedMainGroupItem | DeletedSubgroupItem;
+
 export function TrashBin() {
     const { deletedSubgroups, deletedMainGroups, restoreSubgroup, restoreMainGroup, clearDeletedSubgroups } = useConfig();
 
     if (deletedSubgroups.length === 0 && deletedMainGroups.length === 0) return null;
 
-    const allDeleted = [
-        ...deletedMainGroups.map(g => ({ ...g, type: 'Main Group' as const })),
-        ...deletedSubgroups.map(s => ({ ...s, type: 'Subgroup' as const }))
+    const mainGroupItems = deletedMainGroups as Omit<DeletedMainGroupItem, "type">[];
+    const subgroupItems = deletedSubgroups as Omit<DeletedSubgroupItem, "type">[];
+
+    const allDeleted: DeletedItem[] = [
+        ...mainGroupItems.map(g => ({ ...g, type: "Main Group" as const })),
+        ...subgroupItems.map(s => ({ ...s, type: "Subgroup" as const }))
     ].sort((a, b) => new Date(b.deletedAt).getTime() - new Date(a.deletedAt).getTime());
 
     return (
@@ -67,7 +90,7 @@ export function TrashBin() {
                                     </AccordionTrigger>
                                     {item.type === 'Subgroup' && (
                                         <span className="text-xs text-foreground/70">
-                                            was in <span className="text-foreground/70">{(item as any).parentName}</span>
+                                            was in <span className="text-foreground/70">{item.parentName}</span>
                                         </span>
                                     )}
                                 </div>
@@ -88,22 +111,23 @@ export function TrashBin() {
                                         <div className="bg-background/50 rounded p-3 border border-border/50 text-xs space-y-1">
                                             <div>
                                                 <span className="text-foreground/70 italic">{item.type === 'Main Group' ? 'Subgroups' : 'Catalogs'}:</span>{' '}
-                                                {item.type === 'Main Group' ? (item as any).subgroupNames?.length : (item as any).catalogs?.length}
+                                                {item.type === 'Main Group' ? item.subgroupNames?.length : item.catalogs?.length}
                                             </div>
-                                            {(item as any).imageUrl && (
-                                                <div className="truncate"><span className="text-foreground/70 italic">Image:</span> {(item as any).imageUrl}</div>
+                                            {item.imageUrl && (
+                                                <div className="truncate"><span className="text-foreground/70 italic">Image:</span> {item.imageUrl}</div>
                                             )}
                                             <div className="text-xs text-foreground/70 pt-1">
                                                 Deleted at: {new Date(item.deletedAt).toLocaleString()}
                                             </div>
                                         </div>
                                     </div>
-                                    {(item as any).imageUrl && (
+                                    {item.imageUrl && (
                                         <div className="space-y-2">
                                             <div className="text-xs text-foreground/70 uppercase font-bold tracking-widest">Preview</div>
                                             <div className="relative aspect-video rounded border border-border overflow-hidden bg-background flex items-center justify-center">
+                                                {/* eslint-disable-next-line @next/next/no-img-element -- Remote user image preview with direct onError fallback replacement. */}
                                                 <img
-                                                    src={(item as any).imageUrl}
+                                                    src={item.imageUrl}
                                                     alt={item.name}
                                                     className="w-full h-full object-cover"
                                                     onError={(e) => {

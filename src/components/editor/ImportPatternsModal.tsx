@@ -53,22 +53,22 @@ interface ParsedPattern {
     hasChanges: boolean;
 }
 
-const normalizeForCompare = (value: any): any => {
+const normalizeForCompare = (value: unknown): unknown => {
     if (Array.isArray(value)) {
         return value.map(normalizeForCompare);
     }
     if (value && typeof value === "object") {
         return Object.keys(value)
             .sort()
-            .reduce<Record<string, any>>((acc, key) => {
-                acc[key] = normalizeForCompare(value[key]);
+            .reduce<Record<string, unknown>>((acc, key) => {
+                acc[key] = normalizeForCompare((value as Record<string, unknown>)[key]);
                 return acc;
             }, {});
     }
     return value;
 };
 
-const areEqual = (a: any, b: any): boolean =>
+const areEqual = (a: unknown, b: unknown): boolean =>
     JSON.stringify(normalizeForCompare(a)) === JSON.stringify(normalizeForCompare(b));
 
 export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProps) {
@@ -107,7 +107,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
     const [error, setError] = useState("");
     const [searchFilter, setSearchFilter] = useState("");
 
-    const [importedValues, setImportedValues] = useState<Record<string, any>>({});
+    const [importedValues, setImportedValues] = useState<Record<string, unknown>>({});
     const [parsedPatterns, setParsedPatterns] = useState<ParsedPattern[]>([]);
     const [selectedPatterns, setSelectedPatterns] = useState<Set<string>>(new Set());
 
@@ -128,10 +128,17 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
         onClose();
     };
 
-    const checkPatternHasChanges = (regex: string, extracted: Record<string, any>): boolean => {
+    const checkPatternHasChanges = (regex: string, extracted: Record<string, unknown>): boolean => {
         for (const key of DICT_KEYS) {
-            const importedVal = extracted[key]?.[regex];
-            const currentVal = currentValues[key]?.[regex];
+            const extractedDict = extracted[key];
+            const importedVal = extractedDict && typeof extractedDict === "object"
+                ? (extractedDict as Record<string, unknown>)[regex]
+                : undefined;
+
+            const currentDict = currentValues[key];
+            const currentVal = currentDict && typeof currentDict === "object"
+                ? (currentDict as Record<string, unknown>)[regex]
+                : undefined;
             // Dict values are imported only when present for this regex.
             if (importedVal !== undefined && !areEqual(importedVal, currentVal)) return true;
         }
@@ -149,21 +156,21 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
     const processUploadedJson = (jsonString: string) => {
         try {
             const rawData = JSON.parse(jsonString);
-            let decoded: Record<string, any> = {};
+            let decoded: Record<string, unknown> = {};
 
             if (rawData.values) {
                 for (const [key, val] of Object.entries(rawData.values)) {
-                    decoded[key] = decodeConfig(val as any);
+                    decoded[key] = decodeConfig(val);
                 }
             } else if (rawData.config) {
                 for (const [key, val] of Object.entries(rawData.config)) {
-                    decoded[key] = decodeConfig(val as any);
+                    decoded[key] = decodeConfig(val);
                 }
             } else {
                 decoded = rawData;
             }
 
-            const extracted: Record<string, any> = {};
+            const extracted: Record<string, unknown> = {};
             for (const key of ALL_PATTERN_KEYS) {
                 if (decoded[key] !== undefined) {
                     extracted[key] = decoded[key];
@@ -186,13 +193,19 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                 const presentIn: string[] = [];
                 ALL_PATTERN_KEYS.forEach(k => {
                     if (DICT_KEYS.includes(k)) {
-                        if (extracted[k]?.[regex] !== undefined) presentIn.push(k);
+                        const dict = extracted[k];
+                        if (dict && typeof dict === "object" && (dict as Record<string, unknown>)[regex] !== undefined) {
+                            presentIn.push(k);
+                        }
                     } else {
                         if (Array.isArray(extracted[k]) && extracted[k].includes(regex)) presentIn.push(k);
                     }
                 });
 
-                const customName = extracted["regex_pattern_custom_names"]?.[regex] || regex;
+                const customNameDict = extracted["regex_pattern_custom_names"];
+                const customName = customNameDict && typeof customNameDict === "object"
+                    ? ((customNameDict as Record<string, unknown>)[regex] as string | undefined) || regex
+                    : regex;
                 const exists = ALL_PATTERN_KEYS.some(k => {
                     const currentVal = currentValues[k];
                     if (DICT_KEYS.includes(k)) {
@@ -231,7 +244,10 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
     const handleImport = () => {
         selectedPatterns.forEach(regex => {
             for (const key of DICT_KEYS) {
-                const val = importedValues[key]?.[regex];
+                const dict = importedValues[key];
+                const val = dict && typeof dict === "object"
+                    ? (dict as Record<string, unknown>)[regex]
+                    : undefined;
                 if (val !== undefined) {
                     updateValue([key, regex], val);
                 }
@@ -351,8 +367,8 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                                                 const text = new TextDecoder("utf-8").decode(buffer);
                                                 setFileName(`Template ${t.label}`);
                                                 processUploadedJson(text);
-                                            } catch (err: any) {
-                                                setError(err.message || "Failed to load template.");
+                                            } catch (err: unknown) {
+                                                setError(err instanceof Error ? err.message : "Failed to load template.");
                                             } finally {
                                                 setTemplateLoading(false);
                                             }

@@ -25,9 +25,7 @@ import {
     WandSparkles,
     Maximize,
     Palette,
-    Type,
     Image as ImageIcon,
-    Hexagon,
     Monitor,
     Smartphone,
     UploadCloud
@@ -38,7 +36,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { downloadTemplateFile } from "@/lib/template-download";
@@ -233,7 +230,7 @@ export function Documentation() {
                                 </li>
                                 <li className="text-sm text-foreground/70 flex gap-3">
                                     <CheckCircle2 className="w-5 h-5 text-blue-500 shrink-0" />
-                                    <span><strong>Linking:</strong> Manage which <strong>Catalogs</strong> belong to which subgroup by dragging or using the "Add" menu.</span>
+                                    <span><strong>Linking:</strong> Manage which <strong>Catalogs</strong> belong to which subgroup by dragging or using the &quot;Add&quot; menu.</span>
                                 </li>
                                 <li className="text-sm text-foreground/70 flex gap-3">
                                     <CheckCircle2 className="w-5 h-5 text-blue-500 shrink-0" />
@@ -392,7 +389,7 @@ export function Documentation() {
                         </div>
 
                         <p className="text-sm text-foreground leading-relaxed relative z-10">
-                            When you're finished, export your configuration to load it to your Omni App.
+                            When you&apos;re finished, export your configuration to load it to your Omni App.
                         </p>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 relative z-10">

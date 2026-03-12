@@ -1,23 +1,29 @@
 import { ensureCatalogPrefix, resolveCatalogName } from "./utils";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- mutation layer edits arbitrary user-defined config trees.
+type LooseAny = any;
+type MutableState = Record<string, LooseAny>;
+
 /**
  * Helper: counts how many places a string-keyed group name is referenced.
  */
-export function countGroupReferences(name: string, state: Record<string, any>): number {
+export function countGroupReferences(name: string, state: MutableState): number {
     let count = 0;
     if (state.catalog_groups && state.catalog_groups[name]) count++;
     if (state.catalog_group_order && state.catalog_group_order.includes(name)) count++;
     if (state.catalog_group_image_urls && state.catalog_group_image_urls[name] !== undefined) count++;
 
     if (state.subgroup_order) {
-        Object.values(state.subgroup_order).forEach((arr: any) => {
+        Object.values(state.subgroup_order as Record<string, unknown>).forEach((arr) => {
             if (Array.isArray(arr) && arr.includes(name)) count++;
         });
     }
 
     if (state.main_catalog_groups) {
-        Object.values(state.main_catalog_groups).forEach((group: any) => {
-            if (group && Array.isArray(group.subgroupNames) && group.subgroupNames.includes(name)) count++;
+        Object.values(state.main_catalog_groups as Record<string, unknown>).forEach((group) => {
+            if (!group || typeof group !== "object") return;
+            const subgroupNames = (group as { subgroupNames?: unknown }).subgroupNames;
+            if (Array.isArray(subgroupNames) && subgroupNames.includes(name)) count++;
         });
     }
 
@@ -27,7 +33,7 @@ export function countGroupReferences(name: string, state: Record<string, any>): 
 /**
  * Helper: counts if a main group UUID exists in order arrays
  */
-export function countMainGroupReferences(uuid: string, state: Record<string, any>): number {
+export function countMainGroupReferences(uuid: string, state: MutableState): number {
     let count = 0;
     if (state.main_catalog_groups && state.main_catalog_groups[uuid]) count++;
     if (state.main_group_order && state.main_group_order.includes(uuid)) count++;
@@ -35,13 +41,13 @@ export function countMainGroupReferences(uuid: string, state: Record<string, any
     return count;
 }
 
-export function renameGroup(oldName: string, newName: string, state: Record<string, any>): Record<string, any> {
+export function renameGroup(oldName: string, newName: string, state: MutableState): MutableState {
     if (oldName === newName) return state;
 
     // We do NOT mutate the original state, make a deep copy or do immutable updates
     const draft = JSON.parse(JSON.stringify(state));
 
-    const mergeArrays = (arr1: any[] = [], arr2: any[] = []) => {
+    const mergeArrays = (arr1: string[] = [], arr2: string[] = []) => {
         return Array.from(new Set([...arr1, ...arr2])); // Quick unique merge
     };
 
@@ -122,7 +128,7 @@ export function renameGroup(oldName: string, newName: string, state: Record<stri
     return draft;
 }
 
-export function renameMainGroup(uuid: string, newName: string, state: Record<string, any>): Record<string, any> {
+export function renameMainGroup(uuid: string, newName: string, state: MutableState): MutableState {
     const draft = JSON.parse(JSON.stringify(state));
 
     if (draft.main_catalog_groups && draft.main_catalog_groups[uuid]) {
@@ -138,7 +144,7 @@ export function renameMainGroup(uuid: string, newName: string, state: Record<str
 /**
  * Unassigns a subgroup from all main groups without deleting its data from catalog_groups.
  */
-export function unassignSubgroup(name: string, state: Record<string, any>): Record<string, any> {
+export function unassignSubgroup(name: string, state: MutableState): MutableState {
     const draft = JSON.parse(JSON.stringify(state));
 
     if (draft.subgroup_order) {
@@ -165,7 +171,7 @@ export function unassignSubgroup(name: string, state: Record<string, any>): Reco
 /**
  * Assigns a subgroup to a specific main group.
  */
-export function assignSubgroup(name: string, targetMainGroupUuid: string, state: Record<string, any>): Record<string, any> {
+export function assignSubgroup(name: string, targetMainGroupUuid: string, state: MutableState): MutableState {
     const draft = JSON.parse(JSON.stringify(state));
 
     // First unassign it from any existing main groups to ensure it only lives in one place
@@ -214,7 +220,7 @@ export function assignSubgroup(name: string, targetMainGroupUuid: string, state:
 /**
  * Creates a new Main Group.
  */
-export function createMainGroup(name: string, assignedSubgroups: string[], state: Record<string, any>): Record<string, any> {
+export function createMainGroup(name: string, assignedSubgroups: string[], state: MutableState): MutableState {
     const draft = JSON.parse(JSON.stringify(state));
     const newUuid = crypto.randomUUID();
 
@@ -242,7 +248,7 @@ export function createMainGroup(name: string, assignedSubgroups: string[], state
 /**
  * Creates a new Subgroup.
  */
-export function createSubgroup(name: string, targetMainGroupUuid: string, imageUrl: string, initialCatalogs: string[] = [], state: Record<string, any>): Record<string, any> {
+export function createSubgroup(name: string, targetMainGroupUuid: string, imageUrl: string, initialCatalogs: string[] = [], state: MutableState): MutableState {
     const draft = JSON.parse(JSON.stringify(state));
 
     if (!draft.catalog_groups) draft.catalog_groups = {};
@@ -266,7 +272,7 @@ export function createSubgroup(name: string, targetMainGroupUuid: string, imageU
     return draft;
 }
 
-export function disableGroup(name: string, state: Record<string, any>): Record<string, any> {
+export function disableGroup(name: string, state: MutableState): MutableState {
     const draft = JSON.parse(JSON.stringify(state));
 
     if (draft.catalog_groups) {
@@ -306,12 +312,12 @@ export function disableGroup(name: string, state: Record<string, any>): Record<s
     return draft;
 }
 
-export function disableMainGroup(uuid: string, state: Record<string, any>): Record<string, any> {
+export function disableMainGroup(uuid: string, state: MutableState): MutableState {
     const draft = JSON.parse(JSON.stringify(state));
 
     // 1. Remove from main_group_order
     if (Array.isArray(draft.main_group_order)) {
-        draft.main_group_order = draft.main_group_order.filter((id: any) => id !== uuid);
+        draft.main_group_order = draft.main_group_order.filter((id: unknown) => id !== uuid);
     }
 
     // 2. Cascade delete subgroups
@@ -320,7 +326,7 @@ export function disableMainGroup(uuid: string, state: Record<string, any>): Reco
         subgroupNames.forEach((name: string) => {
             if (draft.catalog_groups) delete draft.catalog_groups[name];
             if (Array.isArray(draft.catalog_group_order)) {
-                draft.catalog_group_order = draft.catalog_group_order.filter((g: any) => g !== name);
+                draft.catalog_group_order = draft.catalog_group_order.filter((g: unknown) => g !== name);
             }
             if (draft.catalog_group_image_urls) delete draft.catalog_group_image_urls[name];
         });
@@ -341,7 +347,7 @@ export function disableMainGroup(uuid: string, state: Record<string, any>): Reco
 /**
  * Sweeps a catalog from every list in the config when disabled.
  */
-export function disableCatalog(catalogId: string, state: Record<string, any>): Record<string, any> {
+export function disableCatalog(catalogId: string, state: MutableState): MutableState {
     const draft = JSON.parse(JSON.stringify(state));
 
     // Remove from catalog_groups lists
@@ -379,7 +385,7 @@ export function disableCatalog(catalogId: string, state: Record<string, any>): R
  * Dedupe & Validation Pass
  * Ensures arrays don't have dupes, and ordering arrays don't hold references to non-existent groups.
  */
-export function validateAndFix(state: Record<string, any>): Record<string, any> {
+export function validateAndFix(state: MutableState): MutableState {
     const draft = JSON.parse(JSON.stringify(state));
 
     const validGroupNames = new Set(Object.keys(draft.catalog_groups || {}));
@@ -396,7 +402,7 @@ export function validateAndFix(state: Record<string, any>): Record<string, any> 
 
     // Dedupe & Clean
     draft.catalog_group_order = Array.from(new Set(draft.catalog_group_order))
-        .filter((g: any) => typeof g === 'string' && validGroupNames.has(g));
+        .filter((g: unknown): g is string => typeof g === 'string' && validGroupNames.has(g));
 
     // Ensure every existing group appears
     validGroupNames.forEach(name => {
@@ -408,7 +414,7 @@ export function validateAndFix(state: Record<string, any>): Record<string, any> 
     // CRITICAL: Reorder the keys in catalog_groups and related objects to match catalog_group_order
     // This ensures that modern JSON stringifiers preserve the order requested by the user.
     if (draft.catalog_groups) {
-        const orderedGroups: Record<string, any> = {};
+        const orderedGroups: MutableState = {};
         draft.catalog_group_order.forEach((name: string) => {
             if (draft.catalog_groups[name]) {
                 orderedGroups[name] = draft.catalog_groups[name];
@@ -418,7 +424,7 @@ export function validateAndFix(state: Record<string, any>): Record<string, any> 
     }
 
     if (draft.catalog_group_image_urls) {
-        const orderedUrls: Record<string, any> = {};
+        const orderedUrls: MutableState = {};
         draft.catalog_group_order.forEach((name: string) => {
             if (draft.catalog_group_image_urls[name] !== undefined) {
                 orderedUrls[name] = draft.catalog_group_image_urls[name];
@@ -448,7 +454,7 @@ export function validateAndFix(state: Record<string, any>): Record<string, any> 
             const group = draft.main_catalog_groups[uuid];
             if (group && Array.isArray(group.subgroupNames)) {
                 group.subgroupNames = Array.from(new Set(group.subgroupNames))
-                    .filter((g: any) => typeof g === 'string' && validGroupNames.has(g));
+                    .filter((g: unknown): g is string => typeof g === 'string' && validGroupNames.has(g));
             }
         });
     }
@@ -476,7 +482,7 @@ export function validateAndFix(state: Record<string, any>): Record<string, any> 
 
 export function importGroups(
     payload: {
-        mainGroups: Record<string, any>;
+        mainGroups: Record<string, LooseAny>;
         subgroups: Record<string, { catalogs: string[], imageUrl?: string }>;
         standaloneAssignments: Record<string, string>;
         metadata?: {
@@ -484,10 +490,10 @@ export function importGroups(
             regex_pattern_image_urls?: Record<string, string>;
             enabled_patterns?: string[];
         };
-        globalSettings?: Record<string, any>;
+        globalSettings?: Record<string, LooseAny>;
     },
-    state: Record<string, any>
-): Record<string, any> {
+    state: MutableState
+): MutableState {
     const draft = JSON.parse(JSON.stringify(state));
 
     if (!draft.main_catalog_groups) draft.main_catalog_groups = {};
@@ -501,8 +507,12 @@ export function importGroups(
 
     // Build a reverse lookup: main group name -> existing UUID in current config
     const existingMgByName: Record<string, string> = {};
-    Object.entries(draft.main_catalog_groups).forEach(([uid, mg]: [string, any]) => {
-        if (mg?.name) existingMgByName[mg.name] = uid;
+    Object.entries(draft.main_catalog_groups as Record<string, unknown>).forEach(([uid, mg]) => {
+        if (!mg || typeof mg !== "object") return;
+        const maybeName = (mg as { name?: unknown }).name;
+        if (typeof maybeName === "string" && maybeName) {
+            existingMgByName[maybeName] = uid;
+        }
     });
 
     // 1. Import Main Groups
@@ -619,10 +629,10 @@ export function importGroups(
 /**
  * Finds all unique catalog IDs in the config from all known sources.
  */
-export function getAllCatalogIds(state: Record<string, any>): Set<string> {
+export function getAllCatalogIds(state: MutableState): Set<string> {
     const ids = new Set<string>();
 
-    const addIds = (source: any) => {
+    const addIds = (source: unknown) => {
         if (!source) return;
         if (Array.isArray(source)) {
             source.forEach(id => { if (typeof id === 'string') ids.add(id); });

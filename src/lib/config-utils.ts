@@ -2,22 +2,28 @@
  * Utilities for decoding and encoding the _data base64 strings in the Omni Config.
  */
 
+type UnknownRecord = Record<string, unknown>;
+type Base64DataNode = { _data: string };
+
+const isObjectRecord = (value: unknown): value is UnknownRecord =>
+    typeof value === "object" && value !== null && !Array.isArray(value);
+
 // Helper to check if an object is a _data wrapper
-export const isBase64DataNode = (node: any): boolean => {
-    return node && typeof node === "object" && !Array.isArray(node) && Object.keys(node).length === 1 && typeof node._data === "string";
+export const isBase64DataNode = (node: unknown): node is Base64DataNode => {
+    return isObjectRecord(node) && Object.keys(node).length === 1 && typeof node._data === "string";
 };
 
 /**
  * Recursively decodes _data fields in a JSON object
  */
-export const decodeConfig = (obj: any): any => {
+export const decodeConfig = (obj: unknown): unknown => {
     if (obj === null || obj === undefined) return obj;
 
     if (Array.isArray(obj)) {
         return obj.map(item => decodeConfig(item));
     }
 
-    if (typeof obj === "object") {
+    if (isObjectRecord(obj)) {
         if (isBase64DataNode(obj)) {
             try {
                 const decodedStr = atob(obj._data);
@@ -30,7 +36,7 @@ export const decodeConfig = (obj: any): any => {
             }
         }
 
-        const result: Record<string, any> = {};
+        const result: Record<string, unknown> = {};
         for (const [key, value] of Object.entries(obj)) {
             result[key] = decodeConfig(value);
         }
@@ -48,8 +54,13 @@ export const decodeConfig = (obj: any): any => {
  * An alternative simpler approach:  When we load, we keep track of which keys were base64 encoded.
  * We can pass that map here, or compare against original.
  */
-export const encodeConfig = (currentParsedMap: Record<string, any>, originalValuesMap: Record<string, any>, disabledKeys: Set<string>): Record<string, any> => {
-    const result: Record<string, any> = {};
+export const encodeConfig = (
+    currentParsedMap: Record<string, unknown>,
+    originalValuesMap: Record<string, unknown>,
+    disabledKeys: Set<string>
+): Record<string, unknown> => {
+    void disabledKeys;
+    const result: Record<string, unknown> = {};
 
     // List of keys that Omni EXPECTS to be base64 wrapped even if they weren't in original
     const ALWAYS_WRAPPED_KEYS = [
@@ -112,27 +123,27 @@ export const encodeConfig = (currentParsedMap: Record<string, any>, originalValu
 /**
  * Prunes disabled catalogs from specific arrays (like ordering arrays or selected catalogs).
  */
-export const pruneDisabledCatalogs = (values: Record<string, any>, disabledCatalogs: Set<string>) => {
+export const pruneDisabledCatalogs = (values: Record<string, unknown>, disabledCatalogs: Set<string>) => {
     // Deep clone to avoid mutating state directly during export
-    const cloned = JSON.parse(JSON.stringify(values));
+    const cloned = JSON.parse(JSON.stringify(values)) as unknown;
 
-    const pruneArray = (arr: any[]) => arr.filter(item => {
+    const pruneArray = (arr: unknown[]) => arr.filter(item => {
         if (typeof item === 'string') {
             return !disabledCatalogs.has(item);
         }
         // If it's an object with an 'id' or something similar
-        if (item && typeof item === 'object' && item.id) {
+        if (isObjectRecord(item) && typeof item.id === "string") {
             return !disabledCatalogs.has(item.id);
         }
         return true;
     });
 
     // Recursive search and prune arrays
-    const walkAndPrune = (obj: any) => {
+    const walkAndPrune = (obj: unknown): unknown => {
         if (Array.isArray(obj)) {
             return pruneArray(obj);
         }
-        if (obj !== null && typeof obj === 'object') {
+        if (isObjectRecord(obj)) {
             for (const key in obj) {
                 // If the key itself is a disabled group/catalog name, delete it.
                 // This covers `catalog_groups[disabled]` and `catalog_group_image_urls[disabled]`
@@ -158,11 +169,11 @@ export const pruneDisabledCatalogs = (values: Record<string, any>, disabledCatal
  * Deeply prunes keys that were explicitly disabled via GenericRenderer switches.
  * `disabledKeys` contains dot-notation paths like "parent.child.key".
  */
-export const pruneDisabledKeys = (values: Record<string, any>, disabledKeys: Set<string>) => {
-    const cloned = JSON.parse(JSON.stringify(values));
+export const pruneDisabledKeys = (values: Record<string, unknown>, disabledKeys: Set<string>) => {
+    const cloned = JSON.parse(JSON.stringify(values)) as unknown;
 
-    const walkAndPrune = (obj: any, currentPath: string[]) => {
-        if (obj !== null && typeof obj === 'object' && !Array.isArray(obj)) {
+    const walkAndPrune = (obj: unknown, currentPath: string[]): unknown => {
+        if (isObjectRecord(obj)) {
             for (const key in obj) {
                 const pathStr = [...currentPath, key].join('.');
                 if (disabledKeys.has(pathStr)) {
@@ -180,12 +191,12 @@ export const pruneDisabledKeys = (values: Record<string, any>, disabledKeys: Set
 /**
  * Validates if the given object is a valid Omni Configuration structure.
  */
-export const validateOmniConfig = (config: any): boolean => {
-    if (!config || typeof config !== 'object') return false;
+export const validateOmniConfig = (config: unknown): boolean => {
+    if (!isObjectRecord(config)) return false;
 
     // An Omni config must have either a 'values' or 'config' root object
     const values = config.values || config.config;
-    if (!values || typeof values !== 'object') return false;
+    if (!isObjectRecord(values)) return false;
 
     // Check for some common Omni keys to be reasonably sure it's the right format.
     // We check for at least ONE of these known keys.

@@ -6,6 +6,58 @@ import { resolveCatalogName, ensureCatalogPrefix } from '@/lib/utils';
 import { decodeConfig, encodeConfig, pruneDisabledCatalogs, pruneDisabledKeys } from "../lib/config-utils";
 import { renameGroup, renameMainGroup, disableGroup, disableMainGroup, disableCatalog, validateAndFix, countGroupReferences, countMainGroupReferences, unassignSubgroup, assignSubgroup, createMainGroup, createSubgroup, importGroups } from "../lib/mutations";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Omni configs are user-defined dynamic JSON blobs.
+type LooseAny = any;
+type ConfigValues = Record<string, LooseAny>;
+
+type ManifestCatalog = {
+    id: string;
+    name: string;
+    enabled?: boolean;
+    showInHome?: boolean;
+    metadata?: Record<string, LooseAny> & { itemCount?: number };
+    _synthetic?: boolean;
+    [key: string]: LooseAny;
+};
+
+type DeletedSubgroup = {
+    name: string;
+    catalogs?: string[];
+    imageUrl?: string;
+    parentUUID?: string;
+    parentName?: string;
+    deletedAt: string;
+};
+
+type DeletedMainGroup = {
+    uuid: string;
+    name: string;
+    subgroupNames?: string[];
+    deletedAt: string;
+};
+
+type ImportGroupsPayload = {
+    mainGroups: Record<string, LooseAny>;
+    subgroups: Record<string, { catalogs: string[]; imageUrl?: string }>;
+    standaloneAssignments: Record<string, string>;
+    metadata?: {
+        custom_catalog_names?: Record<string, string>;
+        regex_pattern_image_urls?: Record<string, string>;
+        enabled_patterns?: string[];
+    };
+    globalSettings?: Record<string, LooseAny>;
+};
+
+type ExportableConfig = OmniConfig & {
+    values?: ConfigValues;
+    config?: ConfigValues;
+    includedKeys?: string[];
+    catalogs?: ManifestCatalog[];
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === "object" && value !== null && !Array.isArray(value);
+
 export interface TemplateManifest {
     version: string;
     lastUpdated: string;
@@ -21,25 +73,25 @@ export interface TemplateManifest {
 
 interface ConfigContextType {
     originalConfig: OmniConfig | null;
-    initialValues: Record<string, any>;
-    currentValues: Record<string, any>;
+    initialValues: ConfigValues;
+    currentValues: ConfigValues;
     disabledKeys: Set<string>;
     disabledCatalogs: Set<string>;
-    deletedSubgroups: any[];
-    deletedMainGroups: any[];
-    catalogs: any[];
+    deletedSubgroups: DeletedSubgroup[];
+    deletedMainGroups: DeletedMainGroup[];
+    catalogs: ManifestCatalog[];
     fileName: string;
     isLoaded: boolean;
     loadConfig: (config: OmniConfig, fileName?: string) => void;
-    updateValue: (keyPath: string[], value: any) => void;
+    updateValue: (keyPath: string[], value: LooseAny) => void;
     toggleKey: (keyPath: string[], isEnabled: boolean) => void;
     toggleCatalog: (catalogId: string, isEnabled: boolean) => void;
-    updateCatalogsOrder: (newOrder: any[]) => void;
+    updateCatalogsOrder: (newOrder: LooseAny[]) => void;
     // Manifest catalog mutations (direct operations on config.catalogs[])
-    updateCatalogField: (id: string, patch: Record<string, any>) => void;
-    addManifestCatalog: (catalog: any) => void;
+    updateCatalogField: (id: string, patch: Record<string, LooseAny>) => void;
+    addManifestCatalog: (catalog: { id: string; name: string; enabled?: boolean; showInHome?: boolean }) => void;
     removeManifestCatalog: (id: string) => void;
-    reorderManifestCatalogs: (newCatalogs: any[]) => void;
+    reorderManifestCatalogs: (newCatalogs: ManifestCatalog[]) => void;
     renameCatalogGroup: (oldName: string, newName: string) => void;
     renameMainCatalogGroup: (uuid: string, newName: string) => void;
     removeMainCatalogGroup: (uuid: string) => void;
@@ -48,11 +100,11 @@ interface ConfigContextType {
     assignCatalogGroup: (name: string, targetMainGroupUuid: string) => void;
     addMainCatalogGroup: (name: string, assignedSubgroups: string[]) => void;
     addCatalogGroup: (name: string, targetMainGroupUuid: string, imageUrl: string, initialCatalogs?: string[]) => void;
-    importGroups: (payload: { mainGroups: Record<string, any>; subgroups: Record<string, { catalogs: string[], imageUrl?: string }>; standaloneAssignments: Record<string, string>; metadata?: { custom_catalog_names?: Record<string, string>; regex_pattern_image_urls?: Record<string, string>; enabled_patterns?: string[] }; globalSettings?: Record<string, any> }) => void;
+    importGroups: (payload: ImportGroupsPayload) => void;
     removeCatalog: (id: string) => void;
     countReferences: (name: string, isMainGroup?: boolean) => number;
-    restoreSubgroup: (subgroup: any) => void;
-    restoreMainGroup: (mainGroup: any) => void;
+    restoreSubgroup: (subgroup: DeletedSubgroup) => void;
+    restoreMainGroup: (mainGroup: DeletedMainGroup) => void;
     clearDeletedSubgroups: () => void;
     cleanupOrphans: () => void;
     resetAll: () => void;
@@ -74,13 +126,13 @@ const ConfigContext = createContext<ConfigContextType | undefined>(undefined);
 
 export const ConfigProvider = ({ children }: { children: ReactNode }) => {
     const [originalConfig, setOriginalConfig] = useState<OmniConfig | null>(null);
-    const [initialValues, setInitialValues] = useState<Record<string, any>>({});
-    const [currentValues, setCurrentValues] = useState<Record<string, any>>({});
+    const [initialValues, setInitialValues] = useState<ConfigValues>({});
+    const [currentValues, setCurrentValues] = useState<ConfigValues>({});
     const [disabledKeys, setDisabledKeys] = useState<Set<string>>(new Set());
     const [disabledCatalogs, setDisabledCatalogs] = useState<Set<string>>(new Set());
-    const [deletedSubgroups, setDeletedSubgroups] = useState<any[]>([]);
-    const [deletedMainGroups, setDeletedMainGroups] = useState<any[]>([]);
-    const [catalogs, setCatalogs] = useState<any[]>([]);
+    const [deletedSubgroups, setDeletedSubgroups] = useState<DeletedSubgroup[]>([]);
+    const [deletedMainGroups, setDeletedMainGroups] = useState<DeletedMainGroup[]>([]);
+    const [catalogs, setCatalogs] = useState<ManifestCatalog[]>([]);
     const [fileName, setFileName] = useState<string>("omni-config.json");
     const [isSyntheticSession, setIsSyntheticSession] = useState(false);
 
@@ -130,13 +182,13 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         }
     }, []);
 
-    const loadConfig = (config: any, fn = "omni-config.json") => {
+    const loadConfig = (config: OmniConfig, fn = "omni-config.json") => {
         setOriginalConfig(config);
         setFileName(fn);
 
         // Map config.values OR config.config to internal values state
-        const rawValues = config.values || config.config || {};
-        const decodedValues: Record<string, any> = {};
+        const rawValues = (config.values || config.config || {}) as ConfigValues;
+        const decodedValues: ConfigValues = {};
 
         // Decode fields if they use the base64 wrapper format (_data)
         for (const [key, val] of Object.entries(rawValues)) {
@@ -153,11 +205,14 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         }
 
         // Extract catalogs if it's a manifest format (config.catalogs[])
-        let extractedCatalogs: any[] = [];
-        if (Array.isArray(config.config?.catalogs)) {
-            extractedCatalogs = config.config.catalogs;
-        } else if (Array.isArray(config.catalogs)) {
-            extractedCatalogs = config.catalogs;
+        let extractedCatalogs: ManifestCatalog[] = [];
+        const configCatalogs = (config.config as ConfigValues | undefined)?.catalogs;
+        const rootCatalogs = (config as ExportableConfig).catalogs;
+
+        if (Array.isArray(configCatalogs)) {
+            extractedCatalogs = configCatalogs as ManifestCatalog[];
+        } else if (Array.isArray(rootCatalogs)) {
+            extractedCatalogs = rootCatalogs;
         }
 
         // FALLBACK: If no manifest catalogs found, synthesize minimal objects from state-format selected_catalogs
@@ -209,26 +264,33 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         setDeletedMainGroups([]);
     };
 
-    const updateValuePath = (obj: any, path: string[], value: any): any => {
+    const updateValuePath = (obj: LooseAny, path: string[], value: LooseAny): LooseAny => {
         if (path.length === 0) return value;
         if (path.length === 1) {
+            const base = isRecord(obj) ? obj : {};
             if (value === undefined) {
-                const newObj = { ...obj };
+                const newObj = { ...base };
                 delete newObj[path[0]];
                 return newObj;
             }
-            return { ...obj, [path[0]]: value };
+            return { ...base, [path[0]]: value };
         }
         const [head, ...rest] = path;
-        const innerObj = obj ? obj[head] : {};
-        return { ...obj, [head]: updateValuePath(innerObj, rest, value) };
+        const base = isRecord(obj) ? obj : {};
+        const innerObj = base[head];
+        return { ...base, [head]: updateValuePath(innerObj, rest, value) };
     };
 
-    const getValuePath = (obj: any, path: string[]): any => {
-        return path.reduce((acc, part) => (acc && acc[part] !== undefined ? acc[part] : undefined), obj);
+    const getValuePath = (obj: LooseAny, path: string[]): LooseAny => {
+        return path.reduce<LooseAny>((acc, part) => {
+            if (isRecord(acc) && acc[part] !== undefined) {
+                return acc[part];
+            }
+            return undefined;
+        }, obj);
     };
 
-    const updateValue = (keyPath: string[], value: any) => {
+    const updateValue = (keyPath: string[], value: LooseAny) => {
         setCurrentValues(prev => updateValuePath(prev, keyPath, value));
     };
 
@@ -266,7 +328,8 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         });
     };
 
-    const updateCatalogsOrder = (_newOrder: any[]) => {
+    const updateCatalogsOrder = (newOrder: LooseAny[]) => {
+        void newOrder;
         // Specifically for catalogs
     };
 
@@ -291,7 +354,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         setCurrentValues(prev => disableMainGroup(uuid, prev));
     };
 
-    const restoreMainGroup = (item: any) => {
+    const restoreMainGroup = (item: DeletedMainGroup) => {
         setCurrentValues(prev => {
             const draft = JSON.parse(JSON.stringify(prev));
 
@@ -361,11 +424,11 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         setCurrentValues(prev => createSubgroup(name, targetMainGroupUuid, imageUrl, normalized, prev));
     };
 
-    const importGroupsToState = (payload: { mainGroups: Record<string, any>; subgroups: Record<string, { catalogs: string[], imageUrl?: string }>; standaloneAssignments: Record<string, string>; metadata?: { custom_catalog_names?: Record<string, string>; regex_pattern_image_urls?: Record<string, string>; enabled_patterns?: string[] }; globalSettings?: Record<string, any> }) => {
+    const importGroupsToState = (payload: ImportGroupsPayload) => {
         setCurrentValues(prev => importGroups(payload, prev));
     };
 
-    const restoreSubgroup = (item: any) => {
+    const restoreSubgroup = (item: DeletedSubgroup) => {
         setCurrentValues(prev => {
             const draft = JSON.parse(JSON.stringify(prev));
 
@@ -411,7 +474,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
     // --- Manifest Catalog Mutations ---
     // These directly mutate the config.catalogs[] array
 
-    const updateCatalogField = (id: string, patch: Record<string, any>) => {
+    const updateCatalogField = (id: string, patch: Record<string, LooseAny>) => {
         setCatalogs(prev => {
             return prev.map(c => {
                 if (c.id !== id) return c;
@@ -432,14 +495,14 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         const finalId = ensureCatalogPrefix(catalog.id, catalog.name);
         setCatalogs(prev => {
             if (prev.find(c => c.id === finalId)) return prev; // No duplicates
-            const newCat = {
+            const newCat: ManifestCatalog = {
                 enabled: catalog.enabled ?? true, // Default to true if called from Catalog Manager
                 showInHome: catalog.showInHome ?? false,
                 ...catalog,
                 id: finalId
             };
             if (isSyntheticSession) {
-                (newCat as any)._synthetic = true;
+                newCat._synthetic = true;
             }
             return [...prev, newCat];
         });
@@ -452,7 +515,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         setCurrentValues(prev => disableCatalog(id, prev));
     };
 
-    const reorderManifestCatalogs = (newCatalogs: any[]) => {
+    const reorderManifestCatalogs = (newCatalogs: ManifestCatalog[]) => {
         setCatalogs(newCatalogs);
     };
 
@@ -506,7 +569,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         const validatedValues = validateAndFix(clonedValues);
 
         // 5a. If manifest mode (config.catalogs[]) — real objects, not synthetic
-        const finalResult: any = { ...originalConfig };
+        const finalResult: ExportableConfig = { ...originalConfig };
         const isSynthetic = isSyntheticSession;
 
         if (originalConfig.config && !isSynthetic && catalogs.length > 0) {
@@ -516,7 +579,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
             // Also merge any side-array changes from currentValues (e.g. landscape_catalogs added by editor)
             // These live in currentValues but aren't catalog objects
             const sideArrayKeys = ['landscape_catalogs', 'small_catalogs', 'small_top_row_catalogs', 'pinned_catalogs', 'starred_catalogs', 'custom_catalog_names', 'top_row_item_limits'];
-            const mergedConfig: any = { ...(originalConfig.config || {}) };
+            const mergedConfig: ConfigValues = { ...((originalConfig.config || {}) as ConfigValues) };
             for (const key of sideArrayKeys) {
                 if (currentValues[key] !== undefined) {
                     mergedConfig[key] = currentValues[key];
@@ -576,7 +639,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         if (!originalConfig) return null;
 
         // Build a filtered values map containing only the specified section keys
-        const filteredValues: Record<string, any> = {};
+        const filteredValues: Record<string, unknown> = {};
         for (const key of sectionKeys) {
             if (currentValues[key] !== undefined) {
                 filteredValues[key] = JSON.parse(JSON.stringify(currentValues[key]));
@@ -596,7 +659,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         const encodedValues = encodeConfig(validatedValues, originalValues, disabledKeys);
 
         // Build the full config shell
-        const finalResult: any = { ...originalConfig };
+        const finalResult: ExportableConfig = { ...originalConfig };
         if (originalConfig.values) {
             finalResult.values = encodedValues;
             finalResult.includedKeys = Object.keys(encodedValues);

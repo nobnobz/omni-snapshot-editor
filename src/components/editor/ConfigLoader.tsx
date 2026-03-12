@@ -270,6 +270,7 @@ export function ConfigLoader() {
                 <div className="relative z-10 w-full max-w-4xl mx-auto px-4 py-6 sm:py-8">
                     <div className="text-center mb-4 space-y-3">
                         <div className="w-20 h-20 sm:w-28 sm:h-28 flex items-center justify-center mb-0 mx-auto">
+                            {/* eslint-disable-next-line @next/next/no-img-element -- Static local logo; preserving existing rendering behavior. */}
                             <img src="/omni-snapshot-editor/clown.png" alt="Logo" className="w-full h-full object-contain" />
                         </div>
                         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground drop-shadow-sm dark:drop-shadow-md">

@@ -12,6 +12,8 @@ import {
     useSensors,
     DragOverlay,
     defaultDropAnimationSideEffects,
+    type DragEndEvent,
+    type DragStartEvent,
 } from '@dnd-kit/core';
 import {
     arrayMove,
@@ -23,11 +25,11 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { GripVertical, AlertCircle, ArrowDownAZ, ArrowUpZA, Edit2 } from "lucide-react";
+import { GripVertical, ArrowDownAZ, ArrowUpZA } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { RenameGroupModal } from "./RenameGroupModal";
-import { formatDisplayName, resolveCatalogName } from "@/lib/utils";
+import { resolveCatalogName } from "@/lib/utils";
 
 const stringArraysEqual = (a: string[], b: string[]) => (
     a.length === b.length && a.every((item, idx) => item === b[idx])
@@ -73,14 +75,18 @@ function SortableItem({
         onRename(id, newName);
     };
 
+    const submitInlineRename = () => {
+        setIsEditing(false);
+        if (editValue.trim() !== "" && editValue !== displayName) {
+            onRename(id, editValue.trim());
+        } else {
+            setEditValue(displayName);
+        }
+    };
+
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
-            setIsEditing(false);
-            if (editValue.trim() !== "" && editValue !== displayName) {
-                onRename(id, editValue.trim());
-            } else {
-                setEditValue(displayName);
-            }
+            submitInlineRename();
         }
         if (e.key === 'Escape') {
             setEditValue(displayName);
@@ -108,7 +114,7 @@ function SortableItem({
                         <Input
                             value={editValue}
                             onChange={(e) => setEditValue(e.target.value)}
-                            onBlur={() => handleKeyDown({ key: 'Enter' } as any)}
+                            onBlur={submitInlineRename}
                             onKeyDown={handleKeyDown}
                             className="h-8 text-sm bg-background border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500"
                         />
@@ -183,16 +189,18 @@ function SortableList({
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
-    const handleDragStart = (event: any) => {
-        setActiveId(event.active.id);
+    const handleDragStart = (event: DragStartEvent) => {
+        setActiveId(String(event.active.id));
     };
 
-    const handleDragEnd = (event: any) => {
+    const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
         setActiveId(null);
         if (over && active.id !== over.id) {
-            const oldIndex = items.indexOf(active.id);
-            const newIndex = items.indexOf(over.id);
+            const activeId = String(active.id);
+            const overId = String(over.id);
+            const oldIndex = items.indexOf(activeId);
+            const newIndex = items.indexOf(overId);
             const newArray = arrayMove(items, oldIndex, newIndex);
 
             setItems(newArray);
@@ -313,9 +321,16 @@ export function OrderingEditor({ configKey }: { configKey: string }) {
             Object.assign(nameMap, customNames);
 
             // 2. For main groups, fallback to main_catalog_groups[id].name
-            Object.entries(mainGroups).forEach(([id, groupObj]: [string, any]) => {
-                if (!nameMap[id] && groupObj && groupObj.name) {
-                    nameMap[id] = groupObj.name;
+            Object.entries(mainGroups as Record<string, unknown>).forEach(([id, groupObj]) => {
+                const groupName = (
+                    groupObj &&
+                    typeof groupObj === "object" &&
+                    "name" in groupObj &&
+                    typeof (groupObj as { name?: unknown }).name === "string"
+                ) ? (groupObj as { name: string }).name : undefined;
+
+                if (!nameMap[id] && groupName) {
+                    nameMap[id] = groupName;
                 }
             });
         }
@@ -357,8 +372,9 @@ export function OrderingEditor({ configKey }: { configKey: string }) {
             <div className="border border-border rounded-xl p-5 bg-background/50 mb-6 shadow-sm">
                 <h4 className="text-xl font-bold tracking-tight text-foreground mb-4">{configKey}</h4>
                 <Accordion type="multiple" className="w-full space-y-2 mt-4">
-                    {Object.entries(data).map(([groupId, itemsList]: [string, any]) => {
+                    {Object.entries(data as Record<string, unknown>).map(([groupId, itemsList]) => {
                         if (!Array.isArray(itemsList)) return null;
+                        const normalizedItems = itemsList.filter((item): item is string => typeof item === "string");
                         const groupName = displayNames[groupId] || groupId;
 
                         return (
@@ -371,13 +387,13 @@ export function OrderingEditor({ configKey }: { configKey: string }) {
                                 </AccordionTrigger>
                                 <AccordionContent className="border-t border-border pt-4">
                                     <SortableList
-                                        itemsList={itemsList}
+                                        itemsList={normalizedItems}
                                         customNames={displayNames}
                                         disabledCatalogs={disabledCatalogs}
                                         isGroup={isGroup}
                                         isMainGroup={isMainGroup}
                                         onUpdateOrder={(newOrder) => {
-                                            const updatedObj = { ...data, [groupId]: newOrder };
+                                            const updatedObj = { ...(data as Record<string, unknown>), [groupId]: newOrder };
                                             updateValue([configKey], updatedObj);
                                         }}
                                         onRenameCatalog={handleRenameCatalog}
