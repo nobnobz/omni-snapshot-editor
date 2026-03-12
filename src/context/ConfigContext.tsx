@@ -222,18 +222,23 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
             const customNames: Record<string, string> = decodedValues.custom_catalog_names || {};
             const topRowLimits: Record<string, number> = decodedValues.top_row_item_limits || {};
 
-            // All IDs in scope
-            const allIds = new Set([...decodedCatalogOrdering, ...topRowList]);
+            // All IDs in scope (selected, ordering, top row, and starred/header)
+            const allIds = new Set([
+                ...decodedCatalogOrdering, 
+                ...topRowList, 
+                ...(decodedValues.starred_catalogs || []),
+                ...(decodedValues.pinned_catalogs || [])
+            ]);
             extractedCatalogs = Array.from(allIds).map(id => {
-                const name = customNames[id] || id;
-                const finalId = ensureCatalogPrefix(id, name);
+                const name = resolveCatalogName(id, customNames);
+                const finalId = id.includes(":") ? id : ensureCatalogPrefix(id, name);
                 return {
                     id: finalId,
-                    name: name,
+                    name: name === id ? id : name, // Keep ID if no name resolved
                     enabled: decodedCatalogOrdering.length > 0 ? decodedCatalogOrdering.includes(id) : true,
                     showInHome: topRowList.includes(id),
                     metadata: topRowLimits[id] ? { itemCount: topRowLimits[id] } : undefined,
-                    _synthetic: true, // Mark as synthetic so export knows to write back to state arrays
+                    _synthetic: true,
                 };
             });
             setIsSyntheticSession(true);
@@ -425,7 +430,36 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const importGroupsToState = (payload: ImportGroupsPayload) => {
-        setCurrentValues(prev => importGroups(payload, prev));
+        setCurrentValues(prev => {
+            const next = importGroups(payload, prev);
+            
+            // Sync the manifest-style catalogs state so Catalog Manager sees the new items
+            // We scan all IDs from the newly merged state
+            const { getAllCatalogIds } = require("../lib/mutations");
+            const allIds = getAllCatalogIds(next);
+            const customNames = next.custom_catalog_names || {};
+            
+            setCatalogs(prevCats => {
+                const existingIds = new Set(prevCats.map(c => c.id));
+                const newCats = [...prevCats];
+                
+                allIds.forEach((id: string) => {
+                    if (!existingIds.has(id)) {
+                        const name = resolveCatalogName(id, customNames);
+                        newCats.push({
+                            id,
+                            name: name === id ? id : name,
+                            enabled: true,
+                            showInHome: false,
+                            _synthetic: isSyntheticSession
+                        });
+                    }
+                });
+                return newCats;
+            });
+
+            return next;
+        });
     };
 
     const restoreSubgroup = (item: DeletedSubgroup) => {

@@ -107,6 +107,7 @@ function SortableCatalogItem({
     onUpdateRandom,
     onUpdatePinned,
     onRemove,
+    currentValues,
 }: {
     catalog: ManifestCatalog;
     isLandscape: boolean;
@@ -124,6 +125,7 @@ function SortableCatalogItem({
     onUpdateRandom: (v: boolean) => void;
     onUpdatePinned: (v: boolean) => void;
     onRemove: () => void;
+    currentValues: Record<string, any>;
 }) {
     const isActive = catalog.enabled !== false || catalog.showInHome === true || isPinned;
 
@@ -248,7 +250,11 @@ function SortableCatalogItem({
                                 className={`text-sm font-bold flex items-center gap-1.5 cursor-pointer hover:underline underline-offset-4 decoration-blue-500/40 max-w-full group/name ${isActive ? "text-foreground" : "text-foreground/70"}`}
                                 onClick={startNameEdit}
                             >
-                                <span className="truncate">{catalog.name || catalog.id}</span>
+                                <span className="truncate">
+                                    {catalog.name && catalog.name !== catalog.id 
+                                        ? catalog.name 
+                                        : resolveCatalogName(catalog.id, currentValues.custom_catalog_names || {})}
+                                </span>
                                 {catalog.showInHome && <Star className="w-3 h-3 text-amber-500 shrink-0" />}
                                 <Pencil className="w-3 h-3 text-foreground/45 opacity-0 group-hover/name:opacity-90 transition-opacity shrink-0" />
                             </h4>
@@ -835,6 +841,7 @@ export function CatalogEditor() {
                                         <SortableCatalogItem
                                             key={cat.id}
                                             catalog={cat}
+                                            currentValues={currentValues}
                                             isLandscape={landscapeList.includes(cat.id)}
                                             isSmall={smallList.includes(cat.id)}
                                             isSmallTopRow={smallTopRowList.includes(cat.id)}

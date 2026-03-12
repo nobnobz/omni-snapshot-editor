@@ -76,6 +76,19 @@ export function ConfigLoader() {
 
     const [selectedVersion, setSelectedVersion] = useState(templates[0].label);
     const [url, setUrl] = useState(templates[0].url);
+
+    // Sync state when manifest loads to pre-select the latest theme
+    useEffect(() => {
+        if (manifest?.templates?.length) {
+            const umeTemplates = manifest.templates.filter(t => t.id.startsWith('ume-') && t.id !== 'ume-catalogs' && t.url);
+            if (umeTemplates.length > 0) {
+                const latest = umeTemplates[0];
+                setSelectedVersion(latest.name);
+                setUrl(latest.url);
+            }
+        }
+    }, [manifest]);
+
     const [isFileDropActive, setIsFileDropActive] = useState(false);
 
     useEffect(() => {
