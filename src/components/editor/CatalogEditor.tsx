@@ -726,13 +726,13 @@ export function CatalogEditor() {
                                                 {group.items.map(c => (
                                                     <div
                                                         key={c.id}
-                                                        className="flex items-center gap-2.5 pl-2 py-2 sm:py-1.5 hover:bg-muted/50 rounded-sm group/candidate"
+                                                        className="flex items-start gap-2.5 pl-2 py-2 sm:py-1.5 hover:bg-muted/50 rounded-sm group/candidate"
                                                     >
                                                         <Checkbox
                                                             id={`add-cat-${c.id}`}
                                                             checked={pendingAddSelections.has(c.id)}
                                                             onCheckedChange={() => togglePendingSelection(c.id)}
-                                                            className="border-border data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 h-4 w-4 shrink-0"
+                                                            className="mt-0.5 border-border data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 h-4 w-4 shrink-0"
                                                         />
                                                         <label
                                                             htmlFor={`add-cat-${c.id}`}

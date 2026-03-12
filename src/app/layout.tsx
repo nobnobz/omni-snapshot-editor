@@ -48,7 +48,7 @@ export default function RootLayout({
 
             {/* 2. Grid pattern - extended even further for super-robust coverage */}
             <div 
-              className="absolute inset-[-100px] opacity-[0.11] dark:opacity-[0.14]" 
+              className="absolute inset-[-100px] opacity-[0.11] dark:opacity-[0.095]" 
               style={{ 
                 backgroundImage: `linear-gradient(to right, oklch(0.60 0 0 / 0.15) 1px, transparent 1px), linear-gradient(to bottom, oklch(0.60 0 0 / 0.15) 1px, transparent 1px)`,
                 backgroundSize: '32px 32px'

@@ -53,6 +53,24 @@ interface ParsedPattern {
     hasChanges: boolean;
 }
 
+const normalizeForCompare = (value: any): any => {
+    if (Array.isArray(value)) {
+        return value.map(normalizeForCompare);
+    }
+    if (value && typeof value === "object") {
+        return Object.keys(value)
+            .sort()
+            .reduce<Record<string, any>>((acc, key) => {
+                acc[key] = normalizeForCompare(value[key]);
+                return acc;
+            }, {});
+    }
+    return value;
+};
+
+const areEqual = (a: any, b: any): boolean =>
+    JSON.stringify(normalizeForCompare(a)) === JSON.stringify(normalizeForCompare(b));
+
 export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProps) {
     const { currentValues, updateValue, manifest, fetchManifest } = useConfig();
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -114,12 +132,16 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
         for (const key of DICT_KEYS) {
             const importedVal = extracted[key]?.[regex];
             const currentVal = currentValues[key]?.[regex];
-            if (importedVal !== undefined && JSON.stringify(importedVal) !== JSON.stringify(currentVal)) return true;
+            // Dict values are imported only when present for this regex.
+            if (importedVal !== undefined && !areEqual(importedVal, currentVal)) return true;
         }
         for (const key of ARRAY_KEYS) {
+            // Arrays are additive in handleImport (we only add when present in import),
+            // so a "missing in import, present in current" state is not an import change.
+            if (!Array.isArray(extracted[key])) continue;
             const inImported = Array.isArray(extracted[key]) && extracted[key].includes(regex);
             const inCurrent = Array.isArray(currentValues[key]) && currentValues[key].includes(regex);
-            if (inImported !== inCurrent) return true;
+            if (inImported && !inCurrent) return true;
         }
         return false;
     };
