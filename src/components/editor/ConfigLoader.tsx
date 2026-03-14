@@ -530,8 +530,8 @@ export function ConfigLoader() {
                                     <h1 className="text-[2rem] font-black tracking-tight text-foreground sm:text-[2.62rem] xl:text-[2.88rem]">
                                         Omni Snapshot Manager
                                     </h1>
-                                    <p className="mx-auto max-w-[40rem] text-sm leading-6 text-foreground/70 sm:text-[0.98rem] sm:leading-7">
-                                        Import an Omni snapshot from GitHub or your local disk, or create a new setup from scratch.
+                                    <p className="mx-auto max-w-[42rem] text-sm leading-6 text-foreground/70 sm:text-[0.98rem] sm:leading-7">
+                                        Import an Omni snapshot from GitHub or your local disk, or start a new setup from scratch.
                                     </p>
                                 </div>
 
