@@ -313,7 +313,8 @@ export function MainEditor() {
         const newFile = new File([blob], newFileName, { type: "application/json" });
 
         // If sharing is supported (common in mobile PWAs), try navigator.share first
-        if (navigator.canShare && navigator.canShare({ files: [newFile] })) {
+        // Restricted to touch devices to avoid triggering system share menus on desktops
+        if (isIosDevice && navigator.canShare && navigator.canShare({ files: [newFile] })) {
             navigator.share({
                 files: [newFile],
                 title: 'Omni Configuration',
@@ -706,7 +707,7 @@ export function MainEditor() {
                             Cancel
                         </Button>
                         <Button onClick={confirmDownload} className={editorAction.primary}>
-                            Confirm & Download
+                            Download
                         </Button>
                     </DialogFooter>
                 </DialogContent>
