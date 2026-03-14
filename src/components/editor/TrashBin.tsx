@@ -82,8 +82,8 @@ export function TrashBin() {
                         >
                             <div className="flex items-center justify-between px-4 py-3">
                                 <div className="flex items-center gap-3">
-                                    <AccordionTrigger className="p-0 hover:no-underline [&>svg]:hidden flex items-center gap-2">
-                                        <Badge variant="outline" className={`text-xs uppercase tracking-tighter bg-muted/50 border-border ${item.type === 'Main Group' ? 'text-blue-400 border-blue-900/50' : 'text-foreground/70'}`}>
+                                    <AccordionTrigger className="p-0 [&>svg]:hidden flex items-center gap-2">
+                                        <Badge variant="outline" className={`text-xs uppercase tracking-tighter bg-muted/50 border-border ${item.type === 'Main Group' ? 'text-primary border-primary/40' : 'text-foreground/70'}`}>
                                             {item.type}
                                         </Badge>
                                         <span className="font-semibold text-foreground">{item.name}</span>
@@ -97,7 +97,7 @@ export function TrashBin() {
                                 <Button
                                     size="sm"
                                     onClick={() => item.type === 'Main Group' ? restoreMainGroup(item) : restoreSubgroup(item)}
-                                    className="h-9 bg-blue-600 hover:bg-blue-500 text-white text-sm gap-2 shadow-lg shadow-blue-900/20"
+                                    className="h-9 bg-primary hover:bg-primary/92 text-primary-foreground text-sm gap-2 shadow-lg shadow-primary/20"
                                 >
                                     <RotateCcw className="w-3.5 h-3.5" /> Restore
                                 </Button>

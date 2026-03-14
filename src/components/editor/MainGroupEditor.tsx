@@ -26,6 +26,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Badge } from "@/components/ui/badge";
 import { RenameGroupModal } from "./RenameGroupModal";
 import { resolveCatalogName } from "@/lib/utils";
+import { editorHover, editorSurface } from "@/components/editor/ui/style-contract";
 
 const EMPTY_STRING_ARRAY: string[] = [];
 const stringArraysEqual = (a: string[], b: string[]) => (
@@ -80,15 +81,15 @@ function SortableSubgroupItem({
         <div
             ref={setNodeRef}
             style={style}
-            className={`group flex items-center gap-3 p-3 bg-card border rounded-lg mb-2 transition-colors
-                ${isDragging ? "opacity-50 border-blue-500 shadow-xl" : "border-border hover:border-border/80"}
+            className={`group flex items-center gap-3 p-3 bg-card border rounded-lg mb-2 ${editorHover.transition}
+                ${isDragging ? "opacity-50 border-primary shadow-xl" : `border-border ${editorHover.row}`}
                 ${!isEnabled ? "opacity-60 border-dashed border-border/50 bg-card/60" : ""}
             `}
         >
             <button 
                 {...attributes} 
                 {...listeners} 
-                className={`cursor-grab shrink-0 p-2 rounded-md transition-colors ${isEnabled ? "text-foreground/70 hover:text-foreground hover:bg-muted" : "text-foreground pointer-events-none"}`}
+                className={`cursor-grab shrink-0 p-2 rounded-md transition-colors ${isEnabled ? editorHover.softAction : "text-foreground pointer-events-none"}`}
                 style={{ touchAction: 'none' }} 
                 aria-label="Drag handle"
             >
@@ -106,10 +107,10 @@ function SortableSubgroupItem({
                             onClick={() => setIsEditing(true)}
                             title="Click to rename"
                         >
-                            <h4 className={`text-sm font-bold flex items-center gap-1.5 hover:underline underline-offset-4 decoration-blue-500/40 truncate ${!isEnabled ? "text-foreground/70 line-through" : "text-foreground"}`}>
+                            <h4 className={`text-sm font-bold flex items-center gap-1.5 transition-colors truncate ${!isEnabled ? "text-foreground/70 line-through" : "text-foreground group-hover/name:text-primary"}`}>
                                 {displayName}
                                 {showInHome && <Star className="w-3 h-3 text-amber-500 shrink-0" />}
-                                <Edit2 className="w-3 h-3 text-blue-400 opacity-0 group-hover/name:opacity-100 transition-opacity shrink-0" />
+                                <Edit2 className="w-3 h-3 text-primary opacity-0 group-hover/name:opacity-100 transition-opacity shrink-0" />
                             </h4>
                             {displayName !== id && <p className="text-xs text-foreground/70 truncate font-mono mt-0.5">{id}</p>}
                         </div>
@@ -135,7 +136,7 @@ function SortableSubgroupItem({
 
                     {/* Shelf Specifics */}
                     {isLandscape && (
-                        <Badge className="text-xs h-4 px-1 bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20">Wide</Badge>
+                        <Badge className="text-xs h-4 px-1 bg-primary/10 text-primary dark:text-primary border border-primary/20">Wide</Badge>
                     )}
                 </div>
             </div>
@@ -150,7 +151,7 @@ function SortableSubgroupItem({
             <Switch
                 checked={isEnabled}
                 onCheckedChange={onToggle}
-                className="data-[state=checked]:bg-blue-600 shrink-0"
+                className="data-[state=checked]:bg-primary shrink-0"
             />
         </div>
     );
@@ -234,18 +235,18 @@ function SingleMainGroupEditor({
 
     return (
         <div className="space-y-4 py-2">
-            <div className="border border-border rounded-xl bg-card/20 overflow-hidden">
+            <div className={`${editorSurface.cardInteractive} overflow-hidden`}>
                 {/* Unified Toolbar */}
-                <div className="sticky top-0 z-20 flex flex-wrap items-center gap-2 bg-card/95 backdrop-blur-md p-3 border-b border-border/80 shadow-sm">
-                    <Button variant="outline" size="sm" onClick={sortAZ} className="h-8 text-xs border-border hover:bg-muted text-foreground/70 hover:text-foreground transition-all">
+                <div className={`${editorSurface.toolbar} sticky top-0 z-20 flex flex-wrap items-center gap-2 rounded-none border-x-0 border-t-0 p-3`}>
+                    <Button variant="outline" size="sm" onClick={sortAZ} className="h-8 text-xs border-border hover:bg-muted/80 text-foreground/70 hover:text-foreground">
                         <ArrowDownAZ className="w-4 h-4 mr-1.5" /> A-Z
                     </Button>
-                    <Button variant="outline" size="sm" onClick={sortZA} className="h-8 text-xs border-border hover:bg-muted text-foreground/70 hover:text-foreground transition-all">
+                    <Button variant="outline" size="sm" onClick={sortZA} className="h-8 text-xs border-border hover:bg-muted/80 text-foreground/70 hover:text-foreground">
                         <ArrowUpZA className="w-4 h-4 mr-1.5" /> Z-A
                     </Button>
                     <div className="w-px h-5 bg-border mx-1" />
-                    <Button variant="ghost" size="sm" onClick={enableAll} className="h-8 text-xs text-blue-400 hover:text-blue-300 transition-colors">Enable All</Button>
-                    <Button variant="ghost" size="sm" onClick={disableAll} className="h-8 text-xs text-foreground/60 hover:text-foreground transition-colors">Disable All</Button>
+                    <Button variant="ghost" size="sm" onClick={enableAll} className="h-8 text-xs text-primary hover:text-primary hover:bg-primary/10 transition-colors">Enable All</Button>
+                    <Button variant="ghost" size="sm" onClick={disableAll} className="h-8 text-xs text-foreground/60 hover:text-foreground hover:bg-muted/60 transition-colors">Disable All</Button>
                 </div>
 
                 <div className="p-3">
@@ -308,8 +309,8 @@ function SortableMainGroupItem({
         <div ref={setNodeRef} style={style}>
             <AccordionItem 
                 value={groupId} 
-                className={`border border-border/60 rounded-xl bg-card shadow-sm hover:shadow-md transition-all overflow-hidden group/accordion mb-2
-                    ${isDragging ? "opacity-50 border-blue-500 shadow-2xl z-50" : "bg-card/40"}
+                className={`${editorSurface.cardInteractive} transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out overflow-hidden group/accordion mb-2
+                    ${isDragging ? "opacity-50 border-primary shadow-2xl z-50" : ""}
                 `}
             >
                 <div className="flex items-center">
@@ -317,25 +318,25 @@ function SortableMainGroupItem({
                     <button 
                         {...attributes} 
                         {...listeners}
-                        className="p-3 text-foreground/40 hover:text-foreground/80 cursor-grab active:cursor-grabbing transition-colors shrink-0"
+                        className={`p-3 cursor-grab active:cursor-grabbing shrink-0 transition-colors ${editorHover.softAction}`}
                     >
                         <GripVertical className="w-5 h-5" />
                     </button>
 
-                    <AccordionTrigger className="flex-1 hover:no-underline text-foreground px-4 py-4 hover:bg-muted/30 transition-colors">
+                    <AccordionTrigger className={`flex-1 text-foreground px-4 py-4 transition-colors ${editorHover.rowSubtle}`}>
                         <div className="flex flex-col items-start gap-1 min-w-0">
-                            <span className="font-bold text-sm tracking-tight text-foreground group-hover/accordion:text-blue-400 transition-colors uppercase">
+                            <span className="font-bold text-sm tracking-tight text-foreground group-hover/accordion:text-primary transition-colors uppercase">
                                 {groupData.name || "Unnamed Group"}
                             </span>
                             <div className="flex items-center gap-2">
                                 <span className="text-xs text-foreground/50 font-mono font-normal uppercase tracking-widest leading-none">{(groupData.subgroupNames || []).length} catalogs</span>
-                                <div className="w-1 h-1 rounded-full bg-blue-500/30" />
+                                <div className="w-1 h-1 rounded-full bg-primary/30" />
                                 <span className="text-xs text-foreground/40 font-mono font-normal truncate uppercase tracking-widest leading-none">{groupId}</span>
                             </div>
                         </div>
                     </AccordionTrigger>
                 </div>
-                <AccordionContent className="border-t border-border/40 p-4 pt-2 bg-background/20">
+                <AccordionContent className="border-t border-slate-200/80 p-4 pt-2 bg-white/18 dark:border-white/8 dark:bg-white/[0.025]">
                     <SingleMainGroupEditor
                         groupId={groupId}
                         groupData={groupData}
@@ -413,7 +414,7 @@ export function MainGroupEditor() {
 
     return (
         <div className="space-y-4">
-            <p className="text-sm text-foreground/70 mb-6 border-l-2 border-blue-500/40 pl-4 py-1">
+            <p className="text-sm text-foreground/70 mb-6 border-l-2 border-primary/40 pl-4 py-1">
                 Manage and organize main catalogs groups. Drag headers to reorder top-level presentation.
             </p>
 

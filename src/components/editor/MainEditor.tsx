@@ -9,14 +9,23 @@ import { CatalogEditor } from "@/components/editor/CatalogEditor";
 import { UnifiedSubgroupEditor } from "@/components/editor/UnifiedSubgroupEditor";
 import { UnifiedPatternEditor } from "@/components/editor/UnifiedPatternEditor";
 import { ImportPatternsModal } from "@/components/editor/ImportPatternsModal";
-import { OrderingEditor } from "@/components/editor/OrderingEditor";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Textarea } from "@/components/ui/textarea";
-import { DocumentationDialog } from "@/components/editor/DocumentationDialog";
+import { Documentation } from "@/components/editor/Documentation";
+import { TemplateGuide } from "@/components/editor/TemplateGuide";
+import { UpdateGuide } from "@/components/editor/UpdateGuide";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 import {
     Download,
     Copy,
     RotateCcw,
+    ChevronDown,
     Check,
     UploadCloud,
     ClipboardPaste,
@@ -28,11 +37,13 @@ import {
     Github,
     LogOut,
     Info,
-    AlertTriangle
+    AlertTriangle,
+    MoreHorizontal
 } from "lucide-react";
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogHeader,
     DialogTitle,
     DialogFooter
@@ -49,12 +60,20 @@ import {
 } from "@/components/ui/alert-dialog";
 import { APP_VERSION } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { editorAction, editorNoticeTone } from "@/components/editor/ui/style-contract";
+import { editorAction, editorHover, editorNoticeTone, editorSurface } from "@/components/editor/ui/style-contract";
 
 type UiNotice = {
     tone: "success" | "error" | "info";
     message: string;
 };
+
+const EDITOR_SECTIONS = [
+    { id: "aiometadata", title: "AIOMetadata Integration", keys: [] },
+    { id: "groups", title: "Group Manager", keys: ["subgroup_order", "main_catalog_groups", "catalog_group_image_urls", "catalog_groups"] },
+    { id: "catalogs", title: "Catalog Manager", keys: ["selected_catalogs", "pinned_catalogs", "small_catalogs", "top_row_catalogs", "starred_catalogs", "randomized_catalogs", "small_toprow_catalogs", "catalog_ordering", "custom_catalog_names"] },
+    { id: "settings", title: "General Settings", keys: ["hide_external_playback_prompt", "hide_spoilers", "small_continue_watching_shelf", "hidden_stream_button_elements", "oled_mode_enabled", "preferred_audio_language", "preferred_subtitle_language"] },
+    { id: "patterns", title: "Patterns & Regex", keys: ["pattern_tag_enabled_patterns", "regex_pattern_custom_names", "regex_pattern_image_urls", "pattern_default_filter_enabled_patterns", "pattern_image_color_indices", "pattern_border_radius_indices", "pattern_background_opacities", "pattern_border_thickness_indices", "pattern_color_indices", "pattern_color_hex_values", "auto_play_enabled_patterns", "auto_play_patterns"] },
+];
 
 export function MainEditor() {
     const { originalConfig, currentValues, fileName, exportConfig, exportPartialConfig, customFallbacks, setCustomFallbacks, unloadConfig } = useConfig();
@@ -66,65 +85,20 @@ export function MainEditor() {
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [setupName, setSetupName] = useState("");
     const [isImportPatternsOpen, setIsImportPatternsOpen] = useState(false);
+    const [isGuideDialogOpen, setIsGuideDialogOpen] = useState(false);
+    const [activeGuide, setActiveGuide] = useState<"install" | "update" | "use">("use");
+    const [isSectionsOpen, setIsSectionsOpen] = useState(false);
+    const [isDesktopDocsMenuOpen, setIsDesktopDocsMenuOpen] = useState(false);
+    const [isMobileDocsMenuOpen, setIsMobileDocsMenuOpen] = useState(false);
     const [pastedJson, setPastedJson] = useState("");
     const [isExitConfirmOpen, setIsExitConfirmOpen] = useState(false);
     const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
 
-    // Sidebar State
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [activeSectionId, setActiveSectionId] = useState("aiometadata");
     const [isCopied, setIsCopied] = useState(false);
     const [uiNotice, setUiNotice] = useState<UiNotice | null>(null);
-    const [isHeaderVisible, setIsHeaderVisible] = useState(true);
-    const [isScrolled, setIsScrolled] = useState(false);
     const [isFallbackDropActive, setIsFallbackDropActive] = useState(false);
-    const lastScrollY = useRef(0);
     const scrollContainerRef = useRef<HTMLElement>(null);
-    const scrollThreshold = 6; // keep this small so mobile upward scroll reveals the top bar quickly
-
-    useEffect(() => {
-        const handleScroll = () => {
-            // On mobile we scroll the window/body, on desktop we scroll the ref container
-            const isMobileViewport = window.innerWidth < 1024;
-            const currentScrollY = isMobileViewport
-                ? window.scrollY
-                : scrollContainerRef.current?.scrollTop || 0;
-            const clampedScrollY = Math.max(0, currentScrollY);
-            const delta = clampedScrollY - lastScrollY.current;
-
-            setIsScrolled(clampedScrollY > 8);
-
-            if (Math.abs(delta) < scrollThreshold) {
-                return;
-            }
-
-            if (isMobileViewport) {
-                if (delta > 0 && clampedScrollY > 72) {
-                    setIsHeaderVisible(false);
-                } else if (delta < 0 || clampedScrollY <= 12) {
-                    setIsHeaderVisible(true);
-                }
-            } else {
-                if (delta > 0 && clampedScrollY > 60) {
-                    setIsHeaderVisible(false);
-                } else if (delta < 0 || clampedScrollY <= 10) {
-                    setIsHeaderVisible(true);
-                }
-            }
-            lastScrollY.current = clampedScrollY;
-        };
-
-        const container = scrollContainerRef.current;
-        if (window.innerWidth < 1024) {
-            window.addEventListener("scroll", handleScroll, { passive: true });
-        } else if (container) {
-            container.addEventListener("scroll", handleScroll, { passive: true });
-        }
-
-        return () => {
-            window.removeEventListener("scroll", handleScroll);
-            container?.removeEventListener("scroll", handleScroll);
-        };
-    }, []);
 
     useEffect(() => {
         const preventNavigationOnDrop: EventListener = (event) => {
@@ -147,6 +121,86 @@ export function MainEditor() {
                 target.removeEventListener("dragover", preventNavigationOnDrop, true);
                 target.removeEventListener("drop", preventNavigationOnDrop, true);
             });
+        };
+    }, []);
+
+    useEffect(() => {
+        const sectionElements = EDITOR_SECTIONS
+            .map((section) => document.getElementById(section.id))
+            .filter((element): element is HTMLElement => element instanceof HTMLElement);
+
+        if (sectionElements.length === 0) return;
+
+        let frameId = 0;
+
+        const updateActiveSection = () => {
+            const isDesktopViewport = window.innerWidth >= 1024;
+            const scrollRoot = isDesktopViewport ? scrollContainerRef.current : null;
+            const activationOffset = isDesktopViewport ? 170 : 132;
+            const viewportTop = isDesktopViewport
+                ? scrollRoot?.getBoundingClientRect().top ?? 0
+                : 0;
+
+            const lastSection = sectionElements[sectionElements.length - 1];
+
+            if (isDesktopViewport && scrollRoot) {
+                const remainingScroll =
+                    scrollRoot.scrollHeight - scrollRoot.scrollTop - scrollRoot.clientHeight;
+                if (remainingScroll <= 12) {
+                    setActiveSectionId((current) => (current === lastSection.id ? current : lastSection.id));
+                    return;
+                }
+            } else {
+                const remainingScroll =
+                    document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
+                if (remainingScroll <= 12) {
+                    setActiveSectionId((current) => (current === lastSection.id ? current : lastSection.id));
+                    return;
+                }
+            }
+
+            let nextSectionId = sectionElements[0].id;
+
+            for (const sectionElement of sectionElements) {
+                const sectionTop = sectionElement.getBoundingClientRect().top - viewportTop;
+                if (sectionTop <= activationOffset) {
+                    nextSectionId = sectionElement.id;
+                } else {
+                    break;
+                }
+            }
+
+            setActiveSectionId((current) => (current === nextSectionId ? current : nextSectionId));
+        };
+
+        const requestUpdate = () => {
+            if (frameId) cancelAnimationFrame(frameId);
+            frameId = window.requestAnimationFrame(updateActiveSection);
+        };
+
+        const bindScrollTarget = () => (window.innerWidth >= 1024 ? scrollContainerRef.current : window);
+
+        const handleResize = () => {
+            const nextScrollTarget = bindScrollTarget();
+            if (nextScrollTarget === scrollTarget) return;
+            scrollTarget?.removeEventListener("scroll", requestUpdate);
+            scrollTarget = nextScrollTarget;
+            scrollTarget?.addEventListener("scroll", requestUpdate, { passive: true });
+            requestUpdate();
+        };
+
+        let scrollTarget: HTMLElement | Window | null = bindScrollTarget();
+        scrollTarget?.addEventListener("scroll", requestUpdate, { passive: true });
+        window.addEventListener("resize", requestUpdate);
+        window.addEventListener("resize", handleResize);
+
+        requestUpdate();
+
+        return () => {
+            if (frameId) cancelAnimationFrame(frameId);
+            scrollTarget?.removeEventListener("scroll", requestUpdate);
+            window.removeEventListener("resize", requestUpdate);
+            window.removeEventListener("resize", handleResize);
         };
     }, []);
 
@@ -192,13 +246,7 @@ export function MainEditor() {
         "top_row_item_limits"
     ]);
 
-    const sections = [
-        { id: "aiometadata", title: "AIOMetadata Integration", keys: [] },
-        { id: "groups", title: "Group Manager", keys: ["subgroup_order", "main_catalog_groups", "catalog_group_image_urls", "catalog_groups"] },
-        { id: "catalogs", title: "Catalog Manager", keys: ["selected_catalogs", "pinned_catalogs", "small_catalogs", "top_row_catalogs", "starred_catalogs", "randomized_catalogs", "small_toprow_catalogs", "catalog_ordering", "custom_catalog_names"] },
-        { id: "settings", title: "General Settings", keys: ["hide_external_playback_prompt", "hide_spoilers", "small_continue_watching_shelf", "hidden_stream_button_elements", "oled_mode_enabled", "preferred_audio_language", "preferred_subtitle_language"] },
-        { id: "patterns", title: "Patterns & Regex", keys: ["pattern_tag_enabled_patterns", "regex_pattern_custom_names", "regex_pattern_image_urls", "pattern_default_filter_enabled_patterns", "pattern_image_color_indices", "pattern_border_radius_indices", "pattern_background_opacities", "pattern_border_thickness_indices", "pattern_color_indices", "pattern_color_hex_values", "auto_play_enabled_patterns", "auto_play_patterns"] },
-    ];
+    const sections = EDITOR_SECTIONS;
 
     const showNotice = (tone: UiNotice["tone"], message: string) => {
         setUiNotice({ tone, message });
@@ -396,139 +444,196 @@ export function MainEditor() {
         setIsResetConfirmOpen(false);
     };
 
+    const handleMobileSectionSelect = (sectionId: string) => {
+        setActiveSectionId(sectionId);
+        setIsSectionsOpen(false);
+        requestAnimationFrame(() => {
+            document.getElementById(sectionId)?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+            });
+        });
+    };
+
+    const openGuide = (guide: "install" | "update" | "use") => {
+        setActiveGuide(guide);
+        setIsGuideDialogOpen(true);
+    };
+
     return (
         <div className="relative flex min-h-screen lg:h-[100dvh] w-full max-w-[100vw] overflow-x-hidden lg:overflow-y-hidden bg-transparent text-foreground font-sans">
 
-
-            {/* Mobile Sidebar Overlay */}
-            {isSidebarOpen && (
-                <div
-                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
-                    onClick={() => setIsSidebarOpen(false)}
-                />
-            )}
-
-            <aside className={`
-                fixed lg:static inset-y-0 left-0 z-50 w-72 lg:w-64 border-r border-border bg-card/95 backdrop-blur-md lg:backdrop-blur-none lg:bg-card flex flex-col transform transition-transform duration-300 ease-in-out
-                ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-            `}>
-                <div className="p-5 pt-[calc(1.25rem+env(safe-area-inset-top))] border-b border-border flex flex-col gap-4 bg-card/50">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <h1 className="text-base font-black flex items-center gap-3 text-white tracking-tight">
-                                <div className="w-16 h-16 flex items-center justify-center shrink-0 relative group">
+            <aside className="hidden lg:flex lg:static inset-y-0 left-0 z-50 w-72 lg:w-[17.5rem] bg-transparent flex-col">
+                <div className="px-4 py-5">
+                    <div className="flex h-[calc(100dvh-2.5rem)] flex-col rounded-[1.75rem] border border-slate-200/72 bg-[linear-gradient(180deg,rgba(255,255,255,0.56),rgba(248,250,252,0.44))] shadow-[0_18px_38px_rgba(15,23,42,0.065)] backdrop-blur-md dark:border-white/8 dark:bg-[linear-gradient(180deg,rgba(21,24,31,0.92),rgba(13,16,22,0.9))] dark:shadow-[0_18px_38px_rgba(2,6,23,0.14)]">
+                        <div className="px-5 pt-5 pb-4">
+                            <h1 className="text-base font-black flex items-center gap-3 text-primary-foreground tracking-tight">
+                                <div className="w-14 h-14 flex items-center justify-center shrink-0 relative">
                                     {/* eslint-disable-next-line @next/next/no-img-element -- Static local logo; preserving existing rendering behavior. */}
                                     <img src="/omni-snapshot-editor/clown.png" alt="Logo" className="w-full h-full object-contain relative z-10 scale-125" />
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="leading-none text-foreground">Omni Snapshot</span>
-                                    <span className="text-xs text-blue-600 dark:text-blue-400 font-bold uppercase tracking-widest mt-0.5">Manager</span>
+                                    <span className="text-xs text-primary dark:text-primary font-bold uppercase tracking-widest mt-0.5">Manager</span>
                                 </div>
                             </h1>
                         </div>
-                        {/* Mobile Close Button */}
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="lg:hidden text-foreground/70 hover:text-white -mr-2"
-                            onClick={() => setIsSidebarOpen(false)}
-                            aria-label="Close sidebar"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                        </Button>
-                    </div>
-                </div>
 
-                <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-                    {sections.map(section => (
-                        <a
-                            key={section.id}
-                            href={`#${section.id}`}
-                            className="block px-3 py-2 text-sm text-foreground/70 hover:text-foreground hover:bg-muted rounded-md transition-colors"
-                        >
-                            {section.title}
-                        </a>
-                    ))}
-                    <div className="pt-4 mt-4 border-t border-border space-y-2">
-                        <DocumentationDialog
-                            trigger={
+                        <nav className="flex-1 overflow-y-auto px-4 pb-4">
+                            <div className="border-t border-slate-200/80 pt-4 dark:border-white/6">
+                                <div className="px-2 pb-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-foreground/34">
+                                    Sections
+                                </div>
+                                <div className="space-y-0.5">
+                                    {sections.map(section => (
+                                        <a
+                                            key={section.id}
+                                            href={`#${section.id}`}
+                                            className={cn(
+                                                `block rounded-[0.9rem] px-3 py-2 text-[14px] font-medium tracking-tight ${editorHover.transition}`,
+                                                activeSectionId === section.id
+                                                    ? "bg-primary/10 text-foreground border border-primary/20"
+                                                    : "text-foreground/66 hover:text-foreground hover:bg-muted/30"
+                                            )}
+                                        >
+                                            <span className="flex items-center gap-2.5">
+                                                <span
+                                                    className={cn(
+                                                        "h-1.5 w-1.5 rounded-full transition-colors",
+                                                        activeSectionId === section.id ? "bg-primary" : "bg-white/12"
+                                                    )}
+                                                />
+                                                {section.title}
+                                            </span>
+                                        </a>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="mt-4 border-t border-slate-200/80 pt-4 space-y-1.5 dark:border-white/6">
+                                <DropdownMenu open={isDesktopDocsMenuOpen} onOpenChange={setIsDesktopDocsMenuOpen}>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            className="w-full justify-between gap-3 h-10 rounded-[0.95rem] px-3 text-sm text-primary dark:text-primary hover:text-primary dark:hover:text-primary hover:bg-primary/10 font-medium"
+                                        >
+                                            <span className="flex items-center gap-3">
+                                                <BookOpen className="w-4 h-4" />
+                                                Documentation
+                                            </span>
+                                            <ChevronDown
+                                                className={cn(
+                                                    "h-3.5 w-3.5 shrink-0 text-current/72 transition-transform duration-200",
+                                                    isDesktopDocsMenuOpen && "rotate-180"
+                                                )}
+                                            />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start" sideOffset={8} className="w-52">
+                                        <DropdownMenuItem
+                                            onClick={() => openGuide("install")}
+                                            className="cursor-pointer rounded-xl px-3 py-2.5 transition-colors data-[highlighted]:bg-primary/10"
+                                        >
+                                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-primary/28 bg-primary/10 text-primary dark:border-primary/26 dark:bg-primary/12">
+                                                <UploadCloud className="w-4 h-4 text-current" />
+                                            </span>
+                                            How to Install
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={() => openGuide("update")}
+                                            className="cursor-pointer rounded-xl px-3 py-2.5 transition-colors data-[highlighted]:bg-primary/10"
+                                        >
+                                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-primary/28 bg-primary/10 text-primary dark:border-primary/26 dark:bg-primary/12">
+                                                <RotateCcw className="w-4 h-4 text-current" />
+                                            </span>
+                                            How to Update
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={() => openGuide("use")}
+                                            className="cursor-pointer rounded-xl px-3 py-2.5 transition-colors data-[highlighted]:bg-primary/10"
+                                        >
+                                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-primary/28 bg-primary/10 text-primary dark:border-primary/26 dark:bg-primary/12">
+                                                <BookOpen className="w-4 h-4 text-current" />
+                                            </span>
+                                            How to Use
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                                 <Button
+                                    asChild
                                     variant="ghost"
-                                    className="w-full justify-start gap-3 h-10 px-3 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-500/10 font-medium"
+                                    className="w-full justify-start gap-3 h-10 rounded-[0.95rem] px-3 text-sm text-pink-600 dark:text-pink-500 hover:text-pink-700 dark:hover:text-pink-400 hover:bg-pink-500/10 font-medium"
                                 >
-                                    <BookOpen className="w-4 h-4" />
-                                    Documentation
+                                    <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer">
+                                        <Heart className="w-4 h-4" />
+                                        Support My Work
+                                    </a>
                                 </Button>
-                            }
-                        />
-                        <Button
-                            asChild
-                            variant="ghost"
-                            className="w-full justify-start gap-3 h-10 px-3 text-sm text-pink-600 dark:text-pink-500 hover:text-pink-700 dark:hover:text-pink-400 hover:bg-pink-500/10 font-medium"
-                        >
-                            <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer">
-                                <Heart className="w-4 h-4" />
-                                Support Me
-                            </a>
-                        </Button>
-                    </div>
-                </nav>
-
-                <div className="p-4 border-t border-border bg-card flex flex-col gap-2">
-                    <div className="bg-background/40 rounded-lg p-2.5 border border-border/60 mb-1">
-                        <div className="flex justify-between items-center mb-1.5">
-                            <div className="text-xs font-bold uppercase tracking-wide text-foreground/70 flex items-center gap-1.5 leading-none">
-                                <FileJson className="w-3 h-3 text-foreground/70" />
-                                Selected File
                             </div>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-foreground/70 hover:text-blue-500 hover:bg-blue-500/10 -mr-1 -mt-1 group/back"
-                                onClick={handleBackToStart}
-                                title="Back to Start"
-                                aria-label="Back to start"
-                            >
-                                <LogOut className="w-3.5 h-3.5 transition-transform group-hover/back:-translate-x-0.5" />
-                            </Button>
-                        </div>
-                        <p className="text-xs text-foreground/70 font-mono truncate">{fileName}</p>
-                    </div>
+                        </nav>
 
-                    <div className="hidden lg:flex flex-col gap-2">
-                        <Button
-                            onClick={handleDownloadClick}
-                            className="w-full font-bold h-10 sm:h-9 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20"
-                        >
-                            <Download className="w-4 h-4 mr-2.5" />
-                            Download JSON
-                        </Button>
-                        <Button
-                            onClick={handleCopy}
-                            variant="ghost"
-                            className="w-full text-foreground/70 hover:text-white h-10 bg-muted/40 border border-border/60 hover:bg-muted transition-all px-4"
-                        >
-                            <Copy className="w-4 h-4 mr-2.5" />
-                            Copy to Clipboard
-                        </Button>
-                    </div>
+                        <div className="mt-auto border-t border-slate-200/80 px-4 py-4 dark:border-white/6">
+                            <div className="rounded-[1rem] border border-slate-200/80 bg-white/42 px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] dark:border-white/8 dark:bg-background/26 dark:shadow-none">
+                                <div className="flex justify-between items-center mb-1.5">
+                                    <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/44 flex items-center gap-1.5 leading-none">
+                                        <FileJson className="w-3 h-3 text-primary/80" />
+                                        Selected File
+                                    </div>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 rounded-full text-foreground/66 hover:text-primary hover:bg-primary/10 -mr-1 -mt-1 group/back"
+                                        onClick={handleBackToStart}
+                                        title="Back to Start"
+                                        aria-label="Back to start"
+                                    >
+                                        <LogOut className="w-3.5 h-3.5 transition-transform group-hover/back:-translate-x-0.5" />
+                                    </Button>
+                                </div>
+                                <p className="text-[11px] text-foreground/62 font-mono truncate">{fileName}</p>
+                            </div>
 
-                    <div className="flex flex-col gap-2.5 pt-3 pb-2 border-t border-border/40">
-                        <div className="flex items-center justify-between">
-                            <a href="https://github.com/nobnobz/omni-snapshot-editor" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-foreground/70 hover:text-foreground transition-colors font-medium">
-                                <Github className="w-3.5 h-3.5" />
-                                GitHub
-                            </a>
-                            <div className="scale-[0.80] origin-right -my-1">
-                                <ThemeToggle />
+                            <div className="hidden lg:flex items-center gap-2.5 mt-3">
+                                <Button
+                                    onClick={handleDownloadClick}
+                                    className="flex-1 font-bold h-11 rounded-[1rem] bg-primary hover:bg-primary/92 text-primary-foreground shadow-[0_10px_24px_rgba(2,6,23,0.18)]"
+                                >
+                                    <Download className="w-4 h-4 mr-2.5" />
+                                    Download
+                                </Button>
+                                <Button
+                                    onClick={handleCopy}
+                                    variant="ghost"
+                                    size="icon"
+                                    className={cn(
+                                        `h-11 w-11 shrink-0 rounded-[1rem] border border-slate-200/80 bg-white/42 dark:border-white/8 dark:bg-background/30 ${editorHover.transition} ${editorHover.iconAction}`,
+                                        isCopied ? "border-emerald-500/35 text-emerald-400 bg-emerald-500/8" : ""
+                                    )}
+                                    title={isCopied ? "Copied to clipboard" : "Copy to clipboard"}
+                                    aria-label={isCopied ? "Copied to clipboard" : "Copy to clipboard"}
+                                >
+                                    {isCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                </Button>
                             </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <div className="text-xs text-foreground/40 font-medium leading-none scale-95 origin-left">
-                                Made by Bot-Bid-Raiser
-                            </div>
-                            <div className="text-xs text-foreground/40 font-mono leading-none scale-95 origin-right">
-                                v{APP_VERSION}
+
+                            <div className="mt-4 flex flex-col gap-2.5 border-t border-slate-200/80 pt-3 pb-1 dark:border-white/6">
+                                <div className="flex items-center justify-between">
+                                    <a href="https://github.com/nobnobz/omni-snapshot-editor" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-foreground/62 hover:text-foreground transition-colors font-medium">
+                                        <Github className="w-3.5 h-3.5" />
+                                        GitHub
+                                    </a>
+                                    <div className="scale-[0.80] origin-right -my-1">
+                                        <ThemeToggle />
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <div className="text-xs text-foreground/36 font-medium leading-none scale-95 origin-left">
+                                        Made by Bot-Bid-Raiser
+                                    </div>
+                                    <div className="text-xs text-foreground/36 font-mono leading-none scale-95 origin-right">
+                                        v{APP_VERSION}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -537,7 +642,7 @@ export function MainEditor() {
 
             {/* Export Modal */}
             <Dialog open={isExportModalOpen} onOpenChange={setIsExportModalOpen}>
-                <DialogContent className="max-w-md bg-card border-border text-foreground">
+                <DialogContent className="max-w-md">
                     <DialogHeader>
                         <DialogTitle>Export Configuration</DialogTitle>
                     </DialogHeader>
@@ -549,7 +654,7 @@ export function MainEditor() {
                                 value={setupName}
                                 onChange={(e) => setSetupName(e.target.value)}
                                 placeholder="E.g., My Awesome Setup"
-                                className="h-10 sm:h-9 text-base sm:text-sm bg-background border-border focus-visible:ring-blue-500"
+                                className="h-10 sm:h-9 text-base sm:text-sm bg-background border-border focus-visible:ring-ring/50"
                             />
                             <p className="text-xs text-foreground/70">
                                 The export will include a new timestamp automatically.
@@ -557,7 +662,7 @@ export function MainEditor() {
                         </div>
                     </div>
                     <DialogFooter className="mt-6">
-                        <Button variant="ghost" onClick={() => setIsExportModalOpen(false)} className="hover:bg-accent hover:text-accent-foreground border border-transparent">
+                        <Button variant="outline" onClick={() => setIsExportModalOpen(false)} className={editorAction.secondary}>
                             Cancel
                         </Button>
                         <Button onClick={confirmDownload} className={editorAction.primary}>
@@ -572,94 +677,96 @@ export function MainEditor() {
                 ref={scrollContainerRef}
                 className="flex-1 overflow-x-hidden lg:overflow-y-auto scroll-smooth relative z-10 pb-safe-bottom"
             >
-                {/* Desktop Static Header (Not Sticky) */}
-                <div className="hidden lg:flex items-center justify-between px-8 py-10 border-b border-border bg-gradient-to-b from-card to-transparent">
-                    <div>
-                        <h2 className="text-3xl font-black text-foreground tracking-tight">Configuration Editor</h2>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <Button
-                            variant="ghost"
-                            onClick={handleBackToStart}
-                            className="text-foreground/70 hover:text-foreground hover:bg-accent transition-colors gap-2 px-4 h-10"
-                        >
-                            <RotateCcw className="w-4 h-4" />
-                            Back to Start
-                        </Button>
-                    </div>
-                </div>
+                <div className="mx-auto max-w-5xl px-4 py-8 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:p-10 lg:max-w-6xl lg:px-8 xl:max-w-[76rem] xl:px-6 space-y-10">
+                    <section className="lg:hidden pt-[calc(0.35rem+env(safe-area-inset-top))]">
+                        <div className="rounded-[1.35rem] border border-slate-200/72 bg-[linear-gradient(180deg,rgba(255,255,255,0.56),rgba(248,250,252,0.44))] p-3.5 shadow-[0_18px_38px_rgba(15,23,42,0.065)] backdrop-blur-md dark:border-white/8 dark:bg-[linear-gradient(180deg,rgba(21,24,31,0.92),rgba(13,16,22,0.9))] dark:shadow-[0_18px_38px_rgba(2,6,23,0.14)]">
+                            <div className="flex items-start gap-2.5">
+                                <h1 className="min-w-0 flex flex-1 items-center gap-2.5 text-base font-black tracking-tight text-primary-foreground">
+                                    <div className="h-12 w-12 flex items-center justify-center shrink-0 relative">
+                                        {/* eslint-disable-next-line @next/next/no-img-element -- Static local logo; preserving existing rendering behavior. */}
+                                        <img src="/omni-snapshot-editor/clown.png" alt="Logo" className="w-full h-full object-contain relative z-10 scale-125" />
+                                    </div>
+                                    <div className="flex min-w-0 flex-col">
+                                        <span className="leading-none text-foreground truncate">Omni Snapshot</span>
+                                        <span className="mt-0.5 text-xs font-bold uppercase tracking-widest text-primary dark:text-primary">Manager</span>
+                                    </div>
+                                </h1>
 
-                <header
-                className={`sticky top-0 z-50 w-full border-b transition-all duration-300 transform pt-safe-top flex items-center px-4 h-[calc(4rem+env(safe-area-inset-top))] lg:hidden
-                    ${isScrolled ? "border-transparent bg-transparent backdrop-blur-none" : "border-border/40 bg-card/55 backdrop-blur-xl"}
-                    ${isHeaderVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"}
-                `}
-            >
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setIsSidebarOpen(true)}
-                        className="text-foreground/70 hover:text-white lg:hidden h-9 w-9 shrink-0"
-                        aria-label="Open sidebar"
-                    >
-                        <Menu className="w-5 h-5" />
-                    </Button>
+                                <div className="flex shrink-0 items-center gap-1">
+                                    <Button
+                                        variant="ghost"
+                                        onClick={() => setIsSectionsOpen(true)}
+                                        className="h-7 rounded-full px-2 text-[11px] font-medium text-foreground/70 hover:bg-muted/60 hover:text-foreground"
+                                    >
+                                        <Menu className="h-3.5 w-3.5 text-primary" />
+                                        <span className="ml-1 hidden min-[430px]:inline">Sections</span>
+                                    </Button>
+                                    <DropdownMenu open={isMobileDocsMenuOpen} onOpenChange={setIsMobileDocsMenuOpen}>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button
+                                                variant="ghost"
+                                                className="h-7 rounded-full px-2 text-[11px] font-medium text-foreground/70 hover:bg-primary/10 hover:text-foreground"
+                                            >
+                                                <BookOpen className="h-3.5 w-3.5 text-primary" />
+                                                <span className="ml-1 hidden min-[430px]:inline">Docs</span>
+                                                <ChevronDown
+                                                    className={cn(
+                                                        "ml-1 h-3 w-3 text-primary/80 transition-transform duration-200",
+                                                        isMobileDocsMenuOpen && "rotate-180"
+                                                    )}
+                                                />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" sideOffset={8} className="w-52">
+                                            <DropdownMenuItem
+                                                onClick={() => openGuide("install")}
+                                                className="cursor-pointer rounded-xl px-3 py-2.5 transition-colors data-[highlighted]:bg-primary/10"
+                                            >
+                                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-primary/28 bg-primary/10 text-primary dark:border-primary/26 dark:bg-primary/12">
+                                                    <UploadCloud className="w-4 h-4 text-current" />
+                                                </span>
+                                                How to Install
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                onClick={() => openGuide("update")}
+                                                className="cursor-pointer rounded-xl px-3 py-2.5 transition-colors data-[highlighted]:bg-primary/10"
+                                            >
+                                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-primary/28 bg-primary/10 text-primary dark:border-primary/26 dark:bg-primary/12">
+                                                    <RotateCcw className="w-4 h-4 text-current" />
+                                                </span>
+                                                How to Update
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                onClick={() => openGuide("use")}
+                                                className="cursor-pointer rounded-xl px-3 py-2.5 transition-colors data-[highlighted]:bg-primary/10"
+                                            >
+                                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-primary/28 bg-primary/10 text-primary dark:border-primary/26 dark:bg-primary/12">
+                                                    <BookOpen className="w-4 h-4 text-current" />
+                                                </span>
+                                                How to Use
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                            </div>
 
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 flex items-center justify-center shrink-0 relative">
-                            {/* eslint-disable-next-line @next/next/no-img-element -- Static local logo; preserving existing rendering behavior. */}
-                            <img src="/omni-snapshot-editor/clown.png" alt="Logo" className="w-full h-full object-contain relative z-10 scale-125" />
+                            <div className="mt-2.5 flex items-center gap-2 rounded-[0.95rem] border border-slate-200/80 bg-white/42 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] dark:border-white/8 dark:bg-background/26 dark:shadow-none">
+                                <FileJson className="h-3.5 w-3.5 shrink-0 text-primary/78" />
+                                <span className="min-w-0 flex-1 truncate text-[11px] font-mono text-foreground/58">{fileName}</span>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={handleBackToStart}
+                                    className="h-7 w-7 shrink-0 rounded-full text-foreground/62 hover:bg-muted/30 hover:text-foreground"
+                                    title="Back to start"
+                                    aria-label="Back to start"
+                                >
+                                    <LogOut className="h-3.5 w-3.5" />
+                                </Button>
+                            </div>
                         </div>
-                        <div className="flex flex-col">
-                            <span className="leading-none text-foreground font-bold text-sm sm:text-sm">Omni Snapshot</span>
-                            <span className="text-xs text-blue-400 font-bold uppercase tracking-wide mt-0.5">Manager</span>
-                        </div>
-                    </div>
+                    </section>
 
-                    <div className="flex-1" />
-
-                    <div className="flex items-center gap-1 sm:gap-3">
-                        <Button
-                            onClick={handleDownloadClick}
-                            size="sm"
-                            className="h-9 px-2.5 sm:px-4 flex items-center justify-center font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20"
-                        >
-                            <Download className="w-4 h-4 sm:mr-2" />
-                            <span className="hidden sm:inline">Download</span>
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleCopy}
-                            className={`h-9 min-w-[36px] sm:w-[100px] flex items-center justify-center transition-all duration-300 border-border/60 hover:bg-muted px-2.5 sm:px-3 ${isCopied ? 'border-emerald-500/50 text-emerald-500 bg-emerald-500/5' : 'text-foreground/80'}`}
-                            title="Copy to Clipboard"
-                        >
-                            {isCopied ? (
-                                <>
-                                    <Check className="w-4 h-4 sm:mr-2" />
-                                    <span className="hidden sm:inline">Copied!</span>
-                                </>
-                            ) : (
-                                <>
-                                    <Copy className="w-4 h-4 sm:mr-2" />
-                                    <span className="hidden sm:inline">Copy</span>
-                                </>
-                            )}
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={handleBackToStart}
-                            className="h-9 w-9 text-foreground/70 hover:text-foreground hover:bg-muted"
-                            title="Back to Start"
-                            aria-label="Back to start"
-                        >
-                            <RotateCcw className="h-4 w-4" />
-                        </Button>
-                    </div>
-                </header>
-
-                <div className="max-w-5xl mx-auto px-4 py-8 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:p-10 space-y-10">
                     {uiNotice && (
                         <div
                             className={cn(
@@ -712,7 +819,7 @@ export function MainEditor() {
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            className="text-foreground/70 hover:text-white h-8 px-3 text-xs hover:bg-muted transition-colors gap-1.5"
+                                            className="text-foreground/70 hover:text-foreground h-8 px-3 text-xs hover:bg-muted transition-colors gap-1.5"
                                             onClick={() => handleSectionExport(section.id, section.title, section.keys)}
                                         >
                                             <Download className="w-3.5 h-3.5" />
@@ -729,7 +836,7 @@ export function MainEditor() {
                                                     Import your catalogs by uploading an AIOMetadata config file or pasting the JSON. To export your catalogs in AIOMetadata, go to Catalogs &gt; Share Setup.
                                                 </p>
                                                 <div className={cn("rounded-xl p-4 text-sm flex gap-4 items-start mt-4 shadow-sm border", editorNoticeTone.info)}>
-                                                    <Info className="w-5 h-5 shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" />
+                                                    <Info className="w-5 h-5 shrink-0 mt-0.5 text-primary dark:text-primary" />
                                                     <p className="leading-relaxed">
                                                         <span className="font-bold">Note:</span> You can skip this step if you don’t want to import additional catalogs from your AIOMetadata setup.
                                                     </p>
@@ -750,10 +857,9 @@ export function MainEditor() {
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 {/* File Upload card */}
-                                                <div className="group relative bg-card border border-border hover:border-border/80 rounded-xl p-4 transition-all duration-300 flex flex-col h-full overflow-hidden shadow-sm">
-                                                    <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                                                <div className={cn(editorSurface.card, "p-4 flex flex-col h-full overflow-hidden")}>
                                                     <div className="flex items-start gap-3 mb-auto relative z-10">
-                                                        <div className="p-2.5 bg-blue-500/10 border border-blue-500/20 rounded-xl text-blue-400">
+                                                        <div className="p-2.5 bg-primary/10 border border-primary/20 rounded-xl text-primary">
                                                             <UploadCloud className="w-5 h-5" />
                                                         </div>
                                                         <div>
@@ -793,14 +899,15 @@ export function MainEditor() {
                                                             }}
                                                             onDrop={handleFallbackDrop}
                                                             className={cn(
-                                                                "flex-1 flex flex-col items-center justify-center border-2 border-dashed rounded-lg mb-3 bg-muted/5 transition-colors cursor-pointer group/drop min-h-[96px]",
+                                                                `flex-1 flex flex-col items-center justify-center border-2 rounded-lg mb-3 ${editorHover.transition} cursor-pointer group/drop min-h-[96px]`,
+                                                                editorSurface.dropzone,
                                                                 isFallbackDropActive
-                                                                    ? "border-blue-500 bg-blue-500/10"
-                                                                    : "border-border/60 hover:border-blue-500/40"
+                                                                    ? "border-primary/70 bg-primary/10 shadow-[0_0_0_1px_rgba(15,23,42,0.1),inset_0_1px_0_rgba(255,255,255,0.05)]"
+                                                                    : "hover:border-border/70"
                                                             )}
                                                         >
-                                                            <UploadCloud className={cn("w-5 h-5 mb-1.5 transition-all", isFallbackDropActive ? "text-blue-500 opacity-100" : "opacity-40 group-hover/drop:opacity-70 group-hover/drop:text-blue-500")} />
-                                                            <span className={cn("text-xs font-medium transition-all", isFallbackDropActive ? "text-blue-500 opacity-100" : "opacity-40 group-hover/drop:opacity-70 group-hover/drop:text-blue-500")}>Drop JSON file here</span>
+                                                            <UploadCloud className={cn("w-5 h-5 mb-1.5 transition-colors", isFallbackDropActive ? "text-primary" : "text-foreground/36 group-hover/drop:text-foreground/58")} />
+                                                            <span className={cn("text-xs font-medium transition-colors", isFallbackDropActive ? "text-primary" : "text-foreground/44 group-hover/drop:text-foreground/64")}>Drop JSON file here</span>
                                                         </div>
                                                         <input
                                                             type="file"
@@ -812,7 +919,7 @@ export function MainEditor() {
                                                         />
                                                         <label
                                                             htmlFor="main-fallback-upload"
-                                                            className="w-full inline-flex cursor-pointer items-center justify-center rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white h-9 px-4 border border-transparent shadow-[0_0_15px_rgba(37,99,235,0.2)] transition-all duration-200"
+                                                            className="w-full inline-flex cursor-pointer items-center justify-center rounded-lg text-sm font-medium bg-primary hover:bg-primary/92 text-primary-foreground h-9 px-4 border border-transparent shadow-[0_0_15px_rgba(2,6,23,0.2)] transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 ease-out"
                                                         >
                                                             <UploadCloud className="w-4 h-4 mr-2" />
                                                             Select JSON File
@@ -821,10 +928,9 @@ export function MainEditor() {
                                                 </div>
 
                                                 {/* Paste JSON card */}
-                                                <div className="group relative bg-card border border-border hover:border-border/80 rounded-xl p-4 transition-all duration-300 flex flex-col h-full overflow-hidden shadow-sm">
-                                                    <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                                                <div className={cn(editorSurface.card, "p-4 flex flex-col h-full overflow-hidden")}>
                                                     <div className="flex items-start gap-3 mb-3 relative z-10">
-                                                        <div className="p-2.5 bg-blue-500/10 border border-blue-500/20 rounded-xl text-blue-500">
+                                                        <div className="p-2.5 bg-primary/10 border border-primary/20 rounded-xl text-primary">
                                                             <ClipboardPaste className="w-5 h-5" />
                                                         </div>
                                                         <div>
@@ -838,7 +944,7 @@ export function MainEditor() {
                                                     <div className="flex flex-col gap-2 mt-auto relative z-10">
                                                         <Textarea
                                                             placeholder="Paste your JSON configuration here..."
-                                                            className="min-h-[60px] text-base bg-muted/30 border-input focus:border-blue-500/50 text-foreground resize-none font-mono placeholder:text-foreground/50 custom-scrollbar rounded-lg"
+                                                            className={cn(editorSurface.field, "min-h-[60px] text-base focus:border-ring/55 text-foreground resize-none font-mono placeholder:text-foreground/50 custom-scrollbar rounded-lg")}
                                                             value={pastedJson}
                                                             onChange={(e) => setPastedJson(e.target.value)}
                                                         />
@@ -846,7 +952,7 @@ export function MainEditor() {
                                                             type="button"
                                                             size="sm"
                                                             variant="secondary"
-                                                            className="w-full text-sm h-9 bg-blue-600 hover:bg-blue-500 text-white border-none rounded-lg shadow-[0_0_15px_rgba(37,99,235,0.2)] transition-all duration-200"
+                                                            className="w-full text-sm h-9 bg-primary hover:bg-primary/92 text-primary-foreground border-none rounded-lg shadow-[0_0_15px_rgba(2,6,23,0.2)] transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 ease-out"
                                                             onClick={handlePasteImport}
                                                             disabled={!pastedJson.trim()}
                                                         >
@@ -877,7 +983,7 @@ export function MainEditor() {
                                         </div>
                                     ) : section.id === "patterns" ? (
                                         <div className="space-y-5">
-                                            <div className="bg-amber-500/10 border border-amber-500/20 p-3.5 rounded-xl flex items-start gap-3 shadow-sm mt-2">
+                                            <div className="bg-amber-500/10 border border-amber-500/20 p-3.5 rounded-xl flex items-start gap-3 shadow-[0_8px_18px_rgba(245,158,11,0.06)] mt-2">
                                                 <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                                                 <p className="text-sm text-amber-600 dark:text-amber-500/90 leading-relaxed font-medium">
                                                     Only edit the patterns if you fully understand how they work. Import from template to safely get the latest visual tags.
@@ -886,7 +992,7 @@ export function MainEditor() {
                                             <div className="flex flex-wrap gap-2 items-center">
                                                 <Button
                                                     onClick={() => setIsImportPatternsOpen(true)}
-                                                    className="mt-3 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20"
+                                                    className="mt-3 bg-primary hover:bg-primary/92 text-primary-foreground shadow-lg shadow-primary/20"
                                                 >
                                                     <UploadCloud className="w-5 h-5 mr-2" />
                                                     Import from Template
@@ -904,17 +1010,6 @@ export function MainEditor() {
                                                         data={currentValues[key]}
                                                         path={[key]}
                                                         searchQuery={searchTerm}
-                                                    />
-                                                ))}
-                                            </div>
-                                        </div>
-                                    ) : section.id === "ordering" ? (
-                                        <div className="space-y-6">
-                                            <div className="space-y-4">
-                                                {keysToRender.map(key => (
-                                                    <OrderingEditor
-                                                        key={key}
-                                                        configKey={key}
                                                     />
                                                 ))}
                                             </div>
@@ -941,9 +1036,119 @@ export function MainEditor() {
                 </div>
             </main>
 
+            <Dialog open={isSectionsOpen} onOpenChange={setIsSectionsOpen}>
+                <DialogContent
+                    showCloseButton={false}
+                    className="top-auto left-0 right-0 bottom-0 max-w-none translate-x-0 translate-y-0 rounded-t-[2rem] rounded-b-none border-x-0 border-b-0 border-border/70 bg-popover/96 p-0 shadow-[0_-20px_56px_rgba(2,6,23,0.4)] backdrop-blur-2xl sm:max-w-none dark:bg-popover/94"
+                >
+                    <DialogHeader className="sr-only">
+                        <DialogTitle>Sections</DialogTitle>
+                        <DialogDescription>Jump to a section of the editor.</DialogDescription>
+                    </DialogHeader>
+                    <div className="px-4 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+                        <div className="mx-auto mb-2.5 h-1.5 w-10 rounded-full bg-white/12" />
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <h2 className="text-lg font-black tracking-tight text-foreground">Sections</h2>
+                            </div>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setIsSectionsOpen(false)}
+                                className={`h-9 w-9 rounded-full ${editorHover.iconAction}`}
+                                aria-label="Close sections"
+                            >
+                                <span className="text-xl leading-none">x</span>
+                            </Button>
+                        </div>
+                        <div className="mt-3 overflow-hidden rounded-[1.15rem] border border-white/8 bg-white/4">
+                            {sections.map((section) => (
+                                <button
+                                    key={section.id}
+                                    type="button"
+                                    onClick={() => handleMobileSectionSelect(section.id)}
+                                    className={cn(
+                                        "flex w-full items-center justify-between border-b border-white/6 px-4 py-3 text-left transition-colors last:border-b-0",
+                                        activeSectionId === section.id
+                                            ? "bg-primary/10"
+                                            : "hover:bg-muted/40"
+                                    )}
+                                >
+                                    <div className="flex items-center gap-2.5">
+                                        <span
+                                            className={cn(
+                                                "h-2 w-2 rounded-full transition-colors",
+                                                activeSectionId === section.id ? "bg-primary" : "bg-transparent border border-white/14"
+                                            )}
+                                        />
+                                        <p
+                                            className={cn(
+                                                "text-[14px] font-semibold tracking-tight",
+                                                activeSectionId === section.id ? "text-foreground" : "text-foreground/88"
+                                            )}
+                                        >
+                                            {section.title}
+                                        </p>
+                                    </div>
+                                    <span className={cn("text-base", activeSectionId === section.id ? "text-primary" : "text-foreground/34")}>›</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <div className="pointer-events-none fixed bottom-0 right-0 z-30 px-4 pb-[calc(0.9rem+env(safe-area-inset-bottom))] lg:hidden">
+                <div className="pointer-events-auto flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.78),rgba(226,232,240,0.72))] p-1.5 shadow-[0_14px_34px_rgba(15,23,42,0.14)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[linear-gradient(180deg,rgba(255,255,255,0.62),rgba(226,232,240,0.56))] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(24,24,27,0.74),rgba(10,10,12,0.88))] dark:shadow-[0_14px_34px_rgba(2,6,23,0.26)] dark:supports-[backdrop-filter]:bg-[linear-gradient(180deg,rgba(24,24,27,0.56),rgba(10,10,12,0.74))]">
+                        <Button
+                            onClick={handleDownloadClick}
+                            className="h-11 rounded-full bg-primary px-5 font-bold text-primary-foreground shadow-[0_10px_24px_rgba(2,6,23,0.22)] hover:bg-primary/92"
+                        >
+                            <Download className="w-4 h-4 mr-2" />
+                            Download
+                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    className="size-11 rounded-full border-slate-200/80 bg-white/42 px-0 text-foreground/72 shadow-none hover:bg-muted/80 dark:border-white/10 dark:bg-white/6 dark:hover:bg-muted/50"
+                                    title="More actions"
+                                    aria-label="More actions"
+                                >
+                                    <MoreHorizontal className="w-4 h-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent side="top" align="end" className="mb-2 w-52 rounded-[1.25rem]">
+                                <DropdownMenuItem
+                                    onClick={handleCopy}
+                                    className={`cursor-pointer rounded-xl px-3 py-2.5 ${isCopied ? "text-emerald-500 focus:text-emerald-500 focus:bg-emerald-500/10" : ""}`}
+                                >
+                                    {isCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                    {isCopied ? "Copied to Clipboard" : "Copy JSON"}
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator className="mx-1 my-1 bg-border/60" />
+                                <DropdownMenuItem
+                                    onClick={handleBackToStart}
+                                    className="cursor-pointer rounded-xl px-3 py-2.5"
+                                    variant="destructive"
+                                >
+                                    <RotateCcw className="w-4 h-4" />
+                                    Back to Start
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+            </div>
+
+            <Dialog open={isGuideDialogOpen} onOpenChange={setIsGuideDialogOpen}>
+                {activeGuide === "install" && <TemplateGuide />}
+                {activeGuide === "update" && <UpdateGuide />}
+                {activeGuide === "use" && <Documentation onOpenInstallGuide={() => setActiveGuide("install")} />}
+            </Dialog>
+
             {/* Exit Confirmation Dialog */}
             <AlertDialog open={isExitConfirmOpen} onOpenChange={setIsExitConfirmOpen}>
-                <AlertDialogContent className="bg-card border-border text-foreground">
+                <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle className="text-xl font-bold">Unsaved Changes?</AlertDialogTitle>
                         <AlertDialogDescription className="text-foreground/70">
@@ -967,7 +1172,7 @@ export function MainEditor() {
 
             {/* Reset Catalog Names Confirmation */}
             <AlertDialog open={isResetConfirmOpen} onOpenChange={setIsResetConfirmOpen}>
-                <AlertDialogContent className="bg-card border-border text-foreground">
+                <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle className="text-xl font-bold">Reset Catalog Names?</AlertDialogTitle>
                         <AlertDialogDescription className="text-foreground/70">

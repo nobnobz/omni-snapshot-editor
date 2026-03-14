@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { PlusSquare, Share, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const DISMISS_STORAGE_KEY = "omni_ios_install_hint_dismissed_until";
 const DISMISS_DAYS = 30;
@@ -41,7 +42,11 @@ function isDismissed(): boolean {
     }
 }
 
-export function IosInstallHint() {
+type IosInstallHintProps = {
+    avoidBottomDock?: boolean;
+};
+
+export function IosInstallHint({ avoidBottomDock = false }: IosInstallHintProps) {
     const [visible, setVisible] = useState(() => {
         if (typeof window === "undefined" || typeof navigator === "undefined") {
             return false;
@@ -62,10 +67,17 @@ export function IosInstallHint() {
     if (!visible) return null;
 
     return (
-        <div className="fixed inset-x-3 bottom-3 z-[70] pb-safe sm:hidden">
+        <div
+            className={cn(
+                "fixed inset-x-3 z-[70] pb-safe sm:hidden",
+                avoidBottomDock
+                    ? "bottom-[calc(5.4rem+env(safe-area-inset-bottom))]"
+                    : "bottom-3"
+            )}
+        >
             <div className="mx-auto max-w-md rounded-2xl border border-border/80 bg-card/95 shadow-2xl backdrop-blur">
                 <div className="flex items-start gap-3 p-4">
-                    <div className="mt-0.5 rounded-lg border border-blue-500/30 bg-blue-500/10 p-2 text-blue-400">
+                    <div className="mt-0.5 rounded-lg border border-primary/30 bg-primary/10 p-2 text-primary">
                         <Share className="h-4 w-4" />
                     </div>
 
@@ -92,7 +104,7 @@ export function IosInstallHint() {
                         variant="ghost"
                         size="icon"
                         onClick={dismiss}
-                        className="h-8 w-8 shrink-0 text-foreground/70 hover:bg-muted"
+                        className="h-8 w-8 shrink-0 text-foreground/70 hover:text-foreground hover:bg-accent/70 dark:hover:bg-accent/55"
                         aria-label="Dismiss install hint"
                     >
                         <X className="h-4 w-4" />

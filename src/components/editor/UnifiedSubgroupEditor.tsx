@@ -54,7 +54,8 @@ import { CreateGroupModal } from "./CreateGroupModal";
 import { AddToGroupModal } from "./AddToGroupModal";
 import { ImportSetupModal } from "./ImportSetupModal";
 import { TrashBin } from "./TrashBin";
-import { formatDisplayName, resolveCatalogName, ensureCatalogPrefix } from "@/lib/utils";
+import { cn, formatDisplayName, resolveCatalogName, ensureCatalogPrefix } from "@/lib/utils";
+import { editorHover, editorSurface } from "@/components/editor/ui/style-contract";
 import { CATALOG_FALLBACKS } from "@/lib/catalog-fallbacks";
 import { Label } from "@/components/ui/label";
 
@@ -62,6 +63,7 @@ const stringArraysEqual = (a: string[], b: string[]) => (
     a.length === b.length && a.every((item, idx) => item === b[idx])
 );
 const EMPTY_STRING_ARRAY: string[] = [];
+type ThumbnailAspect = "portrait" | "landscape" | "square";
 
 // Catalog reorder is vertical-only; locking X prevents visible sideways jumps while dragging.
 const restrictVerticalDrag: Modifier = ({ transform }) => ({
@@ -70,10 +72,13 @@ const restrictVerticalDrag: Modifier = ({ transform }) => ({
 });
 
 const subgroupCountBadgeClass =
-    "ml-2 inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded-full border border-border/70 bg-muted/70 px-1.5 text-[10px] font-semibold tabular-nums leading-none text-foreground/65 shadow-sm transition-colors group-hover/subgroup:border-blue-500/25 group-hover/subgroup:bg-blue-500/8 group-hover/subgroup:text-blue-700 dark:group-hover/subgroup:text-blue-300";
+    "ml-2 inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded-full border border-slate-200/70 bg-slate-100/75 px-1.5 text-[10px] font-semibold tabular-nums leading-none text-foreground/62 shadow-sm transition-colors dark:border-white/10 dark:bg-white/[0.045] dark:text-foreground/58";
 
 const subgroupCountInlineClass =
-    "inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded-full border border-border/60 bg-muted/60 px-1.5 text-[10px] font-semibold tabular-nums leading-none text-foreground/60 shadow-sm";
+    "inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded-full border border-slate-200/65 bg-slate-100/70 px-1.5 text-[10px] font-semibold tabular-nums leading-none text-foreground/58 shadow-sm dark:border-white/10 dark:bg-white/[0.045] dark:text-foreground/56";
+
+const buildSubgroupAnchorId = (parentUUID: string, subgroupName: string) =>
+    `subgroup-node-${parentUUID}-${subgroupName.toLowerCase().replace(/[^a-z0-9_-]+/g, "-")}`;
 
 const focusSearchInput = (input: HTMLInputElement | null) => {
     if (!input) return;
@@ -150,13 +155,13 @@ function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => vo
         <div
             ref={setNodeRef}
             style={style}
-            className={`flex items-center gap-3 p-2.5 border rounded-md mb-2 group/cat transition-[background-color,border-color,opacity,box-shadow] duration-150
-                ${isDragging ? "opacity-15 border-border/70 bg-muted/45 border-dashed shadow-none" : "bg-background/80 border-border/60 hover:border-border/90 hover:bg-background/95 shadow-sm"}`}
+            className={`flex items-center gap-3 p-2.5 border rounded-xl mb-2 group/cat transition-[background-color,border-color,opacity,box-shadow] duration-150
+                ${isDragging ? "opacity-15 border-border/70 bg-muted/45 border-dashed shadow-none" : `${editorSurface.field} hover:border-slate-300/85 dark:hover:border-white/12 shadow-[0_8px_20px_rgba(15,23,42,0.05)] dark:shadow-[0_10px_22px_rgba(2,6,23,0.18)]`}`}
         >
             <button
                 {...attributes}
                 {...listeners}
-                className={`cursor-grab shrink-0 p-2 rounded-md transition-colors select-none ${isDragging ? "text-foreground/75" : "text-foreground/60 hover:text-foreground hover:bg-muted/70"}`}
+                className={`cursor-grab shrink-0 p-2 rounded-lg transition-colors select-none ${isDragging ? "text-foreground/75" : "text-foreground/55 hover:text-foreground hover:bg-muted/60 dark:hover:bg-muted/40"}`}
                 style={{ touchAction: 'none' }}
             >
                 <GripVertical className="h-5 w-5" />
@@ -169,7 +174,7 @@ function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => vo
                 {displayName !== id && (
                     <span
                         title={id}
-                        className="hidden sm:inline-block text-xs text-foreground/60 font-mono bg-background/70 px-1.5 py-0.5 rounded-sm border border-border/70 opacity-0 group-hover/cat:opacity-100 transition-opacity truncate max-w-[min(42vw,24rem)]"
+                        className="hidden sm:inline-block text-xs text-foreground/60 font-mono bg-white/55 dark:bg-white/[0.045] px-1.5 py-0.5 rounded-md border border-border/70 opacity-0 group-hover/cat:opacity-100 transition-opacity truncate max-w-[min(42vw,24rem)]"
                     >
                         {id}
                     </span>
@@ -182,7 +187,7 @@ function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => vo
                         variant="ghost"
                         size="icon"
                         onClick={(e) => { e.stopPropagation(); onRemove(); }}
-                        className="h-9 w-9 text-foreground/70 hover:text-red-400 hover:bg-red-500/10 transition-colors rounded-md border border-transparent hover:border-red-500/30"
+                        className={`h-9 w-9 ${editorHover.iconDanger} rounded-md`}
                         aria-label="Remove catalog from subgroup"
                     >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -196,7 +201,7 @@ function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => vo
 // ----------------------------------------------------------------------
 // 2. Sortable Subgroup Node containing Catalogs & URL
 // ----------------------------------------------------------------------
-function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded: propIsExpanded, onToggle }: { subgroupName: string, parentUUID: string, onUnassign?: (name: string, parentId: string) => void, isExpanded?: boolean, onToggle?: () => void }) {
+function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded: propIsExpanded, onToggle, rowAnchorId }: { subgroupName: string, parentUUID: string, onUnassign?: (name: string, parentId: string) => void, isExpanded?: boolean, onToggle?: () => void, rowAnchorId?: string }) {
     const { currentValues, updateValue, renameCatalogGroup, unassignCatalogGroup, catalogs, customFallbacks } = useConfig();
 
     // Sortable Hook for the subgroup itself
@@ -223,6 +228,8 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
 
     const [subgroupCatalogs, setSubgroupCatalogs] = useState<string[]>(catalogsList);
     const [urlInput, setUrlInput] = useState(imageUrl);
+    const [thumbAspect, setThumbAspect] = useState<ThumbnailAspect>("square");
+    const [thumbLoadError, setThumbLoadError] = useState(false);
     const [isRenaming, setIsRenaming] = useState(false);
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
     const [catalogSearch, setCatalogSearch] = useState("");
@@ -297,19 +304,28 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
     const isExpanded = propIsExpanded !== undefined ? propIsExpanded : localExpanded;
     const toggleExpanded = onToggle || (() => setLocalExpanded(!localExpanded));
 
-    const parentName = currentValues.main_catalog_groups?.[parentUUID]?.name || "";
-    const isLandscape = ["discover", "streaming services", "decades", "collection", "collections"].includes(parentName.toLowerCase());
-
     React.useEffect(() => {
         setSubgroupCatalogs(prev => (stringArraysEqual(prev, catalogsList) ? prev : catalogsList));
         setUrlInput(prev => (prev === imageUrl ? prev : imageUrl));
     }, [catalogsList, imageUrl]);
+
+    React.useEffect(() => {
+        setThumbAspect("square");
+        setThumbLoadError(false);
+    }, [urlInput]);
 
     const handleUrlBlur = () => {
         if (urlInput !== imageUrl) {
             updateValue(["catalog_group_image_urls", subgroupName], urlInput);
         }
     };
+
+    const hasThumbPreview = /^https?:\/\//i.test(urlInput.trim()) && !thumbLoadError;
+    const thumbFrameClass = thumbAspect === "landscape"
+        ? "h-10 w-16"
+        : thumbAspect === "portrait"
+            ? "h-14 w-10"
+            : "h-10 w-10";
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -346,6 +362,12 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
         ? resolveCatalogName(activeCatalogId, currentValues.custom_catalog_names || {})
         : "";
 
+    const handleHeaderClick = (event: React.MouseEvent<HTMLDivElement>) => {
+        const target = event.target as HTMLElement;
+        if (target.closest("[data-subgroup-no-toggle='true']")) return;
+        toggleExpanded();
+    };
+
     const handleAddCatalog = (e: Event, catalogId: string) => {
         e.preventDefault();
         if (!catalogId.trim()) return;
@@ -358,37 +380,70 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
     };
 
     return (
-        <div ref={setNodeRef} style={style} className={`border border-border shadow-sm hover:shadow-md rounded-lg overflow-hidden mb-3 bg-card/40 backdrop-blur-sm transition-all hover:border-border/60 group/subgroup ${isDragging ? "opacity-50 border-blue-500 scale-[1.01] shadow-2xl" : ""}`}>
+        <div id={rowAnchorId} ref={setNodeRef} style={style} className={`${editorSurface.card} rounded-xl overflow-hidden mb-3 ${isDragging ? "opacity-50 border-primary scale-[1.01] shadow-2xl" : ""}`}>
             {/* Header: Drag Handle + Subgroup Name */}
-            <div className={`flex items-center gap-3 p-3 bg-muted/40 backdrop-blur-sm border-border/40 ${isExpanded ? "border-b border-border/50" : ""}`}>
+            <div
+                onClick={handleHeaderClick}
+                className={`group/subgroup flex items-stretch gap-3 p-3 bg-[linear-gradient(180deg,rgba(255,255,255,0.22),rgba(248,250,252,0.14))] dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.025),rgba(255,255,255,0.012))] backdrop-blur-sm ${isExpanded ? "border-b border-slate-200/75 dark:border-white/8" : ""}`}
+            >
                 <button
                     {...attributes}
                     {...listeners}
-                    className="cursor-grab hover:text-foreground text-foreground/70 p-1.5 rounded-md hover:bg-muted transition-colors select-none"
+                    data-subgroup-no-toggle="true"
+                    onClick={(e) => e.stopPropagation()}
+                    className={`cursor-grab text-foreground/65 p-1.5 rounded-lg transition-colors select-none ${editorHover.softAction}`}
                     style={{ touchAction: 'none' }}
                 >
                     <GripVertical className="h-5 w-5" />
                 </button>
-                <div className="flex-1 min-w-0 font-bold text-sm text-foreground cursor-pointer flex items-center select-none tracking-tight" onClick={toggleExpanded}>
+                <button
+                    type="button"
+                    data-subgroup-no-toggle="true"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        toggleExpanded();
+                    }}
+                    className="flex flex-1 min-w-0 self-stretch items-center gap-0 rounded-md px-1 py-2 text-left font-bold text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                    aria-expanded={isExpanded}
+                    aria-label={`Toggle subgroup ${formatDisplayName(subgroupName)}`}
+                >
                     {isExpanded ? <ChevronDown className="w-4 h-4 mr-2 text-foreground/70 group-hover:text-foreground transition-colors" /> : <ChevronRight className="w-4 h-4 mr-2 text-foreground/70 group-hover:text-foreground transition-colors" />}
-                    <span className="truncate">{formatDisplayName(subgroupName)}</span>
+                    <span className="truncate transition-colors group-hover/subgroup:text-primary dark:group-hover/subgroup:text-primary">{formatDisplayName(subgroupName)}</span>
                     <Badge
                         variant="outline"
                         className={subgroupCountBadgeClass}
                     >
                         {subgroupCatalogs.length}
                     </Badge>
-                </div>
+                </button>
 
                 {/* Action Buttons: Desktop Header, Mobile hidden here (moved to layout section below) */}
-                <div className="hidden sm:flex items-center gap-1 opacity-80 hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" onClick={() => setIsRenaming(true)} className="h-9 w-9 text-foreground/70 hover:text-foreground hover:bg-muted transition-colors rounded-md border border-transparent hover:border-border/50" title="Rename" aria-label="Rename subgroup">
+                <div data-subgroup-no-toggle="true" className="hidden sm:flex items-center gap-1 opacity-80 hover:opacity-100 transition-opacity">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setIsRenaming(true);
+                        }}
+                        className={`h-9 w-9 rounded-lg transition-colors ${editorHover.iconAction}`}
+                        title="Rename"
+                        aria-label="Rename subgroup"
+                    >
                         <Pencil className="h-3.5 w-3.5" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => {
-                        unassignCatalogGroup(subgroupName);
-                        if (onUnassign) onUnassign(subgroupName, parentUUID);
-                    }} className="h-9 w-9 text-foreground/70 hover:text-red-400 hover:bg-red-500/10 transition-colors rounded-md border border-transparent hover:border-red-500/30" title="Delete" aria-label="Delete subgroup">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            unassignCatalogGroup(subgroupName);
+                            if (onUnassign) onUnassign(subgroupName, parentUUID);
+                        }}
+                        className={`h-9 w-9 rounded-lg ${editorHover.iconDanger}`}
+                        title="Delete"
+                        aria-label="Delete subgroup"
+                    >
                         <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                 </div>
@@ -406,28 +461,38 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
             />
 
             {isExpanded && (
-                <div className="p-4 space-y-5">
+                <div className="space-y-5 bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(248,250,252,0.1))] p-4 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.008))]">
                     {/* Image URL Input */}
                     <div className="space-y-2">
-                        <div className="flex items-center gap-3 bg-background/50 p-3 rounded-lg border border-border/60 shadow-inner">
-                            {urlInput && urlInput.startsWith("http") ? (
-                                <div className={`${isLandscape ? "h-10 w-16" : "h-14 w-10"} rounded-md shrink-0 overflow-hidden bg-muted border border-border/50 shadow-sm flex items-center justify-center`}>
-                                    {/* eslint-disable-next-line @next/next/no-img-element -- Dynamic subgroup thumbnail preview with imperative error fallback UI. */}
-                                    <img
-                                        src={urlInput}
-                                        alt="Thumb"
-                                        className="h-full w-full object-cover"
-                                        onError={(e) => {
-                                            (e.target as HTMLImageElement).style.display = 'none';
-                                            (e.target as HTMLImageElement).parentElement!.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-foreground/70"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
-                                        }}
-                                    />
-                                </div>
-                            ) : (
-                                <div className="h-10 w-10 rounded-md bg-muted border border-border flex items-center justify-center shrink-0">
+                        <div className={`${editorSurface.panel} flex items-center gap-3 p-3`}>
+                            <div className={`${thumbFrameClass} ${editorSurface.field} rounded-md shrink-0 overflow-hidden shadow-sm flex items-center justify-center transition-[width,height] duration-200`}>
+                                {hasThumbPreview ? (
+                                    <>
+                                        {/* eslint-disable-next-line @next/next/no-img-element -- Dynamic subgroup thumbnail preview from user-provided URL. */}
+                                        <img
+                                            src={urlInput}
+                                            alt="Thumb"
+                                            className="h-full w-full object-contain"
+                                            onLoad={(e) => {
+                                                const { naturalWidth, naturalHeight } = e.currentTarget;
+                                                if (!naturalWidth || !naturalHeight) {
+                                                    setThumbAspect("square");
+                                                    return;
+                                                }
+                                                const ratio = naturalWidth / naturalHeight;
+                                                if (ratio > 1.2) setThumbAspect("landscape");
+                                                else if (ratio < 0.82) setThumbAspect("portrait");
+                                                else setThumbAspect("square");
+                                            }}
+                                            onError={() => {
+                                                setThumbLoadError(true);
+                                            }}
+                                        />
+                                    </>
+                                ) : (
                                     <ImageIcon className="w-4 h-4 text-foreground/70" />
-                                </div>
-                            )}
+                                )}
+                            </div>
                             <div className="flex-1 space-y-1">
                                 <Label className="text-xs uppercase font-bold tracking-widest text-foreground/70">Poster Image URL</Label>
                                 <Input
@@ -435,7 +500,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                     value={urlInput}
                                     onChange={e => setUrlInput(e.target.value)}
                                     onBlur={handleUrlBlur}
-                                    className="h-10 sm:h-8 text-base sm:text-sm bg-background border-border focus-visible:ring-1 focus-visible:ring-blue-500 shadow-inner transition-colors font-mono"
+                                    className={`${editorSurface.field} h-10 sm:h-8 text-base sm:text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 transition-colors font-mono`}
                                 />
                             </div>
                         </div>
@@ -446,7 +511,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setIsRenaming(true)}
-                                className="flex-1 h-9 text-xs text-foreground/70 hover:text-foreground bg-background/50 border-border/80"
+                                className={`${editorSurface.field} flex-1 h-9 text-xs text-foreground/70 hover:text-foreground`}
                             >
                                 <Pencil className="w-3.5 h-3.5 mr-2" /> Rename
                             </Button>
@@ -457,7 +522,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                     unassignCatalogGroup(subgroupName);
                                     if (onUnassign) onUnassign(subgroupName, parentUUID);
                                 }}
-                                className="flex-1 h-9 text-xs text-red-400 hover:text-red-300 bg-background/50 border-border/80"
+                                className={`${editorSurface.field} flex-1 h-9 text-xs text-red-400 hover:text-red-300`}
                             >
                                 <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
                             </Button>
@@ -465,8 +530,8 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                     </div>
 
                     {/* Inner Sortable Catalogs */}
-                    <div className="rounded-xl border border-border/70 bg-background/35 shadow-inner p-3 sm:p-3.5">
-                        <div className="flex items-center justify-between mb-3">
+                    <div className={`${editorSurface.panel} p-3 sm:p-3.5`}>
+                        <div className="mb-3 flex items-center justify-between rounded-lg border border-slate-200/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.34),rgba(248,250,252,0.2))] px-3 py-2 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))]">
                             <h5 className="inline-flex items-center gap-2 text-xs font-bold text-foreground/80 uppercase tracking-widest">
                                 <LinkIcon className="h-3.5 w-3.5 text-foreground/60" />
                                 Linked Catalogs
@@ -475,7 +540,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                         </div>
 
                         {subgroupCatalogs.length === 0 ? (
-                            <div className="text-center py-6 border border-dashed border-border/60 rounded-lg bg-background/25">
+                            <div className={`${editorSurface.field} text-center py-6 border-dashed rounded-lg`}>
                                 <p className="text-xs text-foreground/65 font-medium">No linked catalogs in this subgroup yet.</p>
                             </div>
                         ) : (
@@ -513,8 +578,8 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                                 }),
                                             }}
                                         >
-                                            <div className="flex items-center gap-3 rounded-lg border border-blue-500/70 bg-card px-3 py-2.5 shadow-2xl opacity-95">
-                                                <GripVertical className="h-4 w-4 text-blue-500" />
+                                            <div className="flex items-center gap-3 rounded-lg border border-primary/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.84))] px-3 py-2.5 shadow-2xl opacity-95 dark:bg-[linear-gradient(180deg,rgba(20,23,30,0.96),rgba(13,16,21,0.94))]">
+                                                <GripVertical className="h-4 w-4 text-primary" />
                                                 <div className="min-w-0 flex-1">
                                                     <p className="truncate text-sm font-semibold tracking-tight text-foreground">
                                                         {activeCatalogName}
@@ -540,15 +605,15 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                 if (!open) setCatalogSearch("");
                             }}>
                                 <DropdownMenuTrigger asChild>
-                                    <Button size="sm" variant="outline" className="w-full justify-start text-xs border border-dashed border-border/60 bg-background/35 text-foreground/70 hover:text-foreground hover:bg-background/65 hover:border-border transition-colors">
+                                    <Button size="sm" variant="outline" className={`${editorSurface.dropzone} w-full justify-start text-xs text-foreground/70 hover:text-foreground hover:border-primary/30 hover:bg-primary/[0.035]`}>
                                         <Plus className="w-3.5 h-3.5 mr-2" /> Add Catalog...
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-[30rem] max-w-[92vw] rounded-xl border-border/80 bg-card/95 text-popover-foreground shadow-2xl backdrop-blur-xl p-0 overflow-hidden">
-                                    <div className="p-3 border-b border-border/60 bg-card/95 space-y-2">
-                                        <h4 className="text-xs uppercase font-bold text-foreground/65 flex justify-between tracking-[0.14em]">
+                                <DropdownMenuContent className={cn(editorSurface.overlay, "w-[30rem] max-w-[92vw] p-0 overflow-hidden")}>
+                                    <div className={cn(editorSurface.overlaySection, "space-y-2 border-b border-primary/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.66),rgba(239,246,255,0.5))] p-3 dark:border-primary/14 dark:bg-[linear-gradient(180deg,rgba(18,24,35,0.95),rgba(14,20,31,0.92))]")}>
+                                        <h4 className="flex justify-between text-[11px] font-bold uppercase tracking-[0.18em] text-foreground/58">
                                             <span>Select Catalog</span>
-                                            <span className="text-xs text-foreground/60">{filteredCatalogs.length} available</span>
+                                            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary/78 dark:text-primary/70">{filteredCatalogs.length} available</span>
                                         </h4>
                                         <div className="relative">
                                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-foreground/60" />
@@ -558,12 +623,12 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                                 placeholder="Search by name or ID..."
                                                 value={catalogSearch}
                                                 onChange={e => setCatalogSearch(e.target.value)}
-                                                className="h-10 sm:h-9 text-base sm:text-sm pl-8 bg-background/70 border-border/80 focus-visible:ring-blue-600"
+                                                className={cn(editorSurface.field, "h-10 sm:h-9 text-base sm:text-sm pl-8 focus-visible:ring-ring/50")}
                                                 onKeyDown={e => e.stopPropagation()}
                                             />
                                         </div>
                                     </div>
-                                    <div className="max-h-[340px] overflow-y-auto p-2 pt-0 custom-scrollbar bg-card">
+                                    <div className={cn(editorSurface.overlayList, "max-h-[340px] overflow-y-auto p-2 pt-0 custom-scrollbar")}>
                                         {filteredCatalogs.length === 0 ? (
                                             <p className="text-xs text-foreground/70 p-4 text-center">No catalogs found.</p>
                                         ) : (
@@ -593,18 +658,20 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
 
                                                 return sortedCategories.map(category => (
                                                     <div key={category} className="mb-2 last:mb-0">
-                                                        <div className="sticky top-0 bg-card py-2 px-2.5 z-[60] border-b border-border/60 mb-1">
-                                                            <h5 className="text-xs font-bold text-foreground/45 uppercase tracking-[0.18em]">{category}</h5>
+                                                        <div className={`${editorSurface.sticky} sticky top-0 py-2 px-2.5 z-[60] mb-1`}>
+                                                            <h5 className="text-xs font-bold text-foreground/52 uppercase tracking-[0.18em]">{category}</h5>
                                                         </div>
                                                         <div className="flex flex-col gap-0.5">
                                                             {groups[category].map(c => (
                                                                 <DropdownMenuItem
                                                                     key={c.id}
                                                                     onSelect={(e) => handleAddCatalog(e, c.id)}
-                                                                    className="group flex items-center gap-3 px-2.5 py-2 rounded-md cursor-pointer data-[highlighted]:bg-muted/70 data-[highlighted]:text-foreground"
+                                                                    className="group flex cursor-pointer items-center gap-3 rounded-md border border-transparent px-2.5 py-2 hover:bg-primary/10 hover:text-foreground data-[highlighted]:border-primary/20 data-[highlighted]:bg-primary/12 data-[highlighted]:text-foreground dark:hover:bg-primary/16 dark:data-[highlighted]:border-primary/22 dark:data-[highlighted]:bg-primary/20"
                                                                 >
-                                                                    <p className="flex-1 min-w-0 text-sm font-medium truncate text-foreground">{c.name}</p>
-                                                                    <p className="max-w-[40%] shrink-0 text-xs font-mono text-foreground/30 group-data-[highlighted]:text-foreground/45 truncate text-right" title={c.id}>
+                                                                    <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground transition-colors group-data-[highlighted]:text-primary">
+                                                                        {c.name}
+                                                                    </p>
+                                                                    <p className="max-w-[40%] shrink-0 truncate text-right text-xs font-mono text-foreground/42 transition-colors dark:text-foreground/50 group-data-[highlighted]:text-primary/72 dark:group-data-[highlighted]:text-primary/70" title={c.id}>
                                                                         {c.id}
                                                                     </p>
                                                                 </DropdownMenuItem>
@@ -698,8 +765,27 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
         }
     };
 
+    const handleToggleSubgroup = (subgroupName: string) => {
+        const nextExpanded = expandedSubgroup === subgroupName ? null : subgroupName;
+        setExpandedSubgroup(nextExpanded);
+
+        if (!nextExpanded) return;
+
+        const targetId = buildSubgroupAnchorId(uuid, subgroupName);
+        window.requestAnimationFrame(() => {
+            window.requestAnimationFrame(() => {
+                const target = document.getElementById(targetId);
+                target?.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+            });
+        });
+    };
+
     return (
-        <div ref={setNodeRef} style={style} className={`bg-card border rounded-xl mb-2 transition-colors ${isDragging ? "opacity-50 border-blue-500 shadow-xl scale-[1.01] z-50" : "border-border hover:border-border/80"} overflow-hidden group/main`}>
+        <div
+            ref={setNodeRef}
+            style={style}
+            className={`${editorSurface.card} mb-2 overflow-hidden backdrop-blur-[10px] transition-[border-color,background-color,box-shadow] ${isDragging ? "opacity-50 border-primary shadow-xl scale-[1.01] z-50" : ""} group/main`}
+        >
             <AccordionItem value={uuid} className="border-none">
                 <div className="flex items-center">
                     {/* Consistent Drag Handle outside trigger to avoid collapse on drag start */}
@@ -713,44 +799,50 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                         <GripVertical className="h-5 w-5" />
                     </div>
 
-                    <AccordionTrigger className="flex-1 hover:no-underline text-foreground px-4 py-4 hover:bg-muted/30 transition-colors group/trigger">
-                        <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                            <div className="flex flex-col items-start gap-1 min-w-0">
-                                <span className="font-bold text-base text-foreground group-hover/trigger:text-blue-400 transition-colors">
+                    <AccordionTrigger className={`flex-1 text-foreground px-4 py-4 transition-colors group/trigger ${editorHover.rowSubtle}`}>
+                        <div className="flex-1 min-w-0 flex flex-col gap-1">
+                            <div className="flex items-start justify-between gap-2">
+                                <span className="min-w-0 truncate font-bold text-base text-foreground group-hover/trigger:text-primary transition-colors">
                                     {formatDisplayName(name)}
                                 </span>
-                                <div className="text-xs text-foreground/50 font-medium leading-none flex items-center gap-2">
-                                    <span>{subgroupNames.length} Subgroups</span>
+                                <div className="mr-2 flex items-center gap-1 shrink-0 sm:justify-end">
+                                    {posterSize !== "Default" && (
+                                        <Badge
+                                            variant="outline"
+                                            className={cn(
+                                                "text-xs font-bold px-2 py-0.5 rounded-md",
+                                                posterSize === "Small"
+                                                    ? "bg-primary/10 text-primary dark:text-primary border-primary/30"
+                                                    : "bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20"
+                                            )}
+                                        >
+                                            {posterSize}
+                                        </Badge>
+                                    )}
+                                    {posterType === "Poster" && (
+                                        <Badge variant="outline" className="text-xs font-bold px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/25">Poster</Badge>
+                                    )}
+                                    {posterType === "Square" && (
+                                        <Badge variant="outline" className="text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">Square</Badge>
+                                    )}
+                                    {posterType === "Landscape" && (
+                                        <Badge variant="outline" className="text-xs font-bold px-2 py-0.5 rounded-md bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20">Landscape</Badge>
+                                    )}
                                 </div>
                             </div>
-                            
-                            {/* Tags pushed to the right */}
-                            <div className="flex items-center gap-1 shrink-0 flex-wrap sm:justify-end mr-2">
-                                {posterSize !== "Default" && (
-                                    <Badge variant="outline" className="text-xs font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30">
-                                        {posterSize}
-                                    </Badge>
-                                )}
-                                {posterType === "Poster" && (
-                                    <Badge className="text-xs font-bold px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20">Poster</Badge>
-                                )}
-                                {posterType === "Square" && (
-                                    <Badge className="text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">Square</Badge>
-                                )}
-                                {posterType === "Landscape" && (
-                                    <Badge className="text-xs font-bold px-2 py-0.5 rounded-md bg-orange-500/10 text-orange-700 dark:text-orange-400 border border-orange-500/20">Landscape</Badge>
-                                )}
+                            <div className="text-xs text-foreground/50 font-medium leading-none flex items-center gap-2">
+                                <span>{subgroupNames.length} Subgroups</span>
                             </div>
                         </div>
                     </AccordionTrigger>
                 </div>
 
-                <AccordionContent className="p-5 border-t border-border/40 bg-background/20">
+                <AccordionContent className="border-t border-slate-200/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.18),rgba(248,250,252,0.11))] p-5 dark:border-white/8 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.008))]">
                     <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
-                        <div className="flex w-full sm:w-auto items-center gap-1.5 sm:gap-2 bg-background/50 border border-border rounded-lg p-1.5 sm:p-1">
+                        <div className={`${editorSurface.toolbar} flex w-full sm:w-auto items-center gap-1.5 sm:gap-2 p-1.5 sm:p-1`}>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-8 min-w-0 max-w-[48vw] sm:max-w-none text-xs sm:text-sm text-foreground/70 hover:text-foreground hover:bg-muted font-medium tracking-tight px-2">
+                                    <Button variant="ghost" size="sm" className="h-8 min-w-0 max-w-[48vw] sm:max-w-none text-xs sm:text-sm text-foreground/70 hover:text-foreground hover:bg-muted/60 dark:hover:bg-muted/40 font-medium tracking-tight px-2">
                                         <span className="hidden sm:inline">Layout:</span>
                                         <span className="text-foreground sm:ml-1 font-bold min-w-0 truncate">
                                             <span className="hidden sm:inline">{posterType} / {posterSize}</span>
@@ -759,28 +851,28 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                         <ChevronDown className="w-3.5 h-3.5 ml-1 opacity-50 shrink-0" />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent className="bg-card border-border text-foreground">
+                                <DropdownMenuContent className={cn(editorSurface.overlay, "min-w-[13rem]")}>
                                     <DropdownMenuLabel className="px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-foreground/55 font-semibold">Poster Shape</DropdownMenuLabel>
-                                    <DropdownMenuItem onClick={() => updateValue(["main_catalog_groups", uuid, "posterType"], "Poster")} className={`text-xs ${posterType === "Poster" ? "bg-blue-500/20 text-blue-400" : ""}`}>
+                                    <DropdownMenuItem onClick={() => updateValue(["main_catalog_groups", uuid, "posterType"], "Poster")} className={`text-xs ${posterType === "Poster" ? "bg-primary/20 text-primary" : ""}`}>
                                         Poster {posterType === "Poster" && "✓"}
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => updateValue(["main_catalog_groups", uuid, "posterType"], "Square")} className={`text-xs ${posterType === "Square" ? "bg-blue-500/20 text-blue-400" : ""}`}>
+                                    <DropdownMenuItem onClick={() => updateValue(["main_catalog_groups", uuid, "posterType"], "Square")} className={`text-xs ${posterType === "Square" ? "bg-primary/20 text-primary" : ""}`}>
                                         Square {posterType === "Square" && "✓"}
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => updateValue(["main_catalog_groups", uuid, "posterType"], "Landscape")} className={`text-xs ${posterType === "Landscape" ? "bg-blue-500/20 text-blue-400" : ""}`}>
+                                    <DropdownMenuItem onClick={() => updateValue(["main_catalog_groups", uuid, "posterType"], "Landscape")} className={`text-xs ${posterType === "Landscape" ? "bg-primary/20 text-primary" : ""}`}>
                                         Landscape {posterType === "Landscape" && "✓"}
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator className="bg-border" />
                                     <DropdownMenuLabel className="px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-foreground/55 font-semibold">Poster Size</DropdownMenuLabel>
                                     <DropdownMenuItem
                                         onClick={() => updateValue(["main_catalog_groups", uuid, "posterSize"], "Default")}
-                                        className={`text-xs ${posterSize === "Default" ? "bg-blue-500/20 text-blue-400" : ""}`}
+                                        className={`text-xs ${posterSize === "Default" ? "bg-primary/20 text-primary" : ""}`}
                                     >
                                         Default {posterSize === "Default" && "✓"}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         onClick={() => updateValue(["main_catalog_groups", uuid, "posterSize"], "Small")}
-                                        className={`text-xs ${posterSize === "Small" ? "bg-blue-500/20 text-blue-400" : ""}`}
+                                        className={`text-xs ${posterSize === "Small" ? "bg-primary/20 text-primary" : ""}`}
                                     >
                                         Small {posterSize === "Small" && "✓"}
                                     </DropdownMenuItem>
@@ -794,7 +886,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => setIsRenaming(true)}
-                                    className="h-8 shrink-0 text-xs sm:text-sm text-foreground/70 hover:text-foreground hover:bg-muted font-medium tracking-tight px-2"
+                                    className="h-8 shrink-0 text-xs sm:text-sm text-foreground/70 hover:text-foreground hover:bg-muted/60 dark:hover:bg-muted/40 font-medium tracking-tight px-2"
                                 >
                                     <Pencil className="w-3.5 h-3.5 sm:hidden" />
                                     <span className="hidden sm:inline">Rename</span>
@@ -811,7 +903,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                             <span className="hidden sm:inline">Delete</span>
                                         </Button>
                                     </AlertDialogTrigger>
-                                    <AlertDialogContent className="bg-card border-border text-foreground">
+                                    <AlertDialogContent>
                                         <AlertDialogHeader>
                                             <AlertDialogTitle>Delete Main Group?</AlertDialogTitle>
                                             <AlertDialogDescription className="text-foreground/70">
@@ -835,7 +927,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => onAddSubgroup?.(uuid)}
-                                    className="h-8 shrink-0 text-xs sm:text-sm text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition-all flex items-center gap-1.5 px-2.5 rounded-lg font-bold"
+                                    className="h-8 shrink-0 text-xs sm:text-sm text-primary hover:text-primary hover:bg-primary/10 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out flex items-center gap-1.5 px-2.5 rounded-lg font-bold"
                                 >
                                     <Plus className="w-4 h-4" />
                                     <span className="hidden sm:inline">New Subgroup</span>
@@ -856,7 +948,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                     />
 
                     {subgroups.length === 0 ? (
-                        <div className="text-center py-8 border border-dashed border-border/80 rounded-xl bg-background/30 flex flex-col items-center justify-center gap-2">
+                        <div className={`${editorSurface.inset} text-center py-8 border-dashed flex flex-col items-center justify-center gap-2`}>
                             <FolderPlus className="w-8 h-8 text-foreground/70" />
                             <p className="text-sm font-medium text-foreground/70">No subgroups exist here.</p>
                             <p className="text-xs text-foreground/70/80">Add subgroups by clicking &quot;Add to Group&quot; at the top.</p>
@@ -877,8 +969,9 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                             subgroupName={sg}
                                             parentUUID={uuid}
                                             onUnassign={onUnassignSubgroup}
+                                            rowAnchorId={buildSubgroupAnchorId(uuid, sg)}
                                             isExpanded={expandedSubgroup === sg}
-                                            onToggle={() => setExpandedSubgroup(expandedSubgroup === sg ? null : sg)}
+                                            onToggle={() => handleToggleSubgroup(sg)}
                                         />
                                     ))}
                                 </SortableContext>
@@ -892,8 +985,8 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                             },
                                         }),
                                     }}>
-                                        <div className="border border-blue-500 rounded-xl overflow-hidden bg-card shadow-2xl scale-[1.02] opacity-90 p-4 flex items-center gap-4">
-                                            <GripVertical className="h-4 w-4 text-blue-500" />
+                                        <div className="border border-primary/65 rounded-xl overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.84))] dark:bg-[linear-gradient(180deg,rgba(20,20,24,0.96),rgba(10,10,14,0.98))] shadow-2xl scale-[1.02] opacity-90 p-4 flex items-center gap-4">
+                                            <GripVertical className="h-4 w-4 text-primary" />
                                             <div className="font-semibold text-sm text-foreground">
                                                 {formatDisplayName(activeSubgroupId)}
                                             </div>
@@ -1049,7 +1142,7 @@ function UnassignedSubgroupRow({
         : "";
 
     return (
-        <div className="flex flex-col bg-card border border-border rounded-lg overflow-hidden transition-all hover:border-border/80 w-full mb-3">
+        <div className={`${editorSurface.cardInteractive} flex flex-col rounded-xl overflow-hidden transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out hover:border-border/80 w-full mb-3`}>
             <div className="flex items-center justify-between p-3 gap-4">
                 {/* Left: Name */}
                 <div className="flex-1 min-w-0 pr-2">
@@ -1067,12 +1160,12 @@ function UnassignedSubgroupRow({
                             <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-7 px-2 text-xs font-semibold uppercase tracking-tight text-foreground/70 border-border/50 hover:bg-muted hover:text-foreground flex items-center gap-1 transition-colors"
+                                className="h-7 px-2 text-xs font-semibold uppercase tracking-tight text-foreground/70 border-border/50 hover:bg-muted/60 dark:hover:bg-muted/40 hover:text-foreground flex items-center gap-1 transition-colors"
                             >
                                 Assign To... <ChevronDown className="w-3 h-3" />
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="bg-popover border-border text-popover-foreground min-w-[200px]">
+                        <DropdownMenuContent className={cn(editorSurface.overlay, "min-w-[200px]")}>
                             {onRestore && restoreParentName && (
                                 <>
                                     <DropdownMenuItem
@@ -1095,7 +1188,7 @@ function UnassignedSubgroupRow({
                                         <DropdownMenuItem
                                             key={uuid}
                                             onClick={() => assignCatalogGroup(groupName, uuid)}
-                                            className="text-xs focus:bg-blue-500/20 focus:text-blue-400 cursor-pointer"
+                                            className="text-xs focus:bg-primary/20 focus:text-primary cursor-pointer"
                                         >
                                             {formatDisplayName(name)}
                                         </DropdownMenuItem>
@@ -1109,7 +1202,7 @@ function UnassignedSubgroupRow({
                         variant="ghost"
                         size="sm"
                         onClick={() => setIsExpanded(!isExpanded)}
-                        className={`h-7 px-2 text-xs font-semibold uppercase tracking-tight flex items-center gap-1 rounded-md transition-colors ${isExpanded ? 'bg-muted text-foreground' : 'text-foreground/70 hover:text-foreground hover:bg-muted'}`}
+                        className={`h-7 px-2 text-xs font-semibold uppercase tracking-tight flex items-center gap-1 rounded-md transition-colors ${isExpanded ? 'bg-white/60 dark:bg-white/[0.05] text-foreground' : 'text-foreground/70 hover:text-foreground hover:bg-muted/60 dark:hover:bg-muted/40'}`}
                     >
                         <Layout className="w-3.5 h-3.5" />
                         <span className="hidden md:inline">Edit</span>
@@ -1117,11 +1210,11 @@ function UnassignedSubgroupRow({
 
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-9 w-9 p-0 flex items-center justify-center text-foreground/70 hover:text-red-400 hover:bg-red-500/10 transition-colors rounded-md border border-transparent hover:border-red-500/30" aria-label="Delete subgroup">
+                            <Button variant="ghost" size="icon" className={`h-9 w-9 p-0 flex items-center justify-center rounded-md ${editorHover.iconDanger}`} aria-label="Delete subgroup">
                                 <Trash2 className="w-3.5 h-3.5" />
                             </Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent className="bg-popover border-border text-popover-foreground">
+                        <AlertDialogContent className={cn(editorSurface.overlay, "text-popover-foreground")}>
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Delete Subgroup?</AlertDialogTitle>
                                 <AlertDialogDescription className="text-foreground/70">
@@ -1143,9 +1236,9 @@ function UnassignedSubgroupRow({
             </div>
 
             {isExpanded && (
-                <div className="p-4 border-t border-border bg-background">
-                    <div className="rounded-xl border border-border/70 bg-background/35 shadow-inner p-3 sm:p-3.5 mb-4">
-                        <div className="flex items-center justify-between mb-3">
+                <div className="border-t border-slate-200/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(248,250,252,0.1))] p-4 dark:border-white/8 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.008))]">
+                    <div className={`${editorSurface.panel} mb-4 p-3 sm:p-3.5`}>
+                        <div className="mb-3 flex items-center justify-between rounded-lg border border-slate-200/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.34),rgba(248,250,252,0.2))] px-3 py-2 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))]">
                             <h5 className="inline-flex items-center gap-2 text-xs font-bold text-foreground/80 uppercase tracking-widest">
                                 <LinkIcon className="h-3.5 w-3.5 text-foreground/60" />
                                 Linked Catalogs
@@ -1182,8 +1275,8 @@ function UnassignedSubgroupRow({
                                             }),
                                         }}
                                     >
-                                        <div className="flex items-center gap-3 rounded-lg border border-blue-500/70 bg-card px-3 py-2.5 shadow-2xl opacity-95">
-                                            <GripVertical className="h-4 w-4 text-blue-500" />
+                                        <div className="flex items-center gap-3 rounded-lg border border-primary/70 bg-card px-3 py-2.5 shadow-2xl opacity-95">
+                                            <GripVertical className="h-4 w-4 text-primary" />
                                             <div className="min-w-0 flex-1">
                                                 <p className="truncate text-sm font-semibold tracking-tight text-foreground">
                                                     {activeCatalogName}
@@ -1208,15 +1301,15 @@ function UnassignedSubgroupRow({
                                 if (!open) setCatalogSearch("");
                             }}>
                                 <DropdownMenuTrigger asChild>
-                                    <Button size="sm" variant="outline" className="w-full justify-start text-xs border border-dashed border-border/60 bg-background/35 text-foreground/70 hover:text-foreground hover:bg-background/65 hover:border-border transition-colors">
+                                    <Button size="sm" variant="outline" className={`${editorSurface.dropzone} w-full justify-start text-xs text-foreground/70 hover:text-foreground hover:border-primary/30 hover:bg-primary/[0.035]`}>
                                         <Plus className="w-3.5 h-3.5 mr-2" /> Add Catalog...
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-[30rem] max-w-[92vw] rounded-xl border-border/80 bg-card/95 text-popover-foreground shadow-2xl backdrop-blur-xl p-0 overflow-hidden">
-                                    <div className="p-3 border-b border-border/60 bg-card/95 space-y-2">
-                                        <h4 className="text-xs uppercase font-bold text-foreground/65 flex justify-between tracking-[0.14em]">
+                                <DropdownMenuContent className={cn(editorSurface.overlay, "w-[30rem] max-w-[92vw] p-0 overflow-hidden")}>
+                                    <div className={cn(editorSurface.overlaySection, "space-y-2 border-b border-primary/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.66),rgba(239,246,255,0.5))] p-3 dark:border-primary/14 dark:bg-[linear-gradient(180deg,rgba(18,24,35,0.95),rgba(14,20,31,0.92))]")}>
+                                        <h4 className="flex justify-between text-[11px] font-bold uppercase tracking-[0.18em] text-foreground/58">
                                             <span>Select Catalog</span>
-                                            <span className="text-xs text-foreground/60">{filteredCatalogs.length} available</span>
+                                            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary/78 dark:text-primary/70">{filteredCatalogs.length} available</span>
                                         </h4>
                                         <div className="relative">
                                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-foreground/60" />
@@ -1226,12 +1319,12 @@ function UnassignedSubgroupRow({
                                                 placeholder="Search by name or ID..."
                                                 value={catalogSearch}
                                                 onChange={e => setCatalogSearch(e.target.value)}
-                                                className="h-10 sm:h-9 text-base sm:text-sm pl-8 bg-background/70 border-border/80 focus-visible:ring-blue-600"
+                                                className={cn(editorSurface.field, "h-10 sm:h-9 text-base sm:text-sm pl-8 focus-visible:ring-ring/50")}
                                                 onKeyDown={e => e.stopPropagation()}
                                             />
                                         </div>
                                     </div>
-                                    <div className="max-h-[340px] overflow-y-auto p-2 pt-0 custom-scrollbar bg-card">
+                                    <div className={cn(editorSurface.overlayList, "max-h-[340px] overflow-y-auto p-2 pt-0 custom-scrollbar")}>
                                         {filteredCatalogs.length === 0 ? (
                                             <p className="text-xs text-foreground/70 p-4 text-center">No catalogs found.</p>
                                         ) : (
@@ -1261,18 +1354,20 @@ function UnassignedSubgroupRow({
 
                                                 return sortedCategories.map(category => (
                                                     <div key={category} className="mb-2 last:mb-0">
-                                                        <div className="sticky top-0 bg-card py-2 px-2.5 z-[60] border-b border-border/60 mb-1">
-                                                            <h5 className="text-xs font-bold text-foreground/45 uppercase tracking-[0.18em]">{category}</h5>
+                                                        <div className={`${editorSurface.sticky} sticky top-0 py-2 px-2.5 z-[60] mb-1`}>
+                                                            <h5 className="text-xs font-bold text-foreground/52 uppercase tracking-[0.18em]">{category}</h5>
                                                         </div>
                                                         <div className="flex flex-col gap-0.5">
                                                             {groups[category].map(c => (
                                                                 <DropdownMenuItem
                                                                     key={c.id}
                                                                     onSelect={(e) => handleAddCatalog(e, c.id)}
-                                                                    className="group flex items-center gap-3 px-2.5 py-2 rounded-md cursor-pointer data-[highlighted]:bg-muted/70 data-[highlighted]:text-foreground"
+                                                                    className="group flex cursor-pointer items-center gap-3 rounded-md border border-transparent px-2.5 py-2 hover:bg-primary/10 hover:text-foreground data-[highlighted]:border-primary/20 data-[highlighted]:bg-primary/12 data-[highlighted]:text-foreground dark:hover:bg-primary/16 dark:data-[highlighted]:border-primary/22 dark:data-[highlighted]:bg-primary/20"
                                                                 >
-                                                                    <p className="flex-1 min-w-0 text-sm font-medium truncate text-foreground">{c.name}</p>
-                                                                    <p className="max-w-[40%] shrink-0 text-xs font-mono text-foreground/30 group-data-[highlighted]:text-foreground/45 truncate text-right" title={c.id}>
+                                                                    <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground transition-colors group-data-[highlighted]:text-primary">
+                                                                        {c.name}
+                                                                    </p>
+                                                                    <p className="max-w-[40%] shrink-0 truncate text-right text-xs font-mono text-foreground/42 transition-colors dark:text-foreground/50 group-data-[highlighted]:text-primary/72 dark:group-data-[highlighted]:text-primary/70" title={c.id}>
                                                                         {c.id}
                                                                     </p>
                                                                 </DropdownMenuItem>
@@ -1392,13 +1487,13 @@ export function UnifiedSubgroupEditor() {
 
     return (
         <div className="space-y-4">
-            <div className="border border-border rounded-xl bg-card/20 overflow-hidden shadow-inner">
+            <div className={cn(editorSurface.card, "overflow-hidden")}>
                 {/* Unified Sticky Toolbar */}
-                <div className="sticky top-0 z-30 grid grid-cols-2 items-center gap-2 bg-card/95 backdrop-blur-md p-3 border-b border-border/80 shadow-sm sm:flex sm:flex-wrap">
+                <div className={cn(editorSurface.toolbar, "sticky top-0 z-30 grid grid-cols-2 items-center gap-2 rounded-none border-x-0 border-t-0 p-3 sm:flex sm:flex-wrap")}>
                     <Button
                         onClick={() => setIsCreateModalOpen(true)}
                         size="sm"
-                        className="col-span-2 sm:col-auto bg-blue-600 hover:bg-blue-700 text-white font-bold h-9 sm:h-8 px-3 shadow-lg shadow-blue-500/20 whitespace-nowrap justify-center sm:justify-start"
+                        className="col-span-2 sm:col-auto bg-primary hover:bg-primary/92 text-primary-foreground font-bold h-9 sm:h-8 px-3 shadow-lg shadow-primary/20 whitespace-nowrap justify-center sm:justify-start"
                     >
                         <Plus className="w-4 h-4 mr-1.5" /> Create New Group
                     </Button>
@@ -1406,7 +1501,7 @@ export function UnifiedSubgroupEditor() {
                         onClick={() => setIsAddToGroupModalOpen(true)}
                         variant="outline"
                         size="sm"
-                        className="h-9 sm:h-8 text-sm sm:text-sm border-border/60 hover:bg-muted text-foreground/70 hover:text-foreground transition-all px-3 font-medium whitespace-nowrap justify-center sm:justify-start"
+                        className="h-9 sm:h-8 text-sm sm:text-sm border-border/60 hover:bg-muted/60 dark:hover:bg-muted/40 text-foreground/70 hover:text-foreground transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out px-3 font-medium whitespace-nowrap justify-center sm:justify-start"
                     >
                         <FolderPlus className="w-4 h-4 mr-1.5" /> Add to Group
                     </Button>
@@ -1414,7 +1509,7 @@ export function UnifiedSubgroupEditor() {
                         onClick={() => setIsImportModalOpen(true)}
                         variant="outline"
                         size="sm"
-                        className="h-9 sm:h-8 text-sm sm:text-sm border-border/60 hover:bg-muted text-foreground/70 hover:text-foreground transition-all px-3 font-medium whitespace-nowrap justify-center sm:justify-start"
+                        className="h-9 sm:h-8 text-sm sm:text-sm border-border/60 hover:bg-muted/60 dark:hover:bg-muted/40 text-foreground/70 hover:text-foreground transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out px-3 font-medium whitespace-nowrap justify-center sm:justify-start"
                     >
                         <UploadCloud className="w-4 h-4 mr-1.5" />
                         <span className="sm:hidden">Update</span>
@@ -1422,7 +1517,7 @@ export function UnifiedSubgroupEditor() {
                     </Button>
                 </div>
 
-                <div className="p-4 bg-muted/5">
+                <div className="p-4 bg-transparent">
                     <DndContext 
                         sensors={sensors} 
                         collisionDetection={closestCenter} 
@@ -1462,8 +1557,8 @@ export function UnifiedSubgroupEditor() {
                                     },
                                 }),
                             }}>
-                                <div className="border border-blue-500 rounded-xl overflow-hidden bg-card shadow-2xl scale-[1.02] opacity-95 p-4 flex items-center gap-4">
-                                    <GripVertical className="h-5 w-5 text-blue-500" />
+                                <div className="border border-primary rounded-xl overflow-hidden bg-card shadow-2xl scale-[1.02] opacity-95 p-4 flex items-center gap-4">
+                                    <GripVertical className="h-5 w-5 text-primary" />
                                     <div className="font-bold text-lg tracking-tight text-foreground">
                                         {formatDisplayName(mainCatalogGroups[activeMainGroupId]?.name || "Moving Group...")}
                                     </div>
@@ -1488,8 +1583,8 @@ export function UnifiedSubgroupEditor() {
 
             {mainGroupOrder.length === 0 && (
                 <div className="text-center py-12 border border-dashed border-border/80 rounded-2xl bg-background/20 flex flex-col items-center justify-center gap-3">
-                    <div className="p-4 bg-blue-500/10 rounded-full border border-blue-500/20">
-                        <FolderPlus className="w-8 h-8 text-blue-500/60" />
+                    <div className="p-4 bg-primary/10 rounded-full border border-primary/20">
+                        <FolderPlus className="w-8 h-8 text-primary/60" />
                     </div>
                     <div className="space-y-1">
                         <p className="text-sm font-bold text-foreground">No Main Groups Found</p>

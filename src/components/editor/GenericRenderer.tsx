@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Search, Check } from "lucide-react";
 import { ISO_639_2_LANGUAGES } from "@/lib/languages";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { resolveCatalogName } from "@/lib/utils";
+import { cn, resolveCatalogName } from "@/lib/utils";
+import { editorHover, editorSurface } from "@/components/editor/ui/style-contract";
 
 // Helper to format snake_case keys to Title Case
 const formatKeyToTitle = (key: string): string => {
@@ -173,28 +174,44 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
         const hasVisibleChildren = !isFaded && children;
 
         return (
-            <div className={`p-4 sm:p-5 rounded-xl bg-card/60 backdrop-blur-md border shadow-sm transition-all duration-300 ${displayChecked ? "border-white/[0.08] bg-card/90 shadow-[0_4px_20px_rgb(0,0,0,0.1)]" : "border-border/40"}`}>
+            <div
+                className={cn(
+                    "p-4 sm:p-5 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 ease-out",
+                    editorSurface.cardInteractive,
+                    displayChecked
+                        ? "border-slate-200/78 shadow-[0_8px_20px_rgba(15,23,42,0.045)] dark:border-white/8 dark:shadow-[0_6px_14px_rgba(2,6,23,0.08)]"
+                        : "border-slate-200/55 bg-[linear-gradient(180deg,rgba(255,255,255,0.48),rgba(241,245,249,0.34))] shadow-[0_6px_16px_rgba(15,23,42,0.03)] dark:border-white/6 dark:bg-[linear-gradient(180deg,rgba(19,22,28,0.78),rgba(18,21,27,0.76))] dark:shadow-[0_6px_14px_rgba(2,6,23,0.06)]"
+                )}
+            >
                 <div className={`flex items-start justify-between gap-3 sm:items-center ${hasVisibleChildren ? "mb-4 pb-4 border-b border-border/40" : ""}`}>
-                    <div className={`min-w-0 flex-1 flex flex-col gap-1 transition-opacity duration-300 ${isFaded ? "opacity-60" : "opacity-100"}`}>
+                    <div className={`min-w-0 flex-1 flex flex-col gap-1 transition-opacity duration-300 ${isFaded ? "opacity-55" : "opacity-100"}`}>
                         <span className="text-base font-semibold tracking-tight text-foreground">
                             {formatKeyToTitle(currentKey)}
                         </span>
                         {description && (
-                            <span className="text-xs sm:text-sm text-foreground/60 sm:text-foreground/65 leading-relaxed">
+                            <span className={cn("text-xs sm:text-sm leading-relaxed", isFaded ? "text-foreground/48 sm:text-foreground/52" : "text-foreground/60 sm:text-foreground/65")}>
                                 {description}
                             </span>
                         )}
                     </div>
                     {!hideToggle && (
                         <div className="flex shrink-0 items-center gap-2 self-start sm:self-center">
-                            <Label htmlFor={`toggle-${pathString}`} className="hidden text-xs font-bold uppercase tracking-wider text-muted-foreground cursor-pointer select-none transition-colors hover:text-muted-foreground sm:inline-flex">
+                            <Label
+                                htmlFor={`toggle-${pathString}`}
+                                className={cn(
+                                    "hidden text-xs font-bold uppercase tracking-wider cursor-pointer select-none transition-colors sm:inline-flex",
+                                    displayChecked
+                                        ? "text-foreground/76"
+                                        : "text-muted-foreground/90 hover:text-muted-foreground"
+                                )}
+                            >
                                 {displayChecked ? "On" : "Off"}
                             </Label>
                             <Switch
                                 id={`toggle-${pathString}`}
                                 checked={displayChecked}
                                 onCheckedChange={handleToggle}
-                                className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-accent transition-all"
+                                className="data-[state=checked]:bg-primary transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out"
                             />
                         </div>
                     )}
@@ -277,14 +294,14 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
         return renderWrapper(
                 <div className="space-y-1">
                     <Select value={selectedLanguage} onValueChange={(val) => updateValue(path, val)}>
-                        <SelectTrigger className="bg-background/50 border-border text-foreground h-10 hover:border-border transition-colors shadow-inner focus:ring-1 focus:ring-blue-500">
+                        <SelectTrigger className="bg-background/50 border-border text-foreground h-10 hover:border-border/80 hover:bg-background/70 transition-colors shadow-inner focus:ring-[3px] focus:ring-ring/50">
                             <SelectValue placeholder="Select Language" />
                         </SelectTrigger>
-                        <SelectContent className="bg-card border-border text-foreground max-h-[300px] shadow-xl backdrop-blur-xl">
+                        <SelectContent className="max-h-[300px]">
                             {Object.entries(ISO_639_2_LANGUAGES)
                                 .sort((a, b) => a[1].localeCompare(b[1]))
                                 .map(([code, name]) => (
-                                    <SelectItem key={code} value={code} className="focus:bg-blue-600 focus:text-white cursor-pointer transition-colors">
+                                    <SelectItem key={code} value={code} className="focus:bg-primary focus:text-primary-foreground cursor-pointer transition-colors">
                                         {name}
                                     </SelectItem>
                                 ))}
@@ -309,7 +326,7 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                             placeholder="Search names or IDs..."
                             value={catSearch}
                             onChange={(e) => setCatSearch(e.target.value)}
-                            className="h-10 bg-background/50 border-border text-sm pl-9 placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-blue-500 transition-colors shadow-inner"
+                            className="h-10 bg-background/50 border-border text-sm pl-9 placeholder:text-muted-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 transition-colors shadow-inner"
                         />
                         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     </div>
@@ -318,14 +335,14 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                         {filteredEntries.map(([id, name]) => {
                             const isInUse = usedCatalogIds.has(id);
                             return (
-                                <div key={id} className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-300 group ${isInUse ? 'border-blue-500/30 bg-blue-500/5' : 'border-border/60 bg-background/40 hover:bg-card/60 hover:border-border/60'}`}>
+                                <div key={id} className={`flex items-center justify-between p-3 rounded-lg border transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 ease-out group ${isInUse ? 'border-primary/30 bg-primary/5' : 'border-border/60 bg-background/40 hover:bg-muted/30 hover:border-border/80'}`}>
                                     <div className="flex flex-col min-w-0 pr-4">
                                         <div className="flex items-center gap-2">
                                             <span className="text-base font-medium text-foreground truncate" title={name}>
                                                 {name}
                                             </span>
                                             {isInUse && (
-                                                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-bold uppercase tracking-widest bg-blue-500/20 text-blue-400 border border-blue-500/20 shadow-sm">
+                                                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-bold uppercase tracking-widest bg-primary/20 text-primary border border-primary/20 shadow-sm">
                                                     <Check className="w-2.5 h-2.5" /> In Use
                                                 </span>
                                             )}
@@ -338,7 +355,11 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                                         variant="ghost"
                                         size="icon"
                                         onClick={() => updateValue([...path, id], undefined)}
-                                        className={`h-8 w-8 shrink-0 transition-all rounded-md ${isInUse ? 'text-muted-foreground opacity-20 hover:opacity-100 hover:text-red-400 hover:bg-red-500/10' : 'text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-red-500/10'}`}
+                                        className={cn(
+                                            "h-8 w-8 shrink-0 rounded-md text-muted-foreground",
+                                            editorHover.iconDanger,
+                                            isInUse ? "opacity-20 hover:opacity-100" : "opacity-0 group-hover:opacity-100"
+                                        )}
                                         title={isInUse ? "This name is currently in use in a subgroup!" : "Delete custom name"}
                                     >
                                         <Trash2 className="w-4 h-4" />
@@ -385,7 +406,7 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                             return (
                                 <div
                                     key={opt}
-                                    className={`flex items-center space-x-3 p-3 h-[60px] rounded-lg border transition-[border-color,background-color] cursor-pointer select-none shadow-sm ${isChecked ? "border-blue-500/50 bg-blue-500/10 hover:bg-blue-500/20" : "border-border/80 bg-card/50 hover:border-border/80 hover:bg-card"}`}
+                                    className={`flex items-center space-x-3 p-3 h-[60px] rounded-lg border transition-[border-color,background-color] cursor-pointer select-none shadow-sm ${isChecked ? "border-primary/50 bg-primary/10 hover:bg-primary/20" : "border-border/80 bg-card/50 hover:border-border/90 hover:bg-card"}`}
                                     onClick={() => handleCheckboxChange(opt, !isChecked)}
                                 >
                                     <Checkbox
@@ -421,7 +442,7 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                             type="text"
                             value={data}
                             onChange={handleStringChange}
-                            className="bg-background/50 border-border hover:border-border focus-visible:ring-1 focus-visible:ring-blue-500 font-mono text-foreground transition-colors shadow-inner"
+                            className="bg-background/50 border-border hover:border-border/80 hover:bg-background/70 focus-visible:ring-[3px] focus-visible:ring-ring/50 font-mono text-foreground transition-colors shadow-inner"
                         />
                     </div>
                 ) : (
@@ -429,7 +450,7 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                         type="text"
                         value={data}
                         onChange={handleStringChange}
-                        className="bg-background/50 border-border hover:border-border focus-visible:ring-1 focus-visible:ring-blue-500 text-foreground transition-colors shadow-inner w-full"
+                        className="bg-background/50 border-border hover:border-border/80 hover:bg-background/70 focus-visible:ring-[3px] focus-visible:ring-ring/50 text-foreground transition-colors shadow-inner w-full"
                     />
                 )
         );
@@ -442,7 +463,7 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                     type="number"
                     value={data}
                     onChange={handleNumberChange}
-                    className="bg-background/50 border-border hover:border-border focus-visible:ring-1 focus-visible:ring-blue-500 font-mono text-foreground w-full max-w-[200px] transition-colors shadow-inner"
+                    className="bg-background/50 border-border hover:border-border/80 hover:bg-background/70 focus-visible:ring-[3px] focus-visible:ring-ring/50 font-mono text-foreground w-full max-w-[200px] transition-colors shadow-inner"
                 />
         );
     }
@@ -460,7 +481,7 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                     <Switch
                         checked={data}
                         onCheckedChange={handleBooleanChange}
-                        className="data-[state=checked]:bg-emerald-500 data-[state=unchecked]:bg-accent transition-colors shadow-sm"
+                        className="data-[state=checked]:bg-emerald-500 transition-colors shadow-sm"
                     />
                 </div>
         );
@@ -479,23 +500,33 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                                         <Input
                                             value={item}
                                             onChange={(e) => handleArrayStringChange(idx, e.target.value)}
-                                            className="bg-background/50 border-border hover:border-border focus-visible:ring-1 focus-visible:ring-blue-500 text-sm h-10 w-full transition-colors shadow-inner"
+                                            className="bg-background/50 border-border hover:border-border/80 hover:bg-background/70 focus-visible:ring-[3px] focus-visible:ring-ring/50 text-sm h-10 w-full transition-colors shadow-inner"
                                         />
                                         {(typeof item === 'string' && currentValues.custom_catalog_names?.[item]) && (
-                                            <p className="text-xs text-blue-400 mt-1.5 ml-1 px-2 py-0.5 rounded-sm bg-blue-950/30 border-l-2 border-blue-500 inline-block">
+                                            <p className="text-xs text-primary mt-1.5 ml-1 px-2 py-0.5 rounded-sm bg-primary/12 border-l-2 border-primary inline-block">
                                                 Label: <span className="font-semibold">{resolveCatalogName(item, currentValues.custom_catalog_names)}</span>
                                             </p>
                                         )}
                                     </div>
-                                    <Button variant="ghost" size="icon" onClick={() => removeArrayItem(idx)} className="h-10 w-10 rounded-lg text-muted-foreground hover:text-red-400 hover:bg-red-500/10 shrink-0 transition-colors opacity-0 group-hover:opacity-100">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => removeArrayItem(idx)}
+                                        className={cn("h-10 w-10 rounded-lg shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100", editorHover.iconDanger)}
+                                    >
                                         <Trash2 className="w-4 h-4" />
                                     </Button>
                                 </div>
                             );
                         } else {
                             return (
-                                <div key={idx} className="border border-border/80 rounded-xl p-4 bg-background/40 relative group shadow-sm transition-all hover:border-border/80">
-                                    <Button variant="ghost" size="icon" onClick={() => removeArrayItem(idx)} className="absolute top-3 right-3 h-8 w-8 rounded-md text-muted-foreground hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all">
+                                <div key={idx} className="border border-border/80 rounded-xl p-4 bg-background/40 relative group shadow-sm transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out hover:border-border/90 hover:bg-muted/28">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => removeArrayItem(idx)}
+                                        className={cn("absolute top-3 right-3 h-8 w-8 rounded-md text-muted-foreground opacity-0 group-hover:opacity-100", editorHover.iconDanger)}
+                                    >
                                         <Trash2 className="w-4 h-4" />
                                     </Button>
                                     <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3 block">Item <span className="text-foreground">{idx}</span></span>
@@ -505,7 +536,7 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
                         }
                     })}
 
-                    <Button variant="outline" size="sm" onClick={addArrayItem} className="w-full border-border border-dashed bg-background/30 text-muted-foreground hover:text-foreground hover:bg-card hover:border-border mt-3 h-10 transition-all rounded-lg">
+                    <Button variant="outline" size="sm" onClick={addArrayItem} className="w-full border-border border-dashed bg-background/30 text-muted-foreground hover:text-foreground hover:bg-muted/30 hover:border-border/80 mt-3 h-10 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out rounded-lg">
                         <Plus className="w-4 h-4 mr-2" />
                         Add Item
                     </Button>
@@ -528,9 +559,9 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
         }
 
         return renderWrapper(
-                <Accordion type="single" collapsible className="w-full overflow-hidden border border-border/80 rounded-xl bg-background/40 shadow-sm transition-all hover:border-border/80">
+                <Accordion type="single" collapsible className="w-full overflow-hidden border border-border/80 rounded-xl bg-background/40 shadow-sm transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out hover:border-border/90 hover:bg-muted/30">
                     <AccordionItem value="item-1" className="border-b-0">
-                        <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-card/50 text-sm font-medium text-foreground transition-colors">
+                        <AccordionTrigger className="px-5 py-4 hover:bg-muted/30 text-sm font-medium text-foreground transition-colors">
                             <span className="flex items-center gap-3">
                                 View Object Details
                                 <span className="flex items-center justify-center px-2 py-0.5 rounded-full bg-muted text-xs font-bold text-muted-foreground">

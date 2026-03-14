@@ -18,7 +18,7 @@ import { decodeConfig } from "@/lib/config-utils";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { editorAction, editorLayout, editorNoticeTone, editorToneBadge } from "@/components/editor/ui/style-contract";
+import { editorAction, editorLayout, editorNoticeTone, editorSurface, editorToneBadge } from "@/components/editor/ui/style-contract";
 
 interface ImportPatternsModalProps {
     isOpen: boolean;
@@ -279,9 +279,18 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
 
     const renderPatternRow = (p: ParsedPattern) => {
         const isSynced = p.existsInCurrent && !p.hasChanges;
+        const isSelected = selectedPatterns.has(p.regex);
 
         return (
-            <div key={p.regex} className={`flex items-start gap-3 p-3 border-b border-border/40 transition-colors group/row ${isSynced ? 'opacity-40 bg-muted/5' : 'hover:bg-muted/30'}`}>
+            <div
+                key={p.regex}
+                className={`group/row flex items-start gap-3 border-b border-border/35 p-3 transition-colors ${isSynced
+                    ? "bg-muted/[0.04] opacity-55"
+                    : isSelected
+                        ? "bg-primary/8 hover:bg-primary/12 dark:bg-primary/10 dark:hover:bg-primary/18"
+                        : "hover:bg-primary/10 dark:hover:bg-primary/16"
+                    }`}
+            >
                 <Checkbox
                     id={`pattern-${p.regex}`}
                     checked={selectedPatterns.has(p.regex)}
@@ -292,17 +301,17 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                         else next.delete(p.regex);
                         setSelectedPatterns(next);
                     }}
-                    className="mt-0.5"
+                    className="mt-0.5 border-border data-[state=unchecked]:hover:border-primary/70 data-[state=unchecked]:hover:bg-primary/10 data-[state=checked]:border-primary data-[state=checked]:bg-primary"
                 />
                 <div className="flex-1 min-w-0">
-                    <label 
-                        htmlFor={`pattern-${p.regex}`} 
-                        className={`text-sm font-medium block truncate ${isSynced ? 'text-foreground/60 cursor-default' : 'text-foreground cursor-pointer'}`}
+                    <label
+                        htmlFor={`pattern-${p.regex}`}
+                        className={`block truncate text-sm font-medium ${isSynced ? "cursor-default text-foreground/62" : isSelected ? "cursor-pointer text-primary" : "cursor-pointer text-foreground"}`}
                     >
                         {p.customName}
                     </label>
                     <p
-                        className={`text-xs font-mono mt-0.5 block overflow-hidden text-ellipsis whitespace-nowrap max-w-full ${isSynced ? 'text-foreground/30' : 'text-foreground/50'}`}
+                        className={`mt-0.5 block max-w-full overflow-hidden text-ellipsis whitespace-nowrap font-mono text-xs ${isSynced ? "text-foreground/34" : isSelected ? "text-primary/72 dark:text-primary/70" : "text-foreground/48"}`}
                         title={p.regex}
                     >
                         {p.regex}
@@ -339,14 +348,14 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                 <div className="flex-1 flex flex-col min-h-0 mt-4">
                     {step === 1 ? (
                         <div className="space-y-6 pt-1 overflow-y-auto custom-scrollbar flex-1 pr-1">
-                            <div className="p-5 border border-border rounded-xl bg-card/50 space-y-4">
+                            <div className={cn(editorSurface.panel, "space-y-4 p-5")}>
                                 <h3 className="font-semibold text-sm text-foreground/90">Load from Template</h3>
                                 <div className="flex flex-col gap-3">
                                     <Select value={selectedVersion} onValueChange={setSelectedVersion}>
-                                        <SelectTrigger className="w-full h-10 sm:h-9 bg-background border-input text-base sm:text-sm font-mono">
+                                        <SelectTrigger className={cn(editorSurface.field, "h-10 w-full text-base font-mono sm:h-9 sm:text-sm")}>
                                             <SelectValue placeholder="Select version" />
                                         </SelectTrigger>
-                                        <SelectContent className="bg-popover border-border text-popover-foreground">
+                                        <SelectContent>
                                             {templates.map(t => (
                                                 <SelectItem key={t.label} value={t.label} className="text-sm sm:text-xs font-mono cursor-pointer focus:bg-accent focus:text-accent-foreground">
                                                     {t.label}
@@ -374,7 +383,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                                             }
                                         }}
                                         disabled={templateLoading}
-                                        className="w-full h-10 sm:h-9 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-500/20 transition-all"
+                                        className={cn(editorAction.primary, "h-10 w-full font-bold sm:h-9")}
                                     >
                                         {templateLoading ? "Loading..." : "Fetch Template"}
                                     </Button>
@@ -389,9 +398,9 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
 
                             <div
                                 onClick={() => fileInputRef.current?.click()}
-                                className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-border rounded-xl hover:border-blue-500/50 hover:bg-blue-500/5 transition-all text-center cursor-pointer group"
+                                className={cn(editorSurface.dropzone, "group flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 p-8 text-center transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out hover:border-primary/50 hover:bg-primary/8")}
                             >
-                                <UploadCloud className="w-12 h-12 text-foreground/40 mb-3 group-hover:text-blue-500/70 transition-colors" />
+                                <UploadCloud className="w-12 h-12 text-foreground/40 mb-3 group-hover:text-primary/70 transition-colors" />
                                 <h3 className="font-semibold text-sm text-foreground/90 mb-1">Configuration File</h3>
                                 <p className="text-xs text-foreground/50 max-w-xs mx-auto">
                                     Extract pattern data from an existing <code>omni-config.json</code> file.
@@ -407,18 +416,18 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                                     value={searchFilter}
                                     onChange={(e) => setSearchFilter(e.target.value)}
                                     placeholder="Search patterns..."
-                                    className="pl-9 h-10 bg-muted/20 border-border text-sm"
+                                    className={cn(editorSurface.field, "h-10 pl-9 text-sm")}
                                 />
                             </div>
 
-                            <div className="flex-1 flex flex-col min-h-0 border border-border rounded-xl bg-card/30 overflow-hidden">
-                                <div className="flex-shrink-0 px-3 py-2 bg-card border-b border-border flex items-center justify-between sticky top-0 z-20">
+                            <div className={cn(editorSurface.inset, "flex min-h-0 flex-1 flex-col overflow-hidden")}>
+                                <div className="sticky top-0 z-20 flex shrink-0 items-center justify-between border-b border-primary/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.66),rgba(239,246,255,0.5))] px-3 py-2 dark:border-primary/14 dark:bg-[linear-gradient(180deg,rgba(18,24,35,0.95),rgba(14,20,31,0.92))]">
                                     <div className="flex gap-1">
                                         <Button
                                             variant="ghost"
                                             size="sm"
                                             onClick={selectAllChanged}
-                                            className="h-7 px-2 text-xs font-semibold text-foreground/70 hover:text-foreground hover:bg-muted/50"
+                                            className="h-7 px-2 text-xs font-semibold text-foreground/72 hover:bg-primary/10 hover:text-foreground"
                                         >
                                             Select All
                                         </Button>
@@ -426,7 +435,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                                             variant="ghost"
                                             size="sm"
                                             onClick={selectAllNew}
-                                            className="h-7 px-2 text-xs font-semibold text-blue-500 hover:text-blue-400 hover:bg-blue-500/10"
+                                            className="h-7 px-2 text-xs font-semibold text-primary hover:text-primary hover:bg-primary/10"
                                         >
                                             New Only
                                         </Button>
@@ -435,7 +444,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                                         variant="ghost"
                                         size="sm"
                                         onClick={deselectAll}
-                                        className="h-7 px-2 text-xs font-semibold text-foreground/50 hover:text-foreground/70 hover:bg-muted/50"
+                                        className="h-7 px-2 text-xs font-semibold text-foreground/52 hover:bg-primary/10 hover:text-foreground/72"
                                     >
                                         Clear
                                     </Button>
@@ -444,7 +453,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                                 <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar">
                                     {newPatterns.length > 0 && (
                                         <>
-                                            <div className="px-3 py-2 bg-card text-xs font-bold text-foreground/50 uppercase tracking-widest border-b border-border/30 sticky top-0 z-10">
+                                            <div className={cn(editorSurface.sticky, "sticky top-0 z-10 border-b border-border/30 px-3 py-2 text-xs font-bold uppercase tracking-widest text-foreground/52")}>
                                                 New ({newPatterns.length})
                                             </div>
                                             {newPatterns.map(renderPatternRow)}
@@ -452,7 +461,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                                     )}
                                     {updatedPatterns.length > 0 && (
                                         <>
-                                            <div className="px-3 py-2 bg-card text-xs font-bold text-foreground/50 uppercase tracking-widest border-y border-border/30 sticky top-0 z-10">
+                                            <div className={cn(editorSurface.sticky, "sticky top-0 z-10 border-y border-border/30 px-3 py-2 text-xs font-bold uppercase tracking-widest text-foreground/52")}>
                                                 Updates ({updatedPatterns.length})
                                             </div>
                                             {updatedPatterns.map(renderPatternRow)}
@@ -460,7 +469,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                                     )}
                                     {unchangedPatterns.length > 0 && (
                                         <>
-                                            <div className="px-3 py-2 bg-card text-xs font-bold text-foreground/50 uppercase tracking-widest border-y border-border/30 sticky top-0 z-10">
+                                            <div className={cn(editorSurface.sticky, "sticky top-0 z-10 border-y border-border/30 px-3 py-2 text-xs font-bold uppercase tracking-widest text-foreground/52")}>
                                                 Synced ({unchangedPatterns.length})
                                             </div>
                                             {unchangedPatterns.map(renderPatternRow)}
@@ -485,7 +494,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                 )}
 
                 <DialogFooter className="mt-4 shrink-0 border-t border-border/50 pt-3 pb-[calc(0.5rem+env(safe-area-inset-bottom))] flex-row justify-end gap-2">
-                    <Button variant="outline" onClick={handleClose} className="bg-muted/50 border-border text-foreground hover:bg-muted font-bold h-10">
+                    <Button variant="outline" onClick={handleClose} className={cn(editorAction.secondary, editorSurface.field, "h-10 font-bold")}>
                         Cancel
                     </Button>
                     {step === 2 && (

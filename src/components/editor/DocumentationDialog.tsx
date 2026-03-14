@@ -10,11 +10,14 @@ import { UpdateGuide } from "@/components/editor/UpdateGuide";
 import { cn } from "@/lib/utils";
 import { GuideHeader } from "@/components/editor/GuideHeader";
 import { GuideBody, GuideDialog } from "@/components/editor/GuidePrimitives";
+import { editorHover } from "@/components/editor/ui/style-contract";
 
 type GuideId = "menu" | "install" | "update" | "use";
 
 type DocumentationDialogProps = {
-    trigger: React.ReactElement;
+    trigger?: React.ReactElement;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
 };
 
 const cards = [
@@ -46,10 +49,10 @@ const cards = [
 
 const cardToneClasses = {
     blue: {
-        shell: "border-sky-500/24 bg-sky-500/7 hover:border-sky-400/45 hover:bg-sky-500/10",
-        icon: "border-sky-500/20 bg-sky-500/10 text-sky-500",
-        badge: "border-sky-500/20 bg-sky-500/10 text-sky-600 dark:text-sky-300",
-        arrow: "border-sky-500/18 bg-background/60 text-sky-500",
+        shell: "border-primary/24 bg-primary/8 hover:border-primary/45 hover:bg-primary/10",
+        icon: "border-primary/20 bg-primary/10 text-primary",
+        badge: "border-primary/20 bg-primary/10 text-primary dark:text-primary",
+        arrow: "border-primary/18 bg-background/60 text-primary",
     },
     amber: {
         shell: "border-amber-500/24 bg-amber-500/7 hover:border-amber-400/45 hover:bg-amber-500/10",
@@ -58,16 +61,20 @@ const cardToneClasses = {
         arrow: "border-amber-500/18 bg-background/60 text-amber-500",
     },
     indigo: {
-        shell: "border-indigo-500/24 bg-indigo-500/7 hover:border-indigo-400/45 hover:bg-indigo-500/10",
-        icon: "border-indigo-500/20 bg-indigo-500/10 text-indigo-500",
-        badge: "border-indigo-500/20 bg-indigo-500/10 text-indigo-600 dark:text-indigo-300",
-        arrow: "border-indigo-500/18 bg-background/60 text-indigo-500",
+        shell: "border-primary/24 bg-primary/8 hover:border-primary/45 hover:bg-primary/10",
+        icon: "border-primary/20 bg-primary/10 text-primary",
+        badge: "border-primary/20 bg-primary/10 text-primary dark:text-primary",
+        arrow: "border-primary/18 bg-background/60 text-primary",
     },
 };
 
 function BackButton({ onBack }: { onBack: () => void }) {
     return (
-        <Button variant="outline" onClick={onBack} className="shrink-0">
+        <Button
+            variant="outline"
+            onClick={onBack}
+            className="h-10 shrink-0 rounded-xl border-border/70 bg-background/70 px-4 text-foreground/86 shadow-none hover:bg-accent/60 hover:text-foreground"
+        >
             <ArrowLeft className="w-4 h-4 mr-2" />
             All guides
         </Button>
@@ -91,7 +98,7 @@ function MenuGuideCard({
             type="button"
             onClick={() => onSelect(card.id)}
             className={cn(
-                "group rounded-2xl border p-4 text-left transition-all duration-200 hover:-translate-y-0.5 sm:rounded-3xl sm:p-5",
+                `group rounded-2xl border p-4 text-left ${editorHover.transition} duration-200 sm:rounded-3xl lg:p-4 ${editorHover.premiumCard}`,
                 tone.shell
             )}
         >
@@ -117,19 +124,19 @@ function MenuGuideCard({
 
             <div className="hidden lg:block">
                 <div className="flex items-start justify-between gap-3">
-                    <div className={cn("flex h-11 w-11 items-center justify-center rounded-2xl border", tone.icon)}>
-                        <Icon className="h-5 w-5" />
+                    <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl border", tone.icon)}>
+                        <Icon className="h-4.5 w-4.5" />
                     </div>
-                    <span className={cn("inline-flex h-8 min-w-8 items-center justify-center rounded-full border px-2.5 text-[11px] font-bold", tone.badge)}>
+                    <span className={cn("inline-flex h-7 min-w-7 items-center justify-center rounded-full border px-2 text-[11px] font-bold", tone.badge)}>
                         0{index + 1}
                     </span>
                 </div>
-                <div className="mt-5">
+                <div className="mt-4">
                     <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-foreground/45">{card.subtitle}</p>
-                    <h3 className="mt-1 text-xl font-black tracking-tight text-foreground">{card.title}</h3>
-                    <p className="mt-2 text-sm leading-relaxed text-foreground/68">{card.description}</p>
+                    <h3 className="mt-1 text-lg font-black tracking-tight text-foreground xl:text-[1.65rem]">{card.title}</h3>
+                    <p className="mt-2 text-[15px] leading-relaxed text-foreground/66">{card.description}</p>
                 </div>
-                <div className="mt-5 inline-flex items-center text-sm font-semibold text-foreground/84">
+                <div className="mt-4 inline-flex items-center text-sm font-semibold text-foreground/84">
                     Open guide
                     <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </div>
@@ -140,16 +147,20 @@ function MenuGuideCard({
 
 function Menu({ onSelect }: { onSelect: (id: GuideId) => void }) {
     return (
-        <GuideDialog className="h-auto max-h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] sm:max-w-5xl p-0 overflow-hidden">
-            <div className="relative bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.14),transparent_58%),radial-gradient(circle_at_top_right,rgba(99,102,241,0.16),transparent_45%)] px-4 py-4 sm:px-8 sm:py-8">
+        <GuideDialog className="relative h-auto max-h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] overflow-y-auto overflow-x-hidden p-0 sm:max-w-[56rem]">
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(17,24,39,0.94)_0%,rgba(17,24,39,0.94)_42%,rgba(17,24,39,0.86)_58%,rgba(17,24,39,0.78)_100%)]" />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(circle_at_top_left,color-mix(in_oklab,var(--color-primary)_18%,transparent),transparent_58%),radial-gradient(circle_at_top_right,color-mix(in_oklab,var(--color-primary)_24%,transparent),transparent_46%)] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
+            <div className="relative px-4 py-4 sm:px-6 sm:py-6">
                 <GuideHeader
                     badge="Documentation"
                     title="Choose your guide"
                     icon={Sparkles}
                     tone="indigo"
+                    compact
+                    showDivider={false}
                 />
             </div>
-            <GuideBody className="px-4 sm:px-8">
+            <GuideBody className="relative mt-0 px-4 pt-1 sm:px-6 sm:pt-2">
                 <div className="grid gap-4 lg:grid-cols-3">
                     {cards.map((card, idx) => (
                         <MenuGuideCard key={card.id} card={card} index={idx} onSelect={onSelect} />
@@ -160,18 +171,22 @@ function Menu({ onSelect }: { onSelect: (id: GuideId) => void }) {
     );
 }
 
-export function DocumentationDialog({ trigger }: DocumentationDialogProps) {
-    const [open, setOpen] = useState(false);
+export function DocumentationDialog({ trigger, open: controlledOpen, onOpenChange }: DocumentationDialogProps) {
+    const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
     const [activeGuide, setActiveGuide] = useState<GuideId>("menu");
+    const open = controlledOpen ?? uncontrolledOpen;
 
     const handleOpenChange = (nextOpen: boolean) => {
-        setOpen(nextOpen);
+        if (controlledOpen === undefined) {
+            setUncontrolledOpen(nextOpen);
+        }
+        onOpenChange?.(nextOpen);
         if (nextOpen) setActiveGuide("menu");
     };
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogTrigger asChild>{trigger}</DialogTrigger>
+            {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
             {activeGuide === "menu" && <Menu onSelect={setActiveGuide} />}
             {activeGuide === "install" && <TemplateGuide headerAction={<BackButton onBack={() => setActiveGuide("menu")} />} />}
             {activeGuide === "use" && (

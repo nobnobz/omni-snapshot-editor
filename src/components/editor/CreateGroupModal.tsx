@@ -11,7 +11,9 @@ import { Checkbox } from "../ui/checkbox";
 import { ImageIcon, Search } from 'lucide-react';
 import { CATALOG_FALLBACKS } from '@/lib/catalog-fallbacks';
 import { cn, formatDisplayName, resolveCatalogName, ensureCatalogPrefix } from '@/lib/utils';
-import { editorAction, editorLayout } from "./ui/style-contract";
+import { editorAction, editorLayout, editorSurface } from "./ui/style-contract";
+
+type ThumbnailAspect = "portrait" | "landscape" | "square";
 
 export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpen: boolean, onClose: () => void, initialParentUUID?: string }) {
     const { currentValues, addMainCatalogGroup, addCatalogGroup, catalogs, customFallbacks } = useConfig();
@@ -25,6 +27,8 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
     // Subgroup State
     const [subName, setSubName] = useState("");
     const [subImageUrl, setSubImageUrl] = useState("");
+    const [subImageAspect, setSubImageAspect] = useState<ThumbnailAspect>("square");
+    const [subImageLoadError, setSubImageLoadError] = useState(false);
     const [targetMainGroup, setTargetMainGroup] = useState(initialParentUUID || "none");
     const [selectedCatalogs, setSelectedCatalogs] = useState<Set<string>>(new Set());
     const [catalogSearch, setCatalogSearch] = useState("");
@@ -36,6 +40,11 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
             setActiveTab("sub"); // Ensure we are on the subgroup tab if a parent is provided
         }
     }, [isOpen, initialParentUUID]);
+
+    React.useEffect(() => {
+        setSubImageAspect("square");
+        setSubImageLoadError(false);
+    }, [subImageUrl]);
 
     // Lookups
     const catalogGroups = currentValues.catalog_groups || {};
@@ -113,6 +122,13 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
         handleClose();
     };
 
+    const isSubImagePreviewable = /^https?:\/\//i.test(subImageUrl.trim());
+    const subImageFrameClass = subImageAspect === "landscape"
+        ? "h-10 w-16"
+        : subImageAspect === "portrait"
+            ? "h-11 w-8"
+            : "h-10 w-10";
+
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
             <DialogContent className={cn(editorLayout.dialogContent, "sm:max-w-[425px] md:max-w-3xl sm:max-h-[95dvh]")}>
@@ -124,9 +140,19 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                 </DialogHeader>
 
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col flex-1 min-h-0 overflow-hidden">
-                    <TabsList className="grid w-full grid-cols-2 bg-muted p-1 rounded-md mb-4 shrink-0">
-                        <TabsTrigger value="sub" className="data-[state=active]:bg-background data-[state=active]:text-foreground text-foreground/70">Subgroup</TabsTrigger>
-                        <TabsTrigger value="main" className="data-[state=active]:bg-background data-[state=active]:text-foreground text-foreground/70">Main Group</TabsTrigger>
+                    <TabsList className={cn(editorSurface.toolbar, "grid w-full grid-cols-2 p-1 h-11 rounded-xl mb-4 shrink-0")}>
+                        <TabsTrigger
+                            value="sub"
+                            className="rounded-lg border border-transparent text-foreground/70 data-[state=active]:border-primary/24 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm dark:data-[state=active]:border-primary/24 dark:data-[state=active]:bg-primary/18"
+                        >
+                            Subgroup
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="main"
+                            className="rounded-lg border border-transparent text-foreground/70 data-[state=active]:border-primary/24 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm dark:data-[state=active]:border-primary/24 dark:data-[state=active]:bg-primary/18"
+                        >
+                            Main Group
+                        </TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="main" className="space-y-4 flex-1 flex flex-col min-h-0 data-[state=inactive]:hidden overflow-hidden">
@@ -138,7 +164,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                     value={mainName}
                                     onChange={(e) => setMainName(e.target.value)}
                                     placeholder="e.g. User Collections"
-                                    className="h-10 text-base sm:text-sm bg-background border-input focus-visible:ring-blue-500"
+                                    className={cn(editorSurface.field, "h-10 text-base sm:text-sm focus-visible:ring-ring/50")}
                                 />
                             </div>
 
@@ -152,11 +178,11 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                         placeholder="Search subgroups..."
                                         value={searchQuery}
                                         onChange={e => setSearchQuery(e.target.value)}
-                                        className="pl-8 h-10 sm:h-8 text-base sm:text-sm bg-background border-input focus-visible:ring-blue-500 mb-2"
+                                        className={cn(editorSurface.field, "pl-8 h-10 sm:h-8 text-base sm:text-sm focus-visible:ring-ring/50 mb-2")}
                                     />
                                 </div>
 
-                                <ScrollArea className="h-[30vh] sm:h-[200px] rounded-md border border-border bg-transparent px-4 pb-4">
+                                <ScrollArea className={cn(editorSurface.inset, editorSurface.listSurface, "h-[30vh] sm:h-[200px] rounded-xl px-4 pb-4")}>
                                     {allSubgroupNames.length === 0 ? (
                                         <p className="text-sm text-foreground/70 italic">No subgroups available.</p>
                                     ) : (
@@ -164,7 +190,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                             {allSubgroupNames
                                                 .filter(name => name.toLowerCase().includes(searchQuery.toLowerCase()))
                                                 .map(name => (
-                                                    <div key={name} className="flex items-center space-x-2 pl-1">
+                                                    <div key={name} className="flex items-center space-x-2 pl-1 py-1.5 rounded-sm hover:bg-primary/10 dark:hover:bg-primary/16 transition-colors">
                                                         <Checkbox
                                                             id={`sg-${name}`}
                                                             checked={selectedSubgroups.has(name)}
@@ -174,7 +200,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                                                 else next.delete(name);
                                                                 setSelectedSubgroups(next);
                                                             }}
-                                                            className="border-primary data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                                            className="border-border data-[state=unchecked]:hover:border-primary/70 data-[state=unchecked]:hover:bg-primary/10 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                                         />
                                                         <label
                                                             htmlFor={`sg-${name}`}
@@ -191,7 +217,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                         </div>
 
                         <DialogFooter className="mt-4 border-t border-border/50 pt-3 pb-[max(0px,env(safe-area-inset-bottom))]">
-                            <Button variant="outline" onClick={handleClose} className="bg-muted border-border text-foreground hover:bg-muted/80">Cancel</Button>
+                            <Button variant="outline" onClick={handleClose} className={cn(editorAction.secondary, editorSurface.field, "bg-white/42")}>Cancel</Button>
                             <Button onClick={handleCreateMain} disabled={!mainName.trim()} className={editorAction.primary}>Create Main Group</Button>
                         </DialogFooter>
                     </TabsContent>
@@ -207,17 +233,17 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                         value={subName}
                                         onChange={(e) => setSubName(e.target.value)}
                                         placeholder="e.g. Action Movies"
-                                        className="h-10 text-base sm:text-sm bg-background border-input focus-visible:ring-blue-500 font-bold"
+                                        className={cn(editorSurface.field, "h-10 text-base sm:text-sm focus-visible:ring-ring/50 font-bold")}
                                     />
                                 </div>
 
                                 <div className="space-y-2">
                                     <Label htmlFor="target-main" className="text-foreground">Main Group</Label>
                                     <Select value={targetMainGroup} onValueChange={setTargetMainGroup}>
-                                        <SelectTrigger className="w-full h-10 text-base sm:text-sm bg-background border-input text-foreground">
+                                        <SelectTrigger className={cn("w-full h-10 text-base sm:text-sm text-foreground", editorSurface.field)}>
                                             <SelectValue placeholder="Select a Main Group" />
                                         </SelectTrigger>
-                                        <SelectContent className="bg-popover border-border text-popover-foreground max-h-[200px]">
+                                        <SelectContent className={cn(editorSurface.overlay, "max-h-[200px]")}>
                                             {mainGroupOrder.length === 0 ? (
                                                 <SelectItem value="none" className="focus:bg-accent focus:text-accent-foreground italic text-foreground/70">None (Unassigned)</SelectItem>
                                             ) : (
@@ -238,31 +264,41 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
 
                                 <div className="space-y-2">
                                     <Label htmlFor="sub-image" className="text-foreground">Thumbnail Image URL (Optional)</Label>
-                                    <div className="flex items-center gap-3 bg-background border border-input p-2 rounded-md">
-                                        {subImageUrl && subImageUrl.startsWith("http") ? (
-                                            <div className="h-10 w-10 rounded shadow-sm overflow-hidden bg-muted border border-border shrink-0">
-                                                {/* eslint-disable-next-line @next/next/no-img-element -- User-provided preview image with imperative fallback handling. */}
-                                                <img
-                                                    src={subImageUrl}
-                                                    alt="Preview"
-                                                    className="h-full w-full object-cover"
-                                                    onError={(e) => {
-                                                        (e.target as HTMLImageElement).style.display = 'none';
-                                                        (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="h-full w-full flex items-center justify-center text-foreground/70"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></div>';
-                                                    }}
-                                                />
-                                            </div>
-                                        ) : (
-                                            <div className="h-10 w-10 rounded bg-muted border border-border shrink-0 flex items-center justify-center">
+                                    <div className={cn(editorSurface.panel, "flex items-center gap-3 p-2 rounded-xl")}>
+                                        <div className={cn(editorSurface.inset, subImageFrameClass, "rounded-lg overflow-hidden shrink-0 flex items-center justify-center transition-[width,height] duration-200")}>
+                                            {isSubImagePreviewable && !subImageLoadError ? (
+                                                <>
+                                                    {/* eslint-disable-next-line @next/next/no-img-element -- User-provided preview image URL for subgroup thumbnail. */}
+                                                    <img
+                                                        src={subImageUrl}
+                                                        alt="Preview"
+                                                        className="h-full w-full object-contain"
+                                                        onLoad={(e) => {
+                                                            const { naturalWidth, naturalHeight } = e.currentTarget;
+                                                            if (!naturalWidth || !naturalHeight) {
+                                                                setSubImageAspect("square");
+                                                                return;
+                                                            }
+                                                            const ratio = naturalWidth / naturalHeight;
+                                                            if (ratio > 1.2) setSubImageAspect("landscape");
+                                                            else if (ratio < 0.82) setSubImageAspect("portrait");
+                                                            else setSubImageAspect("square");
+                                                        }}
+                                                        onError={() => {
+                                                            setSubImageLoadError(true);
+                                                        }}
+                                                    />
+                                                </>
+                                            ) : (
                                                 <ImageIcon className="w-4 h-4 text-foreground/70" />
-                                            </div>
-                                        )}
+                                            )}
+                                        </div>
                                         <Input
                                             id="sub-image"
                                             value={subImageUrl}
                                             onChange={(e) => setSubImageUrl(e.target.value)}
                                             placeholder="https://..."
-                                            className="border-0 bg-transparent focus-visible:ring-0 px-1 py-0 h-10 text-base sm:text-sm font-medium"
+                                            className={cn(editorSurface.field, "h-10 min-w-0 flex-1 px-3 text-base sm:text-sm font-medium focus-visible:ring-[3px] focus-visible:ring-ring/50")}
                                         />
                                     </div>
                                 </div>
@@ -278,15 +314,15 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                         placeholder="Search catalogs by name or ID..."
                                         value={catalogSearch}
                                         onChange={e => setCatalogSearch(e.target.value)}
-                                        className="pl-8 h-10 sm:h-8 text-base sm:text-sm bg-background border-input focus-visible:ring-blue-500 mb-2 focus:ring-0"
+                                        className={cn(editorSurface.field, "pl-8 h-10 sm:h-8 text-base sm:text-sm focus-visible:ring-ring/50 mb-2 focus:ring-0")}
                                     />
                                 </div>
 
-                                <ScrollArea className="h-[40vh] min-h-[320px] sm:h-[300px] md:h-[450px] rounded-md border border-border bg-transparent px-4 pb-4">
+                                <ScrollArea className={cn(editorSurface.inset, editorSurface.listSurface, "h-[40vh] min-h-[320px] sm:h-[300px] md:h-[450px] rounded-xl px-4 pb-4")}>
                                     {filteredCatalogs.length === 0 ? (
                                         <p className="text-sm text-foreground/70 italic">No catalogs found.</p>
                                     ) : (
-                                        <div className="space-y-4 pr-3 pb-2 pt-4">
+                                        <div className="space-y-4 pb-2 pt-4">
                                             {(() => {
                                                 const groups: Record<string, typeof filteredCatalogs> = {
                                                     "Other": []
@@ -314,12 +350,12 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
 
                                                 return sortedCategories.map(category => (
                                                     <div key={category} className="space-y-2">
-                                                        <div className="sticky top-0 bg-card/95 backdrop-blur-sm py-2.5 z-[60] mb-2 border-b border-border/40 -mx-4 px-4">
+                                                        <div className={cn(editorSurface.insetSticky, "sticky top-0 py-2.5 z-[60] mb-2 ml-[-1rem] w-[calc(100%+2rem)] px-4")}>
                                                             <h5 className="text-xs font-bold text-foreground/50 uppercase tracking-[0.2em]">{category}</h5>
                                                         </div>
                                                         <div className="space-y-3 pt-1">
                                                             {groups[category].map(cat => (
-                                                                <div key={cat.id} className="flex items-start space-x-2 pl-1">
+                                                                <div key={cat.id} className="flex items-start space-x-2 pl-1 py-1.5 rounded-sm hover:bg-primary/10 dark:hover:bg-primary/16 transition-colors">
                                                                     <Checkbox
                                                                         id={`cat-${cat.id}`}
                                                                         checked={selectedCatalogs.has(cat.id)}
@@ -329,7 +365,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                                                             else next.delete(cat.id);
                                                                             setSelectedCatalogs(next);
                                                                         }}
-                                                                        className="mt-0.5 border-primary data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                                                        className="mt-0.5 border-border data-[state=unchecked]:hover:border-primary/70 data-[state=unchecked]:hover:bg-primary/10 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                                                     />
                                                                     <label
                                                                         htmlFor={`cat-${cat.id}`}
@@ -352,7 +388,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                         </div>
 
                         <DialogFooter className="mt-4 border-t border-border/50 pt-3 pb-[max(0px,env(safe-area-inset-bottom))]">
-                            <Button variant="outline" onClick={handleClose} className="bg-muted border-border text-foreground hover:bg-muted/80">Cancel</Button>
+                            <Button variant="outline" onClick={handleClose} className={cn(editorAction.secondary, editorSurface.field, "bg-white/42")}>Cancel</Button>
                             <Button onClick={handleCreateSub} disabled={!subName.trim()} className={editorAction.primary}>Create Subgroup</Button>
                         </DialogFooter>
                     </TabsContent>

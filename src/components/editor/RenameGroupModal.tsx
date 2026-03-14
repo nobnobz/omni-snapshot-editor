@@ -67,12 +67,12 @@ export function RenameGroupModal({ isOpen, onClose, oldName, isMainGroup = false
                             id={nameInputId}
                             value={newName}
                             onChange={e => setNewName(e.target.value)}
-                            className="h-10 text-base sm:text-sm bg-background border-input focus-visible:ring-blue-500"
+                            className="h-10 text-base sm:text-sm bg-background border-input focus-visible:ring-ring/50"
                         />
                     </div>
 
                     <div className={cn("p-3 rounded-lg border text-sm flex items-start gap-3", editorNoticeTone.info)}>
-                        <AlertCircle className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
+                        <AlertCircle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                         <div>
                             <p className="text-foreground/70">This group is referenced in <strong className="text-foreground">{refCount}</strong> places.</p>
                             <p className="text-foreground/70 text-xs mt-1">Renaming will automatically update all references to prevent orphans.</p>
@@ -90,7 +90,7 @@ export function RenameGroupModal({ isOpen, onClose, oldName, isMainGroup = false
                     )}
 
                     <DialogFooter className="mt-6">
-                        <Button type="button" variant="ghost" onClick={onClose} className="hover:bg-muted text-foreground border border-transparent">Cancel</Button>
+                        <Button type="button" variant="outline" onClick={onClose} className={editorAction.secondary}>Cancel</Button>
                         <Button type="submit" className={newNameExists ? cn(editorAction.secondary, "h-10 sm:h-9 editor-tone-warning") : editorAction.primary}>
                             {newNameExists ? "Merge Groups" : "Rename"}
                         </Button>

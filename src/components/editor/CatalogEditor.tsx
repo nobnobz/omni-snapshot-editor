@@ -51,7 +51,7 @@ import {
 import { CATALOG_FALLBACKS } from "@/lib/catalog-fallbacks";
 import { resolveCatalogName, cn } from "@/lib/utils";
 import { GripVertical, Eye, EyeOff, Trash2, ArrowDownAZ, ArrowUpZA, Search, Settings2, Shuffle, LayoutGrid, Star, ChevronDown, ChevronUp, Plus, Maximize, Pencil, ListX, Pin } from "lucide-react";
-import { editorAction, editorLayout, editorToneBadge } from "@/components/editor/ui/style-contract";
+import { editorAction, editorHover, editorLayout, editorSurface, editorToneBadge } from "@/components/editor/ui/style-contract";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 interface ManifestCatalog {
@@ -87,10 +87,11 @@ const updateCatalogFlagList = (list: string[], catalogId: string, isEnabled: boo
 };
 
 const catalogManagerBadgeTone = {
-    blue: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30",
+    blue: "bg-primary/10 text-primary dark:text-primary border-primary/30",
     amber: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30",
     emerald: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
     orange: "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20",
+    violet: "bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-500/25",
 } as const;
 
 const focusSearchInput = (input: HTMLInputElement | null) => {
@@ -229,16 +230,16 @@ function SortableCatalogItem({
         <div
             ref={setNodeRef}
             style={style}
-            className={`group flex items-center gap-3 p-3 bg-card border rounded-lg mb-2 transition-colors
-                ${isDragging ? "opacity-50 border-blue-500 shadow-xl" : "border-border hover:border-border/80"}
-                ${!isActive ? "opacity-60 border-dashed border-border/50 bg-card/60" : ""}
+            className={`group flex items-center gap-3 p-3 rounded-lg mb-2 ${editorHover.transition} ${editorSurface.cardInteractive}
+                ${isDragging ? "opacity-50 border-primary shadow-xl" : ""}
+                ${!isActive ? "opacity-60 border-dashed border-slate-200/60 bg-white/42 dark:border-white/8 dark:bg-white/[0.025]" : ""}
             `}
         >
             {/* Drag Handle */}
             <button
                 {...attributes}
                 {...listeners}
-                className={`cursor-grab shrink-0 p-2 rounded-md transition-colors ${isActive ? "text-foreground/70 hover:text-foreground hover:bg-muted" : "text-foreground pointer-events-none"}`}
+                className={`cursor-grab shrink-0 p-2 rounded-md transition-colors ${isActive ? editorHover.softAction : "text-foreground pointer-events-none"}`}
                 style={{ touchAction: 'none' }}
             >
                 <GripVertical className="h-5 w-5" />
@@ -263,7 +264,7 @@ function SortableCatalogItem({
                     ) : (
                         <div className="flex flex-col min-w-0">
                             <h4
-                                className={`text-sm font-bold flex items-center gap-1.5 cursor-pointer hover:underline underline-offset-4 decoration-blue-500/40 max-w-full group/name ${isActive ? "text-foreground" : "text-foreground/70"}`}
+                                className={`text-sm font-bold flex items-center gap-1.5 cursor-pointer transition-colors max-w-full group/name ${isActive ? "text-foreground group-hover/name:text-primary" : "text-foreground/70"}`}
                                 onClick={startNameEdit}
                             >
                                 <span className="truncate">
@@ -314,7 +315,7 @@ function SortableCatalogItem({
                         <Badge variant="outline" className={cn("text-xs font-bold px-2 py-0.5 rounded-md", catalogManagerBadgeTone.orange)}>Wide</Badge>
                     )}
                     {isRandom && (
-                        <Badge variant="secondary" className="text-xs font-bold px-2 py-0.5 rounded-md bg-muted text-foreground/70 border-none">Rand</Badge>
+                        <Badge variant="outline" className={cn("text-xs font-bold px-2 py-0.5 rounded-md", catalogManagerBadgeTone.violet)}>Rand</Badge>
                     )}
                 </div>
             </div>
@@ -325,7 +326,7 @@ function SortableCatalogItem({
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-foreground/70 hover:text-foreground hover:bg-muted shrink-0"
+                        className={`h-8 w-8 shrink-0 ${editorHover.iconAction}`}
                         onPointerDown={handleSettingsPointerDown}
                         onTouchStart={handleSettingsTouchStart}
                         onTouchMove={handleSettingsTouchMove}
@@ -336,7 +337,7 @@ function SortableCatalogItem({
                         <Settings2 className="w-4 h-4" />
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-64 bg-popover border-border text-popover-foreground shadow-2xl">
+                <DropdownMenuContent className="w-64">
 
                     <DropdownMenuLabel className="text-xs uppercase text-foreground/70 font-bold">Visibility</DropdownMenuLabel>
 
@@ -346,7 +347,7 @@ function SortableCatalogItem({
                         onSelect={(e) => e.preventDefault()}
                         className="text-xs"
                     >
-                        {catalog.enabled ? <Eye className="w-3.5 h-3.5 mr-2 text-blue-400" /> : <EyeOff className="w-3.5 h-3.5 mr-2 text-foreground/70" />}
+                        {catalog.enabled ? <Eye className="w-3.5 h-3.5 mr-2 text-primary" /> : <EyeOff className="w-3.5 h-3.5 mr-2 text-foreground/70" />}
                         {catalog.enabled ? "Shown in Shelf" : "Hidden in Shelf"}
                     </DropdownMenuCheckboxItem>
 
@@ -433,7 +434,7 @@ function SortableCatalogItem({
                                     <SelectTrigger className="h-6 w-16 text-xs bg-background border-border focus:ring-0 px-1">
                                         <SelectValue placeholder="–" />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-popover border-border text-popover-foreground">
+                                    <SelectContent>
                                         {[10, 20, 30, 50].map(opt => (
                                             <SelectItem key={opt} value={String(opt)} className="text-xs focus:bg-accent">{opt}</SelectItem>
                                         ))}
@@ -449,7 +450,7 @@ function SortableCatalogItem({
             <Button
                 variant="ghost" size="icon"
                 onClick={onRemove}
-                className="h-8 w-8 text-foreground/70 hover:text-red-500 hover:bg-red-500/10 shrink-0"
+                className={cn("h-8 w-8 shrink-0", editorHover.iconDanger)}
                 title="Disable catalog"
             >
                 <Trash2 className="w-4 h-4" />
@@ -711,9 +712,9 @@ export function CatalogEditor() {
 
     return (
         <div className="space-y-4 max-w-full overflow-x-hidden">
-            <div className="border border-border rounded-xl bg-card/20 overflow-hidden">
+            <div className={cn(editorSurface.card, "overflow-hidden")}>
                 {/* Unified Toolbar */}
-                <div className="sticky top-0 z-20 flex flex-wrap items-center gap-2 bg-card/95 backdrop-blur-md p-3 border-b border-border/80 shadow-sm">
+                <div className={cn(editorSurface.toolbar, "sticky top-0 z-20 flex flex-wrap items-center gap-2 rounded-none border-x-0 border-t-0 p-3")}>
                     {/* Add Catalog */}
                     <Dialog
                         open={isAddDialogOpen}
@@ -725,7 +726,7 @@ export function CatalogEditor() {
                         <DialogTrigger asChild>
                             <Button
                                 size="sm"
-                                className="h-9 px-3 font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20"
+                                className="h-9 px-3 font-bold bg-primary hover:bg-primary/92 text-primary-foreground shadow-lg shadow-primary/20"
                             >
                                 <Plus className="w-4 h-4 mr-1.5" /> Add Catalog
                             </Button>
@@ -750,40 +751,40 @@ export function CatalogEditor() {
                                         placeholder="Search by name or ID..."
                                         value={addSearch}
                                         onChange={e => setAddSearch(e.target.value)}
-                                        className="pl-8 h-10 sm:h-8 text-base sm:text-sm bg-background border-input focus-visible:ring-blue-500"
+                                        className={cn(editorSurface.field, "pl-8 h-10 sm:h-8 text-base sm:text-sm focus-visible:ring-ring/50")}
                                     />
                                 </div>
                             </DialogHeader>
 
-                            <div className="flex-1 overflow-y-auto rounded-md border-y border-border/50 bg-transparent px-4 pb-4 min-h-[180px]">
+                            <div className={cn(editorSurface.overlayList, "flex-1 overflow-y-auto rounded-md border-y border-border/50 px-4 pb-4 min-h-[180px]")}>
                                 {groupedAddCandidates.length === 0 ? (
                                     <p className="text-sm text-foreground/70 italic p-4">No catalogs found.</p>
                                 ) : (
-                                    <div className="space-y-1 pr-1 pb-2 pt-4">
+                                    <div className="space-y-1 pb-2 pt-4">
                                         {groupedAddCandidates.map(group => (
                                             <div key={group.category}>
-                                                <div className="sticky top-0 bg-card/95 backdrop-blur-sm py-2.5 z-20 mb-2 border-b border-border/40 -mx-4 px-4">
+                                                <div className={cn(editorSurface.sticky, "sticky top-0 py-2.5 z-20 mb-2 ml-[-1rem] w-[calc(100%+2rem)] px-4")}>
                                                     <h5 className="text-xs font-bold text-foreground/50 uppercase tracking-[0.2em]">{group.category}</h5>
                                                 </div>
                                                 {group.items.map(c => (
                                                     <div
                                                         key={c.id}
-                                                        className="flex items-start gap-2.5 pl-2 py-2 sm:py-1.5 hover:bg-muted/50 rounded-sm group/candidate"
+                                                        className="flex items-start gap-2.5 pl-2 py-2 sm:py-1.5 hover:bg-primary/10 dark:hover:bg-primary/16 rounded-sm transition-colors group/candidate"
                                                     >
                                                         <Checkbox
                                                             id={`add-cat-${c.id}`}
                                                             checked={pendingAddSelections.has(c.id)}
                                                             onCheckedChange={() => togglePendingSelection(c.id)}
-                                                            className="mt-0.5 border-border data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 h-4 w-4 shrink-0"
+                                                            className="mt-0.5 border-border data-[state=unchecked]:hover:border-primary/70 data-[state=unchecked]:hover:bg-primary/10 data-[state=checked]:bg-primary data-[state=checked]:border-primary h-4 w-4 shrink-0"
                                                         />
                                                         <label
                                                             htmlFor={`add-cat-${c.id}`}
                                                             className="flex-1 min-w-0 cursor-pointer select-none flex flex-col gap-0.5 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(120px,34%)] sm:items-center sm:gap-2.5"
                                                         >
-                                                            <p className={`text-sm leading-snug transition-colors truncate min-w-0 ${pendingAddSelections.has(c.id) ? "text-blue-600 dark:text-blue-400 font-semibold" : "text-foreground"}`}>
+                                                            <p className={`text-sm leading-snug transition-colors truncate min-w-0 ${pendingAddSelections.has(c.id) ? "text-primary dark:text-primary font-semibold" : "text-foreground"}`}>
                                                                 {c.name}
                                                             </p>
-                                                            <p className={`text-[11px] sm:text-xs font-mono font-normal tracking-tight truncate text-left sm:text-right min-w-0 ${pendingAddSelections.has(c.id) ? "text-blue-400/70 dark:text-blue-300/70" : "text-foreground/45 sm:text-foreground/24"}`}>
+                                                            <p className={`text-[11px] sm:text-xs font-mono font-normal tracking-tight truncate text-left sm:text-right min-w-0 ${pendingAddSelections.has(c.id) ? "text-primary/70 dark:text-primary/70" : "text-foreground/45 sm:text-foreground/24"}`}>
                                                                 {c.id}
                                                             </p>
                                                         </label>
@@ -811,7 +812,7 @@ export function CatalogEditor() {
                                             setIsAddDialogOpen(false);
                                             resetAddSelectionUi();
                                         }}
-                                        className="flex-1 sm:flex-none bg-muted border-border text-foreground hover:bg-accent"
+                                        className={cn("flex-1 sm:flex-none", editorAction.secondary)}
                                     >
                                         Cancel
                                     </Button>
@@ -828,10 +829,10 @@ export function CatalogEditor() {
                     </Dialog>
 
                     <div className="w-px h-5 bg-border mx-1" />
-                    <Button variant="outline" size="sm" onClick={handleSortAZ} className="h-8 text-xs border-border hover:bg-muted text-foreground/70 hover:text-foreground">
+                    <Button variant="outline" size="sm" onClick={handleSortAZ} className="h-8 text-xs border-border hover:bg-muted/80 text-foreground/70 hover:text-foreground">
                         <ArrowDownAZ className="w-4 h-4 mr-1" /> A-Z
                     </Button>
-                    <Button variant="outline" size="sm" onClick={handleSortZA} className="h-8 text-xs border-border hover:bg-muted text-foreground/70 hover:text-foreground">
+                    <Button variant="outline" size="sm" onClick={handleSortZA} className="h-8 text-xs border-border hover:bg-muted/80 text-foreground/70 hover:text-foreground">
                         <ArrowUpZA className="w-4 h-4 mr-1" /> Z-A
                     </Button>
                 </div>
@@ -847,9 +848,9 @@ export function CatalogEditor() {
                         <SortableContext items={enabledIds} strategy={verticalListSortingStrategy}>
                             <div className="space-y-1 max-h-[700px] overflow-y-auto pr-1 custom-scrollbar">
                                 {enabledCatalogs.length === 0 ? (
-                                    <div className="text-center py-10 border border-dashed border-border/80 rounded-2xl bg-background/20 flex flex-col items-center justify-center gap-3">
-                                        <div className="p-4 bg-blue-500/10 rounded-full border border-blue-500/20">
-                                            <ListX className="w-8 h-8 text-blue-500/60" />
+                                    <div className={cn(editorSurface.inset, "text-center py-10 border-dashed flex flex-col items-center justify-center gap-3")}>
+                                        <div className="p-4 rounded-full border border-white/10 bg-white/[0.04] dark:bg-white/[0.04]">
+                                            <ListX className="w-8 h-8 text-foreground/45" />
                                         </div>
                                         <div className="space-y-1">
                                             <p className="text-sm font-bold text-foreground">No Enabled Catalogs</p>
@@ -890,9 +891,9 @@ export function CatalogEditor() {
 
             {/* Disabled section */}
             {disabledCatalogs.length > 0 && (
-                <div className="border border-border rounded-lg overflow-hidden">
+                <div className={cn(editorSurface.card, "rounded-lg overflow-hidden")}>
                     <button
-                        className="w-full flex items-center justify-between px-4 py-2.5 text-xs text-foreground/70 hover:bg-muted/50 transition-colors"
+                        className="w-full flex items-center justify-between px-4 py-2.5 text-xs text-foreground/70 hover:bg-primary/10 dark:hover:bg-primary/16 transition-colors"
                         onClick={() => setShowDisabled(p => !p)}
                     >
                         <span className="font-semibold uppercase tracking-wider">Disabled Catalogs ({disabledCatalogs.length})</span>
@@ -901,7 +902,7 @@ export function CatalogEditor() {
                     {showDisabled && (
                         <div className="p-3 space-y-1 max-h-[400px] overflow-y-auto custom-scrollbar">
                             {disabledCatalogs.map(cat => (
-                                <div key={cat.id} className="flex items-center gap-3 p-2.5 bg-card/50 border border-border border-dashed rounded-lg">
+                                <div key={cat.id} className={cn(editorSurface.inset, "flex items-center gap-3 p-2.5 border-dashed rounded-lg")}>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm text-foreground/70 truncate">{cat.name || cat.id}</p>
                                         <p className="text-xs text-foreground font-mono truncate">{cat.id}</p>
@@ -915,7 +916,7 @@ export function CatalogEditor() {
                                     </Button>
                                     <Button
                                         variant="ghost" size="icon"
-                                        className="h-7 w-7 text-foreground/70 hover:text-red-500 hover:bg-red-500/10 shrink-0"
+                                        className={cn("h-7 w-7 shrink-0", editorHover.iconDanger)}
                                         title="Remove permanently from config"
                                         onClick={() => reorderManifestCatalogs(catalogs.filter(c => c.id !== cat.id))}
                                     >

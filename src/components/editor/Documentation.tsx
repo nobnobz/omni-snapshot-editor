@@ -4,6 +4,7 @@ import React from "react";
 import {
     AlertCircle,
     BookOpen,
+    ChevronRight,
     Database,
     Download,
     ExternalLink,
@@ -30,6 +31,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { useConfig } from "@/context/ConfigContext";
 import { downloadTemplateFile } from "@/lib/template-download";
+import { getTemplateDisplay } from "@/lib/template-display";
+import { editorHover } from "@/components/editor/ui/style-contract";
 import { GuideHeader } from "@/components/editor/GuideHeader";
 import {
     GuideBody,
@@ -182,6 +185,8 @@ export function Documentation({ headerAction, onOpenInstallGuide }: Documentatio
         }
     };
 
+    const guideActionButtonClass = `${editorHover.transition} ${editorHover.premiumCard} group h-auto min-h-11 w-full justify-between gap-3 rounded-2xl border border-primary/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.56),rgba(241,245,255,0.46))] px-4 py-3 text-left shadow-[0_4px_10px_rgba(148,163,184,0.07)] hover:border-primary/20 hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.6),rgba(232,238,255,0.5))] dark:border-primary/16 dark:bg-[linear-gradient(180deg,rgba(17,22,34,0.82),rgba(13,18,29,0.78))] dark:shadow-[0_6px_14px_rgba(2,6,23,0.18)] dark:hover:border-primary/24 dark:hover:bg-[linear-gradient(180deg,rgba(20,26,40,0.86),rgba(15,21,34,0.82))]`;
+
     return (
         <GuideDialog>
             <GuideHeader
@@ -205,7 +210,7 @@ export function Documentation({ headerAction, onOpenInstallGuide }: Documentatio
                             <button
                                 type="button"
                                 onClick={onOpenInstallGuide}
-                                className="inline-flex items-center gap-1 font-semibold text-indigo-600 underline-offset-2 hover:underline dark:text-indigo-300"
+                                className="inline-flex items-center gap-1 font-semibold text-primary transition-colors duration-200 ease-out hover:text-primary/85 dark:text-primary"
                             >
                                 Open How to Install guide
                             </button>
@@ -253,6 +258,7 @@ export function Documentation({ headerAction, onOpenInstallGuide }: Documentatio
                                     "Choose Download JSON or Copy to Clipboard.",
                                     "Import that mapping into this editor.",
                                 ]}
+                                tone="indigo"
                                 className="mt-1"
                             />
                         </GuidePanel>
@@ -283,6 +289,7 @@ export function Documentation({ headerAction, onOpenInstallGuide }: Documentatio
                                 "Manage catalog-to-subgroup links and reorder with drag and drop.",
                             ]}
                             ordered={false}
+                            tone="indigo"
                             className="mt-1"
                         />
                     </GuidePanel>
@@ -333,13 +340,13 @@ export function Documentation({ headerAction, onOpenInstallGuide }: Documentatio
                     title="Finalizing & Export"
                     description="Use the built-in export paths once your structure and patterns are ready."
                     icon={Download}
-                    tone="emerald"
+                    tone="indigo"
                 >
                     <div className="grid gap-4 sm:auto-rows-fr sm:grid-cols-2">
                         <GuidePanel
                             title="Full Export"
                             description="Download the complete configuration as one JSON file."
-                            tone="emerald"
+                            tone="indigo"
                         />
                         <GuidePanel
                             title="Partial Export"
@@ -348,11 +355,11 @@ export function Documentation({ headerAction, onOpenInstallGuide }: Documentatio
                         />
                     </div>
 
-                    <GuidePanel title="Export behavior" icon={HelpCircle} tone="emerald" className="mt-4">
+                    <GuidePanel title="Export behavior" icon={HelpCircle} tone="indigo" className="mt-4">
                         <GuideStepList
                             items={["Exports run automatic cleanup and structure validation to reduce manual fixing."]}
                             ordered={false}
-                            tone="emerald"
+                            tone="indigo"
                             className="mt-1"
                         />
                     </GuidePanel>
@@ -366,30 +373,40 @@ export function Documentation({ headerAction, onOpenInstallGuide }: Documentatio
                     tone="indigo"
                 >
                     <div className="flex flex-wrap gap-2.5">
-                        {templates.map((item) => (
-                            <Button
-                                key={item.id}
-                                onClick={() =>
-                                    handleDownload(
-                                        item.url,
-                                        manifest?.templates?.find((t) => t.id === item.id)?.name || item.name
-                                    )
-                                }
-                                variant="outline"
-                                className="group h-auto min-h-11 items-center gap-2.5 rounded-xl border border-indigo-500/25 bg-background/70 px-4 py-2 text-left text-foreground transition-all hover:-translate-y-0.5 hover:border-indigo-400/45 hover:bg-indigo-500/10"
-                            >
-                                <span className="flex h-6.5 w-6.5 items-center justify-center rounded-md border border-indigo-500/30 bg-indigo-500/10">
-                                    <FileJson className="h-3.5 w-3.5 text-indigo-500" />
-                                </span>
-                                <span className="text-sm font-semibold tracking-tight">{item.name}</span>
-                            </Button>
-                        ))}
+                        {templates.map((item) => {
+                            const manifestName = manifest?.templates?.find((t) => t.id === item.id)?.name || item.name;
+                            const display = getTemplateDisplay(manifestName, item.id);
+
+                            return (
+                                <Button
+                                    key={item.id}
+                                    onClick={() => handleDownload(item.url, manifestName)}
+                                    variant="outline"
+                                    className={guideActionButtonClass}
+                                >
+                                    <span className="flex min-w-0 items-center gap-3">
+                                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-primary/16 bg-primary/6 dark:border-primary/18 dark:bg-primary/7">
+                                            <FileJson className="h-4 w-4 text-primary/90" />
+                                        </span>
+                                        <span className="min-w-0">
+                                            <span className="block text-sm font-bold tracking-tight text-foreground">{display.label}</span>
+                                            {display.version && (
+                                                <span className="mt-0.5 block text-[10px] leading-tight text-foreground/46 font-medium tracking-[0.04em]">
+                                                    {display.version}
+                                                </span>
+                                            )}
+                                        </span>
+                                    </span>
+                                    <ChevronRight className="h-4 w-4 shrink-0 text-foreground/36 transition-transform group-hover:translate-x-0.5 group-hover:text-primary dark:group-hover:text-primary" />
+                                </Button>
+                            );
+                        })}
                     </div>
 
                     <div className="mt-4 grid gap-4 lg:auto-rows-fr lg:grid-cols-2">
                         <GuidePanel title="iOS Installation" icon={Smartphone} tone="indigo">
                             <p className="text-sm text-foreground/72">Copy your JSON backup into:</p>
-                            <div className="mt-2 rounded-xl border border-indigo-500/20 bg-indigo-500/8 px-3.5 py-3 font-mono text-xs text-indigo-700 dark:text-indigo-300">
+                            <div className="mt-2 rounded-xl border border-primary/20 bg-primary/8 px-3.5 py-3 font-mono text-xs text-primary dark:text-primary">
                                 Files &gt; On my iPhone &gt; Omni &gt; Backups
                             </div>
                             <p className="mt-3 flex items-start gap-2 text-xs leading-relaxed text-foreground/78">
@@ -402,11 +419,6 @@ export function Documentation({ headerAction, onOpenInstallGuide }: Documentatio
                             <p className="text-sm leading-relaxed text-foreground/72">
                                 Import on iOS first, enable iCloud Sync in Omni settings, then pull on Apple TV.
                             </p>
-                            <GuideStepList
-                                items={["Sync transfer runs automatically through iCloud."]}
-                                ordered={false}
-                                className="mt-3"
-                            />
                         </GuidePanel>
                     </div>
                 </GuideSection>

@@ -29,7 +29,8 @@ import { GripVertical, ArrowDownAZ, ArrowUpZA } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { RenameGroupModal } from "./RenameGroupModal";
-import { resolveCatalogName } from "@/lib/utils";
+import { cn, resolveCatalogName } from "@/lib/utils";
+import { editorHover, editorSurface } from "@/components/editor/ui/style-contract";
 
 const stringArraysEqual = (a: string[], b: string[]) => (
     a.length === b.length && a.every((item, idx) => item === b[idx])
@@ -98,12 +99,12 @@ function SortableItem({
         <div
             ref={setNodeRef}
             style={style}
-            className={`group flex items-center gap-3 p-3 bg-card border border-border rounded-lg mb-2 ${isDragging ? "opacity-50 border-blue-500" : ""}`}
+            className={`group flex items-center gap-3 p-3 rounded-lg mb-2 ${editorHover.transition} ${editorSurface.cardInteractive} ${isDragging ? "opacity-50 border-primary" : ""}`}
         >
             <button
                 {...attributes}
                 {...listeners}
-                className="cursor-grab hover:text-white text-foreground/70 select-none"
+                className={`cursor-grab select-none ${editorHover.softAction}`}
                 style={{ touchAction: 'none' }}
                 aria-label="Drag handle"
             >
@@ -116,11 +117,11 @@ function SortableItem({
                             onChange={(e) => setEditValue(e.target.value)}
                             onBlur={submitInlineRename}
                             onKeyDown={handleKeyDown}
-                            className="h-8 text-sm bg-background border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500"
+                            className="h-8 text-sm bg-background border-primary focus-visible:ring-[3px] focus-visible:ring-ring/50"
                         />
                 ) : (
                     <div
-                        className="flex-1 min-w-0 cursor-pointer p-1.5 -ml-1.5 rounded hover:bg-muted/80 transition-colors border border-transparent hover:border-border"
+                        className="flex-1 min-w-0 cursor-pointer p-1.5 -ml-1.5 rounded hover:bg-muted/80 transition-colors border border-transparent hover:border-border/80"
                         onClick={() => setIsEditing(true)}
                         title="Click to rename"
                     >
@@ -142,7 +143,7 @@ function SortableItem({
             <Switch
                 checked={isEnabled}
                 onCheckedChange={onToggle}
-                className="data-[state=checked]:bg-blue-600"
+                className="data-[state=checked]:bg-primary"
             />
         </div>
     );
@@ -230,16 +231,16 @@ function SortableList({
 
     return (
         <div className="space-y-4 py-2">
-            <div className="flex flex-wrap items-center gap-2 mb-4 bg-card/50 p-2 rounded-lg border border-border">
-                <Button variant="outline" size="sm" onClick={sortAZ} className="h-8 text-xs border-border hover:bg-muted">
+            <div className={cn(editorSurface.toolbar, "flex flex-wrap items-center gap-2 mb-4 p-2 rounded-lg")}>
+                <Button variant="outline" size="sm" onClick={sortAZ} className="h-8 text-xs border-border hover:bg-muted/80">
                     <ArrowDownAZ className="w-4 h-4 mr-2" /> A-Z
                 </Button>
-                <Button variant="outline" size="sm" onClick={sortZA} className="h-8 text-xs border-border hover:bg-muted">
+                <Button variant="outline" size="sm" onClick={sortZA} className="h-8 text-xs border-border hover:bg-muted/80">
                     <ArrowUpZA className="w-4 h-4 mr-2" /> Z-A
                 </Button>
                 <div className="w-px h-5 bg-muted mx-2" />
-                <Button variant="ghost" size="sm" onClick={enableAll} className="h-8 text-sm text-blue-400 hover:text-blue-300">Enable All</Button>
-                <Button variant="ghost" size="sm" onClick={disableAll} className="h-8 text-sm text-foreground/70 hover:text-foreground/70">Disable All</Button>
+                <Button variant="ghost" size="sm" onClick={enableAll} className="h-8 text-sm text-primary hover:text-primary hover:bg-primary/10">Enable All</Button>
+                <Button variant="ghost" size="sm" onClick={disableAll} className="h-8 text-sm text-foreground/70 hover:text-foreground hover:bg-muted/60">Disable All</Button>
             </div>
 
             <DndContext 
@@ -274,8 +275,8 @@ function SortableList({
                     }),
                 }}>
                     {activeId ? (
-                        <div className="flex items-center gap-3 p-3 bg-muted border border-blue-500 rounded-lg shadow-2xl scale-[1.02] opacity-90">
-                            <GripVertical className="h-4 w-4 text-blue-500" />
+                        <div className="flex items-center gap-3 p-3 bg-muted border border-primary rounded-lg shadow-2xl scale-[1.02] opacity-90">
+                            <GripVertical className="h-4 w-4 text-primary" />
                             <div className="flex-1 min-w-0">
                                 <p className="text-base truncate font-medium text-foreground">
                                     {resolveCatalogName(activeId, customNames)}
@@ -350,7 +351,7 @@ export function OrderingEditor({ configKey }: { configKey: string }) {
     // 1. If it's a direct array of strings
     if (Array.isArray(data)) {
         return (
-            <div className="border border-border rounded-xl p-5 bg-background/50 mb-6 shadow-sm">
+            <div className={cn(editorSurface.card, "p-5 mb-6")}>
                 <h4 className="text-xl font-bold tracking-tight text-foreground mb-4">{configKey === 'catalog_ordering' ? 'Global Catalog Order' : configKey}</h4>
                 <SortableList
                     itemsList={data}
@@ -369,7 +370,7 @@ export function OrderingEditor({ configKey }: { configKey: string }) {
     // 2. If it's a Record<string, string[]> (like subgroup_order)
     if (typeof data === "object") {
         return (
-            <div className="border border-border rounded-xl p-5 bg-background/50 mb-6 shadow-sm">
+            <div className={cn(editorSurface.card, "p-5 mb-6")}>
                 <h4 className="text-xl font-bold tracking-tight text-foreground mb-4">{configKey}</h4>
                 <Accordion type="multiple" className="w-full space-y-2 mt-4">
                     {Object.entries(data as Record<string, unknown>).map(([groupId, itemsList]) => {
@@ -378,8 +379,8 @@ export function OrderingEditor({ configKey }: { configKey: string }) {
                         const groupName = displayNames[groupId] || groupId;
 
                         return (
-                            <AccordionItem key={groupId} value={groupId} className="border border-border rounded-md bg-background px-2">
-                                <AccordionTrigger className="hover:no-underline text-foreground">
+                            <AccordionItem key={groupId} value={groupId} className={cn(editorSurface.inset, "rounded-md px-2")}>
+                                <AccordionTrigger className=" text-foreground">
                                     <div className="flex flex-col items-start gap-1 py-1">
                                         <span className="font-semibold text-base">{groupName}</span>
                                         <span className="text-xs text-foreground/70 font-mono font-normal">{itemsList.length} items</span>

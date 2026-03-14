@@ -29,6 +29,8 @@ import {
     useSensors,
     DragEndEvent,
 } from '@dnd-kit/core';
+import { editorHover, editorSurface } from "@/components/editor/ui/style-contract";
+import { cn } from "@/lib/utils";
 import {
     arrayMove,
     SortableContext,
@@ -60,6 +62,15 @@ const IMAGE_COLOR_OPTIONS = [
 const BORDER_RADIUS_OPTIONS = Array.from({ length: 8 }, (_, i) => ({ index: i, px: i * 2 }));
 type PatternScalar = string | number | boolean;
 type PatternInputValue = PatternScalar | "";
+
+const patternFieldSurface =
+    "!border-slate-200/88 !bg-white/62 shadow-[inset_0_1px_0_rgba(255,255,255,0.74)] dark:!border-white/[0.11] dark:!bg-[linear-gradient(180deg,rgba(18,22,30,0.96),rgba(14,18,25,0.94))] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]";
+
+const patternCardHeaderSurface =
+    "!border-slate-200/72 dark:!border-white/[0.07] !bg-[linear-gradient(180deg,rgba(255,255,255,0.58),rgba(248,250,252,0.5))] dark:!bg-[linear-gradient(180deg,rgba(17,20,26,0.9),rgba(13,16,22,0.88))]";
+
+const patternRegexFrameSurface =
+    "!rounded-xl !border !border-slate-300/60 dark:!border-white/[0.14] !bg-none !bg-[var(--editor-list-surface)] !shadow-none";
 
 const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename }: { regex: string, onDelete: (r: string) => void, onRename: (oldRegex: string, newRegex: string) => void }) {
     const { currentValues, updateValue, originalConfig } = useConfig();
@@ -120,32 +131,63 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
             ref={setNodeRef}
             style={style}
             value={regex}
-            className={`border rounded-lg overflow-hidden bg-card mb-2 group/item
-                ${!isTagEnabled ? "opacity-60 grayscale-[0.3]" : "hover:border-border/80"}
-                ${isDragging ? "border-blue-500 shadow-xl" : "border-border"}`}
+            className={cn(
+                "mb-2 overflow-hidden rounded-xl group/item transition-[border-color,background-color,box-shadow,transform]",
+                editorSurface.card,
+                !isTagEnabled && "opacity-65",
+                isDragging && "border-primary shadow-xl scale-[1.01]"
+            )}
         >
-            <div className={`flex items-center justify-between transition-colors ${!isTagEnabled ? "bg-card/60" : "bg-card hover:bg-muted/50"} pl-2 pr-1`}>
+            <div
+                className={cn(
+                    "flex items-center justify-between pl-2 pr-1 transition-colors",
+                    editorSurface.toolbar,
+                    patternCardHeaderSurface,
+                    "rounded-none border-x-0 border-t-0",
+                    "hover:!border-slate-300/72 dark:hover:!border-white/[0.09] hover:!bg-[linear-gradient(180deg,rgba(255,255,255,0.6),rgba(248,250,252,0.53))] dark:hover:!bg-[linear-gradient(180deg,rgba(18,22,29,0.9),rgba(14,18,25,0.88))]",
+                    !isTagEnabled && "opacity-85"
+                )}
+            >
                 <div className="flex items-center flex-1 gap-3">
                     <button
                         {...attributes}
                         {...listeners}
-                        className={`cursor-grab shrink-0 p-4 -ml-2 rounded-md transition-colors ${isTagEnabled ? "text-foreground/70 hover:text-foreground hover:bg-muted" : "text-foreground/40 hover:text-foreground/70 hover:bg-muted/40"}`}
+                        className={cn(
+                            "cursor-grab shrink-0 p-4 -ml-2 rounded-md transition-colors",
+                            isTagEnabled
+                                ? "text-foreground/65 hover:text-foreground hover:bg-muted/38 dark:hover:bg-muted/24"
+                                : "text-foreground/40 hover:text-foreground/70 hover:bg-muted/22 dark:hover:bg-muted/14"
+                        )}
                         style={{ touchAction: 'none' }}
                     >
                         <GripVertical className="h-5 w-5" />
                     </button>
-                    <AccordionTrigger className="pr-4 py-4 flex-1 hover:no-underline flex items-center justify-between [&>svg]:hidden">
+                    <AccordionTrigger className="pr-4 py-4 flex-1 flex items-center justify-between !rounded-none hover:bg-transparent dark:hover:bg-transparent [&>svg]:hidden">
                         <div className="flex items-center gap-3">
                             <ChevronRight className="w-4 h-4 shrink-0 text-foreground/70 transition-transform duration-200 group-data-[state=open]/item:rotate-90" />
                             <span className={`font-bold text-sm tracking-tight transition-colors text-left flex items-center flex-wrap gap-2 ${!isTagEnabled ? "text-foreground/50 line-through decoration-foreground/30" : "text-foreground"}`}>
-                                {customName || <span className={`font-mono text-xs inline-block break-all bg-background/50 px-2 py-0.5 rounded border border-border ${!isTagEnabled ? "text-foreground/50 line-through decoration-foreground/30" : "text-blue-400"}`}>{regex}</span>}
+                                {customName || (
+                                    <span className={cn(
+                                        "font-mono text-xs inline-block break-all px-2 py-0.5 rounded border",
+                                        editorSurface.field,
+                                        patternFieldSurface,
+                                        !isTagEnabled ? "text-foreground/50 line-through decoration-foreground/30" : "text-primary"
+                                    )}>
+                                        {regex}
+                                    </span>
+                                )}
                             </span>
                         </div>
                     </AccordionTrigger>
                 </div>
                 <div className="pr-2 shrink-0 flex items-center gap-4">
                     {imageUrl && (
-                        <div className={`h-8 w-auto max-w-24 shrink-0 overflow-hidden rounded-md border border-border/50 bg-neutral-900 flex items-center justify-center shadow-inner transition-opacity ${!isTagEnabled ? "opacity-30" : ""}`}>
+                        <div className={cn(
+                            "h-8 w-auto max-w-24 shrink-0 overflow-hidden rounded-md flex items-center justify-center transition-opacity",
+                            editorSurface.field,
+                            patternFieldSurface,
+                            !isTagEnabled && "opacity-30"
+                        )}>
                             {/* eslint-disable-next-line @next/next/no-img-element -- Pattern preview accepts dynamic remote URLs and must stay lightweight. */}
                             <img src={imageUrl} alt={customName || regex} className="h-full w-auto object-contain" />
                         </div>
@@ -154,14 +196,14 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                         variant="ghost"
                         size="icon"
                         onClick={handleDeleteClick}
-                        className="h-8 w-8 text-foreground/70 hover:text-red-400 hover:bg-red-500/10 rounded-md border border-transparent hover:border-red-500/30 transition-all opacity-80 hover:opacity-100 shrink-0"
+                        className={`h-8 w-8 rounded-md opacity-80 hover:opacity-100 shrink-0 ${editorHover.iconDanger}`}
                         title="Delete Pattern"
                     >
                         <Trash2 className="w-4 h-4" />
                     </Button>
                 </div>
             </div>
-            <AccordionContent className="p-5 border-t border-border/50 bg-background/20">
+            <AccordionContent className="border-t border-slate-200/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(248,250,252,0.1))] p-5 dark:border-white/8 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.008))]">
                 {/* Regex Editor */}
                 <div className="mb-6">
                     <Label className="text-xs font-bold uppercase tracking-widest text-foreground/70 mb-2 block">Pattern Regex</Label>
@@ -178,23 +220,23 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                                     if (e.key === 'Escape') handleCancelEdit(e);
                                 }}
                                 rows={1}
-                                className="min-h-[unset] py-2 text-base sm:text-sm font-mono bg-background/80 border-blue-500/50 focus-visible:ring-1 focus-visible:ring-blue-500 text-blue-300 flex-1 shadow-inner resize-none"
+                                className={cn(editorSurface.field, patternFieldSurface, patternRegexFrameSurface, "min-h-[unset] py-2 text-base sm:text-sm font-mono border-primary/50 focus-visible:ring-[3px] focus-visible:ring-ring/50 text-primary flex-1 resize-none")}
                             />
                             <div className="flex justify-end gap-2">
                                 <Button size="sm" variant="ghost" onClick={handleConfirmEdit} className="h-8 px-3 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-300 rounded-md transition-colors flex items-center gap-2">
                                     <Check className="w-3.5 h-3.5" />
                                     <span className="text-xs font-bold uppercase font-sans">Save</span>
                                 </Button>
-                                <Button size="sm" variant="ghost" onClick={handleCancelEdit} className="h-8 px-3 bg-muted/50 text-foreground/70 hover:bg-muted hover:text-white rounded-md transition-colors flex items-center gap-2">
+                                <Button size="sm" variant="ghost" onClick={handleCancelEdit} className="h-8 px-3 bg-muted/50 text-foreground/70 hover:bg-muted hover:text-foreground rounded-md transition-colors flex items-center gap-2">
                                     <X className="w-3.5 h-3.5" />
                                     <span className="text-xs font-bold uppercase font-sans">Cancel</span>
                                 </Button>
                             </div>
                         </div>
                     ) : (
-                        <div className="flex items-center gap-3 p-2.5 rounded-lg border border-border/80 bg-background/50 shadow-inner group/regex transition-colors hover:border-border/80">
-                            <code className="text-xs sm:text-sm font-mono text-blue-400 flex-1 break-all tracking-tight">{regex}</code>
-                            <Button size="icon" variant="ghost" onClick={handleStartEdit} className="h-7 w-7 text-foreground/70 hover:text-blue-400 hover:bg-blue-500/10 rounded-md opacity-100 sm:opacity-0 sm:group-hover/regex:opacity-100 transition-all shrink-0">
+                        <div className={cn(editorSurface.field, patternFieldSurface, patternRegexFrameSurface, "flex items-center gap-3 p-2.5 group/regex")}>
+                            <code className="text-xs sm:text-sm font-mono text-primary flex-1 break-all tracking-tight">{regex}</code>
+                            <Button size="icon" variant="ghost" onClick={handleStartEdit} className="h-7 w-7 text-foreground/70 hover:text-primary hover:bg-primary/10 rounded-md opacity-100 sm:opacity-0 sm:group-hover/regex:opacity-100 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out shrink-0">
                                 <Pencil className="w-3.5 h-3.5" />
                             </Button>
                         </div>
@@ -254,9 +296,9 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                         };
 
                         return (
-                            <div key={dictDef.key} className="flex flex-col justify-center gap-2.5 p-4 bg-background/40 border border-border/80 shadow-sm rounded-lg transition-colors hover:border-border/80 hover:bg-card/40">
+                            <div key={dictDef.key} className={cn(editorSurface.panel, "flex flex-col justify-center gap-2.5 p-4")}>
                                 <Label className="flex items-center gap-2 text-xs font-semibold tracking-tight text-foreground">
-                                    <span className="p-1 rounded bg-card text-foreground/70 border border-border">
+                                    <span className={cn(editorSurface.field, "p-1 rounded text-foreground/70")}>
                                         {dictDef.icon}
                                     </span>
                                     {dictDef.label}
@@ -266,19 +308,19 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                                     <Switch
                                         checked={!!displayVal}
                                         onCheckedChange={(c) => handleChange(c)}
-                                        className="data-[state=checked]:bg-blue-500 mt-1"
+                                        className="data-[state=checked]:bg-primary mt-1"
                                     />
                                 ) : dictDef.type === "imageColor" ? (
                                     <Select
                                         value={displayVal !== "" ? String(displayVal) : ""}
                                         onValueChange={(v) => handleChange(Number(v))}
                                     >
-                                        <SelectTrigger className="h-10 sm:h-9 text-base sm:text-sm bg-background/80 border-border w-full hover:border-border focus:ring-1 focus:ring-blue-500 transition-colors shadow-inner">
+                                        <SelectTrigger className={cn(editorSurface.field, patternFieldSurface, "h-10 sm:h-9 text-base sm:text-sm w-full focus:ring-[3px] focus:ring-ring/50 transition-colors")}>
                                             <SelectValue placeholder="Select color..." />
                                         </SelectTrigger>
-                                        <SelectContent className="bg-card/95 backdrop-blur-xl border-border text-foreground shadow-xl">
+                                        <SelectContent>
                                             {IMAGE_COLOR_OPTIONS.map(opt => (
-                                                <SelectItem key={opt.value} value={String(opt.value)} className="text-base sm:text-sm focus:bg-blue-600 focus:text-white cursor-pointer transition-colors">
+                                                <SelectItem key={opt.value} value={String(opt.value)} className="text-base sm:text-sm focus:bg-primary focus:text-primary-foreground cursor-pointer transition-colors">
                                                     {opt.label}
                                                 </SelectItem>
                                             ))}
@@ -289,12 +331,12 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                                         value={displayVal !== "" ? String(displayVal) : ""}
                                         onValueChange={(v) => handleChange(Number(v))}
                                     >
-                                        <SelectTrigger className="h-10 sm:h-9 text-base sm:text-sm bg-background/80 border-border w-full hover:border-border focus:ring-1 focus:ring-blue-500 transition-colors shadow-inner">
+                                        <SelectTrigger className={cn(editorSurface.field, patternFieldSurface, "h-10 sm:h-9 text-base sm:text-sm w-full focus:ring-[3px] focus:ring-ring/50 transition-colors")}>
                                             <SelectValue placeholder="Select radius..." />
                                         </SelectTrigger>
-                                        <SelectContent className="bg-card/95 backdrop-blur-xl border-border text-foreground shadow-xl max-h-[250px]">
+                                        <SelectContent className="max-h-[250px]">
                                             {BORDER_RADIUS_OPTIONS.map(r => (
-                                                <SelectItem key={r.index} value={String(r.index)} className="text-base sm:text-sm focus:bg-blue-600 focus:text-white cursor-pointer transition-colors">
+                                                <SelectItem key={r.index} value={String(r.index)} className="text-base sm:text-sm focus:bg-primary focus:text-primary-foreground cursor-pointer transition-colors">
                                                     {r.px}px
                                                 </SelectItem>
                                             ))}
@@ -305,11 +347,11 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                                         type="number"
                                         value={typeof displayVal === "number" ? displayVal : ""}
                                         onChange={(e) => handleChange(e.target.value === "" ? "" : Number(e.target.value))}
-                                        className="h-10 sm:h-9 text-base sm:text-sm bg-background/80 border-border hover:border-border focus-visible:ring-1 focus-visible:ring-blue-500 shadow-inner font-mono transition-colors w-full"
+                                        className={cn(editorSurface.field, patternFieldSurface, "h-10 sm:h-9 text-base sm:text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 font-mono transition-colors w-full")}
                                     />
                                 ) : inferredType === "color" ? (
                                     <div className="flex gap-2">
-                                        <div className="relative w-9 h-9 rounded-md shrink-0 overflow-hidden border border-border/80 bg-background shadow-inner ring-1 ring-black/20">
+                                        <div className={cn(editorSurface.field, patternFieldSurface, "relative w-9 h-9 rounded-md shrink-0 overflow-hidden ring-1 ring-black/20")}>
                                             <input
                                                 type="color"
                                                 value={typeof displayVal === "string" && displayVal ? displayVal : "#000000"}
@@ -322,7 +364,7 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                                             value={typeof displayVal === "string" ? displayVal : ""}
                                             onChange={(e) => handleChange(e.target.value)}
                                             placeholder="#FFFFFF"
-                                            className="h-10 sm:h-9 text-base sm:text-sm font-mono bg-background/80 border-border uppercase focus-visible:ring-1 focus-visible:ring-blue-500 shadow-inner transition-colors"
+                                            className={cn(editorSurface.field, patternFieldSurface, "h-10 sm:h-9 text-base sm:text-sm font-mono uppercase focus-visible:ring-[3px] focus-visible:ring-ring/50 transition-colors")}
                                         />
                                     </div>
                                 ) : (
@@ -331,7 +373,7 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                                         value={typeof displayVal === "string" || typeof displayVal === "number" ? displayVal : ""}
                                         onChange={(e) => handleChange(e.target.value)}
                                         placeholder={`Enter ${dictDef.label}...`}
-                                        className="h-10 sm:h-9 text-base sm:text-sm bg-background/80 border-border hover:border-border focus-visible:ring-1 focus-visible:ring-blue-500 shadow-inner transition-colors"
+                                        className={cn(editorSurface.field, patternFieldSurface, "h-10 sm:h-9 text-base sm:text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 transition-colors")}
                                     />
                                 )}
                             </div>
@@ -496,30 +538,30 @@ export function UnifiedPatternEditor() {
 
     return (
         <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="patterns-root" className="!border-b-0 rounded-xl overflow-hidden border border-border/85 bg-card/80 shadow-sm ring-1 ring-inset ring-white/5 transition-colors hover:bg-card/85 dark:ring-white/[0.06]">
-                <AccordionTrigger className="px-5 py-4 hover:no-underline flex justify-between items-center group transition-colors">
+            <AccordionItem value="patterns-root" className={`!border-b-0 ${editorSurface.card} ring-1 ring-inset ring-white/5 dark:ring-white/[0.06]`}>
+                <AccordionTrigger className="px-5 py-4 flex justify-between items-center group transition-colors !rounded-none hover:bg-transparent dark:hover:bg-transparent">
                     <div className="flex items-center gap-3">
-                        <WandSparkles className="w-5 h-5 text-purple-400 group-hover:text-purple-300 transition-colors" />
+                        <WandSparkles className="w-5 h-5 text-primary group-hover:text-primary transition-colors" />
                         <span className="font-bold text-base tracking-tight text-foreground flex items-center gap-2">
                             Pattern & Regex Settings
-                            <Badge variant="outline" className="text-xs uppercase tracking-widest bg-purple-500/10 text-purple-400 border-purple-500/30 font-bold ml-2">
+                            <Badge variant="outline" className="text-xs uppercase tracking-widest bg-primary/12 text-primary border-primary/35 font-bold ml-2">
                                 {orderedKeys.length} Patterns
                             </Badge>
                         </span>
                     </div>
                 </AccordionTrigger>
-                <AccordionContent className="p-5 pt-5 border-t border-border/20 bg-card/10">
+                <AccordionContent className="rounded-b-xl border-t border-border/30 p-5 pb-6 pt-5">
                     <div className="space-y-6">
-                        <div className="flex flex-col gap-3 bg-background/60 p-4 rounded-xl border border-border/80 shadow-inner">
+                        <div className={`${editorSurface.panel} flex flex-col gap-3 p-4`}>
                             <div className="flex sm:flex-row flex-col gap-3">
                                 <Input
                                     value={newPattern}
                                     onChange={e => setNewPattern(e.target.value)}
                                     onKeyDown={e => e.key === 'Enter' && handleAddPattern()}
                                     placeholder="Enter new Regex string (e.g. (?i)uhd|4k)"
-                                    className="h-10 text-base sm:text-sm font-mono bg-background/40 border-border/40 focus-visible:ring-1 focus-visible:ring-purple-500 shadow-inner transition-colors flex-1"
+                                    className={cn(editorSurface.field, patternFieldSurface, "h-10 text-base sm:text-sm font-mono focus-visible:ring-[3px] focus-visible:ring-ring/50 transition-colors flex-1")}
                                 />
-                                <Button onClick={handleAddPattern} className="h-10 bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-900/20 transition-all font-semibold px-6 w-full sm:w-auto">
+                                <Button onClick={handleAddPattern} className="h-10 bg-primary hover:bg-primary/92 text-primary-foreground shadow-lg shadow-primary/20 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out font-semibold px-6 w-full sm:w-auto">
                                     <Plus className="w-4 h-4 mr-2" /> Add Pattern
                                 </Button>
                             </div>
@@ -553,7 +595,7 @@ export function UnifiedPatternEditor() {
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => setConfirmDeleteAll(true)}
-                                        className="text-red-500 hover:text-red-400 hover:bg-red-500/10 h-8 px-3 border border-transparent text-xs"
+                                        className="h-8 px-3 border border-transparent text-xs text-red-500 hover:text-red-400 hover:bg-red-500/10"
                                     >
                                         <Trash2 className="w-3.5 h-3.5 mr-2" />
                                         Delete All Patterns
@@ -568,7 +610,7 @@ export function UnifiedPatternEditor() {
                             onDragEnd={handleDragEnd}
                         >
                             <SortableContext items={orderedKeys} strategy={verticalListSortingStrategy}>
-                                <Accordion type="single" collapsible className="w-full">
+                                <Accordion type="single" collapsible className="w-full pb-1">
                                     {orderedKeys.map((regex: string) => (
                                         <PatternNode key={regex} regex={regex} onDelete={handleDeletePattern} onRename={handleRenamePattern} />
                                     ))}
@@ -577,8 +619,8 @@ export function UnifiedPatternEditor() {
                         </DndContext>
                         {orderedKeys.length === 0 && (
                             <div className="text-center py-12 border border-dashed border-border/80 rounded-xl bg-background/20 flex flex-col items-center justify-center gap-3">
-                                <div className="p-4 bg-blue-500/10 rounded-full border border-blue-500/20">
-                                    <WandSparkles className="w-8 h-8 text-blue-500/60" />
+                                <div className="p-4 bg-primary/10 rounded-full border border-primary/20">
+                                    <WandSparkles className="w-8 h-8 text-primary/60" />
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-sm font-bold text-foreground">No Patterns Found</p>
@@ -593,10 +635,10 @@ export function UnifiedPatternEditor() {
             </AccordionItem>
 
             <Dialog open={isNameDialogOpen} onOpenChange={setIsNameDialogOpen}>
-                <DialogContent className="bg-card border-border text-foreground sm:max-w-[425px] shadow-2xl backdrop-blur-xl">
+                <DialogContent className="sm:max-w-[425px]">
                     <DialogHeader>
                         <DialogTitle className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-                            <CheckCircle className="w-5 h-5 text-purple-400" />
+                            <CheckCircle className="w-5 h-5 text-primary" />
                             Pattern Name
                         </DialogTitle>
                         <DialogDescription className="text-foreground/70 text-sm">
@@ -614,7 +656,7 @@ export function UnifiedPatternEditor() {
                                 onChange={(e) => setPatternNameDraft(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleConfirmAddPattern()}
                                 placeholder="e.g. 4K Movies, TrueHD, etc."
-                                className="h-11 text-base sm:text-sm bg-background/50 border-border focus:ring-purple-500 focus:border-purple-500 text-foreground"
+                                className="h-11 text-base sm:text-sm bg-background/50 border-border focus:ring-ring/50 focus:border-ring text-foreground"
                             />
                         </div>
                     </div>
@@ -622,13 +664,13 @@ export function UnifiedPatternEditor() {
                         <Button
                             variant="ghost"
                             onClick={() => setIsNameDialogOpen(false)}
-                            className="text-foreground/70 hover:text-foreground hover:bg-muted"
+                            className={editorHover.softAction}
                         >
                             Cancel
                         </Button>
                         <Button
                             onClick={handleConfirmAddPattern}
-                            className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-8 shadow-lg shadow-blue-900/20 transition-all"
+                            className="bg-primary hover:bg-primary/92 text-primary-foreground font-bold px-8 shadow-lg shadow-primary/20 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out"
                         >
                             Save Pattern
                         </Button>
@@ -637,7 +679,7 @@ export function UnifiedPatternEditor() {
             </Dialog>
 
             <Dialog open={!!patternToDelete} onOpenChange={(open) => !open && setPatternToDelete(null)}>
-                <DialogContent className="bg-card border-border text-foreground sm:max-w-[425px] shadow-2xl backdrop-blur-xl">
+                <DialogContent className="sm:max-w-[425px]">
                     <DialogHeader>
                         <DialogTitle className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
                             <Trash2 className="w-5 h-5 text-red-500" />
@@ -655,13 +697,13 @@ export function UnifiedPatternEditor() {
                         <Button
                             variant="ghost"
                             onClick={() => setPatternToDelete(null)}
-                            className="text-foreground/70 hover:text-foreground hover:bg-muted"
+                            className={editorHover.softAction}
                         >
                             Cancel
                         </Button>
                         <Button
                             onClick={confirmDeletePattern}
-                            className="bg-red-600 hover:bg-red-500 text-white font-bold px-8 shadow-lg shadow-red-900/20 transition-all"
+                            className="bg-red-600 hover:bg-red-500 text-white font-bold px-8 shadow-lg shadow-red-900/20 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out"
                         >
                             Delete
                         </Button>

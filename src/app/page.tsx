@@ -11,7 +11,7 @@ export default function Home() {
   return (
     <>
       {isLoaded ? <MainEditor /> : <ConfigLoader />}
-      <IosInstallHint />
+      <IosInstallHint avoidBottomDock={isLoaded} />
     </>
   );
 }

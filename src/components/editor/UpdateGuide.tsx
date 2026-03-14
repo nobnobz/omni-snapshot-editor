@@ -28,7 +28,9 @@ type UpdateGuideProps = {
 };
 
 const CATALOGS_ONLY_URL =
-    "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/aiometadata-catalogs-only-2026-03-12.json";
+    "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/AIOM%20Catalogs%20Only/aiometadata-catalogs-only.json";
+
+const subtleAmberPanelClass = "border-amber-500/24 bg-[linear-gradient(180deg,rgba(255,248,241,0.98),rgba(255,239,216,0.9))] dark:border-amber-500/14 dark:bg-card/40";
 
 export function UpdateGuide({ headerAction }: UpdateGuideProps = {}) {
     const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
@@ -73,7 +75,7 @@ export function UpdateGuide({ headerAction }: UpdateGuideProps = {}) {
                     tone="amber"
                 >
                     <div className="grid gap-4 lg:auto-rows-fr lg:grid-cols-[1fr_0.95fr]">
-                        <GuidePanel title="In AIOMetadata" icon={LogIn} tone="blue">
+                        <GuidePanel title="In AIOMetadata" icon={LogIn} tone="amber" className={subtleAmberPanelClass}>
                             <GuideStepList
                                 items={[
                                     "Login with your existing UUID.",
@@ -82,6 +84,7 @@ export function UpdateGuide({ headerAction }: UpdateGuideProps = {}) {
                                     "Select From URL.",
                                     "Paste the catalogs-only link below and import.",
                                 ]}
+                                tone="amber"
                                 className="mt-1"
                             />
                         </GuidePanel>
@@ -91,6 +94,7 @@ export function UpdateGuide({ headerAction }: UpdateGuideProps = {}) {
                             value={CATALOGS_ONLY_URL}
                             helperText="Use this only to pull new catalogs into your existing AIOMetadata setup."
                             tone="amber"
+                            className={subtleAmberPanelClass}
                             action={
                                 <Button
                                     type="button"
@@ -112,13 +116,14 @@ export function UpdateGuide({ headerAction }: UpdateGuideProps = {}) {
                     description="Once AIOMetadata is up to date, switch to the manager and work against your real setup instead of starting from a blank template."
                     tone="amber"
                 >
-                    <GuidePanel title="Use your real setup" icon={ListChecks} tone="amber">
+                    <GuidePanel title="Use your real setup" icon={ListChecks} tone="amber" className={subtleAmberPanelClass}>
                         <GuideStepList
                             items={[
                                 "Create a new Omni Snapshot if needed and export your current setup.",
                                 "Open the manager and use Custom Import.",
                                 "Upload your current Omni Snapshot JSON so updates apply to your real setup.",
                             ]}
+                            tone="amber"
                             className="mt-1"
                         />
                     </GuidePanel>
@@ -131,7 +136,7 @@ export function UpdateGuide({ headerAction }: UpdateGuideProps = {}) {
                     tone="amber"
                 >
                     <div className="grid gap-4 lg:auto-rows-fr lg:grid-cols-[1fr_0.9fr]">
-                        <GuidePanel title="In the app" icon={Workflow} tone="amber">
+                        <GuidePanel title="In the app" icon={Workflow} tone="amber" className={subtleAmberPanelClass}>
                             <GuideStepList
                                 items={[
                                     "Open the Catalog Manager.",
@@ -143,7 +148,7 @@ export function UpdateGuide({ headerAction }: UpdateGuideProps = {}) {
                             />
                         </GuidePanel>
 
-                        <GuidePanel title="What the updater detects" icon={Link2} tone="amber">
+                        <GuidePanel title="What the updater detects" icon={Link2} tone="amber" className={subtleAmberPanelClass}>
                             <GuideStepList
                                 items={[
                                     "New groups and catalogs",
@@ -165,7 +170,7 @@ export function UpdateGuide({ headerAction }: UpdateGuideProps = {}) {
                     tone="amber"
                 >
                     <div className="grid gap-4 lg:auto-rows-fr lg:grid-cols-2">
-                        <GuidePanel title="During import" icon={ListChecks} tone="amber">
+                        <GuidePanel title="During import" icon={ListChecks} tone="amber" className={subtleAmberPanelClass}>
                             <GuideStepList
                                 items={[
                                     "Select the groups and catalogs you want to update or add.",
@@ -173,11 +178,12 @@ export function UpdateGuide({ headerAction }: UpdateGuideProps = {}) {
                                     "Import once the selection looks correct.",
                                 ]}
                                 ordered={false}
+                                tone="amber"
                                 className="mt-1"
                             />
                         </GuidePanel>
 
-                        <GuidePanel title="After import" icon={Sparkles} tone="amber">
+                        <GuidePanel title="After import" icon={Sparkles} tone="amber" className={subtleAmberPanelClass}>
                             <GuideStepList
                                 items={[
                                     "Reorder imported catalogs and groups as needed.",
@@ -185,6 +191,7 @@ export function UpdateGuide({ headerAction }: UpdateGuideProps = {}) {
                                     "Personalize images, layout, and final structure.",
                                 ]}
                                 ordered={false}
+                                tone="amber"
                                 className="mt-1"
                             />
                         </GuidePanel>
@@ -193,18 +200,19 @@ export function UpdateGuide({ headerAction }: UpdateGuideProps = {}) {
 
                 <GuideSection
                     eyebrow="Optional"
-                    title="Update regex patterns too"
+                    title="Update regex patterns"
                     description="If you also want newer regex patterns, you can import or update those separately afterward. This is optional and not required for the catalog/group update itself."
                     icon={CheckCircle2}
-                    tone="blue"
+                    tone="amber"
                 >
-                    <GuidePanel title="When to do this" icon={Sparkles} tone="blue">
+                    <GuidePanel title="When to do this" icon={Sparkles} tone="amber" className={subtleAmberPanelClass}>
                         <GuideStepList
                             items={[
                                 "Do this only if you want updated tag logic or newer regex behavior.",
                                 "You can keep your current regex setup if the catalog and group update is your only goal.",
                             ]}
                             ordered={false}
+                            tone="amber"
                             className="mt-1"
                         />
                     </GuidePanel>

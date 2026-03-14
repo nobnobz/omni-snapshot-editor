@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
-import { CheckCircle2 } from "lucide-react";
-import { DialogContent } from "@/components/ui/dialog";
+import { CheckCircle2, X } from "lucide-react";
+import { DialogClose, DialogContent } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { editorLayout } from "@/components/editor/ui/style-contract";
 
@@ -10,34 +11,50 @@ type GuideTone = "neutral" | "blue" | "amber" | "emerald" | "indigo";
 
 const sectionToneClasses: Record<GuideTone, string> = {
     neutral: "border-border/70 bg-card/45",
-    blue: "border-sky-500/18 bg-sky-500/6",
-    amber: "border-amber-500/18 bg-amber-500/6",
+    blue: "border-primary/22 bg-[linear-gradient(180deg,rgba(240,249,255,0.98),rgba(224,242,254,0.88))] dark:border-primary/18 dark:bg-[linear-gradient(180deg,rgba(10,25,40,0.88),rgba(7,18,31,0.82))]",
+    amber: "border-amber-400/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(250,246,239,0.9))] dark:border-amber-400/12 dark:bg-[linear-gradient(180deg,rgba(29,22,16,0.96),rgba(19,15,11,0.96))]",
     emerald: "border-emerald-500/18 bg-emerald-500/6",
-    indigo: "border-indigo-500/18 bg-indigo-500/6",
+    indigo: "border-primary/18 bg-[linear-gradient(180deg,rgba(245,246,255,0.96),rgba(239,242,255,0.9))] dark:border-primary/12 dark:bg-[linear-gradient(180deg,rgba(17,21,34,0.9),rgba(12,16,28,0.86))]",
 };
 
 const panelToneClasses: Record<GuideTone, string> = {
     neutral: "border-border/70 bg-muted/20",
-    blue: "border-sky-500/18 bg-sky-500/6",
-    amber: "border-amber-500/18 bg-amber-500/6",
+    blue: "border-primary/24 bg-[linear-gradient(180deg,rgba(232,245,255,0.98),rgba(219,234,254,0.92))] dark:border-primary/18 dark:bg-[linear-gradient(180deg,rgba(14,31,48,0.86),rgba(10,22,36,0.8))]",
+    amber: "border-amber-400/22 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(251,246,237,0.9))] dark:border-amber-500/16 dark:bg-[linear-gradient(180deg,rgba(48,34,20,0.78),rgba(31,22,14,0.74))]",
     emerald: "border-emerald-500/18 bg-emerald-500/6",
-    indigo: "border-indigo-500/18 bg-indigo-500/6",
+    indigo: "border-primary/18 bg-[linear-gradient(180deg,rgba(240,243,255,0.96),rgba(233,238,255,0.9))] dark:border-primary/12 dark:bg-[linear-gradient(180deg,rgba(22,27,41,0.84),rgba(16,21,34,0.82))]",
+};
+
+const flowItemToneClasses: Record<GuideTone, string> = {
+    neutral: "border-border/65 bg-background/50",
+    blue: "border-primary/22 bg-[linear-gradient(180deg,rgba(227,242,253,0.98),rgba(219,234,254,0.94))] dark:border-primary/14 dark:bg-[linear-gradient(180deg,rgba(17,34,50,0.86),rgba(11,24,38,0.82))]",
+    amber: "border-amber-400/22 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(252,247,239,0.92))] dark:border-amber-500/18 dark:bg-[linear-gradient(180deg,rgba(43,31,18,0.66),rgba(26,19,13,0.6))]",
+    emerald: "border-emerald-500/14 bg-emerald-500/6",
+    indigo: "border-primary/18 bg-[linear-gradient(180deg,rgba(237,239,255,0.96),rgba(231,234,255,0.92))] dark:border-primary/12 dark:bg-[linear-gradient(180deg,rgba(24,29,44,0.84),rgba(17,22,35,0.82))]",
+};
+
+const codeToneClasses: Record<GuideTone, string> = {
+    neutral: "border-border/70 bg-background/60",
+    blue: "border-primary/20 bg-[linear-gradient(180deg,rgba(224,242,254,0.9),rgba(239,246,255,0.82))] dark:border-primary/16 dark:bg-[linear-gradient(180deg,rgba(16,37,56,0.82),rgba(11,27,43,0.78))]",
+    amber: "border-amber-400/18 bg-[linear-gradient(180deg,rgba(255,252,247,0.94),rgba(251,246,238,0.88))] dark:border-amber-400/12 dark:bg-[linear-gradient(180deg,rgba(31,22,14,0.8),rgba(19,15,11,0.9))]",
+    emerald: "border-emerald-500/16 bg-emerald-500/7",
+    indigo: "border-primary/20 bg-[linear-gradient(180deg,rgba(224,231,255,0.88),rgba(238,242,255,0.82))] dark:border-primary/16 dark:bg-[linear-gradient(180deg,rgba(29,34,60,0.8),rgba(20,24,45,0.76))]",
 };
 
 const markerToneClasses: Record<GuideTone, string> = {
     neutral: "border-border/70 bg-background/70 text-foreground/70",
-    blue: "border-sky-500/20 bg-sky-500/10 text-sky-600 dark:text-sky-300",
-    amber: "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+    blue: "border-primary/20 bg-primary/10 text-primary dark:text-primary",
+    amber: "border-amber-400/22 bg-amber-400/[0.08] text-amber-700 dark:text-amber-300",
     emerald: "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-    indigo: "border-indigo-500/20 bg-indigo-500/10 text-indigo-600 dark:text-indigo-300",
+    indigo: "border-primary/20 bg-primary/10 text-primary dark:text-primary",
 };
 
 const iconToneClasses: Record<GuideTone, string> = {
     neutral: "text-foreground/55",
-    blue: "text-sky-500",
-    amber: "text-amber-500",
+    blue: "text-primary",
+    amber: "text-amber-600",
     emerald: "text-emerald-500",
-    indigo: "text-indigo-500",
+    indigo: "text-primary",
 };
 
 type GuideDialogProps = {
@@ -48,12 +65,23 @@ type GuideDialogProps = {
 export function GuideDialog({ children, className }: GuideDialogProps) {
     return (
         <DialogContent
+            showCloseButton={false}
             className={cn(
                 editorLayout.dialogContent,
-                "sm:max-w-6xl max-h-[95vh] overflow-y-auto custom-scrollbar",
+                "z-[70] h-auto max-h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] overflow-y-auto custom-scrollbar top-[calc(0.5rem+env(safe-area-inset-top))] -translate-y-0 sm:top-[3.5vh] sm:max-h-[calc(100dvh-3.5rem)] sm:max-w-6xl",
                 className
             )}
         >
+            <DialogClose asChild>
+                <Button
+                    variant="outline"
+                    size="icon-sm"
+                    className="absolute right-4 top-4 z-20 rounded-xl border-border/70 bg-background/70 text-foreground/74 shadow-none hover:bg-accent/60 hover:text-foreground"
+                >
+                    <X className="h-4 w-4" />
+                    <span className="sr-only">Close</span>
+                </Button>
+            </DialogClose>
             {children}
         </DialogContent>
     );
@@ -146,7 +174,7 @@ export function GuidePanel({
     className,
 }: GuidePanelProps) {
     return (
-        <article className={cn("h-full rounded-2xl border p-4 sm:p-5", panelToneClasses[tone], className)}>
+        <article className={cn("flex h-full flex-col rounded-2xl border p-4 sm:p-5", panelToneClasses[tone], className)}>
             {title || eyebrow || description ? (
                 <div>
                     {eyebrow ? (
@@ -163,7 +191,9 @@ export function GuidePanel({
                     ) : null}
                 </div>
             ) : null}
-            {children ? <div className={cn(title || eyebrow || description ? "mt-4" : undefined)}>{children}</div> : null}
+            {children ? (
+                <div className={cn("min-h-0 flex-1", title || eyebrow || description ? "mt-4" : undefined)}>{children}</div>
+            ) : null}
         </article>
     );
 }
@@ -199,7 +229,7 @@ export function GuideFlow({
                 {items.map((item, index) => {
                     const ItemIcon = item.icon;
                     return (
-                        <li key={item.title} className="rounded-2xl border border-border/65 bg-background/50 p-4">
+                        <li key={item.title} className={cn("rounded-2xl border p-4", flowItemToneClasses[tone])}>
                             <div className="flex items-start gap-3">
                                 <span
                                     className={cn(
@@ -269,18 +299,19 @@ type GuideCodeBlockProps = {
     helperText?: string;
     action?: React.ReactNode;
     tone?: GuideTone;
+    className?: string;
 };
 
-export function GuideCodeBlock({ label, value, helperText, action, tone = "neutral" }: GuideCodeBlockProps) {
+export function GuideCodeBlock({ label, value, helperText, action, tone = "neutral", className }: GuideCodeBlockProps) {
     return (
-        <div className={cn("h-full rounded-2xl border p-4 sm:p-5", panelToneClasses[tone])}>
+        <div className={cn("h-full rounded-2xl border p-4 sm:p-5", panelToneClasses[tone], className)}>
             <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-foreground/46">{label}</p>
-            <div className="mt-3 rounded-xl border border-border/70 bg-background/60 p-3.5">
-                <code className="block break-all text-xs leading-relaxed text-foreground/78">{value}</code>
+            <div className={cn("mt-3 rounded-xl border p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]", codeToneClasses[tone])}>
+                <code className="block break-all text-xs leading-relaxed text-foreground/80 sm:text-[13px]">{value}</code>
             </div>
             {helperText || action ? (
-                <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    {helperText ? <p className="text-xs leading-relaxed text-foreground/58">{helperText}</p> : <span />}
+                <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    {helperText ? <p className="max-w-md text-xs leading-relaxed text-foreground/60">{helperText}</p> : <span />}
                     {action}
                 </div>
             ) : null}

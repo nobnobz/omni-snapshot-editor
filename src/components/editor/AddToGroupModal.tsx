@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 
 import { Checkbox } from "../ui/checkbox";
 import { Search } from 'lucide-react';
-import { editorAction, editorLayout } from "./ui/style-contract";
+import { editorAction, editorLayout, editorSurface } from "./ui/style-contract";
 
 export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
     const { currentValues, assignCatalogGroup, unassignCatalogGroup } = useConfig();
@@ -109,10 +109,10 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                     <div className="flex flex-col shrink-0 gap-2">
                         <Label htmlFor="target-main" className="text-foreground">Target Main Group</Label>
                         <Select value={targetMainGroupUuid} onValueChange={setTargetMainGroupUuid}>
-                            <SelectTrigger className="w-full h-10 text-base sm:text-sm bg-background border-input text-foreground">
+                            <SelectTrigger className={cn("w-full h-10 text-base sm:text-sm text-foreground", editorSurface.field)}>
                                 <SelectValue placeholder="Select a Main Group" />
                             </SelectTrigger>
-                            <SelectContent className="bg-popover border-border text-popover-foreground max-h-[200px]">
+                            <SelectContent className={cn(editorSurface.overlay, "max-h-[200px]")}>
                                 {mainGroupOrder.length === 0 ? (
                                     <SelectItem value="none" disabled>No Main Groups available</SelectItem>
                                 ) : (
@@ -135,11 +135,11 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                 placeholder="Search subgroups..."
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
-                                className="pl-8 h-10 sm:h-8 text-base sm:text-sm bg-background border-input focus-visible:ring-blue-500 mb-2"
+                                className={cn(editorSurface.field, "pl-8 h-10 sm:h-8 text-base sm:text-sm focus-visible:ring-ring/50 mb-2")}
                             />
                         </div>
 
-                        <div className="flex-1 overflow-y-auto rounded-md border border-border bg-transparent px-4 pb-4 min-h-[150px]">
+                        <div className={cn(editorSurface.inset, editorSurface.listSurface, "flex-1 overflow-y-auto rounded-xl px-4 pb-4 min-h-[150px]")}>
                             {allSubgroupNames.length === 0 ? (
                                 <p className="text-sm text-foreground/70 italic">No subgroups available.</p>
                             ) : (
@@ -177,7 +177,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                     for (const [cat, items] of categories.entries()) {
                                         if (items.length > 0) {
                                             categoryElements.push(
-                                                <div key={`header-${cat}`} className="sticky top-0 bg-card/95 backdrop-blur-sm py-2.5 z-20 mb-2 border-b border-border/40 -mx-4 px-4 mt-4 first:mt-0">
+                                                <div key={`header-${cat}`} className={cn(editorSurface.insetSticky, "sticky top-0 py-2.5 z-20 mb-2 ml-[-1rem] w-[calc(100%+2rem)] px-4 mt-4 first:mt-0")}>
                                                     <h5 className="text-xs font-bold text-foreground/50 uppercase tracking-[0.2em]">{cat}</h5>
                                                 </div>
                                             );
@@ -185,7 +185,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                             for (const name of items) {
                                                 const isAssigned = selectedSubgroups.has(name);
                                                 categoryElements.push(
-                                                    <div key={`sg-${name}`} className="flex items-center space-x-2 pl-2 py-1.5 hover:bg-muted/50 rounded-sm group/sg">
+                                                    <div key={`sg-${name}`} className="flex items-center space-x-2 pl-2 py-1.5 hover:bg-primary/10 dark:hover:bg-primary/16 rounded-sm transition-colors group/sg">
                                                         <Checkbox
                                                             id={`add-sg-${name}`}
                                                             checked={isAssigned}
@@ -195,11 +195,11 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                                                 else next.delete(name);
                                                                 setSelectedSubgroups(next);
                                                             }}
-                                                            className="border-border data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 h-4 w-4 shrink-0"
+                                                            className="border-border data-[state=unchecked]:hover:border-primary/70 data-[state=unchecked]:hover:bg-primary/10 data-[state=checked]:bg-primary data-[state=checked]:border-primary h-4 w-4 shrink-0"
                                                         />
                                                         <label
                                                             htmlFor={`add-sg-${name}`}
-                                                            className={`flex-1 text-sm font-medium leading-none cursor-pointer select-none transition-colors ${isAssigned ? "text-blue-600 dark:text-blue-400 font-bold" : "text-foreground group-hover/sg:text-foreground"}`}
+                                                            className={`flex-1 text-sm font-medium leading-none cursor-pointer select-none transition-colors ${isAssigned ? "text-primary dark:text-primary font-bold" : "text-foreground group-hover/sg:text-foreground"}`}
                                                         >
                                                             {formatDisplayName(name)}
                                                         </label>
@@ -214,7 +214,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                     }
 
                                     return (
-                                        <div className="space-y-1 pr-3 pb-2 pt-4">
+                                        <div className="space-y-1 pb-2 pt-4">
                                             {categoryElements}
                                         </div>
                                     );
@@ -229,7 +229,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                         {selectedSubgroups.size} subgroup(s) checked
                     </p>
                     <div className="flex w-full sm:w-auto gap-2 sm:order-2">
-                        <Button variant="outline" onClick={handleClose} className="flex-1 sm:flex-none bg-muted border-border text-foreground hover:bg-accent">Cancel</Button>
+                        <Button variant="outline" onClick={handleClose} className={cn(editorAction.secondary, editorSurface.field, "flex-1 sm:flex-none bg-white/42")}>Cancel</Button>
                         <Button onClick={handleAssign} disabled={!targetMainGroupUuid} className={cn("flex-1 sm:flex-none", editorAction.primary)}>Save Changes</Button>
                     </div>
                 </DialogFooter>

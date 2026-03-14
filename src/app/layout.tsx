@@ -14,13 +14,15 @@ export const metadata = {
   manifest: "/omni-snapshot-editor/manifest.json",
   icons: {
     icon: [
-      { url: "/omni-snapshot-editor/omni-icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/omni-snapshot-editor/omni-icon-512.png", sizes: "512x512", type: "image/png" },
+      { url: "/omni-snapshot-editor/favicon-clown-32.png?v=2", sizes: "32x32", type: "image/png" },
+      { url: "/omni-snapshot-editor/favicon-clown-64.png?v=2", sizes: "64x64", type: "image/png" },
+      { url: "/omni-snapshot-editor/app-icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/omni-snapshot-editor/app-icon-512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      { url: "/omni-snapshot-editor/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+      { url: "/omni-snapshot-editor/apple-touch-icon-app.png", sizes: "180x180", type: "image/png" },
     ],
-    shortcut: "/omni-snapshot-editor/omni-icon-192.png",
+    shortcut: "/omni-snapshot-editor/favicon-clown-32.png?v=2",
   },
 };
 
@@ -29,8 +31,8 @@ export const viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#202a39" },
-    { media: "(prefers-color-scheme: dark)", color: "#090d14" },
+    { media: "(prefers-color-scheme: light)", color: "#f8f8f8" },
+    { media: "(prefers-color-scheme: dark)", color: "#121212" },
   ],
 };
 
@@ -41,10 +43,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="antialiased min-h-screen text-foreground selection:bg-blue-500/30 overflow-x-hidden relative">
+      <body className="antialiased min-h-screen text-foreground selection:bg-primary/30 overflow-x-hidden relative">
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
+          defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >

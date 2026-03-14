@@ -8,7 +8,6 @@ import {
     Download,
     FileJson,
     Info,
-    KeyRound,
     Link2,
     MousePointer2,
     Search,
@@ -18,10 +17,11 @@ import {
     UploadCloud,
     Zap,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useConfig } from "@/context/ConfigContext";
 import { cn } from "@/lib/utils";
 import { downloadTemplateFile } from "@/lib/template-download";
+import { getTemplateDisplay } from "@/lib/template-display";
+import { editorHover } from "@/components/editor/ui/style-contract";
 import { GuideHeader } from "@/components/editor/GuideHeader";
 import {
     GuideBody,
@@ -61,7 +61,7 @@ type DeviceGuide = {
     icon: React.ComponentType<{ className?: string }>;
     description: string;
     note: string;
-    tone: "blue" | "emerald";
+    tone: "blue";
 };
 
 export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
@@ -165,7 +165,7 @@ export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
             icon: Cloud,
             description: "Import the backup on iOS first, enable iCloud Sync in Omni settings, then pull the synced setup on Apple TV.",
             note: "iCloud Sync must be enabled on the same Apple account.",
-            tone: "emerald",
+            tone: "blue",
         },
     ];
 
@@ -179,6 +179,14 @@ export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
 
     const getTemplateName = (id: string, fallback: string) =>
         manifest?.templates?.find((t) => t.id === id)?.name || fallback;
+
+    const guideActionButtonClass = cn(
+        "group flex items-center justify-between gap-3 rounded-2xl border border-primary/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.58),rgba(239,246,255,0.46))] px-4 py-3 shadow-[0_6px_14px_rgba(148,163,184,0.08)] hover:border-primary/24 hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.62),rgba(224,242,254,0.56))] dark:border-primary/28 dark:bg-[linear-gradient(180deg,rgba(14,33,52,0.9),rgba(8,22,38,0.86))] dark:shadow-[0_10px_20px_rgba(2,6,23,0.24)] dark:hover:border-primary/42 dark:hover:bg-[linear-gradient(180deg,rgba(18,41,66,0.94),rgba(10,28,48,0.9))]",
+        editorHover.transition,
+        editorHover.premiumCard
+    );
+    const guideActionIconShellClass =
+        "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-primary/18 bg-primary/8 dark:border-primary/20 dark:bg-primary/8";
 
     return (
         <GuideDialog>
@@ -224,6 +232,7 @@ export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
                     title="Choose your instances"
                     description="Start with the instance pair you want to run, then download the three template files you will use during setup."
                     icon={Settings}
+                    tone="blue"
                 >
                     <div className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
                         <div className="grid gap-4 md:auto-rows-fr md:grid-cols-2">
@@ -232,7 +241,6 @@ export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
                                 return (
                                     <GuidePanel
                                         key={group.name}
-                                        eyebrow="Recommended source"
                                         title={group.name}
                                         icon={Icon}
                                         description={group.description}
@@ -245,12 +253,17 @@ export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
                                                     href={link.url}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="group flex items-center justify-between rounded-2xl border border-border/70 bg-background/65 px-3.5 py-3 transition-colors hover:border-blue-400/45 hover:bg-blue-500/10"
+                                                    className={guideActionButtonClass}
                                                 >
-                                                    <div>
-                                                        <p className={cn("text-sm font-bold tracking-tight", link.tone)}>{link.text}</p>
+                                                    <div className="flex min-w-0 items-center gap-3">
+                                                        <span className={guideActionIconShellClass}>
+                                                            <Icon className="h-4 w-4 text-primary dark:text-primary" />
+                                                        </span>
+                                                        <div className="min-w-0">
+                                                            <p className="text-sm font-bold tracking-tight text-foreground">{link.text}</p>
+                                                        </div>
                                                     </div>
-                                                    <ChevronRight className="h-4 w-4 text-foreground/42 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-400" />
+                                                    <ChevronRight className="h-4 w-4 text-foreground/36 transition-transform group-hover:translate-x-0.5 group-hover:text-primary dark:group-hover:text-primary" />
                                                 </a>
                                             ))}
                                         </div>
@@ -261,34 +274,34 @@ export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
 
                         <GuidePanel title="Required files" icon={Download} tone="blue">
                             <div className="space-y-2.5">
-                                {templates.map((item) => (
-                                    <Button
-                                        key={item.id}
-                                        onClick={() => handleDownload(item.url, getTemplateName(item.id, item.name))}
-                                        variant="outline"
-                                        className="h-auto w-full justify-start gap-3 rounded-2xl border border-blue-500/20 bg-background/70 px-4 py-3 text-left transition-all hover:-translate-y-0.5 hover:border-blue-400/40 hover:bg-blue-500/10"
-                                    >
-                                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-blue-500/25 bg-blue-500/10">
-                                            <FileJson className="h-4 w-4 text-blue-500" />
-                                        </span>
-                                        <span className="min-w-0">
-                                            <span className="block text-sm font-bold tracking-tight text-foreground">{item.name}</span>
-                                        </span>
-                                    </Button>
-                                ))}
-                            </div>
+                                {templates.map((item) => {
+                                    const manifestName = getTemplateName(item.id, item.name);
+                                    const display = getTemplateDisplay(manifestName, item.id);
 
-                            <div className="mt-4 border-t border-border/60 pt-4">
-                                <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.16em] text-foreground/62">
-                                    <KeyRound className="h-4 w-4 text-amber-500" />
-                                    Keep handy
-                                </h3>
-                                <GuideStepList
-                                    items={["Save the generated UUID and password for both addons."]}
-                                    ordered={false}
-                                    tone="amber"
-                                    className="mt-3"
-                                />
+                                    return (
+                                        <button
+                                            key={item.id}
+                                            type="button"
+                                            onClick={() => handleDownload(item.url, manifestName)}
+                                            className={cn(guideActionButtonClass, "w-full text-left")}
+                                        >
+                                            <span className="flex min-w-0 items-center gap-3">
+                                                <span className={guideActionIconShellClass}>
+                                                    <FileJson className="h-4 w-4 text-primary dark:text-primary" />
+                                                </span>
+                                                <span className="min-w-0">
+                                                    <span className="block text-sm font-bold tracking-tight text-foreground">{display.label}</span>
+                                                    {display.version && (
+                                                        <span className="mt-0.5 block text-[10px] leading-tight text-foreground/46 font-medium tracking-[0.04em]">
+                                                            {display.version}
+                                                        </span>
+                                                    )}
+                                                </span>
+                                            </span>
+                                            <ChevronRight className="h-4 w-4 shrink-0 text-foreground/36 transition-transform group-hover:translate-x-0.5 group-hover:text-primary dark:group-hover:text-primary" />
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </GuidePanel>
                     </div>
@@ -312,16 +325,18 @@ export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
                                     icon={Icon}
                                     tone="blue"
                                 >
-                                    <GuideStepList items={track.steps} className="mt-4" />
-                                    <div className="mt-4 space-y-2 border-t border-border/60 pt-4">
-                                        <p className="flex items-start gap-2 text-xs leading-relaxed text-foreground/78">
-                                            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-                                            Save UUID + password before leaving the page.
-                                        </p>
-                                        <p className="flex items-start gap-2 text-xs leading-relaxed text-foreground/78">
-                                            <Link2 className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
-                                            {track.finalStep}
-                                        </p>
+                                    <div className="flex h-full flex-col">
+                                        <GuideStepList items={track.steps} className="mt-4" />
+                                        <div className="mt-4 space-y-2 border-t border-border/60 pt-4 xl:mt-auto">
+                                            <p className="flex items-start gap-2 text-xs leading-relaxed text-foreground/78">
+                                                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+                                                Save UUID + password before leaving the page.
+                                            </p>
+                                            <p className="flex items-start gap-2 text-xs leading-relaxed text-foreground/78">
+                                                <Link2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                                                {track.finalStep}
+                                            </p>
+                                        </div>
                                     </div>
                                 </GuidePanel>
                             );
@@ -337,7 +352,7 @@ export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
                     tone="blue"
                 >
                     <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-                        <GuidePanel title="Checklist" icon={CheckCircle2} tone="emerald">
+                        <GuidePanel title="Checklist" icon={CheckCircle2} tone="blue">
                             <GuideStepList
                                 items={[
                                     "AIOStreams manifest URL added in Omni",
@@ -346,7 +361,7 @@ export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
                                     "Snapshot template downloaded to your device",
                                 ]}
                                 ordered={false}
-                                tone="emerald"
+                                tone="blue"
                                 className="mt-1"
                             />
                         </GuidePanel>
