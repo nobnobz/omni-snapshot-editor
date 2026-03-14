@@ -312,23 +312,8 @@ export function MainEditor() {
         const blob = new Blob([JSON.stringify(config, null, 2)], { type: "application/json;charset=utf-8" });
         const newFile = new File([blob], newFileName, { type: "application/json" });
 
-        // If sharing is supported (common in mobile PWAs), try navigator.share first
-        // Restricted to touch devices to avoid triggering system share menus on desktops
-        if (isIosDevice && navigator.canShare && navigator.canShare({ files: [newFile] })) {
-            navigator.share({
-                files: [newFile],
-                title: 'Omni Configuration',
-                text: 'Exported Omni Configuration JSON'
-            }).then(() => {
-                setIsExportModalOpen(false);
-            }).catch((err) => {
-                console.error("Share failed, falling back to download", err);
-                // Fallback to traditional download
-                triggerDownload(blob, newFileName);
-            });
-        } else {
-            triggerDownload(blob, newFileName);
-        }
+        // Always use direct download for a consistent experience across all platforms
+        triggerDownload(blob, newFileName);
     };
 
     const triggerDownload = (blob: Blob, filename: string) => {
