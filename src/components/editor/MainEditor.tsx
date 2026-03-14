@@ -673,7 +673,14 @@ export function MainEditor() {
 
             {/* Export Modal */}
             <Dialog open={isExportModalOpen} onOpenChange={setIsExportModalOpen}>
-                <DialogContent className="max-w-md">
+                <DialogContent 
+                    className="max-w-md"
+                    onOpenAutoFocus={(e) => {
+                        if (isIosDevice) {
+                            e.preventDefault();
+                        }
+                    }}
+                >
                     <DialogHeader>
                         <DialogTitle>Export Configuration</DialogTitle>
                     </DialogHeader>
