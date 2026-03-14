@@ -1169,35 +1169,36 @@ export function MainEditor() {
                                             size="sm"
                                             onClick={() => setTheme("light")}
                                             className={cn(
-                                                "flex-1 h-8 rounded-lg text-xs font-medium transition-all",
+                                                "flex-1 h-9 rounded-lg transition-all",
                                                 theme === "light" ? "bg-white shadow-sm text-foreground dark:bg-zinc-800" : "text-foreground/50 hover:text-foreground hover:bg-white/50 dark:hover:bg-zinc-800/50"
                                             )}
+                                            title="Light Mode"
                                         >
-                                            <Sun className="w-3.5 h-3.5 mr-1.5" />
-                                            Light
+                                            <Sun className="w-4 h-4" />
                                         </Button>
                                         <Button
                                             variant="ghost"
                                             size="sm"
                                             onClick={() => setTheme("dark")}
                                             className={cn(
-                                                "flex-1 h-8 rounded-lg text-xs font-medium transition-all",
+                                                "flex-1 h-9 rounded-lg transition-all",
                                                 theme === "dark" ? "bg-white shadow-sm text-foreground dark:bg-zinc-800" : "text-foreground/50 hover:text-foreground hover:bg-white/50 dark:hover:bg-zinc-800/50"
                                             )}
+                                            title="Dark Mode"
                                         >
-                                            <Moon className="w-3.5 h-3.5 mr-1.5" />
-                                            Dark
+                                            <Moon className="w-4 h-4" />
                                         </Button>
                                         <Button
                                             variant="ghost"
                                             size="sm"
                                             onClick={() => setTheme("system")}
                                             className={cn(
-                                                "flex-1 h-8 rounded-lg text-xs font-medium transition-all",
+                                                "flex-1 h-9 rounded-lg transition-all",
                                                 theme === "system" ? "bg-white shadow-sm text-foreground dark:bg-zinc-800" : "text-foreground/50 hover:text-foreground hover:bg-white/50 dark:hover:bg-zinc-800/50"
                                             )}
+                                            title="System Theme"
                                         >
-                                            System
+                                            <span className="text-[13px] font-black">A</span>
                                         </Button>
                                     </div>
                                 </div>

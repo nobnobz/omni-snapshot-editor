@@ -44,6 +44,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="apple-touch-icon" href="/omni-snapshot-editor/apple-touch-icon-dark.png" />
         <link rel="apple-touch-icon" href="/omni-snapshot-editor/apple-touch-icon-light.png" media="(prefers-color-scheme: light)" />
         <link rel="apple-touch-icon" href="/omni-snapshot-editor/apple-touch-icon-dark.png" media="(prefers-color-scheme: dark)" />
       </head>
