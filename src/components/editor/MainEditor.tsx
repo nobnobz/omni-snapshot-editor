@@ -299,15 +299,35 @@ export function MainEditor() {
         const newFileName = `omni-config-${timestampStr}.json`;
 
         const blob = new Blob([JSON.stringify(config, null, 2)], { type: "application/json;charset=utf-8" });
+        const newFile = new File([blob], newFileName, { type: "application/json" });
+
+        // If sharing is supported (common in mobile PWAs), try navigator.share first
+        if (navigator.canShare && navigator.canShare({ files: [newFile] })) {
+            navigator.share({
+                files: [newFile],
+                title: 'Omni Configuration',
+                text: 'Exported Omni Configuration JSON'
+            }).then(() => {
+                setIsExportModalOpen(false);
+            }).catch((err) => {
+                console.error("Share failed, falling back to download", err);
+                // Fallback to traditional download
+                triggerDownload(blob, newFileName);
+            });
+        } else {
+            triggerDownload(blob, newFileName);
+        }
+    };
+
+    const triggerDownload = (blob: Blob, filename: string) => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = newFileName;
+        a.download = filename;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-
         setIsExportModalOpen(false);
     };
 
@@ -519,7 +539,7 @@ export function MainEditor() {
                                         >
                                             <span className="flex items-center gap-3">
                                                 <BookOpen className="w-4 h-4" />
-                                                Documentation
+                                                Docs
                                             </span>
                                             <ChevronDown
                                                 className={cn(
@@ -566,7 +586,7 @@ export function MainEditor() {
                                 >
                                     <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer">
                                         <Heart className="w-4 h-4" />
-                                        Support My Work
+                                        Support
                                     </a>
                                 </Button>
                             </div>

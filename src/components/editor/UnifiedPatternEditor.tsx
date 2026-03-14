@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { useConfig } from "@/context/ConfigContext";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,9 @@ import {
     useSensor,
     useSensors,
     DragEndEvent,
+    DragStartEvent,
+    DragOverlay,
+    defaultDropAnimationSideEffects,
 } from '@dnd-kit/core';
 import { editorHover, editorSurface } from "@/components/editor/ui/style-contract";
 import { cn } from "@/lib/utils";
@@ -392,6 +396,7 @@ export function UnifiedPatternEditor() {
     const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
     const [patternNameDraft, setPatternNameDraft] = useState("");
     const [patternToDelete, setPatternToDelete] = useState<string | null>(null);
+    const [activeId, setActiveId] = useState<string | null>(null);
     const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
 
     // Gather all unique regex strings from all dicts
@@ -435,8 +440,13 @@ export function UnifiedPatternEditor() {
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
+    const handleDragStart = (event: DragStartEvent) => {
+        setActiveId(String(event.active.id));
+    };
+
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
+        setActiveId(null);
         if (!over || active.id === over.id) return;
 
         const oldIndex = orderedKeys.indexOf(active.id as string);
@@ -608,6 +618,8 @@ export function UnifiedPatternEditor() {
                         <DndContext 
                             sensors={sensors} 
                             collisionDetection={closestCenter} 
+                            onDragStart={handleDragStart}
+                            onDragCancel={() => setActiveId(null)}
                             onDragEnd={handleDragEnd}
                         >
                             <SortableContext items={orderedKeys} strategy={verticalListSortingStrategy}>
@@ -617,6 +629,40 @@ export function UnifiedPatternEditor() {
                                     ))}
                                 </Accordion>
                             </SortableContext>
+                            {activeId && typeof document !== 'undefined' ? createPortal(
+                                <DragOverlay
+                                    dropAnimation={{
+                                        sideEffects: defaultDropAnimationSideEffects({
+                                            styles: {
+                                                active: {
+                                                    opacity: "0.15",
+                                                },
+                                            },
+                                        }),
+                                    }}
+                                >
+                                    <div className={cn(
+                                        "flex items-center justify-between pl-2 pr-4 py-4 rounded-xl border border-primary/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.84))] shadow-2xl opacity-95 dark:bg-[linear-gradient(180deg,rgba(20,23,30,0.96),rgba(13,16,21,0.94))]",
+                                        "ring-1 ring-primary/20"
+                                    )}>
+                                        <div className="flex items-center gap-3">
+                                            <GripVertical className="h-5 w-5 text-primary" />
+                                            <span className="font-bold text-sm tracking-tight text-foreground truncate max-w-[200px]">
+                                                {currentValues["regex_pattern_custom_names"]?.[activeId] || activeId}
+                                            </span>
+                                        </div>
+                                        {currentValues["regex_pattern_image_urls"]?.[activeId] && (
+                                            <div 
+                                                className="h-8 w-8 shrink-0 overflow-hidden rounded-md flex items-center justify-center border border-white/10 p-1"
+                                                style={{ backgroundColor: '#020617' }}
+                                            >
+                                                <img src={currentValues["regex_pattern_image_urls"]?.[activeId]} alt="Preview" className="h-full w-auto object-contain" />
+                                            </div>
+                                        )}
+                                    </div>
+                                </DragOverlay>,
+                                document.body
+                            ) : null}
                         </DndContext>
                         {orderedKeys.length === 0 && (
                             <div className="text-center py-12 border border-dashed border-border/80 rounded-xl bg-background/20 flex flex-col items-center justify-center gap-3">

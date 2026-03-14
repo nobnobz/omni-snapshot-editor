@@ -808,7 +808,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                 <span className="min-w-0 truncate font-bold text-base text-foreground group-hover/trigger:text-primary transition-colors">
                                     {formatDisplayName(name)}
                                 </span>
-                                <div className="mr-2 flex items-center gap-1 shrink-0 sm:justify-end">
+                                <div className="mr-2 flex items-center gap-1 shrink-0 flex-wrap sm:justify-end">
                                     {posterSize !== "Default" && (
                                         <Badge
                                             variant="outline"

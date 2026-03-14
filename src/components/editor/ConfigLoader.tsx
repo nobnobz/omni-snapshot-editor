@@ -539,7 +539,7 @@ export function ConfigLoader() {
                                                 <Button type="button" variant="outline" className={cn(editorLoader.resourceButtonPrimary, "group/resource w-full")}>
                                                     <LoaderResourceButtonContent
                                                         icon={FileDown}
-                                                        label="Download UME Templates"
+                                                        label="UME Templates"
                                                         affordance={<ChevronDown className={cn(loaderResourceAffordanceClass, "group-hover/resource:translate-y-px")} strokeWidth={2.2} />}
                                                     />
                                                 </Button>
@@ -547,7 +547,7 @@ export function ConfigLoader() {
                                             <DropdownMenuContent
                                                 align="center"
                                                 sideOffset={8}
-                                                className={cn(editorSurface.overlay, "w-[min(24rem,calc(100vw-1.25rem))] rounded-[1.4rem] p-2")}
+                                                className={cn(editorSurface.overlay, "w-[min(20rem,calc(100vw-1.25rem))] rounded-[1.4rem] p-1.5")}
                                             >
                                                 <DropdownMenuLabel className={cn(editorLoader.subtleMeta, "px-3 pt-1 pb-1 text-foreground/38")}>UME Templates</DropdownMenuLabel>
                                                 {templateDownloads.length === 0 ? (
@@ -625,7 +625,7 @@ export function ConfigLoader() {
                                                 <Button type="button" variant="outline" className={cn(loaderDocsButtonClass, "group/resource w-full")}>
                                                     <LoaderResourceButtonContent
                                                         icon={BookOpen}
-                                                        label="Documentation"
+                                                        label="Docs"
                                                         tone="amber"
                                                         affordance={<ChevronDown className={cn(loaderResourceAffordanceClass, "group-hover/resource:translate-y-px")} strokeWidth={2.2} />}
                                                     />
@@ -658,7 +658,7 @@ export function ConfigLoader() {
                                             <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer">
                                                 <LoaderResourceButtonContent
                                                     icon={Heart}
-                                                    label="Support My Work"
+                                                    label="Support"
                                                     tone="pink"
                                                 />
                                             </a>
