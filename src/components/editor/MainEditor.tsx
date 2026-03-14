@@ -26,6 +26,9 @@ import {
     Copy,
     RotateCcw,
     ChevronDown,
+    ChevronRight,
+    Sun,
+    Moon,
     Check,
     UploadCloud,
     ClipboardPaste,
@@ -60,6 +63,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { APP_VERSION } from "@/lib/constants";
 import { cn, isIos } from "@/lib/utils";
+import { useTheme } from "next-themes";
 import { editorAction, editorHover, editorNoticeTone, editorSurface } from "@/components/editor/ui/style-contract";
 
 type UiNotice = {
@@ -1150,6 +1154,46 @@ export function MainEditor() {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent side="top" align="end" className="mb-2 w-52 rounded-[1.25rem]">
+                                <div className="p-2 pb-1.5">
+                                    <div className="flex items-center gap-1 rounded-xl bg-muted/40 p-1">
+                                        <Button
+                                            variant="ghost" 
+                                            size="sm"
+                                            onClick={() => setTheme("light")}
+                                            className={cn(
+                                                "flex-1 h-8 rounded-lg text-xs font-medium transition-all",
+                                                theme === "light" ? "bg-white shadow-sm text-foreground dark:bg-zinc-800" : "text-foreground/50 hover:text-foreground hover:bg-white/50 dark:hover:bg-zinc-800/50"
+                                            )}
+                                        >
+                                            <Sun className="w-3.5 h-3.5 mr-1.5" />
+                                            Light
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setTheme("dark")}
+                                            className={cn(
+                                                "flex-1 h-8 rounded-lg text-xs font-medium transition-all",
+                                                theme === "dark" ? "bg-white shadow-sm text-foreground dark:bg-zinc-800" : "text-foreground/50 hover:text-foreground hover:bg-white/50 dark:hover:bg-zinc-800/50"
+                                            )}
+                                        >
+                                            <Moon className="w-3.5 h-3.5 mr-1.5" />
+                                            Dark
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setTheme("system")}
+                                            className={cn(
+                                                "flex-1 h-8 rounded-lg text-xs font-medium transition-all",
+                                                theme === "system" ? "bg-white shadow-sm text-foreground dark:bg-zinc-800" : "text-foreground/50 hover:text-foreground hover:bg-white/50 dark:hover:bg-zinc-800/50"
+                                            )}
+                                        >
+                                            System
+                                        </Button>
+                                    </div>
+                                </div>
+                                <DropdownMenuSeparator className="mx-1 my-1 bg-border/60" />
                                 <DropdownMenuItem
                                     onClick={handleCopy}
                                     className={`cursor-pointer rounded-xl px-3 py-2.5 ${isCopied ? "text-emerald-500 focus:text-emerald-500 focus:bg-emerald-500/10" : ""}`}
@@ -1157,14 +1201,6 @@ export function MainEditor() {
                                     {isCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                                     <span className="flex-1">{isCopied ? "Copied to Clipboard" : "Copy JSON"}</span>
                                 </DropdownMenuItem>
-                                <DropdownMenuSeparator className="mx-1 my-1 bg-border/60" />
-                                <div className="px-1.5 py-1.5">
-                                    <div className="flex items-center justify-between rounded-xl px-2 py-1.5 bg-muted/30">
-                                        <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider ml-1">Theme</span>
-                                        <ThemeToggle />
-                                    </div>
-                                </div>
-                                <DropdownMenuSeparator className="mx-1 my-1 bg-border/60" />
                                 <DropdownMenuItem
                                     onClick={handleBackToStart}
                                     className="cursor-pointer rounded-xl px-3 py-2.5"
