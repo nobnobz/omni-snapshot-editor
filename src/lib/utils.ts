@@ -69,3 +69,8 @@ export function ensureCatalogPrefix(id: string, name?: string): string {
   }
   return `${typePrefix}${id}`;
 }
+export function isIos(): boolean {
+  if (typeof window === "undefined" || typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent;
+  return /iPhone|iPod|iPad/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}

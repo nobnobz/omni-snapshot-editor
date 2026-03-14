@@ -403,18 +403,20 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                         e.stopPropagation();
                         toggleExpanded();
                     }}
-                    className="flex flex-1 min-w-0 self-stretch items-center gap-0 rounded-md px-1 py-2 text-left font-bold text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                    className="flex flex-1 min-w-0 self-stretch items-center gap-0 rounded-md px-1 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                     aria-expanded={isExpanded}
                     aria-label={`Toggle subgroup ${formatDisplayName(subgroupName)}`}
                 >
-                    {isExpanded ? <ChevronDown className="w-4 h-4 mr-2 text-foreground/70 group-hover:text-foreground transition-colors" /> : <ChevronRight className="w-4 h-4 mr-2 text-foreground/70 group-hover:text-foreground transition-colors" />}
-                    <span className="truncate transition-colors group-hover/subgroup:text-primary dark:group-hover/subgroup:text-primary">{formatDisplayName(subgroupName)}</span>
-                    <Badge
-                        variant="outline"
-                        className={subgroupCountBadgeClass}
-                    >
-                        {subgroupCatalogs.length}
-                    </Badge>
+                    {isExpanded ? <ChevronDown className="w-4 h-4 mr-2 text-foreground/70 group-hover:text-foreground shrink-0 transition-colors" /> : <ChevronRight className="w-4 h-4 mr-2 text-foreground/70 group-hover:text-foreground shrink-0 transition-colors" />}
+                    <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+                        <span className="truncate font-bold text-sm text-foreground transition-colors group-hover/subgroup:text-primary dark:group-hover/subgroup:text-primary">{formatDisplayName(subgroupName)}</span>
+                        <Badge
+                            variant="outline"
+                            className={cn(subgroupCountBadgeClass, "ml-0 sm:ml-2")}
+                        >
+                            {subgroupCatalogs.length}
+                        </Badge>
+                    </div>
                 </button>
 
                 {/* Action Buttons: Desktop Header, Mobile hidden here (moved to layout section below) */}
@@ -804,11 +806,11 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
 
                     <AccordionTrigger className={`flex-1 text-foreground px-4 py-4 transition-colors group/trigger ${editorHover.rowSubtle}`}>
                         <div className="flex-1 min-w-0 flex flex-col gap-1">
-                            <div className="flex items-start justify-between gap-2">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
                                 <span className="min-w-0 truncate font-bold text-base text-foreground group-hover/trigger:text-primary transition-colors">
                                     {formatDisplayName(name)}
                                 </span>
-                                <div className="mr-2 flex items-center gap-1 shrink-0 flex-wrap sm:justify-end">
+                                <div className="sm:mr-2 flex items-center gap-1 shrink-0 flex-wrap sm:justify-end">
                                     {posterSize !== "Default" && (
                                         <Badge
                                             variant="outline"

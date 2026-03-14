@@ -59,7 +59,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { APP_VERSION } from "@/lib/constants";
-import { cn } from "@/lib/utils";
+import { cn, isIos } from "@/lib/utils";
 import { editorAction, editorHover, editorNoticeTone, editorSurface } from "@/components/editor/ui/style-contract";
 
 type UiNotice = {
@@ -94,10 +94,14 @@ export function MainEditor() {
     const [isExitConfirmOpen, setIsExitConfirmOpen] = useState(false);
     const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
 
-    const [activeSectionId, setActiveSectionId] = useState("aiometadata");
     const [isCopied, setIsCopied] = useState(false);
     const [uiNotice, setUiNotice] = useState<UiNotice | null>(null);
     const [isFallbackDropActive, setIsFallbackDropActive] = useState(false);
+    const [isIosDevice, setIsIosDevice] = useState(false);
+
+    useEffect(() => {
+        setIsIosDevice(isIos());
+    }, []);
     const scrollContainerRef = useRef<HTMLElement>(null);
 
     useEffect(() => {
@@ -1124,10 +1128,14 @@ export function MainEditor() {
                 <div className="pointer-events-auto flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.78),rgba(226,232,240,0.72))] p-1.5 shadow-[0_14px_34px_rgba(15,23,42,0.14)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[linear-gradient(180deg,rgba(255,255,255,0.62),rgba(226,232,240,0.56))] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(24,24,27,0.74),rgba(10,10,12,0.88))] dark:shadow-[0_14px_34px_rgba(2,6,23,0.26)] dark:supports-[backdrop-filter]:bg-[linear-gradient(180deg,rgba(24,24,27,0.56),rgba(10,10,12,0.74))]">
                         <Button
                             onClick={handleDownloadClick}
-                            className="h-11 rounded-full bg-primary px-5 font-bold text-primary-foreground shadow-[0_10px_24px_rgba(2,6,23,0.22)] hover:bg-primary/92"
+                            className={cn(
+                                "h-11 rounded-full bg-primary font-bold text-primary-foreground shadow-[0_10px_24px_rgba(2,6,23,0.22)] hover:bg-primary/92",
+                                isIosDevice ? "size-11 px-0 flex items-center justify-center p-0" : "px-5"
+                            )}
+                            title={isIosDevice ? "Download JSON" : undefined}
                         >
-                            <Download className="w-4 h-4 mr-2" />
-                            Download
+                            <Download className={cn("w-4 h-4", !isIosDevice && "mr-2")} />
+                            {!isIosDevice && "Download"}
                         </Button>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -1146,8 +1154,15 @@ export function MainEditor() {
                                     className={`cursor-pointer rounded-xl px-3 py-2.5 ${isCopied ? "text-emerald-500 focus:text-emerald-500 focus:bg-emerald-500/10" : ""}`}
                                 >
                                     {isCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                                    {isCopied ? "Copied to Clipboard" : "Copy JSON"}
+                                    <span className="flex-1">{isCopied ? "Copied to Clipboard" : "Copy JSON"}</span>
                                 </DropdownMenuItem>
+                                <DropdownMenuSeparator className="mx-1 my-1 bg-border/60" />
+                                <div className="px-1.5 py-1.5">
+                                    <div className="flex items-center justify-between rounded-xl px-2 py-1.5 bg-muted/30">
+                                        <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider ml-1">Theme</span>
+                                        <ThemeToggle />
+                                    </div>
+                                </div>
                                 <DropdownMenuSeparator className="mx-1 my-1 bg-border/60" />
                                 <DropdownMenuItem
                                     onClick={handleBackToStart}
