@@ -805,40 +805,41 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                     </div>
 
                     <AccordionTrigger className={`flex-1 text-foreground px-4 py-4 transition-colors group/trigger ${editorHover.rowSubtle}`}>
-                        <div className="flex-1 min-w-0 flex flex-col gap-1.5">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+                        <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            {/* Name + Subgroup Count */}
+                            <div className="flex flex-col min-w-0 gap-1.5">
                                 <span className="min-w-0 truncate font-bold text-base text-foreground group-hover/trigger:text-primary transition-colors">
                                     {formatDisplayName(name)}
                                 </span>
-                            </div>
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
                                 <div className="text-xs text-foreground/50 font-medium leading-none flex items-center gap-2">
                                     <span>{subgroupNames.length} Subgroups</span>
                                 </div>
-                                <div className="flex items-center gap-1 shrink-0 flex-wrap">
-                                    {posterSize !== "Default" && (
-                                        <Badge
-                                            variant="outline"
-                                            className={cn(
-                                                "text-xs font-bold px-2 py-0.5 rounded-md",
-                                                posterSize === "Small"
-                                                    ? "bg-primary/10 text-primary dark:text-primary border-primary/30"
-                                                    : "bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20"
-                                            )}
-                                        >
-                                            {posterSize}
-                                        </Badge>
-                                    )}
-                                    {posterType === "Poster" && (
-                                        <Badge variant="outline" className="text-xs font-bold px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/25">Poster</Badge>
-                                    )}
-                                    {posterType === "Square" && (
-                                        <Badge variant="outline" className="text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">Square</Badge>
-                                    )}
-                                    {posterType === "Landscape" && (
-                                        <Badge variant="outline" className="text-xs font-bold px-2 py-0.5 rounded-md bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20">Landscape</Badge>
-                                    )}
-                                </div>
+                            </div>
+
+                            {/* Badges */}
+                            <div className="flex items-center gap-1 shrink-0 flex-wrap sm:justify-end">
+                                {posterSize !== "Default" && (
+                                    <Badge
+                                        variant="outline"
+                                        className={cn(
+                                            "text-xs font-bold px-2 py-0.5 rounded-md",
+                                            posterSize === "Small"
+                                                ? "bg-primary/10 text-primary dark:text-primary border-primary/30"
+                                                : "bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20"
+                                        )}
+                                    >
+                                        {posterSize}
+                                    </Badge>
+                                )}
+                                {posterType === "Poster" && (
+                                    <Badge variant="outline" className="text-xs font-bold px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/25">Poster</Badge>
+                                )}
+                                {posterType === "Square" && (
+                                    <Badge variant="outline" className="text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">Square</Badge>
+                                )}
+                                {posterType === "Landscape" && (
+                                    <Badge variant="outline" className="text-xs font-bold px-2 py-0.5 rounded-md bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20">Landscape</Badge>
+                                )}
                             </div>
                         </div>
                     </AccordionTrigger>
