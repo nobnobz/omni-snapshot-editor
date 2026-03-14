@@ -182,12 +182,13 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                 </div>
                 <div className="pr-2 shrink-0 flex items-center gap-4">
                     {imageUrl && (
-                        <div className={cn(
-                            "h-8 w-auto max-w-24 shrink-0 overflow-hidden rounded-md flex items-center justify-center transition-opacity",
-                            editorSurface.field,
-                            patternFieldSurface,
-                            !isTagEnabled && "opacity-30"
-                        )}>
+                        <div 
+                            className={cn(
+                                "h-8 w-auto min-w-[32px] max-w-24 shrink-0 overflow-hidden rounded-md flex items-center justify-center transition-opacity border border-white/10 p-1",
+                                !isTagEnabled && "opacity-30"
+                            )}
+                            style={{ backgroundColor: '#020617' }}
+                        >
                             {/* eslint-disable-next-line @next/next/no-img-element -- Pattern preview accepts dynamic remote URLs and must stay lightweight. */}
                             <img src={imageUrl} alt={customName || regex} className="h-full w-auto object-contain" />
                         </div>

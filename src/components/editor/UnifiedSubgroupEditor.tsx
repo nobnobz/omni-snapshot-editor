@@ -465,7 +465,10 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                     {/* Image URL Input */}
                     <div className="space-y-2">
                         <div className={`${editorSurface.panel} flex items-center gap-3 p-3`}>
-                            <div className={`${thumbFrameClass} ${editorSurface.field} rounded-md shrink-0 overflow-hidden shadow-sm flex items-center justify-center transition-[width,height] duration-200`}>
+                            <div 
+                                className={`${thumbFrameClass} rounded-md shrink-0 overflow-hidden shadow-sm flex items-center justify-center transition-[width,height] duration-200 border border-white/10 p-1`}
+                                style={{ backgroundColor: '#020617' }}
+                            >
                                 {hasThumbPreview ? (
                                     <>
                                         {/* eslint-disable-next-line @next/next/no-img-element -- Dynamic subgroup thumbnail preview from user-provided URL. */}
