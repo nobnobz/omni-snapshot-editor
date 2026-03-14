@@ -98,11 +98,13 @@ function LoaderIconBadge({
 function LoaderResourceButtonContent({
     icon: Icon,
     label,
+    mobileLabel,
     tone = "primary",
     affordance,
 }: {
     icon: LucideIcon;
     label: string;
+    mobileLabel?: string;
     tone?: LoaderBadgeTone;
     affordance?: ReactNode;
 }) {
@@ -111,7 +113,8 @@ function LoaderResourceButtonContent({
             <span className="inline-flex min-w-0 items-center justify-center gap-2.5 sm:gap-3">
                 <Icon className={cn("size-[1.08rem] shrink-0 sm:size-[1.18rem]", loaderResourceIconToneClass[tone])} strokeWidth={2.2} />
                 <span className="min-w-0 truncate text-center text-[0.9rem] font-semibold tracking-[-0.02em] text-foreground sm:text-[0.98rem] sm:tracking-[-0.015em]">
-                    {label}
+                    <span className={cn(mobileLabel && "hidden sm:inline")}>{label}</span>
+                    {mobileLabel && <span className="sm:hidden">{mobileLabel}</span>}
                 </span>
             </span>
             {affordance ? (
@@ -539,7 +542,8 @@ export function ConfigLoader() {
                                                 <Button type="button" variant="outline" className={cn(editorLoader.resourceButtonPrimary, "group/resource w-full")}>
                                                     <LoaderResourceButtonContent
                                                         icon={FileDown}
-                                                        label="UME Templates"
+                                                        label="Download UME Templates"
+                                                        mobileLabel="UME Templates"
                                                         affordance={<ChevronDown className={cn(loaderResourceAffordanceClass, "group-hover/resource:translate-y-px")} strokeWidth={2.2} />}
                                                     />
                                                 </Button>
@@ -625,7 +629,8 @@ export function ConfigLoader() {
                                                 <Button type="button" variant="outline" className={cn(loaderDocsButtonClass, "group/resource w-full")}>
                                                     <LoaderResourceButtonContent
                                                         icon={BookOpen}
-                                                        label="Docs"
+                                                        label="Documentation"
+                                                        mobileLabel="Docs"
                                                         tone="amber"
                                                         affordance={<ChevronDown className={cn(loaderResourceAffordanceClass, "group-hover/resource:translate-y-px")} strokeWidth={2.2} />}
                                                     />
@@ -658,7 +663,8 @@ export function ConfigLoader() {
                                             <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer">
                                                 <LoaderResourceButtonContent
                                                     icon={Heart}
-                                                    label="Support"
+                                                    label="Support My Work"
+                                                    mobileLabel="Support"
                                                     tone="pink"
                                                 />
                                             </a>
