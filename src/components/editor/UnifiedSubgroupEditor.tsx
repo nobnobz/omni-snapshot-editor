@@ -820,7 +820,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                         <Badge
                                             variant="outline"
                                             className={cn(
-                                                "text-[10px] font-bold px-1.5 py-0 rounded-md",
+                                                "text-xs font-bold px-2 py-0.5 rounded-md",
                                                 posterSize === "Small"
                                                     ? "bg-primary/10 text-primary dark:text-primary border-primary/30"
                                                     : "bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20"
@@ -830,13 +830,13 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                         </Badge>
                                     )}
                                     {posterType === "Poster" && (
-                                        <Badge variant="outline" className="text-[10px] font-bold px-1.5 py-0 rounded-md bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/25">Poster</Badge>
+                                        <Badge variant="outline" className="text-xs font-bold px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/25">Poster</Badge>
                                     )}
                                     {posterType === "Square" && (
-                                        <Badge variant="outline" className="text-[10px] font-bold px-1.5 py-0 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">Square</Badge>
+                                        <Badge variant="outline" className="text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">Square</Badge>
                                     )}
                                     {posterType === "Landscape" && (
-                                        <Badge variant="outline" className="text-[10px] font-bold px-1.5 py-0 rounded-md bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20">Landscape</Badge>
+                                        <Badge variant="outline" className="text-xs font-bold px-2 py-0.5 rounded-md bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20">Landscape</Badge>
                                     )}
                                 </div>
                             </div>

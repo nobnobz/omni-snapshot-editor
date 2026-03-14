@@ -41,7 +41,8 @@ import {
     LogOut,
     Info,
     AlertTriangle,
-    MoreHorizontal
+    MoreHorizontal,
+    Monitor
 } from "lucide-react";
 import {
     Dialog,
@@ -1198,7 +1199,7 @@ export function MainEditor() {
                                             )}
                                             title="System Theme"
                                         >
-                                            <span className="text-[13px] font-black">A</span>
+                                            <Monitor className="w-4 h-4" />
                                         </Button>
                                     </div>
                                 </div>
