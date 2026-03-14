@@ -94,6 +94,7 @@ export function MainEditor() {
     const [isExitConfirmOpen, setIsExitConfirmOpen] = useState(false);
     const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
 
+    const [activeSectionId, setActiveSectionId] = useState("aiometadata");
     const [isCopied, setIsCopied] = useState(false);
     const [uiNotice, setUiNotice] = useState<UiNotice | null>(null);
     const [isFallbackDropActive, setIsFallbackDropActive] = useState(false);
