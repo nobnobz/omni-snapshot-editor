@@ -16,11 +16,11 @@ export const metadata = {
     icon: [
       { url: "/omni-snapshot-editor/favicon-clown-32.png?v=2", sizes: "32x32", type: "image/png" },
       { url: "/omni-snapshot-editor/favicon-clown-64.png?v=2", sizes: "64x64", type: "image/png" },
-      { url: "/omni-snapshot-editor/app-icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/omni-snapshot-editor/app-icon-512.png", sizes: "512x512", type: "image/png" },
+      { url: "/omni-snapshot-editor/omni-icon-dark-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/omni-snapshot-editor/omni-icon-dark-512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      { url: "/omni-snapshot-editor/apple-touch-icon-app.png", sizes: "180x180", type: "image/png" },
+      { url: "/omni-snapshot-editor/apple-touch-icon-dark.png", sizes: "180x180", type: "image/png" },
     ],
     shortcut: "/omni-snapshot-editor/favicon-clown-32.png?v=2",
   },
@@ -43,6 +43,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="apple-touch-icon" href="/omni-snapshot-editor/apple-touch-icon-light.png" media="(prefers-color-scheme: light)" />
+        <link rel="apple-touch-icon" href="/omni-snapshot-editor/apple-touch-icon-dark.png" media="(prefers-color-scheme: dark)" />
+      </head>
       <body className="antialiased min-h-screen text-foreground selection:bg-primary/30 overflow-x-hidden relative">
         <ThemeProvider
           attribute="class"

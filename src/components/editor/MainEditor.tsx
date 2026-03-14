@@ -103,6 +103,7 @@ export function MainEditor() {
     const [uiNotice, setUiNotice] = useState<UiNotice | null>(null);
     const [isFallbackDropActive, setIsFallbackDropActive] = useState(false);
     const [isIosDevice, setIsIosDevice] = useState(false);
+    const { theme, setTheme } = useTheme();
 
     useEffect(() => {
         setIsIosDevice(isIos());
