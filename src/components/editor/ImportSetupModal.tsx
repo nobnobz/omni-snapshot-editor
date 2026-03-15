@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useConfig } from "@/context/ConfigContext";
 import { formatDisplayName, cn } from "@/lib/utils";
-import { UploadCloud, AlertTriangle, ChevronDown, CheckSquare, Square, RefreshCw, Image as ImageIcon } from "lucide-react";
+import { UploadCloud, AlertTriangle, ChevronDown, CheckSquare, Square, RefreshCw, Image as ImageIcon, BookOpen } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { decodeConfig } from "@/lib/config-utils";
@@ -30,6 +30,7 @@ import { editorAction, editorLayout, editorSurface, editorToneBadge, editorNotic
 interface ImportSetupModalProps {
     isOpen: boolean;
     onClose: () => void;
+    onOpenGuide?: (guide: "install" | "update" | "use") => void;
 }
 
 interface ParsedMainGroup {
@@ -78,7 +79,7 @@ const importSetupTone = {
     infoBadge: "border-primary/30 bg-primary/10 text-primary dark:text-primary",
 } as const;
 
-export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
+export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupModalProps) {
     const { currentValues, importGroups, manifest, fetchManifest } = useConfig();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -582,7 +583,10 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <DialogContent className={cn(editorLayout.dialogContent, "sm:max-w-2xl")}>
+            <DialogContent 
+                onOpenAutoFocus={(e) => e.preventDefault()}
+                className={cn(editorLayout.dialogContent, "sm:max-w-2xl sm:max-h-[85vh]")}
+            >
                 <DialogHeader className="shrink-0">
                     <DialogTitle>Update From Existing Setup</DialogTitle>
                     <DialogDescription className="text-foreground/70">
@@ -592,6 +596,27 @@ export function ImportSetupModal({ isOpen, onClose }: ImportSetupModalProps) {
 
                 {step === 1 && (
                     <div className="space-y-4 flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1">
+                        {/* Hint Box */}
+                        <div className={cn("rounded-xl p-4 text-sm flex gap-4 items-start shadow-sm border mb-2", editorNoticeTone.warning)}>
+                            <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-amber-600 dark:text-amber-500" />
+                            <div className="flex flex-col items-start gap-y-1 sm:flex-row sm:items-center sm:justify-between sm:gap-x-4 w-full">
+                                <p className="leading-relaxed font-semibold">
+                                    Updating your setup for the first time?
+                                </p>
+                                {onOpenGuide && (
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        onClick={() => onOpenGuide("update")}
+                                        className="h-8 px-3 text-xs font-bold text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 -ml-2 sm:ml-0"
+                                    >
+                                        <BookOpen className="w-3.5 h-3.5 mr-2" />
+                                        How to Update
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+
                         {/* Template Loader */}
                         <div className={cn(editorSurface.card, "p-5")}>
                             <h3 className="font-semibold text-sm text-foreground mb-3">Load Unified Media Experience Template</h3>

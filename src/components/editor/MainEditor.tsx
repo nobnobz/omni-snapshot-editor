@@ -995,7 +995,10 @@ export function MainEditor() {
                                                 <p className="text-sm text-foreground/70 px-1 leading-relaxed">
                                                     Create and organize groups, assign catalogs, and reorder items. To update your setup, use <strong>Update from Template</strong>.
                                                 </p>
-                                                <UnifiedSubgroupEditor />
+                                                <UnifiedSubgroupEditor onOpenGuide={(guide) => {
+                                                    setActiveGuide(guide);
+                                                    setIsGuideDialogOpen(true);
+                                                }} />
                                             </div>
                                         </div>
                                     ) : section.id === "catalogs" ? (

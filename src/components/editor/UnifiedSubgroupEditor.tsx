@@ -1400,7 +1400,7 @@ function UnassignedSubgroupRow({
 // ----------------------------------------------------------------------
 // Unified App Entry Point
 // ----------------------------------------------------------------------
-export function UnifiedSubgroupEditor() {
+export function UnifiedSubgroupEditor({ onOpenGuide }: { onOpenGuide?: (guide: "install" | "update" | "use") => void }) {
     const { currentValues, updateValue, assignCatalogGroup } = useConfig();
     const subgroupOrder = currentValues["subgroup_order"] || {};
     const mainCatalogGroups = currentValues["main_catalog_groups"] || {};
@@ -1509,7 +1509,7 @@ export function UnifiedSubgroupEditor() {
                         onClick={() => setIsAddToGroupModalOpen(true)}
                         variant="outline"
                         size="sm"
-                        className="h-9 sm:h-8 text-sm sm:text-sm border-border/60 hover:bg-muted/60 dark:hover:bg-muted/40 text-foreground/70 hover:text-foreground transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out px-3 font-medium whitespace-nowrap justify-center sm:justify-start"
+                        className="h-9 sm:h-8 text-sm sm:text-sm border-border/60 hover:bg-muted/60 dark:hover:bg-muted/40 text-foreground/80 hover:text-foreground transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out px-3 font-medium whitespace-nowrap justify-center sm:justify-start"
                     >
                         <FolderPlus className="w-4 h-4 mr-1.5" /> Add to Group
                     </Button>
@@ -1517,7 +1517,7 @@ export function UnifiedSubgroupEditor() {
                         onClick={() => setIsImportModalOpen(true)}
                         variant="outline"
                         size="sm"
-                        className="h-9 sm:h-8 text-sm sm:text-sm border-border/60 hover:bg-muted/60 dark:hover:bg-muted/40 text-foreground/70 hover:text-foreground transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out px-3 font-medium whitespace-nowrap justify-center sm:justify-start"
+                        className="h-9 sm:h-8 text-sm sm:text-sm border-border/60 hover:bg-muted/60 dark:hover:bg-muted/40 text-foreground/80 hover:text-foreground transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out px-3 font-medium whitespace-nowrap justify-center sm:justify-start"
                     >
                         <UploadCloud className="w-4 h-4 mr-1.5" />
                         <span className="sm:hidden">Update</span>
@@ -1587,7 +1587,14 @@ export function UnifiedSubgroupEditor() {
                 initialParentUUID={createParentUUID}
             />
             <AddToGroupModal isOpen={isAddToGroupModalOpen} onClose={() => setIsAddToGroupModalOpen(false)} />
-            <ImportSetupModal isOpen={isImportModalOpen} onClose={() => setIsImportModalOpen(false)} />
+            <ImportSetupModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                onOpenGuide={(guide) => {
+                    setIsImportModalOpen(false);
+                    if (onOpenGuide) onOpenGuide(guide);
+                }}
+            />
 
             {mainGroupOrder.length === 0 && (
                 <div className="text-center py-12 border border-dashed border-border/80 rounded-2xl bg-background/20 flex flex-col items-center justify-center gap-3">

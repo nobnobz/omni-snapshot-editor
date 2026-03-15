@@ -829,10 +829,10 @@ export function CatalogEditor() {
                     </Dialog>
 
                     <div className="w-px h-5 bg-border mx-1" />
-                    <Button variant="outline" size="sm" onClick={handleSortAZ} className="h-8 text-xs border-border hover:bg-muted/80 text-foreground/70 hover:text-foreground">
+                    <Button variant="outline" size="sm" onClick={handleSortAZ} className="h-8 text-xs border-border hover:bg-muted/80 text-foreground/80 hover:text-foreground">
                         <ArrowDownAZ className="w-4 h-4 mr-1" /> A-Z
                     </Button>
-                    <Button variant="outline" size="sm" onClick={handleSortZA} className="h-8 text-xs border-border hover:bg-muted/80 text-foreground/70 hover:text-foreground">
+                    <Button variant="outline" size="sm" onClick={handleSortZA} className="h-8 text-xs border-border hover:bg-muted/80 text-foreground/80 hover:text-foreground">
                         <ArrowUpZA className="w-4 h-4 mr-1" /> Z-A
                     </Button>
                 </div>
@@ -909,7 +909,7 @@ export function CatalogEditor() {
                                     </div>
                                     <Button
                                         variant="outline" size="sm"
-                                        className="h-7 text-xs border-border text-foreground/70 hover:bg-muted shrink-0"
+                                        className="h-7 text-xs border-border text-foreground/80 hover:bg-muted shrink-0"
                                         onClick={() => updateCatalogField(cat.id, { enabled: true })}
                                     >
                                         Enable

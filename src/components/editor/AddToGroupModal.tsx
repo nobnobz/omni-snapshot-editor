@@ -97,7 +97,10 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <DialogContent className={cn(editorLayout.dialogContent, "sm:max-w-[425px] sm:max-h-[90dvh]")}>
+            <DialogContent 
+                onOpenAutoFocus={(e) => e.preventDefault()}
+                className={cn(editorLayout.dialogContent, "sm:max-w-[425px] sm:max-h-[90dvh]")}
+            >
                 <DialogHeader className="shrink-0">
                     <DialogTitle>Add to Existing Group</DialogTitle>
                     <DialogDescription className="text-foreground/60">

@@ -131,7 +131,10 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <DialogContent className={cn(editorLayout.dialogContent, "sm:max-w-[425px] md:max-w-3xl sm:max-h-[95dvh]")}>
+            <DialogContent 
+                onOpenAutoFocus={(e) => e.preventDefault()}
+                className={cn(editorLayout.dialogContent, "sm:max-w-[425px] md:max-w-3xl sm:max-h-[95dvh]")}
+            >
                 <DialogHeader className="shrink-0">
                     <DialogTitle>Create New Group</DialogTitle>
                     <DialogDescription className="text-foreground/70">
@@ -318,7 +321,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
                                     />
                                 </div>
 
-                                <ScrollArea className={cn(editorSurface.inset, editorSurface.listSurface, "h-[40vh] min-h-[320px] sm:h-[300px] md:h-[450px] rounded-xl px-4 pb-4")}>
+                                <ScrollArea className={cn(editorSurface.inset, editorSurface.listSurface, "h-[40vh] min-h-[160px] sm:h-[300px] md:h-[450px] rounded-xl px-4 pb-4")}>
                                     {filteredCatalogs.length === 0 ? (
                                         <p className="text-sm text-foreground/70 italic">No catalogs found.</p>
                                     ) : (

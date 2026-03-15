@@ -66,9 +66,10 @@ export function GuideDialog({ children, className }: GuideDialogProps) {
     return (
         <DialogContent
             showCloseButton={false}
+            onOpenAutoFocus={(e) => e.preventDefault()}
             className={cn(
                 editorLayout.dialogContent,
-                "z-[70] h-auto max-h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] overflow-y-auto custom-scrollbar top-[calc(0.5rem+env(safe-area-inset-top))] -translate-y-0 sm:top-[3.5vh] sm:max-h-[calc(100dvh-3.5rem)] sm:max-w-6xl",
+                "z-[70] h-auto max-h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] overflow-y-auto custom-scrollbar left-1/2 -translate-x-1/2 top-[calc(0.5rem+env(safe-area-inset-top))] sm:top-[3.5vh] sm:translate-y-0 sm:max-h-[calc(100dvh-3.5rem)] sm:max-w-6xl",
                 className
             )}
         >
@@ -98,7 +99,7 @@ export function GuideBody({ children, className }: GuideBodyProps) {
 
 type GuideSectionProps = {
     title: string;
-    description?: string;
+    description?: React.ReactNode;
     eyebrow?: string;
     icon?: React.ComponentType<{ className?: string }>;
     step?: string;
@@ -145,7 +146,7 @@ export function GuideSection({
                     ) : null}
                     <h2 className="mt-1 text-xl font-black tracking-tight text-foreground sm:text-2xl">{title}</h2>
                     {description ? (
-                        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-foreground/72">{description}</p>
+                        <div className="mt-2 max-w-3xl text-sm leading-relaxed text-foreground/72">{description}</div>
                     ) : null}
                 </div>
             </div>
@@ -157,7 +158,7 @@ export function GuideSection({
 type GuidePanelProps = {
     title?: string;
     eyebrow?: string;
-    description?: string;
+    description?: React.ReactNode;
     icon?: React.ComponentType<{ className?: string }>;
     tone?: GuideTone;
     children?: React.ReactNode;
@@ -187,7 +188,7 @@ export function GuidePanel({
                         </h3>
                     ) : null}
                     {description ? (
-                        <p className="mt-2 text-sm leading-relaxed text-foreground/72">{description}</p>
+                        <div className="mt-2 text-sm leading-relaxed text-foreground/72">{description}</div>
                     ) : null}
                 </div>
             ) : null}

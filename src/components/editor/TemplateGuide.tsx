@@ -104,7 +104,7 @@ export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
                 },
                 {
                     text: "Nightly Instance",
-                    url: "https://aiostreamsnightlyfortheweak.nhyira.dev/stremio/configure",
+                    url: "https://aiostreams-nightly.fortheweak.cloud/stremio/configure",
                     tone: "text-amber-600 dark:text-amber-300",
                 },
             ],
@@ -121,7 +121,7 @@ export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
                 },
                 {
                     text: "Nightly Instance",
-                    url: "https://aiometadatafortheweak.nhyira.dev/configure/",
+                    url: "https://aiometadata.fortheweak.cloud/configure/",
                     tone: "text-amber-600 dark:text-amber-300",
                 },
             ],
@@ -246,7 +246,7 @@ export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
                                         description={group.description}
                                         tone="blue"
                                     >
-                                        <div className="mt-4 space-y-2.5">
+                                        <div className="space-y-2.5">
                                             {group.links.map((link) => (
                                                 <a
                                                     key={link.text}
@@ -272,7 +272,12 @@ export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
                             })}
                         </div>
 
-                        <GuidePanel title="Required files" icon={Download} tone="blue">
+                        <GuidePanel
+                            title="Required files"
+                            icon={Download}
+                            tone="blue"
+                            description="Download the template files below."
+                        >
                             <div className="space-y-2.5">
                                 {templates.map((item) => {
                                     const manifestName = getTemplateName(item.id, item.name);
