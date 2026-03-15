@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.6] - 2026-03-15
+### Fixed
+- Build Failure: Removed `any` types in favor of strict `CatalogFallback` mapping.
+- Build Failure: Cleaned up unused imports and variables (`newFile`, `ChevronRight`).
+- Build Failure: Fixed undeclared `finalId` reference in `UnifiedSubgroupEditor.tsx`.
+
 ## [0.3.5] - 2026-03-15
 
 ### Added

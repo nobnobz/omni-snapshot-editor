@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { ScrollArea } from "../ui/scroll-area";
 import { Checkbox } from "../ui/checkbox";
 import { ImageIcon, Search } from 'lucide-react';
-import { CATALOG_FALLBACKS } from '@/lib/catalog-fallbacks';
+import { CATALOG_FALLBACKS, CatalogFallback } from '@/lib/catalog-fallbacks';
 import { cn, formatDisplayName, resolveCatalogName, ensureCatalogPrefix } from '@/lib/utils';
 import { editorAction, editorLayout, editorSurface } from "./ui/style-contract";
 
@@ -69,12 +69,13 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
         }
 
         // 2. Fallbacks
-        const allFallbacks = { ...CATALOG_FALLBACKS, ...customFallbacks as any };
-        Object.entries(allFallbacks).forEach(([id, fallback]: [string, any]) => {
+        const allFallbacks: Record<string, string | CatalogFallback> = { ...CATALOG_FALLBACKS, ...customFallbacks as Record<string, string | CatalogFallback> };
+        Object.entries(allFallbacks).forEach(([id, fallback]) => {
             const name = typeof fallback === 'string' ? fallback : fallback.name;
             if (!existingBaseIds.has(id.replace(/^(movie:|series:|all:)/, ''))) {
                 const displayName = customNames[id] || name;
-                const finalId = ensureCatalogPrefix(id, displayName);
+                const explicitType = (fallback && typeof fallback !== 'string') ? fallback.type : undefined;
+                const finalId = ensureCatalogPrefix(id, displayName, explicitType);
                 options.push({
                     id: finalId,
                     name: displayName

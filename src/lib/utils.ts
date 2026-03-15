@@ -55,30 +55,35 @@ export function resolveCatalogName(id: string, customNames: Record<string, strin
 }
 
 /**
- * Ensures a catalog ID has the required "movie:" or "series:" prefix.
+ * Ensures a catalog ID has the required "movie:", "series:" or "all:" prefix.
  * If already prefixed, returns as is.
- * If not, uses the displayName to guess the correct prefix.
+ * If not, uses the displayName to guess the correct prefix, unless an explicitType is provided.
  */
-export function ensureCatalogPrefix(id: string, name?: string): string {
+export function ensureCatalogPrefix(id: string, name?: string, explicitType?: string): string {
   if (!id || id.includes(':')) return id;
 
-  // 1. Try to find explicit type from fallback data
-  const fallback = CATALOG_FALLBACKS[id];
   let typePrefix = "movie:"; // default
 
-  if (fallback) {
-    typePrefix = `${fallback.type}:`;
+  // 1. Use explicit type if provided
+  if (explicitType) {
+    typePrefix = `${explicitType}:`;
   } else {
-    // 2. Use guessing logic if no fallback is available
-    const lowerName = (name || "").toLowerCase();
-    
-    const hasShowKeywords = lowerName.includes("show") || lowerName.includes("series") || lowerName.includes("tv") || lowerName.includes("serien");
-    const hasMovieKeywords = lowerName.includes("movie") || lowerName.includes("film");
+    // 2. Try to find explicit type from fallback data
+    const fallback = CATALOG_FALLBACKS[id];
+    if (fallback) {
+      typePrefix = `${fallback.type}:`;
+    } else {
+      // 3. Use guessing logic if no fallback is available
+      const lowerName = (name || "").toLowerCase();
+      
+      const hasShowKeywords = lowerName.includes("show") || lowerName.includes("series") || lowerName.includes("tv") || lowerName.includes("serien");
+      const hasMovieKeywords = lowerName.includes("movie") || lowerName.includes("film");
 
-    if (hasShowKeywords && hasMovieKeywords) {
-      typePrefix = "all:";
-    } else if (hasShowKeywords) {
-      typePrefix = "series:";
+      if (hasShowKeywords && hasMovieKeywords) {
+        typePrefix = "all:";
+      } else if (hasShowKeywords) {
+        typePrefix = "series:";
+      }
     }
   }
   

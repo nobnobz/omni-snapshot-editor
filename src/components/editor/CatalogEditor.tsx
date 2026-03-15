@@ -48,7 +48,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { CATALOG_FALLBACKS } from "@/lib/catalog-fallbacks";
+import { CATALOG_FALLBACKS, CatalogFallback } from "@/lib/catalog-fallbacks";
 import { resolveCatalogName, cn, ensureCatalogPrefix } from "@/lib/utils";
 import { GripVertical, Eye, EyeOff, Trash2, ArrowDownAZ, ArrowUpZA, Search, Settings2, Shuffle, LayoutGrid, Star, ChevronDown, ChevronUp, Plus, Maximize, Pencil, ListX, Pin } from "lucide-react";
 import { editorAction, editorHover, editorLayout, editorSurface, editorToneBadge } from "@/components/editor/ui/style-contract";
@@ -585,17 +585,18 @@ export function CatalogEditor() {
         // Strip out 'movie:' or 'series:' from existing IDs for accurate duplicate checking
         const existingBaseIds = new Set(Array.from(existingIds).map(stripCatalogTypePrefix));
 
-        const allFallbacks = { ...CATALOG_FALLBACKS, ...customFallbacks as any };
+        const allFallbacks: Record<string, string | CatalogFallback> = { ...CATALOG_FALLBACKS, ...customFallbacks as Record<string, string | CatalogFallback> };
         const fromFallbacks = Object.entries(allFallbacks)
             .filter(([id]) => !existingBaseIds.has(stripCatalogTypePrefix(id)))
-            .map(([id, fallback]: [string, any]) => {
+            .map(([id, fallback]) => {
                 const name = typeof fallback === 'string' ? fallback : fallback.name;
                 const displayName = customNames[id] || name;
 
                 let finalId = id;
                 // Prepend "movie:", "series:" or "all:" since Omni format requires it
                 if (!id.includes(':')) {
-                    finalId = ensureCatalogPrefix(id, displayName);
+                    const explicitType = (fallback && typeof fallback !== 'string') ? fallback.type : undefined;
+                    finalId = ensureCatalogPrefix(id, displayName, explicitType);
                 }
 
                 return {

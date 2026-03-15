@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
 import { OmniConfig } from "../lib/types";
 import { resolveCatalogName, ensureCatalogPrefix } from '@/lib/utils';
+import { CatalogFallback } from "@/lib/catalog-fallbacks";
 import { decodeConfig, encodeConfig, pruneDisabledCatalogs, pruneDisabledKeys } from "../lib/config-utils";
 import { renameGroup, renameMainGroup, disableGroup, disableMainGroup, disableCatalog, validateAndFix, countGroupReferences, countMainGroupReferences, unassignSubgroup, assignSubgroup, createMainGroup, createSubgroup, importGroups, getAllCatalogIds } from "../lib/mutations";
 
@@ -152,8 +153,8 @@ interface ConfigContextType {
     exportConfig: () => OmniConfig | null;
     exportPartialConfig: (sectionKeys: string[]) => OmniConfig | null;
 
-    customFallbacks: Record<string, string>;
-    setCustomFallbacks: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+    customFallbacks: Record<string, string | CatalogFallback>;
+    setCustomFallbacks: React.Dispatch<React.SetStateAction<Record<string, string | CatalogFallback>>>;
     clearPatterns: () => void;
 
     // GitHub Manifest
@@ -177,7 +178,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
     const [isSyntheticSession, setIsSyntheticSession] = useState(false);
 
     // Custom fallbacks from localStorage
-    const [customFallbacks, setCustomFallbacks] = useState<Record<string, string>>({});
+    const [customFallbacks, setCustomFallbacks] = useState<Record<string, string | CatalogFallback>>({});
 
     // GitHub Manifest State
     const [manifest, setManifest] = useState<TemplateManifest | null>(null);
@@ -249,10 +250,17 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
             : {};
 
         CATALOG_ID_LIST_KEYS.forEach((key) => {
-            const normalizedList = normalizeCatalogIdList(decodedValues[key], rawCustomNames);
-            if (normalizedList) {
-                decodedValues[key] = normalizedList;
-            }
+            if (!Array.isArray(decodedValues[key])) return;
+            const normalized: string[] = [];
+            decodedValues[key].forEach((entry: any) => {
+                if (typeof entry !== "string") return;
+                const name = resolveCatalogName(entry, rawCustomNames);
+                const explicitFallback = customFallbacks[entry] || customFallbacks[entry.replace(/^(movie:|series:|all:|anime:)/, '')];
+                const explicitType = (explicitFallback && typeof explicitFallback !== 'string') ? explicitFallback.type : undefined;
+                const catalogId = ensureCatalogPrefix(entry, name, explicitType);
+                if (!normalized.includes(catalogId)) normalized.push(catalogId);
+            });
+            decodedValues[key] = normalized;
         });
 
         if (isRecord(decodedValues.catalog_groups)) {
@@ -300,7 +308,9 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
             ]);
             extractedCatalogs = Array.from(allIds).map(id => {
                 const name = resolveCatalogName(id, customNames);
-                const finalId = id.includes(":") ? id : ensureCatalogPrefix(id, name);
+                const explicitFallback = customFallbacks[id] || customFallbacks[id.replace(/^(movie:|series:|all:|anime:)/, '')];
+                const explicitType = (explicitFallback && typeof explicitFallback !== 'string') ? explicitFallback.type : undefined;
+                const finalId = id.includes(":") ? id : ensureCatalogPrefix(id, name, explicitType);
                 return {
                     id: finalId,
                     name: name === id ? id : name, // Keep ID if no name resolved

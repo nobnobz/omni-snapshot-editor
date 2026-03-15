@@ -26,7 +26,6 @@ import {
     Copy,
     RotateCcw,
     ChevronDown,
-    ChevronRight,
     Sun,
     Moon,
     Check,
@@ -311,7 +310,6 @@ export function MainEditor() {
         const newFileName = `omni-config-${timestampStr}.json`;
 
         const blob = new Blob([JSON.stringify(config, null, 2)], { type: "application/json;charset=utf-8" });
-        const newFile = new File([blob], newFileName, { type: "application/json" });
 
         // Always use direct download for a consistent experience across all platforms
         triggerDownload(blob, newFileName);
@@ -387,18 +385,28 @@ export function MainEditor() {
                 return;
             }
 
-            const newFallbacks: Record<string, string> = { ...customFallbacks };
+            const newFallbacks: Record<string, any> = { ...customFallbacks };
             let addedCount = 0;
             for (const cat of catalogsList) {
                 if (cat.id && cat.name) {
-                    newFallbacks[cat.id] = cat.name;
+                    // Extract type if available (AIOMetadata usually has 'type' or 'displayType')
+                    const type = cat.type || cat.displayType || (cat.metadata?.mediatype === 'movie' ? 'movie' : cat.metadata?.mediatype === 'tv' ? 'series' : undefined);
+                    
+                    if (type) {
+                        newFallbacks[cat.id] = { 
+                            name: cat.name, 
+                            type: type === 'tv' ? 'series' : type 
+                        };
+                    } else {
+                        newFallbacks[cat.id] = cat.name;
+                    }
                     addedCount++;
                 }
             }
 
             setCustomFallbacks(newFallbacks);
             localStorage.setItem("omni_custom_fallbacks", JSON.stringify(newFallbacks));
-            showNotice("success", `Imported ${addedCount} catalog names from AIOMetadata.`);
+            showNotice("success", `Imported ${addedCount} catalogs with type info from AIOMetadata.`);
             setPastedJson(""); // clear on success
         } catch (err: unknown) {
             console.error(err);

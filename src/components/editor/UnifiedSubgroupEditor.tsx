@@ -56,7 +56,7 @@ import { ImportSetupModal } from "./ImportSetupModal";
 import { TrashBin } from "./TrashBin";
 import { cn, formatDisplayName, resolveCatalogName, ensureCatalogPrefix } from "@/lib/utils";
 import { editorHover, editorSurface } from "@/components/editor/ui/style-contract";
-import { CATALOG_FALLBACKS } from "@/lib/catalog-fallbacks";
+import { CATALOG_FALLBACKS, CatalogFallback } from "@/lib/catalog-fallbacks";
 import { Label } from "@/components/ui/label";
 
 const stringArraysEqual = (a: string[], b: string[]) => (
@@ -264,14 +264,15 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
         }
 
         // 2. Fallbacks not already in subgroupCatalogs
-        const allFallbacks = { ...CATALOG_FALLBACKS, ...customFallbacks as any };
-        Object.entries(allFallbacks).forEach(([id, fallback]: [string, any]) => {
+        const allFallbacks: Record<string, string | CatalogFallback> = { ...CATALOG_FALLBACKS, ...customFallbacks as Record<string, string | CatalogFallback> };
+        Object.entries(allFallbacks).forEach(([id, fallback]) => {
             const name = typeof fallback === 'string' ? fallback : fallback.name;
             if (!existingBaseIds.has(id.replace(/^(movie:|series:|all:)/, ''))) {
                 const displayName = customNames[id] || name;
                 let finalId = id;
                 if (!id.includes(':')) {
-                    finalId = ensureCatalogPrefix(id, displayName);
+                    const explicitType = (fallback && typeof fallback !== 'string') ? fallback.type : undefined;
+                    finalId = ensureCatalogPrefix(id, displayName, explicitType);
                 }
                 if (!subgroupCatalogs.includes(finalId)) {
                     options.push({
@@ -1058,12 +1059,13 @@ function UnassignedSubgroupRow({
             }
         }
 
-        const allFallbacks = { ...CATALOG_FALLBACKS, ...customFallbacks as any };
-        Object.entries(allFallbacks).forEach(([id, fallback]: [string, any]) => {
+        const allFallbacks: Record<string, string | CatalogFallback> = { ...CATALOG_FALLBACKS, ...customFallbacks as Record<string, string | CatalogFallback> };
+        Object.entries(allFallbacks).forEach(([id, fallback]) => {
             const name = typeof fallback === 'string' ? fallback : fallback.name;
             if (!existingBaseIds.has(id.replace(/^(movie:|series:|all:)/, ''))) {
                 const displayName = customNames[id] || name;
-                const finalId = ensureCatalogPrefix(id, displayName);
+                const explicitType = (fallback && typeof fallback !== 'string') ? fallback.type : undefined;
+                const finalId = ensureCatalogPrefix(id, displayName, explicitType);
                 
                 if (!subgroupCatalogsProp.includes(finalId)) {
                     options.push({
