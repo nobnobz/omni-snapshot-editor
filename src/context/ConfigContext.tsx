@@ -5,7 +5,7 @@ import { OmniConfig } from "../lib/types";
 import { resolveCatalogName, ensureCatalogPrefix } from '@/lib/utils';
 import { CatalogFallback } from "@/lib/catalog-fallbacks";
 import { decodeConfig, encodeConfig, pruneDisabledCatalogs, pruneDisabledKeys } from "../lib/config-utils";
-import { renameGroup, renameMainGroup, disableGroup, disableMainGroup, disableCatalog, validateAndFix, countGroupReferences, countMainGroupReferences, unassignSubgroup, assignSubgroup, createMainGroup, createSubgroup, importGroups, getAllCatalogIds } from "../lib/mutations";
+import { renameGroup, renameMainGroup, disableGroup, disableMainGroup, disableCatalog, validateAndFix, countGroupReferences, countMainGroupReferences, unassignSubgroup, assignSubgroup, createMainGroup, createSubgroup, importGroups, getAllCatalogIds, reorderCatalogGroupOrder } from "../lib/mutations";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Omni configs are user-defined dynamic JSON blobs.
 type LooseAny = any;
@@ -294,29 +294,59 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
 
         // FALLBACK: If no manifest catalogs found, synthesize minimal objects from state-format selected_catalogs
         if (extractedCatalogs.length === 0) {
-            const decodedCatalogOrdering: string[] = decodedValues.catalog_ordering || decodedValues.selected_catalogs || [];
+            const selectedList: string[] = decodedValues.selected_catalogs || [];
+            const decodedCatalogOrdering: string[] = decodedValues.catalog_ordering || selectedList;
             const topRowList: string[] = decodedValues.top_row_catalogs || [];
+            const smallTopRowList: string[] = decodedValues.small_toprow_catalogs || [];
             const customNames: Record<string, string> = decodedValues.custom_catalog_names || {};
             const topRowLimits: Record<string, number> = decodedValues.top_row_item_limits || {};
 
-            // All IDs in scope (selected, ordering, top row, and starred/header)
-            const allIds = new Set([
+            // Collect IDs from all other side-arrays
+            const landscapeList: string[] = decodedValues.landscape_catalogs || [];
+            const smallList: string[] = decodedValues.small_catalogs || [];
+            const randomList: string[] = decodedValues.randomized_catalogs || [];
+            const pinnedList: string[] = decodedValues.pinned_catalogs || [];
+            const starredList: string[] = decodedValues.starred_catalogs || [];
+
+            // Main config paths that represent "active" visibility or ordering
+            const mainConfigIds = new Set([
                 ...decodedCatalogOrdering,
+                ...selectedList,
                 ...topRowList,
+                ...smallTopRowList,
+            ]);
+
+            // All IDs in scope (ordering, selected, top row, and ALL side-arrays)
+            const allIds = new Set([
+                ...mainConfigIds,
+                ...landscapeList,
+                ...smallList,
+                ...randomList,
+                ...pinnedList,
+                ...starredList,
                 ...(decodedValues.starred_catalogs || []),
                 ...(decodedValues.pinned_catalogs || [])
             ]);
+
             extractedCatalogs = Array.from(allIds).map(id => {
                 const name = resolveCatalogName(id, customNames);
                 const explicitFallback = customFallbacks[id] || customFallbacks[id.replace(/^(movie:|series:|all:|anime:)/, '')];
                 const explicitType = (explicitFallback && typeof explicitFallback !== 'string') ? explicitFallback.type : undefined;
                 const finalId = id.includes(":") ? id : ensureCatalogPrefix(id, name, explicitType);
+                
+                // ENABLED status: Primary source is selected_catalogs (the shelf list). 
+                const isEnabled = selectedList.includes(id);
+                
+                // ORPHANED status: Found in side-arrays but NOT in main config paths
+                const isOrphaned = !mainConfigIds.has(id);
+
                 return {
                     id: finalId,
-                    name: name === id ? id : name, // Keep ID if no name resolved
-                    enabled: decodedCatalogOrdering.length > 0 ? decodedCatalogOrdering.includes(id) : true,
-                    showInHome: topRowList.includes(id),
+                    name: name === id ? id : name,
+                    enabled: isEnabled,
+                    showInHome: topRowList.includes(id) || smallTopRowList.includes(id),
                     metadata: topRowLimits[id] ? { itemCount: topRowLimits[id] } : undefined,
+                    isOrphaned,
                     _synthetic: true,
                 };
             });
@@ -682,6 +712,29 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         // This also MUST happen while decoded
         const validatedValues = validateAndFix(clonedValues);
 
+        // EXTRA: Set specifically ordered catalog_group_order
+        validatedValues.catalog_group_order = reorderCatalogGroupOrder(validatedValues);
+
+        // Reorder object keys to match the final catalog_group_order for sequence-dependent parsers
+        if (validatedValues.catalog_groups) {
+            const orderedGroups: Record<string, any> = {};
+            validatedValues.catalog_group_order.forEach((name: string) => {
+                if (validatedValues.catalog_groups[name]) {
+                    orderedGroups[name] = validatedValues.catalog_groups[name];
+                }
+            });
+            validatedValues.catalog_groups = orderedGroups;
+        }
+        if (validatedValues.catalog_group_image_urls) {
+            const orderedUrls: Record<string, any> = {};
+            validatedValues.catalog_group_order.forEach((name: string) => {
+                if (validatedValues.catalog_group_image_urls[name] !== undefined) {
+                    orderedUrls[name] = validatedValues.catalog_group_image_urls[name];
+                }
+            });
+            validatedValues.catalog_group_image_urls = orderedUrls;
+        }
+
         // 5a. If manifest mode (config.catalogs[]) — real objects, not synthetic
         const finalResult: ExportableConfig = { ...originalConfig };
         const isSynthetic = isSyntheticSession;
@@ -767,6 +820,31 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
 
         // Validate & fix the filtered subset
         const validatedValues = validateAndFix(filteredValues);
+
+        // EXTRA: Set specifically ordered catalog_group_order if present
+        if (sectionKeys.includes('catalog_groups') || sectionKeys.includes('catalog_group_order')) {
+            validatedValues.catalog_group_order = reorderCatalogGroupOrder(validatedValues);
+
+            // Reorder keys
+            if (validatedValues.catalog_groups) {
+                const orderedGroups: Record<string, any> = {};
+                validatedValues.catalog_group_order.forEach((name: string) => {
+                    if (validatedValues.catalog_groups[name]) {
+                        orderedGroups[name] = validatedValues.catalog_groups[name];
+                    }
+                });
+                validatedValues.catalog_groups = orderedGroups;
+            }
+            if (validatedValues.catalog_group_image_urls) {
+                const orderedUrls: Record<string, any> = {};
+                validatedValues.catalog_group_order.forEach((name: string) => {
+                    if (validatedValues.catalog_group_image_urls[name] !== undefined) {
+                        orderedUrls[name] = validatedValues.catalog_group_image_urls[name];
+                    }
+                });
+                validatedValues.catalog_group_image_urls = orderedUrls;
+            }
+        }
 
         // Encode using the original values for format detection
         const originalValues = originalConfig.values || originalConfig.config || {};

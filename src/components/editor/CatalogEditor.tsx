@@ -288,6 +288,9 @@ function SortableCatalogItem({
                     {isPinned && (
                         <Badge variant="outline" className={cn("text-xs font-bold px-2 py-0.5 rounded-md", catalogManagerBadgeTone.emerald)}>Header</Badge>
                     )}
+                    {catalog.isOrphaned && (
+                        <Badge variant="outline" className={cn("text-xs font-bold px-2 py-0.5 rounded-md", catalogManagerBadgeTone.violet)}>Orphaned</Badge>
+                    )}
                     
                     {/* Top Row Group */}
                     <div className="flex items-center gap-1">
@@ -475,6 +478,7 @@ export function CatalogEditor() {
     // Local state for UI
     const [showDisabled, setShowDisabled] = useState(false);
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [addSearch, setAddSearch] = useState("");
     const [pendingAddSelections, setPendingAddSelections] = useState<Set<string>>(new Set());
     const [editingCatalogId, setEditingCatalogId] = useState<string | null>(null);
@@ -537,11 +541,11 @@ export function CatalogEditor() {
 
     // Split catalogs: active if enabled in shelf OR shown in home OR pinned (header)
     const enabledCatalogs = useMemo(
-        () => catalogs.filter(c => c.enabled !== false || c.showInHome === true || catalogListHasId(pinnedList, c.id)),
+        () => catalogs.filter(c => (c.enabled !== false || c.showInHome === true || catalogListHasId(pinnedList, c.id)) && !c.isOrphaned),
         [catalogs, pinnedList]
     );
     const disabledCatalogs = useMemo(
-        () => catalogs.filter(c => c.enabled === false && c.showInHome !== true && !catalogListHasId(pinnedList, c.id)),
+        () => catalogs.filter(c => c.enabled === false && c.showInHome !== true && !catalogListHasId(pinnedList, c.id) || c.isOrphaned),
         [catalogs, pinnedList]
     );
 
@@ -691,6 +695,12 @@ export function CatalogEditor() {
         if (cleanName && cleanName !== cat.id) {
             updateValue(["custom_catalog_names", cat.id], cleanName);
         }
+    };
+
+    const handleDeleteAllDisabled = () => {
+        const disabledIds = new Set(disabledCatalogs.map(c => c.id));
+        reorderManifestCatalogs(catalogs.filter(c => !disabledIds.has(c.id)));
+        setShowDisabled(false);
     };
 
     const handleBatchImport = () => {
@@ -888,13 +898,65 @@ export function CatalogEditor() {
             {/* Disabled section */}
             {disabledCatalogs.length > 0 && (
                 <div className={cn(editorSurface.card, "rounded-lg overflow-hidden")}>
-                    <button
-                        className="w-full flex items-center justify-between px-4 py-2.5 text-xs text-foreground/70 hover:bg-primary/10 dark:hover:bg-primary/16 transition-colors"
-                        onClick={() => setShowDisabled(p => !p)}
-                    >
-                        <span className="font-semibold uppercase tracking-wider">Disabled Catalogs ({disabledCatalogs.length})</span>
-                        {showDisabled ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                    </button>
+                    <div className="flex items-center w-full px-4 py-1.5 hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors group/header">
+                        <button
+                            className="flex-1 flex items-center justify-between text-xs text-foreground/70 py-1"
+                            onClick={() => setShowDisabled(p => !p)}
+                        >
+                            <span className="font-semibold uppercase tracking-wider">Disabled Catalogs ({disabledCatalogs.length})</span>
+                            {showDisabled ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        </button>
+                        <div className="w-px h-4 bg-border/40 mx-2" />
+                        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className={cn("h-7 px-2 text-[10px] font-bold uppercase tracking-wider", editorHover.iconDanger)}
+                                >
+                                    <Trash2 className="w-3 h-3 mr-1" />
+                                    Delete All
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className={cn(editorSurface.card, "max-w-[400px] border-none shadow-2xl p-0 overflow-hidden")}>
+                                <div className="p-6 space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2.5 rounded-full bg-red-500/10 border border-red-500/20">
+                                            <Trash2 className="w-5 h-5 text-red-500" />
+                                        </div>
+                                        <div>
+                                            <DialogTitle className="text-base font-bold text-foreground">Delete All Disabled</DialogTitle>
+                                            <DialogDescription className="text-xs text-foreground/60">This action cannot be undone.</DialogDescription>
+                                        </div>
+                                    </div>
+                                    
+                                    <p className="text-sm text-foreground/80 leading-relaxed bg-white/[0.03] p-4 rounded-xl border border-white/5">
+                                        Are you sure you want to permanently remove all <span className="font-bold text-red-400">{disabledCatalogs.length}</span> disabled and orphaned catalogs from your configuration?
+                                    </p>
+
+                                    <div className="flex gap-2 pt-2">
+                                        <Button 
+                                            variant="outline" 
+                                            onClick={() => setIsDeleteDialogOpen(false)}
+                                            className={cn("flex-1 h-10 text-xs font-semibold border-border hover:bg-muted", editorAction.secondary)}
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button 
+                                            variant="ghost"
+                                            onClick={() => {
+                                                handleDeleteAllDisabled();
+                                                setIsDeleteDialogOpen(false);
+                                            }}
+                                            className={cn("flex-1 h-10 text-xs font-bold uppercase tracking-wider text-red-500 hover:text-white hover:bg-red-600 border border-red-500/10 hover:border-red-600", editorAction.danger)}
+                                        >
+                                            Delete All
+                                        </Button>
+                                    </div>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
                     {showDisabled && (
                         <div className="p-3 space-y-1 max-h-[400px] overflow-y-auto custom-scrollbar">
                             {disabledCatalogs.map(cat => (

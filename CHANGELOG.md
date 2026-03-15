@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.3.9] - 2026-03-15
+### Added
+- Catalog Manager: Added "Orphaned" catalog detection to identify stale entries in side-arrays.
+- Catalog Manager: Added "Delete All" button for bulk removal of disabled and orphaned catalogs.
+- UI: Implemented a custom premium-styled confirmation dialog for bulk deletion.
+
+### Fixed
+- Catalog Manager: Resolved bug where hidden catalogs with Top Row active were incorrectly shown as "Enabled".
+- UI: Fixed hover contrast on the "Delete All" button for better readability.
+
 ## [0.3.8] - 2026-03-15
 ### Added
 - PWA: Added exclusive iOS Home Screen icon based on user-provided clown image.

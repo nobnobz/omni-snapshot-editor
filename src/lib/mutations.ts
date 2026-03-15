@@ -671,3 +671,62 @@ export function getAllCatalogIds(state: MutableState): Set<string> {
 
     return ids;
 }
+/**
+ * Generates the final catalog_group_order based on main group configuration.
+ */
+export function reorderCatalogGroupOrder(state: MutableState): string[] {
+    const mainGroupOrder = state.main_group_order || [];
+    const mainGroups = state.main_catalog_groups || {};
+    const catalogGroups = state.catalog_groups || {};
+
+    const finalOrder: string[] = [];
+    const seen = new Set<string>();
+
+    const ALPHABETICAL_MAIN_GROUPS = ["Genres", "Directors", "Actors", "Collections"];
+
+    mainGroupOrder.forEach((uuid: string) => {
+        const mg = mainGroups[uuid];
+        if (!mg) return;
+
+        const mainGroupName = (mg.name || "").trim();
+        if (!mainGroupName) return;
+
+        // Try both variations of the emoji: ❗️ (U+2757 FE0F) and ❗ (U+2757)
+        const placeholders = [
+            `❗️[${mainGroupName}]`,
+            `❗[${mainGroupName}]`
+        ];
+
+        // 1. Add the first placeholder variant that exists in catalogGroups
+        for (const pName of placeholders) {
+            if (catalogGroups[pName] && !seen.has(pName)) {
+                finalOrder.push(pName);
+                seen.add(pName);
+                break;
+            }
+        }
+
+        // 2. Real subgroups (sorted A-Z)
+        let subgroups = Array.isArray(mg.subgroupNames) ? [...mg.subgroupNames] : [];
+        subgroups.sort((a, b) => a.localeCompare(b));
+
+        subgroups.forEach(sgName => {
+            const trimmedSgName = sgName.trim();
+            // Don't add if it's any of our possible placeholders
+            if (!placeholders.includes(trimmedSgName) && catalogGroups[trimmedSgName] && !seen.has(trimmedSgName)) {
+                finalOrder.push(trimmedSgName);
+                seen.add(trimmedSgName);
+            }
+        });
+    });
+
+    // 3. Catch-all for any orphaned subgroups that aren't in any main group but exist in data
+    Object.keys(catalogGroups).forEach(name => {
+        if (!seen.has(name)) {
+            finalOrder.push(name);
+            seen.add(name);
+        }
+    });
+
+    return finalOrder;
+}
