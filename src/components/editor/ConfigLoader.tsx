@@ -111,11 +111,6 @@ function LoaderResourceButtonContent({
     return (
         <span className="relative flex w-full items-center justify-center">
             <span className="inline-flex min-w-0 items-center justify-center gap-2.5 sm:gap-3">
-                {/* Optical Balance: Invisible spacer matching the chevron's width */}
-                {affordance && (
-                    <span className="size-4 shrink-0" aria-hidden="true" />
-                )}
-
                 <Icon className={cn("size-[1.08rem] shrink-0 sm:size-[1.18rem]", loaderResourceIconToneClass[tone])} strokeWidth={2.2} />
                 <span className="min-w-0 truncate text-[0.9rem] font-semibold tracking-[-0.02em] text-foreground sm:text-[0.98rem] sm:tracking-[-0.015em]">
                     <span className={cn(mobileLabel && "hidden sm:inline")}>{label}</span>
@@ -557,7 +552,7 @@ export function ConfigLoader() {
                                             <DropdownMenuContent
                                                 align="center"
                                                 sideOffset={8}
-                                                className={cn(editorSurface.overlay, "w-[min(20rem,calc(100vw-1.25rem))] rounded-[1.4rem] p-1.5")}
+                                                className={cn(editorSurface.overlay, "w-[min(20rem,calc(100vw-0.75rem))] rounded-[1.4rem] p-1.5")}
                                             >
                                                 <DropdownMenuLabel className={cn(editorLoader.subtleMeta, "px-3 pt-1 pb-1 text-foreground/38")}>UME Templates</DropdownMenuLabel>
                                                 {templateDownloads.length === 0 ? (
@@ -629,7 +624,7 @@ export function ConfigLoader() {
                                         </DropdownMenu>
                                     </div>
 
-                                    <div className="mx-auto grid w-full max-w-[30.75rem] grid-cols-2 gap-2.5 sm:gap-3">
+                                    <div className="mx-auto grid w-full max-w-[33.5rem] grid-cols-2 gap-2.5 sm:gap-3">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <Button type="button" variant="outline" className={cn(loaderDocsButtonClass, "group/resource w-full")}>
@@ -645,7 +640,7 @@ export function ConfigLoader() {
                                             <DropdownMenuContent
                                                 align="center"
                                                 sideOffset={8}
-                                                className={cn(editorSurface.overlay, "w-[min(18rem,calc(100vw-1.25rem))] rounded-[1.25rem] p-2")}
+                                                className={cn(editorSurface.overlay, "w-[min(18rem,calc(100vw-0.75rem))] rounded-[1.25rem] p-2")}
                                             >
                                                 <DropdownMenuLabel className={cn(editorLoader.subtleMeta, "px-3 pt-1.5 pb-1 text-foreground/38")}>
                                                     Guides
