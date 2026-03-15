@@ -69,7 +69,7 @@ export function GuideDialog({ children, className }: GuideDialogProps) {
             onOpenAutoFocus={(e) => e.preventDefault()}
             className={cn(
                 editorLayout.dialogContent,
-                "z-[70] h-auto max-h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] overflow-y-auto custom-scrollbar left-1/2 -translate-x-1/2 top-[calc(0.5rem+env(safe-area-inset-top))] sm:top-[3.5vh] sm:translate-y-0 sm:max-h-[calc(100dvh-3.5rem)] sm:max-w-6xl",
+                "z-[70] h-auto max-h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] overflow-y-auto custom-scrollbar left-1/2 -translate-x-1/2 top-[calc(0.5rem+env(safe-area-inset-top))] translate-y-0 sm:top-[3.5vh] sm:translate-y-0 sm:max-h-[calc(100dvh-3.5rem)] sm:max-w-6xl",
                 className
             )}
         >
