@@ -5,7 +5,7 @@ import { OmniConfig } from "../lib/types";
 import { resolveCatalogName, ensureCatalogPrefix } from '@/lib/utils';
 import { CatalogFallback } from "@/lib/catalog-fallbacks";
 import { decodeConfig, encodeConfig, pruneDisabledCatalogs, pruneDisabledKeys } from "../lib/config-utils";
-import { renameGroup, renameMainGroup, disableGroup, disableMainGroup, disableCatalog, validateAndFix, countGroupReferences, countMainGroupReferences, unassignSubgroup, assignSubgroup, createMainGroup, createSubgroup, importGroups, getAllCatalogIds, reorderCatalogGroupOrder } from "../lib/mutations";
+import { renameGroup, renameMainGroup, disableGroup, disableMainGroup, disableCatalog, bulkDisableCatalogs, validateAndFix, countGroupReferences, countMainGroupReferences, unassignSubgroup, assignSubgroup, createMainGroup, createSubgroup, importGroups, getAllCatalogIds, reorderCatalogGroupOrder } from "../lib/mutations";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Omni configs are user-defined dynamic JSON blobs.
 type LooseAny = any;
@@ -133,6 +133,7 @@ interface ConfigContextType {
     addManifestCatalog: (catalog: { id: string; name: string; enabled?: boolean; showInHome?: boolean }) => void;
     removeManifestCatalog: (id: string) => void;
     reorderManifestCatalogs: (newCatalogs: ManifestCatalog[]) => void;
+    bulkRemoveManifestCatalogs: (ids: string[]) => void;
     renameCatalogGroup: (oldName: string, newName: string) => void;
     renameMainCatalogGroup: (uuid: string, newName: string) => void;
     removeMainCatalogGroup: (uuid: string) => void;
@@ -663,6 +664,12 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         setCatalogs(newCatalogs);
     };
 
+    const bulkRemoveManifestCatalogs = (ids: string[]) => {
+        const idSet = new Set(ids);
+        setCatalogs(prev => prev.filter(c => !idSet.has(c.id)));
+        setCurrentValues(prev => bulkDisableCatalogs(ids, prev));
+    };
+
     const removeCatalog = (id: string) => {
         setCurrentValues(prev => disableCatalog(id, prev));
     };
@@ -918,6 +925,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
             addManifestCatalog,
             removeManifestCatalog,
             reorderManifestCatalogs,
+            bulkRemoveManifestCatalogs,
             renameCatalogGroup,
             renameMainCatalogGroup,
             removeMainCatalogGroup,

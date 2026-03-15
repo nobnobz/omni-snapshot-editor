@@ -472,6 +472,7 @@ export function CatalogEditor() {
         updateCatalogField,
         removeManifestCatalog,
         reorderManifestCatalogs,
+        bulkRemoveManifestCatalogs,
         addManifestCatalog,
         customFallbacks,
     } = useConfig();
@@ -699,8 +700,8 @@ export function CatalogEditor() {
     };
 
     const handleDeleteAllDisabled = () => {
-        const disabledIds = new Set(disabledCatalogs.map(c => c.id));
-        reorderManifestCatalogs(catalogs.filter(c => !disabledIds.has(c.id)));
+        const disabledIds = disabledCatalogs.map(c => c.id);
+        bulkRemoveManifestCatalogs(disabledIds);
         setShowDisabled(false);
     };
 

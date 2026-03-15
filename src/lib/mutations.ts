@@ -728,3 +728,41 @@ export function reorderCatalogGroupOrder(state: MutableState): string[] {
 
     return finalOrder;
 }
+
+/**
+ * Bulk version of disableCatalog for efficiency.
+ */
+export function bulkDisableCatalogs(catalogIds: string[], state: MutableState): MutableState {
+    const draft = JSON.parse(JSON.stringify(state));
+    const idsToPrune = new Set(catalogIds);
+
+    // Remove from catalog_groups lists
+    if (draft.catalog_groups) {
+        Object.keys(draft.catalog_groups).forEach(groupName => {
+            const arr = draft.catalog_groups[groupName];
+            if (Array.isArray(arr)) {
+                draft.catalog_groups[groupName] = arr.filter((c: string) => !idsToPrune.has(c));
+            }
+        });
+    }
+
+    // Remove from common flat catalog arrays
+    const commonLists = [
+        "selected_catalogs",
+        "pinned_catalogs",
+        "small_catalogs",
+        "top_row_catalogs",
+        "starred_catalogs",
+        "randomized_catalogs",
+        "small_toprow_catalogs",
+        "catalog_ordering"
+    ];
+
+    commonLists.forEach(listName => {
+        if (Array.isArray(draft[listName])) {
+            draft[listName] = draft[listName].filter((c: string) => !idsToPrune.has(c));
+        }
+    });
+
+    return draft;
+}
