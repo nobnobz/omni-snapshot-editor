@@ -21,7 +21,7 @@ export const metadata = {
       { url: "/omni-snapshot-editor/omni-icon-dark-512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      { url: "/omni-snapshot-editor/clown-v12-apple.png", sizes: "180x180", type: "image/png" },
+      { url: "/omni-snapshot-editor/pwa-ios-icon-180.png", sizes: "180x180", type: "image/png" },
     ],
     shortcut: "/omni-snapshot-editor/clown-v12-32.png",
   },
@@ -44,11 +44,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="apple-touch-icon" href="/omni-snapshot-editor/apple-touch-icon-dark.png" />
-        <link rel="apple-touch-icon" href="/omni-snapshot-editor/apple-touch-icon-light.png" media="(prefers-color-scheme: light)" />
-        <link rel="apple-touch-icon" href="/omni-snapshot-editor/apple-touch-icon-dark.png" media="(prefers-color-scheme: dark)" />
-      </head>
       <body className="antialiased min-h-screen text-foreground selection:bg-primary/30 overflow-x-hidden relative">
         <ThemeProvider
           attribute="class"

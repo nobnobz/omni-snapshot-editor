@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.3.8] - 2026-03-15
+### Added
+- PWA: Added exclusive iOS Home Screen icon based on user-provided clown image.
+- PWA: Updated `apple-touch-icon` metadata while preserving browser tab icons.
+
 All notable changes to this project will be documented in this file.
 
 ## [0.3.7] - 2026-03-15
