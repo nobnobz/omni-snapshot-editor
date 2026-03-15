@@ -583,7 +583,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <DialogContent 
+            <DialogContent
                 onOpenAutoFocus={(e) => e.preventDefault()}
                 className={cn(editorLayout.dialogContent, "sm:max-w-2xl sm:max-h-[85vh]")}
             >
@@ -604,9 +604,9 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                     Updating your setup for the first time?
                                 </p>
                                 {onOpenGuide && (
-                                    <Button 
-                                        variant="ghost" 
-                                        size="sm" 
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
                                         onClick={() => onOpenGuide("update")}
                                         className="h-8 px-3 text-xs font-bold text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 -ml-2 sm:ml-0"
                                     >
@@ -815,43 +815,43 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                     ) : (
                                         <div className="flex flex-col divide-y divide-border/50">
                                             <div className="px-5 py-3 border-b border-border/40">
-                                                    <p className="text-xs text-foreground/70 italic leading-relaxed">
-                                                        Select subgroups you want to import. You can assign them to your existing main groups below.
-                                                    </p>
+                                                <p className="text-xs text-foreground/70 italic leading-relaxed">
+                                                    Select subgroups you want to import. You can assign them to your existing main groups below.
+                                                </p>
                                             </div>
                                             <div className="p-3 bg-white/24 dark:bg-white/[0.03] border-b border-slate-200/80 dark:border-white/8">
                                                 <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row">
-                                                    <Button 
-                                                        variant="outline" 
-                                                        size="sm" 
-                                                        onClick={selectAllSubgroups} 
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={selectAllSubgroups}
                                                         className="flex-1 h-10 sm:h-9 text-xs sm:text-sm bg-background/50 border-border hover:bg-muted text-foreground/80 font-semibold justify-center"
                                                     >
                                                         <CheckSquare className="w-3.5 h-3.5 mr-2 opacity-70" />
                                                         Select All
                                                     </Button>
-                                                    <Button 
-                                                        variant="outline" 
-                                                        size="sm" 
-                                                        onClick={deselectAllSubgroups} 
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={deselectAllSubgroups}
                                                         className="flex-1 h-10 sm:h-9 text-xs sm:text-sm bg-background/50 border-border hover:bg-muted text-foreground/70 font-semibold justify-center"
                                                     >
                                                         <Square className="w-3.5 h-3.5 mr-2 opacity-70" />
                                                         Deselect All
                                                     </Button>
-                                                    <Button 
-                                                        variant="outline" 
-                                                        size="sm" 
-                                                        onClick={selectCatalogUpdates} 
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={selectCatalogUpdates}
                                                         className={cn("flex-1 h-10 sm:h-9 text-xs sm:text-sm font-semibold justify-center", importSetupTone.warningAction)}
                                                     >
                                                         <RefreshCw className="w-3.5 h-3.5 mr-2 opacity-90" />
                                                         Update Catalogs
                                                     </Button>
-                                                    <Button 
-                                                        variant="outline" 
-                                                        size="sm" 
-                                                        onClick={selectImageUpdates} 
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={selectImageUpdates}
                                                         className={cn("flex-1 h-10 sm:h-9 text-xs sm:text-sm font-semibold justify-center", importSetupTone.infoAction)}
                                                     >
                                                         <ImageIcon className="w-3.5 h-3.5 mr-2 opacity-90" />

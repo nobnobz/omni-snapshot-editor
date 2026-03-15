@@ -464,7 +464,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                     {/* Image URL Input */}
                     <div className="space-y-2">
                         <div className={`${editorSurface.panel} flex items-center gap-3 p-3`}>
-                            <div 
+                            <div
                                 className={`${thumbFrameClass} rounded-md shrink-0 overflow-hidden shadow-sm flex items-center justify-center transition-[width,height] duration-200 border border-white/10 p-1`}
                                 style={{ backgroundColor: '#020617' }}
                             >
@@ -547,9 +547,9 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                             </div>
                         ) : (
                             <div className="space-y-0.5">
-                                <DndContext 
-                                    sensors={sensors} 
-                                    collisionDetection={closestCenter} 
+                                <DndContext
+                                    sensors={sensors}
+                                    collisionDetection={closestCenter}
                                     modifiers={[restrictVerticalDrag]}
                                     onDragStart={handleCatalogDragStart}
                                     onDragCancel={() => setActiveCatalogId(null)}
@@ -960,9 +960,9 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                         </div>
                     ) : (
                         <div className="space-y-1">
-                            <DndContext 
-                                sensors={sensors} 
-                                collisionDetection={closestCenter} 
+                            <DndContext
+                                sensors={sensors}
+                                collisionDetection={closestCenter}
                                 modifiers={[restrictVerticalDrag]}
                                 onDragStart={handleSubgroupDragStart}
                                 onDragEnd={handleSubgroupDragEnd}
@@ -1066,7 +1066,7 @@ function UnassignedSubgroupRow({
                 const displayName = customNames[id] || name;
                 const explicitType = (fallback && typeof fallback !== 'string') ? fallback.type : undefined;
                 const finalId = ensureCatalogPrefix(id, displayName, explicitType);
-                
+
                 if (!subgroupCatalogsProp.includes(finalId)) {
                     options.push({
                         id: finalId,
@@ -1518,9 +1518,9 @@ export function UnifiedSubgroupEditor({ onOpenGuide }: { onOpenGuide?: (guide: "
                 </div>
 
                 <div className="p-4 bg-transparent">
-                    <DndContext 
-                        sensors={sensors} 
-                        collisionDetection={closestCenter} 
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
                         modifiers={[restrictVerticalDrag]}
                         onDragStart={handleMainDragStart}
                         onDragEnd={handleMainDragEnd}

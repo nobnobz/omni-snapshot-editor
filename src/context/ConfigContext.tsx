@@ -301,8 +301,8 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
 
             // All IDs in scope (selected, ordering, top row, and starred/header)
             const allIds = new Set([
-                ...decodedCatalogOrdering, 
-                ...topRowList, 
+                ...decodedCatalogOrdering,
+                ...topRowList,
                 ...(decodedValues.starred_catalogs || []),
                 ...(decodedValues.pinned_catalogs || [])
             ]);
@@ -511,16 +511,16 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
     const importGroupsToState = (payload: ImportGroupsPayload) => {
         setCurrentValues(prev => {
             const next = importGroups(payload, prev);
-            
+
             // Sync the manifest-style catalogs state so Catalog Manager sees the new items
             // We scan all IDs from the newly merged state
             const allIds = getAllCatalogIds(next);
             const customNames = (next.custom_catalog_names || {}) as Record<string, string>;
-            
+
             setCatalogs(prevCats => {
                 const existingIds = new Set(prevCats.map(c => normalizeCatalogIdValue(c.id, customNames)));
                 const newCats = [...prevCats];
-                
+
                 allIds.forEach((id: string) => {
                     const normalizedId = normalizeCatalogIdValue(id, customNames);
                     if (!existingIds.has(normalizedId)) {

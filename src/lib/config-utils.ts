@@ -14,6 +14,24 @@ export const isBase64DataNode = (node: unknown): node is Base64DataNode => {
 };
 
 /**
+ * Unicode-safe base64 decoding (UTF-8)
+ */
+const decodeUnicode = (str: string): string => {
+    return decodeURIComponent(atob(str).split('').map((c) => {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+};
+
+/**
+ * Unicode-safe base64 encoding (UTF-8)
+ */
+const encodeUnicode = (str: string): string => {
+    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => {
+        return String.fromCharCode(parseInt(p1, 16));
+    }));
+};
+
+/**
  * Recursively decodes _data fields in a JSON object
  */
 export const decodeConfig = (obj: unknown): unknown => {
@@ -26,7 +44,7 @@ export const decodeConfig = (obj: unknown): unknown => {
     if (isObjectRecord(obj)) {
         if (isBase64DataNode(obj)) {
             try {
-                const decodedStr = atob(obj._data);
+                const decodedStr = decodeUnicode(obj._data);
                 const parsed = JSON.parse(decodedStr);
                 // We do not recursively decode here unless we expect nested base64 (usually not the case)
                 return parsed;
@@ -105,7 +123,7 @@ export const encodeConfig = (
         if (shouldBeWrapped) {
             try {
                 const stringified = JSON.stringify(value);
-                const encoded = btoa(stringified);
+                const encoded = encodeUnicode(stringified);
                 result[key] = { _data: encoded };
             } catch (e) {
                 console.error("Failed to encode data for key", key, e);
