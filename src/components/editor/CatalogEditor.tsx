@@ -65,6 +65,7 @@ interface ManifestCatalog {
     randomizePerPage?: boolean;
     metadata?: { itemCount?: number;[k: string]: unknown };
     _synthetic?: boolean;
+    isOrphaned?: boolean;
     [key: string]: unknown;
 }
 
