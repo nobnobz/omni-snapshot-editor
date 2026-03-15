@@ -109,19 +109,19 @@ function LoaderResourceButtonContent({
     affordance?: ReactNode;
 }) {
     return (
-        <span className="relative flex w-full items-center justify-center text-left">
+        <span className="relative flex w-full items-center justify-center">
             <span className="inline-flex min-w-0 items-center justify-center gap-2.5 sm:gap-3">
                 <Icon className={cn("size-[1.08rem] shrink-0 sm:size-[1.18rem]", loaderResourceIconToneClass[tone])} strokeWidth={2.2} />
-                <span className="min-w-0 truncate text-center text-[0.9rem] font-semibold tracking-[-0.02em] text-foreground sm:text-[0.98rem] sm:tracking-[-0.015em]">
+                <span className="min-w-0 truncate text-[0.9rem] font-semibold tracking-[-0.02em] text-foreground sm:text-[0.98rem] sm:tracking-[-0.015em]">
                     <span className={cn(mobileLabel && "hidden sm:inline")}>{label}</span>
                     {mobileLabel && <span className="sm:hidden">{mobileLabel}</span>}
                 </span>
+                {affordance ? (
+                    <span className="flex items-center justify-center">
+                        {affordance}
+                    </span>
+                ) : null}
             </span>
-            {affordance ? (
-                <span className="absolute right-0 top-1/2 flex -translate-y-1/2 items-center justify-center">
-                    {affordance}
-                </span>
-            ) : null}
         </span>
     );
 }
