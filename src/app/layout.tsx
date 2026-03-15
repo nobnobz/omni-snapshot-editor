@@ -14,16 +14,15 @@ export const metadata = {
   manifest: "/omni-snapshot-editor/manifest.json",
   icons: {
     icon: [
-      { url: "/omni-snapshot-editor/favicon-transparent.svg?v=4", type: "image/svg+xml" },
-      { url: "/omni-snapshot-editor/favicon-transparent-32.png?v=4", sizes: "32x32", type: "image/png" },
-      { url: "/omni-snapshot-editor/favicon-transparent-64.png?v=4", sizes: "64x64", type: "image/png" },
+      { url: "/omni-snapshot-editor/favicon-32.png?v=10", sizes: "32x32", type: "image/png" },
+      { url: "/omni-snapshot-editor/favicon-64.png?v=10", sizes: "64x64", type: "image/png" },
       { url: "/omni-snapshot-editor/omni-icon-dark-192.png", sizes: "192x192", type: "image/png" },
       { url: "/omni-snapshot-editor/omni-icon-dark-512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      { url: "/omni-snapshot-editor/apple-touch-icon-dark.png", sizes: "180x180", type: "image/png" },
+      { url: "/omni-snapshot-editor/apple-touch-icon.png?v=10", sizes: "180x180", type: "image/png" },
     ],
-    shortcut: "/omni-snapshot-editor/favicon-transparent.svg?v=4",
+    shortcut: "/omni-snapshot-editor/favicon-32.png?v=10",
   },
 };
 
