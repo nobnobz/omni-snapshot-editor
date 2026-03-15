@@ -75,11 +75,13 @@ export function ensureCatalogPrefix(id: string, name?: string, explicitType?: st
     } else {
       // 3. Use guessing logic if no fallback is available
       const lowerName = (name || "").toLowerCase();
-      
       const hasShowKeywords = lowerName.includes("show") || lowerName.includes("series") || lowerName.includes("tv") || lowerName.includes("serien");
       const hasMovieKeywords = lowerName.includes("movie") || lowerName.includes("film");
+      const hasAnimeKeywords = lowerName.includes("anime") || lowerName.includes("manga");
 
-      if (hasShowKeywords && hasMovieKeywords) {
+      if (hasAnimeKeywords) {
+        typePrefix = "anime:";
+      } else if (hasShowKeywords && hasMovieKeywords) {
         typePrefix = "all:";
       } else if (hasShowKeywords) {
         typePrefix = "series:";

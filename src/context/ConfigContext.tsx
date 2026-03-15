@@ -252,7 +252,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         CATALOG_ID_LIST_KEYS.forEach((key) => {
             if (!Array.isArray(decodedValues[key])) return;
             const normalized: string[] = [];
-            decodedValues[key].forEach((entry: any) => {
+            decodedValues[key].forEach((entry: string) => {
                 if (typeof entry !== "string") return;
                 const name = resolveCatalogName(entry, rawCustomNames);
                 const explicitFallback = customFallbacks[entry] || customFallbacks[entry.replace(/^(movie:|series:|all:|anime:)/, '')];

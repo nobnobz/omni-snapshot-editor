@@ -63,6 +63,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { APP_VERSION } from "@/lib/constants";
+import { CatalogFallback } from "@/lib/catalog-fallbacks";
 import { cn, isIos } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import { editorAction, editorHover, editorNoticeTone, editorSurface } from "@/components/editor/ui/style-contract";
@@ -385,7 +386,7 @@ export function MainEditor() {
                 return;
             }
 
-            const newFallbacks: Record<string, any> = { ...customFallbacks };
+            const newFallbacks: Record<string, string | CatalogFallback> = { ...customFallbacks };
             let addedCount = 0;
             for (const cat of catalogsList) {
                 if (cat.id && cat.name) {

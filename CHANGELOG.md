@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.7] - 2026-03-15
+### Fixed
+- Build Failure: Removed remaining `any` types in `ConfigContext.tsx` and `MainEditor.tsx`.
+- UI: Fixed version display typo (double 'v').
+
 ## [0.3.6] - 2026-03-15
 ### Fixed
 - Build Failure: Removed `any` types in favor of strict `CatalogFallback` mapping.
