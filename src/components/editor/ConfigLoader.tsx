@@ -640,7 +640,7 @@ export function ConfigLoader() {
                                             <DropdownMenuContent
                                                 align="center"
                                                 sideOffset={8}
-                                                className={cn(editorSurface.overlay, "w-[min(20rem,calc(100vw-1.125rem))] rounded-[1.25rem] p-2")}
+                                                className={cn(editorSurface.overlay, "w-[min(17rem,calc(100vw-1.125rem))] rounded-[1.25rem] p-2")}
                                             >
                                                 <DropdownMenuLabel className={cn(editorLoader.subtleMeta, "px-3 pt-1.5 pb-1 text-foreground/38")}>
                                                     Guides
