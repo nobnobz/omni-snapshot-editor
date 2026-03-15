@@ -682,8 +682,6 @@ export function reorderCatalogGroupOrder(state: MutableState): string[] {
     const finalOrder: string[] = [];
     const seen = new Set<string>();
 
-    const ALPHABETICAL_MAIN_GROUPS = ["Genres", "Directors", "Actors", "Collections"];
-
     mainGroupOrder.forEach((uuid: string) => {
         const mg = mainGroups[uuid];
         if (!mg) return;
@@ -707,7 +705,7 @@ export function reorderCatalogGroupOrder(state: MutableState): string[] {
         }
 
         // 2. Real subgroups (sorted A-Z)
-        let subgroups = Array.isArray(mg.subgroupNames) ? [...mg.subgroupNames] : [];
+        const subgroups = Array.isArray(mg.subgroupNames) ? [...mg.subgroupNames] : [];
         subgroups.sort((a, b) => a.localeCompare(b));
 
         subgroups.forEach(sgName => {

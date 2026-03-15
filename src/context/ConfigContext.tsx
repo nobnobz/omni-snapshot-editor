@@ -717,7 +717,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
 
         // Reorder object keys to match the final catalog_group_order for sequence-dependent parsers
         if (validatedValues.catalog_groups) {
-            const orderedGroups: Record<string, any> = {};
+            const orderedGroups: Record<string, LooseAny> = {};
             validatedValues.catalog_group_order.forEach((name: string) => {
                 if (validatedValues.catalog_groups[name]) {
                     orderedGroups[name] = validatedValues.catalog_groups[name];
@@ -726,7 +726,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
             validatedValues.catalog_groups = orderedGroups;
         }
         if (validatedValues.catalog_group_image_urls) {
-            const orderedUrls: Record<string, any> = {};
+            const orderedUrls: Record<string, LooseAny> = {};
             validatedValues.catalog_group_order.forEach((name: string) => {
                 if (validatedValues.catalog_group_image_urls[name] !== undefined) {
                     orderedUrls[name] = validatedValues.catalog_group_image_urls[name];
@@ -827,7 +827,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
 
             // Reorder keys
             if (validatedValues.catalog_groups) {
-                const orderedGroups: Record<string, any> = {};
+                const orderedGroups: Record<string, LooseAny> = {};
                 validatedValues.catalog_group_order.forEach((name: string) => {
                     if (validatedValues.catalog_groups[name]) {
                         orderedGroups[name] = validatedValues.catalog_groups[name];
@@ -836,7 +836,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
                 validatedValues.catalog_groups = orderedGroups;
             }
             if (validatedValues.catalog_group_image_urls) {
-                const orderedUrls: Record<string, any> = {};
+                const orderedUrls: Record<string, LooseAny> = {};
                 validatedValues.catalog_group_order.forEach((name: string) => {
                     if (validatedValues.catalog_group_image_urls[name] !== undefined) {
                         orderedUrls[name] = validatedValues.catalog_group_image_urls[name];
