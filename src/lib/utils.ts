@@ -27,11 +27,11 @@ export function resolveCatalogName(id: string, customNames: Record<string, strin
     return formatDisplayName(customName);
   }
 
-  // Helper to strip leading prefixes like "movie:", "series:"
+  // Helper to strip leading prefixes like "movie:", "series:", "all:"
   let baseId = id;
   if (id.includes(":")) {
     const parts = id.split(":");
-    if (parts.length === 2 && ["movie", "series", "anime"].includes(parts[0])) {
+    if (parts.length === 2 && ["movie", "series", "anime", "all"].includes(parts[0])) {
       baseId = parts[1];
     } else if (!id.startsWith("movie:trakt-list") && !id.startsWith("series:trakt-list")) {
       baseId = parts.slice(1).join(":");
@@ -45,9 +45,9 @@ export function resolveCatalogName(id: string, customNames: Record<string, strin
   }
 
   // 2. Fallback from Metadata List (exact or base)
-  const fallbackName = CATALOG_FALLBACKS[id] || CATALOG_FALLBACKS[baseId];
-  if (fallbackName) {
-    return formatDisplayName(fallbackName);
+  const fallback = CATALOG_FALLBACKS[id] || CATALOG_FALLBACKS[baseId];
+  if (fallback) {
+    return formatDisplayName(fallback.name);
   }
 
   // 3. Last resort: ID itself
@@ -62,11 +62,26 @@ export function resolveCatalogName(id: string, customNames: Record<string, strin
 export function ensureCatalogPrefix(id: string, name?: string): string {
   if (!id || id.includes(':')) return id;
 
-  const lowerName = (name || "").toLowerCase();
+  // 1. Try to find explicit type from fallback data
+  const fallback = CATALOG_FALLBACKS[id];
   let typePrefix = "movie:"; // default
-  if (lowerName.includes("show") || lowerName.includes("series") || lowerName.includes("tv")) {
-    typePrefix = "series:";
+
+  if (fallback) {
+    typePrefix = `${fallback.type}:`;
+  } else {
+    // 2. Use guessing logic if no fallback is available
+    const lowerName = (name || "").toLowerCase();
+    
+    const hasShowKeywords = lowerName.includes("show") || lowerName.includes("series") || lowerName.includes("tv") || lowerName.includes("serien");
+    const hasMovieKeywords = lowerName.includes("movie") || lowerName.includes("film");
+
+    if (hasShowKeywords && hasMovieKeywords) {
+      typePrefix = "all:";
+    } else if (hasShowKeywords) {
+      typePrefix = "series:";
+    }
   }
+  
   return `${typePrefix}${id}`;
 }
 export function isIos(): boolean {

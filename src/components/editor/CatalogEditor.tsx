@@ -49,7 +49,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { CATALOG_FALLBACKS } from "@/lib/catalog-fallbacks";
-import { resolveCatalogName, cn } from "@/lib/utils";
+import { resolveCatalogName, cn, ensureCatalogPrefix } from "@/lib/utils";
 import { GripVertical, Eye, EyeOff, Trash2, ArrowDownAZ, ArrowUpZA, Search, Settings2, Shuffle, LayoutGrid, Star, ChevronDown, ChevronUp, Plus, Maximize, Pencil, ListX, Pin } from "lucide-react";
 import { editorAction, editorHover, editorLayout, editorSurface, editorToneBadge } from "@/components/editor/ui/style-contract";
 
@@ -72,7 +72,7 @@ const stripCatalogCategoryPrefix = (name: string) =>
     name.replace(/^(\[[^\]]+\]\s*)+/, "").trim();
 
 const stripCatalogTypePrefix = (id: string) =>
-    id.replace(/^(movie:|series:|anime:)/, "");
+    id.replace(/^(movie:|series:|anime:|all:)/, "");
 
 const catalogIdsMatch = (left: string, right: string) =>
     stripCatalogTypePrefix(left) === stripCatalogTypePrefix(right);
@@ -585,22 +585,17 @@ export function CatalogEditor() {
         // Strip out 'movie:' or 'series:' from existing IDs for accurate duplicate checking
         const existingBaseIds = new Set(Array.from(existingIds).map(stripCatalogTypePrefix));
 
-        const allFallbacks = { ...CATALOG_FALLBACKS, ...customFallbacks };
-
+        const allFallbacks = { ...CATALOG_FALLBACKS, ...customFallbacks as any };
         const fromFallbacks = Object.entries(allFallbacks)
             .filter(([id]) => !existingBaseIds.has(stripCatalogTypePrefix(id)))
-            .map(([id, name]) => {
+            .map(([id, fallback]: [string, any]) => {
+                const name = typeof fallback === 'string' ? fallback : fallback.name;
                 const displayName = customNames[id] || name;
 
                 let finalId = id;
-                // Prepend "movie:" or "series:" since Omni format requires it
+                // Prepend "movie:", "series:" or "all:" since Omni format requires it
                 if (!id.includes(':')) {
-                    const lowerName = displayName.toLowerCase();
-                    let typePrefix = "movie:"; // default
-                    if (lowerName.includes("show") || lowerName.includes("series") || lowerName.includes("tv")) {
-                        typePrefix = "series:";
-                    }
-                    finalId = `${typePrefix}${id}`;
+                    finalId = ensureCatalogPrefix(id, displayName);
                 }
 
                 return {

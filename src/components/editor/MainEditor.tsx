@@ -537,8 +537,7 @@ export function MainEditor() {
                                         >
                                             <span className="flex items-center gap-3">
                                                 <BookOpen className="w-4 h-4" />
-                                                <span className="hidden xl:inline">Documentation</span>
-                                                <span className="xl:hidden">Docs</span>
+                                                <span>Documentation</span>
                                             </span>
                                             <ChevronDown
                                                 className={cn(
@@ -585,8 +584,7 @@ export function MainEditor() {
                                 >
                                     <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer">
                                         <Heart className="w-4 h-4" />
-                                        <span className="hidden xl:inline">Support My Work</span>
-                                        <span className="xl:hidden">Support</span>
+                                        <span>Support My Work</span>
                                     </a>
                                 </Button>
                             </div>

@@ -61,7 +61,7 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
         // 1. All existing catalogs
         const existingBaseIds = new Set<string>();
         for (const c of catalogs) {
-            existingBaseIds.add(c.id.replace(/^(movie:|series:)/, ''));
+            existingBaseIds.add(c.id.replace(/^(movie:|series:|all:)/, ''));
             options.push({
                 id: c.id,
                 name: resolveCatalogName(c.id, customNames) || c.name || c.id
@@ -69,9 +69,10 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
         }
 
         // 2. Fallbacks
-        const allFallbacks = { ...CATALOG_FALLBACKS, ...customFallbacks };
-        Object.entries(allFallbacks).forEach(([id, name]) => {
-            if (!existingBaseIds.has(id.replace(/^(movie:|series:)/, ''))) {
+        const allFallbacks = { ...CATALOG_FALLBACKS, ...customFallbacks as any };
+        Object.entries(allFallbacks).forEach(([id, fallback]: [string, any]) => {
+            const name = typeof fallback === 'string' ? fallback : fallback.name;
+            if (!existingBaseIds.has(id.replace(/^(movie:|series:|all:)/, ''))) {
                 const displayName = customNames[id] || name;
                 const finalId = ensureCatalogPrefix(id, displayName);
                 options.push({

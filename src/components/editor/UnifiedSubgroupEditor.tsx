@@ -110,7 +110,7 @@ function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => vo
     let baseId = id;
     if (id.includes(":")) {
         const parts = id.split(":");
-        if (parts.length === 2 && ["movie", "series", "anime"].includes(parts[0])) {
+        if (parts.length === 2 && ["movie", "series", "anime", "all"].includes(parts[0])) {
             baseId = parts[1];
         } else if (id.startsWith("movie:trakt-list") || id.startsWith("series:trakt-list")) {
             // keep it if complex, or try to extract
@@ -120,7 +120,7 @@ function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => vo
         }
     }
     // Specific match for AIO Trakt format if necessary (this is a best effort)
-    const strippedTraktId = id.replace(/^(movie|series|anime):/, "");
+    const strippedTraktId = id.replace(/^(movie|series|anime|all):/, "");
 
     const customNameFromConfig = configCustomNames[id] || configCustomNames[baseId];
     const customNameFromAIO = aioFallbacks[id] || aioFallbacks[baseId] || aioFallbacks[strippedTraktId];
@@ -254,7 +254,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
         // 1. All existing catalogs not already in subgroupCatalogs
         const existingBaseIds = new Set<string>();
         for (const c of catalogs) {
-            existingBaseIds.add(c.id.replace(/^(movie:|series:)/, ''));
+            existingBaseIds.add(c.id.replace(/^(movie:|series:|all:)/, ''));
             if (!subgroupCatalogs.includes(c.id)) {
                 options.push({
                     id: c.id,
@@ -264,18 +264,14 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
         }
 
         // 2. Fallbacks not already in subgroupCatalogs
-        const allFallbacks = { ...CATALOG_FALLBACKS, ...customFallbacks };
-        Object.entries(allFallbacks).forEach(([id, name]) => {
-            if (!existingBaseIds.has(id.replace(/^(movie:|series:)/, ''))) {
+        const allFallbacks = { ...CATALOG_FALLBACKS, ...customFallbacks as any };
+        Object.entries(allFallbacks).forEach(([id, fallback]: [string, any]) => {
+            const name = typeof fallback === 'string' ? fallback : fallback.name;
+            if (!existingBaseIds.has(id.replace(/^(movie:|series:|all:)/, ''))) {
                 const displayName = customNames[id] || name;
                 let finalId = id;
                 if (!id.includes(':')) {
-                    const lowerName = displayName.toLowerCase();
-                    let typePrefix = "movie:"; // default
-                    if (lowerName.includes("show") || lowerName.includes("series") || lowerName.includes("tv")) {
-                        typePrefix = "series:";
-                    }
-                    finalId = `${typePrefix}${id}`;
+                    finalId = ensureCatalogPrefix(id, displayName);
                 }
                 if (!subgroupCatalogs.includes(finalId)) {
                     options.push({
@@ -1053,7 +1049,7 @@ function UnassignedSubgroupRow({
 
         const existingBaseIds = new Set<string>();
         for (const c of fullCatalogs) {
-            existingBaseIds.add(c.id.replace(/^(movie:|series:)/, ''));
+            existingBaseIds.add(c.id.replace(/^(movie:|series:|all:)/, ''));
             if (!subgroupCatalogsProp.includes(c.id)) {
                 options.push({
                     id: c.id,
@@ -1062,19 +1058,13 @@ function UnassignedSubgroupRow({
             }
         }
 
-        const allFallbacks = { ...CATALOG_FALLBACKS, ...customFallbacks };
-        Object.entries(allFallbacks).forEach(([id, name]) => {
-            if (!existingBaseIds.has(id.replace(/^(movie:|series:)/, ''))) {
+        const allFallbacks = { ...CATALOG_FALLBACKS, ...customFallbacks as any };
+        Object.entries(allFallbacks).forEach(([id, fallback]: [string, any]) => {
+            const name = typeof fallback === 'string' ? fallback : fallback.name;
+            if (!existingBaseIds.has(id.replace(/^(movie:|series:|all:)/, ''))) {
                 const displayName = customNames[id] || name;
-                let finalId = id;
-                if (!id.includes(':')) {
-                    const lowerName = displayName.toLowerCase();
-                    let typePrefix = "movie:"; // default
-                    if (lowerName.includes("show") || lowerName.includes("series") || lowerName.includes("tv")) {
-                        typePrefix = "series:";
-                    }
-                    finalId = `${typePrefix}${id}`;
-                }
+                const finalId = ensureCatalogPrefix(id, displayName);
+                
                 if (!subgroupCatalogsProp.includes(finalId)) {
                     options.push({
                         id: finalId,
