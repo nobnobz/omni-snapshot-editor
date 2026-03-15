@@ -111,16 +111,22 @@ function LoaderResourceButtonContent({
     return (
         <span className="relative flex w-full items-center justify-center">
             <span className="inline-flex min-w-0 items-center justify-center gap-2.5 sm:gap-3">
+                {/* Optical Balance: Invisible spacer matching the chevron's width */}
+                {affordance && (
+                    <span className="size-4 shrink-0" aria-hidden="true" />
+                )}
+
                 <Icon className={cn("size-[1.08rem] shrink-0 sm:size-[1.18rem]", loaderResourceIconToneClass[tone])} strokeWidth={2.2} />
                 <span className="min-w-0 truncate text-[0.9rem] font-semibold tracking-[-0.02em] text-foreground sm:text-[0.98rem] sm:tracking-[-0.015em]">
                     <span className={cn(mobileLabel && "hidden sm:inline")}>{label}</span>
                     {mobileLabel && <span className="sm:hidden">{mobileLabel}</span>}
                 </span>
-                {affordance ? (
-                    <span className="flex items-center justify-center">
+
+                {affordance && (
+                    <span className="flex size-4 items-center justify-center shrink-0">
                         {affordance}
                     </span>
-                ) : null}
+                )}
             </span>
         </span>
     );
