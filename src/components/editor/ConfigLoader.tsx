@@ -552,7 +552,7 @@ export function ConfigLoader() {
                                             <DropdownMenuContent
                                                 align="center"
                                                 sideOffset={8}
-                                                className={cn(editorSurface.overlay, "w-[min(20rem,calc(100vw-0.75rem))] rounded-[1.4rem] p-1.5")}
+                                                className={cn(editorSurface.overlay, "w-[min(24rem,calc(100vw-0.75rem))] rounded-[1.4rem] p-1.5")}
                                             >
                                                 <DropdownMenuLabel className={cn(editorLoader.subtleMeta, "px-3 pt-1 pb-1 text-foreground/38")}>UME Templates</DropdownMenuLabel>
                                                 {templateDownloads.length === 0 ? (
@@ -640,7 +640,7 @@ export function ConfigLoader() {
                                             <DropdownMenuContent
                                                 align="center"
                                                 sideOffset={8}
-                                                className={cn(editorSurface.overlay, "w-[min(18rem,calc(100vw-0.75rem))] rounded-[1.25rem] p-2")}
+                                                className={cn(editorSurface.overlay, "w-[min(22rem,calc(100vw-0.75rem))] rounded-[1.25rem] p-2")}
                                             >
                                                 <DropdownMenuLabel className={cn(editorLoader.subtleMeta, "px-3 pt-1.5 pb-1 text-foreground/38")}>
                                                     Guides
