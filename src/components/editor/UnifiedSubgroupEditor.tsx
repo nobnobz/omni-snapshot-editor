@@ -408,11 +408,11 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                     aria-label={`Toggle subgroup ${formatDisplayName(subgroupName)}`}
                 >
                     {isExpanded ? <ChevronDown className="w-4 h-4 mr-2 text-foreground/70 group-hover:text-foreground shrink-0 transition-colors" /> : <ChevronRight className="w-4 h-4 mr-2 text-foreground/70 group-hover:text-foreground shrink-0 transition-colors" />}
-                    <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+                    <div className="flex-1 min-w-0 flex flex-row items-center justify-between gap-2">
                         <span className="truncate font-bold text-sm text-foreground transition-colors group-hover/subgroup:text-primary dark:group-hover/subgroup:text-primary">{formatDisplayName(subgroupName)}</span>
                         <Badge
                             variant="outline"
-                            className={cn(subgroupCountBadgeClass, "ml-0 sm:ml-2")}
+                            className={cn(subgroupCountBadgeClass, "ml-2 shrink-0")}
                         >
                             {subgroupCatalogs.length}
                         </Badge>
@@ -805,9 +805,9 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                     </div>
 
                     <AccordionTrigger className={`flex-1 text-foreground px-4 py-4 transition-colors group/trigger ${editorHover.rowSubtle}`}>
-                        <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex-1 min-w-0 flex flex-row items-center justify-between gap-3">
                             {/* Name + Subgroup Count */}
-                            <div className="flex flex-col min-w-0 gap-1.5">
+                            <div className="flex flex-col min-w-0 gap-1.5 flex-1">
                                 <span className="min-w-0 truncate font-bold text-base text-foreground group-hover/trigger:text-primary transition-colors">
                                     {formatDisplayName(name)}
                                 </span>
