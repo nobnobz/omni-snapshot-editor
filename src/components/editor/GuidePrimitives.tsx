@@ -69,7 +69,7 @@ export function GuideDialog({ children, className }: GuideDialogProps) {
             onOpenAutoFocus={(e) => e.preventDefault()}
             className={cn(
                 editorLayout.dialogContent,
-                "z-[70] h-auto max-h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] overflow-y-auto custom-scrollbar left-1/2 -translate-x-1/2 top-[calc(0.5rem+env(safe-area-inset-top))] translate-y-0 sm:top-[3.5vh] sm:translate-y-0 sm:max-h-[calc(100dvh-3.5rem)] sm:max-w-6xl",
+                "z-[70] h-auto max-h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] p-0 overflow-hidden flex flex-col left-1/2 -translate-x-1/2 top-[calc(0.5rem+env(safe-area-inset-top))] translate-y-0 sm:top-[3.5vh] sm:translate-y-0 sm:max-h-[calc(100dvh-3.5rem)] sm:max-w-6xl",
                 className
             )}
         >
@@ -77,13 +77,15 @@ export function GuideDialog({ children, className }: GuideDialogProps) {
                 <Button
                     variant="outline"
                     size="icon-sm"
-                    className="absolute right-4 top-4 z-20 rounded-xl border-border/70 bg-background/70 text-foreground/74 shadow-none hover:bg-accent/60 hover:text-foreground"
+                    className="absolute right-4 top-4 z-50 rounded-xl border-border/70 bg-background/70 text-foreground/74 shadow-none hover:bg-accent/60 hover:text-foreground backdrop-blur-md"
                 >
                     <X className="h-4 w-4" />
                     <span className="sr-only">Close</span>
                 </Button>
             </DialogClose>
-            {children}
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-6">
+                {children}
+            </div>
         </DialogContent>
     );
 }
