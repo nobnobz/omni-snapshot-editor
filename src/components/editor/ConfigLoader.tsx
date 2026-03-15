@@ -101,6 +101,7 @@ function LoaderResourceButtonContent({
     mobileLabel,
     tone = "primary",
     affordance,
+    size,
 }: {
     icon: LucideIcon;
     label: string;
