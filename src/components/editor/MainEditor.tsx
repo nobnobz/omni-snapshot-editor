@@ -42,7 +42,8 @@ import {
     Info,
     AlertTriangle,
     MoreHorizontal,
-    Monitor
+    Monitor,
+    X
 } from "lucide-react";
 import {
     Dialog,
@@ -1084,10 +1085,10 @@ export function MainEditor() {
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => setIsSectionsOpen(false)}
-                                className={`h-9 w-9 rounded-full ${editorHover.iconAction}`}
+                                className="h-9 w-9 rounded-xl border border-border/70 bg-background/70 text-foreground/74 shadow-none hover:bg-accent/60 hover:text-foreground backdrop-blur-md"
                                 aria-label="Close sections"
                             >
-                                <span className="text-xl leading-none">x</span>
+                                <X className="h-4 w-4" />
                             </Button>
                         </div>
                         <div className="mt-3 overflow-hidden rounded-[1.15rem] border border-white/8 bg-white/4">
