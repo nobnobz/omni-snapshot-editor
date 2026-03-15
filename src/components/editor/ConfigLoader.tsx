@@ -563,7 +563,7 @@ export function ConfigLoader() {
                                             <DropdownMenuContent
                                                 align="center"
                                                 sideOffset={8}
-                                                className={cn(editorSurface.overlay, "w-[min(22rem,calc(100vw-1.125rem))] rounded-[1.4rem] p-1.5")}
+                                                className={cn(editorSurface.overlay, "w-[min(22rem,calc(100vw-1.125rem))] sm:w-[28rem] rounded-[1.4rem] p-1.5")}
                                             >
                                                 <DropdownMenuLabel className={cn(editorLoader.subtleMeta, "px-3 pt-1 pb-1 text-foreground/38")}>UME Templates</DropdownMenuLabel>
                                                 {templateDownloads.length === 0 ? (
