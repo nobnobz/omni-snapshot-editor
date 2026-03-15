@@ -805,9 +805,9 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                     </div>
 
                     <AccordionTrigger className={`flex-1 text-foreground px-4 py-4 transition-colors group/trigger ${editorHover.rowSubtle}`}>
-                        <div className="flex-1 min-w-0 flex flex-row items-center justify-between gap-3">
+                        <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             {/* Name + Subgroup Count */}
-                            <div className="flex flex-col min-w-0 gap-1.5 flex-1">
+                            <div className="flex flex-col min-w-0 gap-1.5">
                                 <span className="min-w-0 truncate font-bold text-base text-foreground group-hover/trigger:text-primary transition-colors">
                                     {formatDisplayName(name)}
                                 </span>
