@@ -107,12 +107,22 @@ function LoaderResourceButtonContent({
     mobileLabel?: string;
     tone?: LoaderBadgeTone;
     affordance?: ReactNode;
+    size?: "default" | "sm";
 }) {
+    const isSmall = size === "sm";
+
     return (
         <span className="relative flex w-full items-center justify-center">
             <span className="inline-flex min-w-0 items-center justify-center gap-2.5 sm:gap-3">
-                <Icon className={cn("size-[1.08rem] shrink-0 sm:size-[1.18rem]", loaderResourceIconToneClass[tone])} strokeWidth={2.2} />
-                <span className="min-w-0 truncate text-[0.9rem] font-semibold tracking-[-0.02em] text-foreground sm:text-[0.98rem] sm:tracking-[-0.015em]">
+                <Icon className={cn(
+                    "shrink-0 transition-colors duration-200 ease-out",
+                    isSmall ? "size-[1.02rem] sm:size-[1.1rem]" : "size-[1.08rem] sm:size-[1.18rem]",
+                    loaderResourceIconToneClass[tone]
+                )} strokeWidth={2.2} />
+                <span className={cn(
+                    "min-w-0 truncate font-semibold tracking-[-0.02em] text-foreground transition-all duration-200 ease-out",
+                    isSmall ? "text-[0.85rem] sm:text-[0.92rem] sm:tracking-[-0.01em]" : "text-[0.9rem] sm:text-[0.98rem] sm:tracking-[-0.015em]"
+                )}>
                     <span className={cn(mobileLabel && "hidden sm:inline")}>{label}</span>
                     {mobileLabel && <span className="sm:hidden">{mobileLabel}</span>}
                 </span>
@@ -624,7 +634,7 @@ export function ConfigLoader() {
                                         </DropdownMenu>
                                     </div>
 
-                                    <div className="mx-auto grid w-full max-w-[33.5rem] grid-cols-2 gap-2.5 sm:gap-3">
+                                    <div className="mx-auto grid w-full max-w-[31rem] grid-cols-2 gap-2.5 sm:gap-3">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <Button type="button" variant="outline" className={cn(loaderDocsButtonClass, "group/resource w-full")}>
@@ -633,6 +643,7 @@ export function ConfigLoader() {
                                                         label="Documentation"
                                                         mobileLabel="Docs"
                                                         tone="amber"
+                                                        size="sm"
                                                         affordance={<ChevronDown className={cn(loaderResourceAffordanceClass, "group-hover/resource:translate-y-px")} strokeWidth={2.2} />}
                                                     />
                                                 </Button>
@@ -667,6 +678,7 @@ export function ConfigLoader() {
                                                     label="Support My Work"
                                                     mobileLabel="Support"
                                                     tone="pink"
+                                                    size="sm"
                                                 />
                                             </a>
                                         </Button>

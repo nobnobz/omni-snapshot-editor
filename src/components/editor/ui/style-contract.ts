@@ -86,7 +86,7 @@ const loaderResourceButtonBase =
   "rounded-[1.6rem] border px-5 sm:px-6 text-left shadow-[0_12px_26px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 ease-out hover:-translate-y-px hover:shadow-[0_16px_32px_rgba(15,23,42,0.11)]"
 
 const loaderResourceButtonPrimarySize = "h-[3.35rem] sm:h-[3.55rem]"
-const loaderResourceButtonSecondarySize = "h-[3.15rem] sm:h-[3.35rem]"
+const loaderResourceButtonSecondarySize = "h-[2.85rem] sm:h-[3.05rem]"
 
 export const editorLoader = {
   heroPanel:
