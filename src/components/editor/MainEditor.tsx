@@ -1,11 +1,13 @@
 "use client";
 
-import { useId, useState, useEffect, useRef } from "react";
+import { useId, useState, useEffect, useRef, Fragment } from "react";
 import { useConfig } from "@/context/ConfigContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { GenericRenderer } from "@/components/editor/GenericRenderer";
 import { CatalogEditor } from "@/components/editor/CatalogEditor";
+import { ShelfOrderingEditor } from "@/components/editor/ShelfOrderingEditor";
+import { StreamElementOrderingEditor } from "@/components/editor/StreamElementOrderingEditor";
 import { UnifiedSubgroupEditor } from "@/components/editor/UnifiedSubgroupEditor";
 import { UnifiedPatternEditor } from "@/components/editor/UnifiedPatternEditor";
 import { ImportPatternsModal } from "@/components/editor/ImportPatternsModal";
@@ -77,7 +79,7 @@ const EDITOR_SECTIONS = [
     { id: "aiometadata", title: "AIOMetadata Integration", keys: [] },
     { id: "groups", title: "Group Manager", keys: ["subgroup_order", "main_catalog_groups", "catalog_group_image_urls", "catalog_groups"] },
     { id: "catalogs", title: "Catalog Manager", keys: ["selected_catalogs", "pinned_catalogs", "small_catalogs", "top_row_catalogs", "starred_catalogs", "randomized_catalogs", "small_toprow_catalogs", "catalog_ordering", "custom_catalog_names"] },
-    { id: "settings", title: "General Settings", keys: ["hide_external_playback_prompt", "hide_spoilers", "small_continue_watching_shelf", "hidden_stream_button_elements", "oled_mode_enabled", "preferred_audio_language", "preferred_subtitle_language"] },
+    { id: "settings", title: "General Settings", keys: ["shelf_order", "disabled_shelves", "hide_external_playback_prompt", "hide_spoilers", "small_continue_watching_shelf", "hidden_stream_button_elements", "oled_mode_enabled", "preferred_audio_language", "preferred_subtitle_language"] },
     { id: "patterns", title: "Patterns & Regex", keys: ["pattern_tag_enabled_patterns", "regex_pattern_custom_names", "regex_pattern_image_urls", "pattern_default_filter_enabled_patterns", "pattern_image_color_indices", "pattern_border_radius_indices", "pattern_background_opacities", "pattern_border_thickness_indices", "pattern_color_indices", "pattern_color_hex_values", "auto_play_enabled_patterns", "auto_play_patterns"] },
 ];
 
@@ -235,6 +237,8 @@ export function MainEditor() {
         "show_only_first_regex_tag",
         "shelf_order",
         "always_show_titles",
+        "stream_button_elements_order",
+        "hidden_stream_button_elements",
         "auto_play_patterns",
         "catalog_cache_duration",
         "default_metadata_provider",
@@ -1039,17 +1043,33 @@ export function MainEditor() {
                                             <UnifiedPatternEditor />
                                         </div>
                                     ) : section.id === "settings" ? (
-                                        <div className="space-y-6">
-                                            <div className="space-y-4">
-                                                {keysToRender.map(key => (
+                                        <div className="space-y-4">
+                                            {keysToRender.map((key) => {
+                                                const renderer = (
                                                     <GenericRenderer
                                                         key={key}
                                                         data={currentValues[key]}
                                                         path={[key]}
                                                         searchQuery={searchTerm}
                                                     />
-                                                ))}
-                                            </div>
+                                                );
+                                                
+                                                if (key === "hidden_stream_button_elements") {
+                                                    return (
+                                                        <Fragment key={key}>
+                                                            <StreamElementOrderingEditor />
+                                                            <ShelfOrderingEditor />
+                                                        </Fragment>
+                                                    );
+                                                }
+                                                return renderer;
+                                            })}
+                                            {!keysToRender.includes("hidden_stream_button_elements") && (
+                                                <Fragment>
+                                                    <StreamElementOrderingEditor />
+                                                    <ShelfOrderingEditor />
+                                                </Fragment>
+                                            )}
                                         </div>
                                     ) : (
                                         <div className="space-y-6">

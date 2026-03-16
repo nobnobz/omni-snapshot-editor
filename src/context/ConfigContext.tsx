@@ -127,6 +127,10 @@ interface ConfigContextType {
     updateValue: (keyPath: string[], value: LooseAny) => void;
     toggleKey: (keyPath: string[], isEnabled: boolean) => void;
     toggleCatalog: (catalogId: string, isEnabled: boolean) => void;
+    toggleShelf: (shelfName: string, isEnabled: boolean) => void;
+    reorderShelves: (newOrder: string[]) => void;
+    toggleStreamElement: (elementName: string, isVisible: boolean) => void;
+    reorderStreamElements: (newOrder: string[]) => void;
     updateCatalogsOrder: (newOrder: LooseAny[]) => void;
     // Manifest catalog mutations (direct operations on config.catalogs[])
     updateCatalogField: (id: string, patch: Record<string, LooseAny>) => void;
@@ -379,6 +383,20 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         setDisabledCatalogs(new Set());
         setDeletedSubgroups([]);
         setDeletedMainGroups([]);
+
+        // Ensure shelf_order and disabled_shelves are present
+        if (!Array.isArray(decodedValues.shelf_order)) {
+            decodedValues.shelf_order = ["Continue Watching", "Top Row", "Catalog Groups", "Catalog", "Live TV", "AI Recommendations"];
+        }
+        if (!Array.isArray(decodedValues.disabled_shelves)) {
+            decodedValues.disabled_shelves = [];
+        }
+        if (!Array.isArray(decodedValues.stream_button_elements_order) || decodedValues.stream_button_elements_order.length === 0) {
+            decodedValues.stream_button_elements_order = ["Title", "Metadata Tags", "Pattern Tags", "Addon Name"];
+        }
+        if (!Array.isArray(decodedValues.hidden_stream_button_elements)) {
+            decodedValues.hidden_stream_button_elements = [];
+        }
     };
 
     const updateValuePath = (obj: LooseAny, path: string[], value: LooseAny): LooseAny => {
@@ -443,6 +461,42 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
             else next.add(catalogId);
             return next;
         });
+    };
+
+    const toggleShelf = (shelfName: string, isEnabled: boolean) => {
+        setCurrentValues(prev => {
+            const next = { ...prev };
+            const disabled = new Set(next.disabled_shelves || []);
+            if (isEnabled) disabled.delete(shelfName);
+            else disabled.add(shelfName);
+            next.disabled_shelves = Array.from(disabled);
+            return next;
+        });
+    };
+
+    const reorderShelves = (newOrder: string[]) => {
+        setCurrentValues(prev => ({
+            ...prev,
+            shelf_order: newOrder
+        }));
+    };
+
+    const toggleStreamElement = (elementName: string, isVisible: boolean) => {
+        setCurrentValues(prev => {
+            const next = { ...prev };
+            const hidden = new Set(next.hidden_stream_button_elements || []);
+            if (isVisible) hidden.delete(elementName);
+            else hidden.add(elementName);
+            next.hidden_stream_button_elements = Array.from(hidden);
+            return next;
+        });
+    };
+
+    const reorderStreamElements = (newOrder: string[]) => {
+        setCurrentValues(prev => ({
+            ...prev,
+            stream_button_elements_order: newOrder
+        }));
     };
 
     const updateCatalogsOrder = (newOrder: LooseAny[]) => {
@@ -1021,6 +1075,10 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
             manifest,
             manifestStatus,
             fetchManifest,
+            toggleShelf,
+            reorderShelves,
+            toggleStreamElement,
+            reorderStreamElements
         }}>
             {children}
         </ConfigContext.Provider>

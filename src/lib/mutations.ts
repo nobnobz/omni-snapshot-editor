@@ -477,6 +477,61 @@ export function validateAndFix(state: MutableState): MutableState {
         }
     });
 
+    // Handle shelf_order and disabled_shelves
+    const shelfKeys = ["shelf_order", "disabled_shelves", "stream_button_elements_order", "hidden_stream_button_elements"];
+    shelfKeys.forEach(key => {
+        if (!Array.isArray(draft[key])) {
+            draft[key] = [];
+        }
+        draft[key] = Array.from(new Set(draft[key].filter((s: unknown) => typeof s === 'string')));
+    });
+
+    return draft;
+}
+
+/**
+ * Reorders shelves based on a new order array.
+ */
+export function reorderShelves(newOrder: string[], state: MutableState): MutableState {
+    const draft = JSON.parse(JSON.stringify(state));
+    draft.shelf_order = newOrder;
+    return draft;
+}
+
+export function reorderStreamElements(newOrder: string[], state: MutableState): MutableState {
+    const draft = JSON.parse(JSON.stringify(state));
+    draft.stream_button_elements_order = newOrder;
+    return draft;
+}
+
+/**
+ * Toggles a shelf's enabled/disabled status.
+ */
+export function toggleShelf(shelfName: string, isEnabled: boolean, state: MutableState): MutableState {
+    const draft = JSON.parse(JSON.stringify(state));
+    const disabled = new Set(draft.disabled_shelves || []);
+
+    if (isEnabled) {
+        disabled.delete(shelfName);
+    } else {
+        disabled.add(shelfName);
+    }
+
+    draft.disabled_shelves = Array.from(disabled);
+    return draft;
+}
+
+export function toggleStreamElement(elementName: string, isVisible: boolean, state: MutableState): MutableState {
+    const draft = JSON.parse(JSON.stringify(state));
+    const hidden = new Set(draft.hidden_stream_button_elements || []);
+
+    if (isVisible) {
+        hidden.delete(elementName);
+    } else {
+        hidden.add(elementName);
+    }
+
+    draft.hidden_stream_button_elements = Array.from(hidden);
     return draft;
 }
 

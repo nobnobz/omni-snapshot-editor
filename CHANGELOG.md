@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.4.1] - 2026-03-16
+### Added
+- General Settings: New "Shelf Ordering" editor with drag-and-drop support.
+- General Settings: New "Stream Element Selection" editor with visibility toggles and reordering.
+
+### Fixed
+- UI Smoothing: Resolved "jumping" behavior during drag-and-drop by implementing portal rendering and transition handling.
+- UI Smoothing: Standardized container styling and item spacing for a more consistent user experience.
+
+
 ## [0.4.0] - 2026-03-16
 ### Added
 - PWA: Updated iOS Home Screen icon with high-quality clown head design (180x180).

@@ -32,8 +32,7 @@ const formatKeyToTitle = (key: string): string => {
         "mdblist_enabled_ratings": "MDBList Rating Icons",
         "top_row_item_limits": "Top Row Items",
         "custom_catalog_names": "Custom Catalog Names",
-        "oled_mode_enabled": "OLED Mode",
-        "hidden_stream_button_elements": "Hide Elements From The Stream Selection"
+        "oled_mode_enabled": "OLED Mode"
     };
 
     if (specialMappings[key]) return specialMappings[key];
@@ -52,7 +51,6 @@ const SETTING_DESCRIPTIONS: Record<string, string> = {
     "mdblist_enabled_ratings": "Requires an MDBList API key set in Omni.",
     "oled_mode_enabled": "Enables true black backgrounds for OLED displays.",
     "hide_addon_info_in_catalog_names": "Removes the addon suffix from home screen catalogs.",
-    "hidden_stream_button_elements": "Choose which elements are visible on the stream selection screen.",
     "preferred_audio_language": "Sets the default audio language for your library.",
     "preferred_subtitle_language": "Sets the default subtitle language for your library.",
     "custom_catalog_names": "Maps catalog IDs to human-readable display names.",
@@ -145,8 +143,8 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
     };
 
     // Specialized keys that hide their internal "Value" toggles to avoid UI duplication
-    const UNIFIED_KEYS = ["hide_spoilers", "small_continue_watching_shelf", "hide_external_playback_prompt", "oled_mode_enabled", "hide_addon_info_in_catalog_names", "hidden_stream_button_elements"];
-    const ALWAYS_RENDER_KEYS = ["hide_spoilers", "small_continue_watching_shelf", "hide_external_playback_prompt", "oled_mode_enabled", "hide_addon_info_in_catalog_names", "hidden_stream_button_elements"];
+    const UNIFIED_KEYS = ["hide_spoilers", "small_continue_watching_shelf", "hide_external_playback_prompt", "oled_mode_enabled", "hide_addon_info_in_catalog_names"];
+    const ALWAYS_RENDER_KEYS = ["hide_spoilers", "small_continue_watching_shelf", "hide_external_playback_prompt", "oled_mode_enabled", "hide_addon_info_in_catalog_names"];
 
     const shouldSkipNullData =
         (data === null || data === undefined)
@@ -159,8 +157,6 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
         customChecked = data === undefined ? true : !data; // ON = true (default) or !hide
     } else if (currentKey === "hide_spoilers" || currentKey === "small_continue_watching_shelf" || currentKey === "oled_mode_enabled" || currentKey === "hide_addon_info_in_catalog_names") {
         customChecked = !!data; // Switch ON = value true
-    } else if (currentKey === "hidden_stream_button_elements") {
-        customChecked = data !== undefined; // Switch ON if array exists
     }
 
     // Shared field chrome to keep all controls visually consistent.
@@ -387,46 +383,6 @@ export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendere
 
     // Specialized rendering for simple boolean or array-requirement toggles (merged & simplified)
     if (UNIFIED_KEYS.includes(currentKey)) {
-        if (currentKey === "hidden_stream_button_elements") {
-            const options = ["Title", "Metadata Tags", "Pattern Tags", "Addon Name"];
-            const currentSelection = (data as string[]) || [];
-
-            const handleCheckboxChange = (opt: string, checked: boolean) => {
-                if (checked) {
-                    updateValue(path, [...currentSelection, opt]);
-                } else {
-                    updateValue(path, currentSelection.filter(x => x !== opt));
-                }
-            };
-
-            return renderWrapper(
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-                        {options.map((opt) => {
-                            const isChecked = currentSelection.includes(opt);
-                            return (
-                                <div
-                                    key={opt}
-                                    className={`flex items-center space-x-3 p-3 h-[60px] rounded-lg border transition-[border-color,background-color] cursor-pointer select-none shadow-sm ${isChecked ? "border-primary/50 bg-primary/10 hover:bg-primary/20" : "border-border/80 bg-card/50 hover:border-border/90 hover:bg-card"}`}
-                                    onClick={() => handleCheckboxChange(opt, !isChecked)}
-                                >
-                                    <Checkbox
-                                        id={`checkbox-${opt}`}
-                                        checked={isChecked}
-                                        onCheckedChange={(val) => handleCheckboxChange(opt, val === true)}
-                                        className="pointer-events-none"
-                                    />
-                                    <div className="flex flex-col flex-1 pointer-events-none">
-                                        <Label htmlFor={`checkbox-${opt}`} className="text-base font-medium text-foreground">{opt}</Label>
-                                        <span className="text-xs text-foreground/70 mt-1 leading-tight">Hide {opt.toLowerCase()}</span>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>,
-                true
-            );
-        }
-
         return renderWrapper();
     }
 
