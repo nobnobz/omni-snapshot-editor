@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.4.0] - 2026-03-16
+### Added
+- PWA: Updated iOS Home Screen icon with high-quality clown head design (180x180).
+
+### Fixed
+- Catalog Manager: Improved "Delete All" robustness by pruning deleted catalogs from all exported fields in the JSON.
+- Catalog Manager: Enhanced visibility detection to correctly identify active "Header" and "Top Row" catalogs (marked as "Hidden" instead of "Orphaned").
+- Infrastructure: Synchronized manifest-style catalog state with legacy side-arrays for enhanced compatibility across bot versions.
+
 ## [0.3.9] - 2026-03-15
 ### Added
 - Catalog Manager: Added "Orphaned" catalog detection to identify stale entries in side-arrays.

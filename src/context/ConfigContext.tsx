@@ -315,6 +315,8 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
                 ...selectedList,
                 ...topRowList,
                 ...smallTopRowList,
+                ...pinnedList,
+                ...starredList,
             ]);
 
             // All IDs in scope (ordering, selected, top row, and ALL side-arrays)
@@ -634,6 +636,41 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
                 return updated;
             });
         });
+
+        // Sync side-arrays in currentValues for legacy bot compatibility
+        setCurrentValues(prev => {
+            const draft = { ...prev };
+            
+            if (patch.enabled !== undefined) {
+                const list = Array.isArray(draft.selected_catalogs) ? [...draft.selected_catalogs] : [];
+                if (patch.enabled) {
+                    if (!list.includes(id)) list.push(id);
+                } else {
+                    const idx = list.indexOf(id);
+                    if (idx !== -1) list.splice(idx, 1);
+                }
+                draft.selected_catalogs = list;
+            }
+
+            if (patch.showInHome !== undefined) {
+                const list = Array.isArray(draft.top_row_catalogs) ? [...draft.top_row_catalogs] : [];
+                if (patch.showInHome) {
+                    if (!list.includes(id)) list.push(id);
+                } else {
+                    const idx = list.indexOf(id);
+                    if (idx !== -1) list.splice(idx, 1);
+                }
+                draft.top_row_catalogs = list;
+            }
+
+            if (patch.metadata?.itemCount !== undefined) {
+                const limits = { ...(draft.top_row_item_limits || {}) };
+                limits[id] = patch.metadata.itemCount;
+                draft.top_row_item_limits = limits;
+            }
+
+            return draft;
+        });
     };
 
     const addManifestCatalog = (catalog: { id: string; name: string; enabled?: boolean; showInHome?: boolean }) => {
@@ -707,12 +744,36 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         // 2. Prune explicitly disabled keys (from GenericRenderer toggles)
         clonedValues = pruneDisabledKeys(clonedValues, disabledKeys);
 
-        // 3. Prune disabled catalogs (remove from arrays and entries)
-        // Only prune if it's completely inactive (shelf, top row, and Header all disabled)
+        // 3. Prune disabled and deleted catalogs
+        // Determine "dead" catalogs: they existed during load (or were added) but are NO LONGER in the catalogs state array.
+        // OR they are explicitly disabled and not used as headers.
+        const currentIdSet = new Set(catalogs.map(c => c.id));
+        const originalIdSet = new Set([
+            ...(initialValues.selected_catalogs || []),
+            ...(initialValues.catalog_ordering || []),
+            ...(initialValues.top_row_catalogs || []),
+            ...(initialValues.small_toprow_catalogs || []),
+            ...(initialValues.pinned_catalogs || []),
+            ...(initialValues.starred_catalogs || []),
+        ]);
+
         const starred = new Set(clonedValues.starred_catalogs || []);
-        const deadCatalogs = new Set(
-            catalogs.filter(c => c.enabled === false && c.showInHome !== true && !starred.has(c.id)).map(c => c.id)
-        );
+        const deadCatalogs = new Set<string>();
+
+        // Catalogs explicitly disabled in manager (AND NOT headers)
+        catalogs.forEach(c => {
+            if (c.enabled === false && c.showInHome !== true && !starred.has(c.id)) {
+                deadCatalogs.add(c.id);
+            }
+        });
+
+        // Catalogs entirely REMOVED (Delete All)
+        originalIdSet.forEach(id => {
+            if (!currentIdSet.has(id)) {
+                deadCatalogs.add(id);
+            }
+        });
+
         clonedValues = pruneDisabledCatalogs(clonedValues, deadCatalogs);
 
         // 4. Validate, Fix and Reorder keys
@@ -767,30 +828,39 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         // 5b. State format (or synthetic): encode values with updated state arrays
         // Sync the synthetic catalog state back to currentValues arrays before encoding
         const valuesToExport = { ...validatedValues };
-        if (isSynthetic) {
-            const activeIds = catalogs.map(c => c.id);
-            const enabledIds = catalogs.filter(c => c.enabled !== false).map(c => c.id);
-            const topRowIds = catalogs.filter(c => c.showInHome).map(c => c.id);
-            const customNamesOut: Record<string, string> = {};
-            const limitsOut: Record<string, number> = {};
-            catalogs.forEach(c => {
-                if (c.name && c.name !== c.id) customNamesOut[c.id] = c.name;
-                if (c.metadata?.itemCount) limitsOut[c.id] = c.metadata.itemCount;
-            });
+        
+        const activeIds = catalogs.map(c => c.id);
+        const enabledIds = catalogs.filter(c => c.enabled !== false).map(c => c.id);
+        const topRowIds = catalogs.filter(c => c.showInHome).map(c => c.id);
+        const customNamesOut: Record<string, string> = {};
+        const limitsOut: Record<string, number> = {};
+        
+        catalogs.forEach(c => {
+            if (c.name && c.name !== c.id) customNamesOut[c.id] = c.name;
+            if (c.metadata?.itemCount) limitsOut[c.id] = c.metadata.itemCount;
+        });
 
-            // Ensure selected_catalogs is always updated as it's the main reading source
-            let finalEnabledIds = enabledIds;
-            if (finalEnabledIds.length > 1 && finalEnabledIds.includes("omni_empty_setup_placeholder")) {
-                finalEnabledIds = finalEnabledIds.filter(id => id !== "omni_empty_setup_placeholder");
-            }
-            valuesToExport.selected_catalogs = finalEnabledIds;
-            // Also update catalog_ordering if the original config used it. It MUST contain all active catalogs (including hidden ones for top row)
-            if (valuesToExport.catalog_ordering !== undefined) {
-                valuesToExport.catalog_ordering = activeIds;
-            }
-            valuesToExport.top_row_catalogs = topRowIds;
-            if (Object.keys(customNamesOut).length) valuesToExport.custom_catalog_names = { ...(valuesToExport.custom_catalog_names || {}), ...customNamesOut };
-            if (Object.keys(limitsOut).length) valuesToExport.top_row_item_limits = limitsOut;
+        // Always update these primary source arrays regardless of session type
+        // to ensure manager changes are reflected in both catalogs[] and legacy arrays.
+        let finalEnabledIds = enabledIds;
+        if (finalEnabledIds.length > 1 && finalEnabledIds.includes("omni_empty_setup_placeholder")) {
+            finalEnabledIds = finalEnabledIds.filter(id => id !== "omni_empty_setup_placeholder");
+        }
+        valuesToExport.selected_catalogs = finalEnabledIds;
+        
+        // Also update catalog_ordering. It MUST contain all catalogs (including hidden ones) to preserve order
+        if (valuesToExport.catalog_ordering !== undefined || !isSynthetic) {
+            valuesToExport.catalog_ordering = activeIds;
+        }
+        
+        valuesToExport.top_row_catalogs = topRowIds;
+        
+        if (Object.keys(customNamesOut).length) {
+            valuesToExport.custom_catalog_names = { ...(valuesToExport.custom_catalog_names || {}), ...customNamesOut };
+        }
+        
+        if (Object.keys(limitsOut).length) {
+            valuesToExport.top_row_item_limits = { ...(valuesToExport.top_row_item_limits || {}), ...limitsOut };
         }
 
         const originalValues = originalConfig.values || originalConfig.config || {};
