@@ -94,8 +94,8 @@ function SortableShelfItem({
 export function ShelfOrderingEditor() {
     const { currentValues, toggleShelf, reorderShelves } = useConfig();
     
-    const shelfOrder = (currentValues.shelf_order as string[]) || [];
-    const disabledShelves = new Set((currentValues.disabled_shelves as string[]) || []);
+    const shelfOrder = React.useMemo(() => (currentValues.shelf_order as string[]) || [], [currentValues.shelf_order]);
+    const disabledShelves = React.useMemo(() => new Set((currentValues.disabled_shelves as string[]) || []), [currentValues.disabled_shelves]);
 
     const [items, setItems] = useState(shelfOrder);
     const [activeId, setActiveId] = useState<string | null>(null);

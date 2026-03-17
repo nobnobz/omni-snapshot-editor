@@ -194,6 +194,7 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                             style={{ backgroundColor: '#020617' }}
                         >
                             {/* eslint-disable-next-line @next/next/no-img-element -- Pattern preview accepts dynamic remote URLs and must stay lightweight. */}
+                            {/* eslint-disable-next-line @next/next/no-img-element -- Dynamic pattern image preview. */}
                             <img src={imageUrl} alt={customName || regex} className="h-full w-auto object-contain" />
                         </div>
                     )}

@@ -32,7 +32,6 @@ import {
     Moon,
     Check,
     UploadCloud,
-    ClipboardPaste,
     BookOpen,
     Menu,
     FileJson,
@@ -84,7 +83,7 @@ const EDITOR_SECTIONS = [
 ];
 
 export function MainEditor() {
-    const { originalConfig, currentValues, fileName, exportConfig, exportPartialConfig, customFallbacks, setCustomFallbacks, unloadConfig, discardSession } = useConfig();
+    const { originalConfig, currentValues, fileName, exportConfig, exportPartialConfig, customFallbacks, setCustomFallbacks, discardSession } = useConfig();
     const searchTerm = "";
     const exportSetupNameId = useId();
     const fallbackFileInputRef = useRef<HTMLInputElement>(null);
