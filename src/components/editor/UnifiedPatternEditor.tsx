@@ -657,6 +657,7 @@ export function UnifiedPatternEditor() {
                                                 className="h-8 w-8 shrink-0 overflow-hidden rounded-md flex items-center justify-center border border-white/10 p-1"
                                                 style={{ backgroundColor: '#020617' }}
                                             >
+                                                {/* eslint-disable-next-line @next/next/no-img-element -- Dynamic pattern preview. */}
                                                 <img src={currentValues["regex_pattern_image_urls"]?.[activeId]} alt="Preview" className="h-full w-auto object-contain" />
                                             </div>
                                         )}

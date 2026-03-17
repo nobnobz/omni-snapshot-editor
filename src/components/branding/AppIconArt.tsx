@@ -38,6 +38,7 @@ export function AppIconArt({ size, maskable = false, imageData }: AppIconArtProp
       >
         {imageData ? (
           // Use custom image if provided (clown.png)
+          {/* eslint-disable-next-line @next/next/no-img-element -- Static branding asset. */}
           <img
             src={imageData}
             alt="App Icon"
