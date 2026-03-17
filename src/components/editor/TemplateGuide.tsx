@@ -61,6 +61,7 @@ type DeviceGuide = {
     icon: React.ComponentType<{ className?: string }>;
     description: string;
     note: string;
+    noteLabel: string;
     tone: "blue";
 };
 
@@ -156,8 +157,9 @@ export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
         {
             title: "Import on iPhone / iPad",
             icon: Smartphone,
-            description: "Move the downloaded Omni Snapshot JSON into Omni's local backups folder, then restart Omni if the file does not appear immediately.",
+            description: "Move the downloaded Omni snapshot JSON file into Omni’s local backup folder. If it doesn’t appear right away, restart Omni. Then select the imported snapshot and restore it.",
             note: "Files > On My iPhone > Omni > Backups",
+            noteLabel: "Path",
             tone: "blue",
         },
         {
@@ -165,6 +167,7 @@ export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
             icon: Cloud,
             description: "Import the backup on iOS first, enable iCloud Sync in Omni settings, then pull the synced setup on Apple TV.",
             note: "iCloud Sync must be enabled on the same Apple account.",
+            noteLabel: "Note",
             tone: "blue",
         },
     ];
@@ -383,11 +386,11 @@ export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
                                         className="h-full"
                                     >
                                         <div className="flex h-full flex-col">
-                                            <p className="min-h-[7.5rem] text-sm leading-relaxed text-foreground/72 sm:min-h-[8.5rem]">
+                                            <p className="flex-1 text-sm leading-relaxed text-foreground/72">
                                                 {item.description}
                                             </p>
-                                            <div className="mt-4 rounded-xl border border-border/60 bg-background/55 p-3.5 lg:mt-auto">
-                                                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground/48">Important path / note</p>
+                                            <div className="mt-6 lg:mt-8 rounded-xl border border-border/60 bg-background/55 p-3.5 lg:mt-auto">
+                                                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground/48">{item.noteLabel}</p>
                                                 <p className="mt-2 break-words font-mono text-xs text-foreground/74">{item.note}</p>
                                             </div>
                                         </div>

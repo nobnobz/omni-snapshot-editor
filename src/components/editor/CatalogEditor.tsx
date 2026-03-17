@@ -734,7 +734,7 @@ export function CatalogEditor() {
                         <DialogTrigger asChild>
                             <Button
                                 size="sm"
-                                className="h-9 px-3 font-bold bg-primary hover:bg-primary/92 text-primary-foreground shadow-lg shadow-primary/20"
+                                className="h-10 px-5 font-bold bg-primary hover:bg-primary/92 text-primary-foreground shadow-lg shadow-primary/20"
                             >
                                 <Plus className="w-4 h-4 mr-1.5" /> Add Catalog
                             </Button>
@@ -836,11 +836,11 @@ export function CatalogEditor() {
                         </DialogContent>
                     </Dialog>
 
-                    <div className="w-px h-5 bg-border mx-1" />
-                    <Button variant="outline" size="sm" onClick={handleSortAZ} className="h-8 text-xs border-border hover:bg-muted/80 text-foreground/80 hover:text-foreground">
+                    <div className="w-px h-6 bg-border mx-1" />
+                    <Button variant="outline" size="sm" onClick={handleSortAZ} className="h-10 text-xs font-semibold border-border hover:bg-muted/80 text-foreground/80 hover:text-foreground px-3">
                         <ArrowDownAZ className="w-4 h-4 mr-1" /> A-Z
                     </Button>
-                    <Button variant="outline" size="sm" onClick={handleSortZA} className="h-8 text-xs border-border hover:bg-muted/80 text-foreground/80 hover:text-foreground">
+                    <Button variant="outline" size="sm" onClick={handleSortZA} className="h-10 text-xs font-semibold border-border hover:bg-muted/80 text-foreground/80 hover:text-foreground px-3">
                         <ArrowUpZA className="w-4 h-4 mr-1" /> Z-A
                     </Button>
                 </div>

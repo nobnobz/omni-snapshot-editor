@@ -570,7 +570,7 @@ export function UnifiedPatternEditor() {
                                     onChange={e => setNewPattern(e.target.value)}
                                     onKeyDown={e => e.key === 'Enter' && handleAddPattern()}
                                     placeholder="Enter new Regex string (e.g. (?i)uhd|4k)"
-                                    className={cn(editorSurface.field, patternFieldSurface, "h-10 text-base sm:text-sm font-mono focus-visible:ring-[3px] focus-visible:ring-ring/50 transition-colors flex-1")}
+                                    className={cn(editorSurface.field, patternFieldSurface, "h-10 text-sm font-medium focus-visible:ring-[3px] focus-visible:ring-ring/50 transition-colors flex-1")}
                                 />
                                 <Button onClick={handleAddPattern} className="h-10 bg-primary hover:bg-primary/92 text-primary-foreground shadow-lg shadow-primary/20 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out font-semibold px-6 w-full sm:w-auto">
                                     <Plus className="w-4 h-4 mr-2" /> Add Pattern
@@ -711,13 +711,13 @@ export function UnifiedPatternEditor() {
                         <Button
                             variant="ghost"
                             onClick={() => setIsNameDialogOpen(false)}
-                            className={editorHover.softAction}
+                            className={cn("h-10 px-6", editorHover.softAction)}
                         >
                             Cancel
                         </Button>
                         <Button
                             onClick={handleConfirmAddPattern}
-                            className="bg-primary hover:bg-primary/92 text-primary-foreground font-bold px-8 shadow-lg shadow-primary/20 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out"
+                            className="h-10 bg-primary hover:bg-primary/92 text-primary-foreground font-bold px-8 shadow-lg shadow-primary/20 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out"
                         >
                             Save Pattern
                         </Button>
@@ -744,13 +744,13 @@ export function UnifiedPatternEditor() {
                         <Button
                             variant="ghost"
                             onClick={() => setPatternToDelete(null)}
-                            className={editorHover.softAction}
+                            className={cn("h-10 px-6", editorHover.softAction)}
                         >
                             Cancel
                         </Button>
                         <Button
                             onClick={confirmDeletePattern}
-                            className="bg-red-600 hover:bg-red-500 text-white font-bold px-8 shadow-lg shadow-red-900/20 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out"
+                            className="h-10 bg-red-600 hover:bg-red-500 text-white font-bold px-8 shadow-lg shadow-red-900/20 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out"
                         >
                             Delete
                         </Button>

@@ -78,13 +78,13 @@ type UiNotice = {
 const EDITOR_SECTIONS = [
     { id: "aiometadata", title: "AIOMetadata Integration", keys: [] },
     { id: "groups", title: "Group Manager", keys: ["subgroup_order", "main_catalog_groups", "catalog_group_image_urls", "catalog_groups"] },
-    { id: "catalogs", title: "Catalog Manager", keys: ["selected_catalogs", "pinned_catalogs", "small_catalogs", "top_row_catalogs", "starred_catalogs", "randomized_catalogs", "small_toprow_catalogs", "catalog_ordering", "custom_catalog_names"] },
+    { id: "catalogs", title: "Catalog Manager", keys: ["selected_catalogs", "pinned_catalogs", "small_catalogs", "top_row_catalogs", "starred_catalogs", "randomized_catalogs", "small_toprow_catalogs", "catalog_ordering", "custom_catalog_names", "landscape_catalogs", "top_row_item_limits"] },
     { id: "settings", title: "General Settings", keys: ["shelf_order", "disabled_shelves", "hide_external_playback_prompt", "hide_spoilers", "small_continue_watching_shelf", "hidden_stream_button_elements", "oled_mode_enabled", "preferred_audio_language", "preferred_subtitle_language"] },
     { id: "patterns", title: "Patterns & Regex", keys: ["pattern_tag_enabled_patterns", "regex_pattern_custom_names", "regex_pattern_image_urls", "pattern_default_filter_enabled_patterns", "pattern_image_color_indices", "pattern_border_radius_indices", "pattern_background_opacities", "pattern_border_thickness_indices", "pattern_color_indices", "pattern_color_hex_values", "auto_play_enabled_patterns", "auto_play_patterns"] },
 ];
 
 export function MainEditor() {
-    const { originalConfig, currentValues, fileName, exportConfig, exportPartialConfig, customFallbacks, setCustomFallbacks, unloadConfig } = useConfig();
+    const { originalConfig, currentValues, fileName, exportConfig, exportPartialConfig, customFallbacks, setCustomFallbacks, unloadConfig, discardSession } = useConfig();
     const searchTerm = "";
     const exportSetupNameId = useId();
     const fallbackFileInputRef = useRef<HTMLInputElement>(null);
@@ -101,6 +101,7 @@ export function MainEditor() {
     const [pastedJson, setPastedJson] = useState("");
     const [isExitConfirmOpen, setIsExitConfirmOpen] = useState(false);
     const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+    const [isImportingUrl, setIsImportingUrl] = useState(false);
 
     const [activeSectionId, setActiveSectionId] = useState("aiometadata");
     const [isCopied, setIsCopied] = useState(false);
@@ -197,9 +198,36 @@ export function MainEditor() {
         const handleResize = () => {
             const nextScrollTarget = bindScrollTarget();
             if (nextScrollTarget === scrollTarget) return;
+
+            // --- Scroll Sync Logic ---
+            const oldTarget = scrollTarget;
+            const isOldWindow = oldTarget === window;
+            const isNewWindow = nextScrollTarget === window;
+
+            const oldScroll = isOldWindow ? window.scrollY : (oldTarget as HTMLElement)?.scrollTop ?? 0;
+            const oldHeight = isOldWindow ? document.documentElement.scrollHeight : (oldTarget as HTMLElement)?.scrollHeight ?? 0;
+            const oldClientHeight = isOldWindow ? window.innerHeight : (oldTarget as HTMLElement)?.clientHeight ?? 0;
+
+            const scrollPercent = (oldHeight - oldClientHeight) <= 0 ? 0 : oldScroll / (oldHeight - oldClientHeight);
+            // ------------------------
+
             scrollTarget?.removeEventListener("scroll", requestUpdate);
             scrollTarget = nextScrollTarget;
             scrollTarget?.addEventListener("scroll", requestUpdate, { passive: true });
+
+            // Apply sync after layout settles
+            requestAnimationFrame(() => {
+                const newHeight = isNewWindow ? document.documentElement.scrollHeight : (nextScrollTarget as HTMLElement)?.scrollHeight ?? 0;
+                const newClientHeight = isNewWindow ? window.innerHeight : (nextScrollTarget as HTMLElement)?.clientHeight ?? 0;
+                const newScroll = scrollPercent * (newHeight - newClientHeight);
+
+                if (isNewWindow) {
+                    window.scrollTo({ top: newScroll, behavior: "auto" });
+                } else if (nextScrollTarget) {
+                    (nextScrollTarget as HTMLElement).scrollTop = newScroll;
+                }
+            });
+
             requestUpdate();
         };
 
@@ -337,7 +365,7 @@ export function MainEditor() {
     };
 
     const confirmBackToStart = () => {
-        unloadConfig();
+        discardSession();
         setIsExitConfirmOpen(false);
     };
 
@@ -383,8 +411,16 @@ export function MainEditor() {
 
     const processAIOMetadata = (jsonText: string) => {
         try {
-            const config = JSON.parse(jsonText);
-            const catalogsList = config?.config?.catalogs || config?.catalogs;
+            const data = JSON.parse(jsonText);
+            
+            // Handle different AIOMetadata export formats:
+            // 1. Direct array of catalogs: [...]
+            // 2. Full export/manifest format: { config: { catalogs: [...] } }
+            // 3. Simple catalogs format: { catalogs: [...] }
+            const catalogsList = Array.isArray(data) 
+                ? data 
+                : (data?.config?.catalogs || data?.catalogs);
+
             if (!catalogsList || !Array.isArray(catalogsList)) {
                 showNotice("error", "Invalid JSON format. Could not find catalogs array.");
                 return;
@@ -454,13 +490,37 @@ export function MainEditor() {
         processFallbackFile(file);
     };
 
-    const handlePasteImport = () => {
-        if (!pastedJson.trim()) return;
+    const handlePasteImport = async () => {
+        const input = pastedJson.trim();
+        if (!input) return;
+
         if (document.activeElement instanceof HTMLElement) {
             document.activeElement.blur();
         }
+
+        // Check if input is a URL
+        if (input.startsWith("http://") || input.startsWith("https://")) {
+            setIsImportingUrl(true);
+            try {
+                const response = await fetch(input);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch manifest: ${response.statusText}`);
+                }
+                const text = await response.text();
+                preserveScrollPosition(() => {
+                    processAIOMetadata(text);
+                });
+            } catch (err: unknown) {
+                console.error(err);
+                showNotice("error", err instanceof Error ? err.message : "Failed to fetch AIOMetadata manifest.");
+            } finally {
+                setIsImportingUrl(false);
+            }
+            return;
+        }
+
         preserveScrollPosition(() => {
-            processAIOMetadata(pastedJson);
+            processAIOMetadata(input);
         });
     };
 
@@ -499,9 +559,9 @@ export function MainEditor() {
                     <div className="flex h-[calc(100dvh-2.5rem)] flex-col rounded-[1.75rem] border border-slate-200/72 bg-[linear-gradient(180deg,rgba(255,255,255,0.56),rgba(248,250,252,0.44))] shadow-[0_18px_38px_rgba(15,23,42,0.065)] backdrop-blur-md dark:border-white/8 dark:bg-[linear-gradient(180deg,rgba(21,24,31,0.92),rgba(13,16,22,0.9))] dark:shadow-[0_18px_38px_rgba(2,6,23,0.14)]">
                         <div className="px-5 pt-5 pb-4">
                             <h1 className="text-base font-black flex items-center gap-3 text-primary-foreground tracking-tight">
-                                <div className="w-14 h-14 flex items-center justify-center shrink-0 relative">
-                                    {/* eslint-disable-next-line @next/next/no-img-element -- Static local logo; preserving existing rendering behavior. */}
-                                    <img src="/omni-snapshot-editor/clown.png" alt="Logo" className="w-full h-full object-contain relative z-10 scale-125" />
+                                <div className="flex items-center justify-center shrink-0 relative group" style={{ width: '64px', height: '52px' }}>
+                                    {/* eslint-disable-next-line @next/next/no-img-element -- Static local logo. */}
+                                    <img src="/omni-snapshot-editor/clown.png" alt="Logo" className="w-full h-full object-contain relative z-10 scale-[1.35]" />
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="leading-none text-foreground">Omni Snapshot</span>
@@ -618,7 +678,7 @@ export function MainEditor() {
                                         title="Back to Start"
                                         aria-label="Back to start"
                                     >
-                                        <LogOut className="w-3.5 h-3.5 transition-transform group-hover/back:-translate-x-0.5" />
+                                        <LogOut className="w-3.5 h-3.5 transition-transform group-hover/back:-translate-x-1" />
                                     </Button>
                                 </div>
                                 <p className="text-[11px] text-foreground/62 font-mono truncate">{fileName}</p>
@@ -646,6 +706,7 @@ export function MainEditor() {
                                     {isCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                                 </Button>
                             </div>
+
 
                             <div className="mt-4 flex flex-col gap-2.5 border-t border-slate-200/80 pt-3 pb-1 dark:border-white/6">
                                 <div className="flex items-center justify-between">
@@ -713,16 +774,27 @@ export function MainEditor() {
             {/* Main Content */}
             <main 
                 ref={scrollContainerRef}
-                className="flex-1 overflow-x-hidden lg:overflow-y-auto scroll-smooth relative z-10 pb-safe-bottom"
+                className="flex-1 overflow-x-hidden lg:overflow-y-auto scroll-smooth relative z-10 pb-32 lg:pb-40"
             >
-                <div className="mx-auto max-w-5xl px-4 py-8 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:p-10 lg:max-w-6xl lg:px-8 xl:max-w-[76rem] xl:px-6 space-y-10">
+                <div className="mx-auto max-w-5xl px-4 py-8 pb-[calc(12rem+env(safe-area-inset-bottom))] sm:px-10 sm:pt-10 lg:max-w-6xl lg:px-8 xl:max-w-[76rem] xl:px-6 space-y-10">
+                    <div className="hidden lg:flex justify-end p-2 -mb-6">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleBackToStart}
+                            className="h-10 text-[11px] font-bold uppercase tracking-wider text-foreground/45 hover:text-rose-500 transition-colors flex items-center gap-1.5 px-4"
+                        >
+                            <LogOut className="w-3 h-3" />
+                            Back
+                        </Button>
+                    </div>
                     <section className="lg:hidden pt-[calc(0.35rem+env(safe-area-inset-top))]">
                         <div className="rounded-[1.35rem] border border-slate-200/72 bg-[linear-gradient(180deg,rgba(255,255,255,0.56),rgba(248,250,252,0.44))] p-3.5 shadow-[0_18px_38px_rgba(15,23,42,0.065)] backdrop-blur-md dark:border-white/8 dark:bg-[linear-gradient(180deg,rgba(21,24,31,0.92),rgba(13,16,22,0.9))] dark:shadow-[0_18px_38px_rgba(2,6,23,0.14)]">
                             <div className="flex items-start gap-2.5">
                                 <h1 className="min-w-0 flex flex-1 items-center gap-2.5 text-base font-black tracking-tight text-primary-foreground">
-                                    <div className="h-12 w-12 flex items-center justify-center shrink-0 relative">
-                                        {/* eslint-disable-next-line @next/next/no-img-element -- Static local logo; preserving existing rendering behavior. */}
-                                        <img src="/omni-snapshot-editor/clown.png" alt="Logo" className="w-full h-full object-contain relative z-10 scale-125" />
+                                    <div className="flex items-center justify-center shrink-0 relative group" style={{ width: '48px', height: '40px' }}>
+                                        {/* eslint-disable-next-line @next/next/no-img-element -- Static local logo. */}
+                                        <img src="/omni-snapshot-editor/clown.png" alt="Logo" className="w-full h-full object-contain relative z-10 scale-[1.35]" />
                                     </div>
                                     <div className="flex min-w-0 flex-col">
                                         <span className="leading-none text-foreground truncate">Omni Snapshot</span>
@@ -795,11 +867,11 @@ export function MainEditor() {
                                     variant="ghost"
                                     size="icon"
                                     onClick={handleBackToStart}
-                                    className="h-7 w-7 shrink-0 rounded-full text-foreground/62 hover:bg-muted/30 hover:text-foreground"
+                                    className="h-8 w-8 shrink-0 rounded-full text-foreground/62 hover:bg-muted/30 hover:text-foreground"
                                     title="Back to start"
                                     aria-label="Back to start"
                                 >
-                                    <LogOut className="h-3.5 w-3.5" />
+                                    <LogOut className="h-4 w-4" />
                                 </Button>
                             </div>
                         </div>
@@ -808,7 +880,7 @@ export function MainEditor() {
                     {uiNotice && (
                         <div
                             className={cn(
-                                "rounded-xl border px-4 py-3 text-sm leading-relaxed",
+                                "rounded-xl border px-4 py-3 text-sm leading-relaxed animate-in fade-in slide-in-from-top-2 duration-300",
                                 uiNotice.tone === "error"
                                     ? editorNoticeTone.danger
                                     : uiNotice.tone === "success"
@@ -818,16 +890,16 @@ export function MainEditor() {
                             role="status"
                             aria-live="polite"
                         >
-                            <div className="flex items-start justify-between gap-3">
-                                <span>{uiNotice.message}</span>
+                            <div className="flex items-center justify-between gap-3">
+                                <span className="font-medium tracking-tight">{uiNotice.message}</span>
                                 <Button
                                     variant="ghost"
-                                    size="icon-sm"
-                                    className="shrink-0 text-foreground/80 hover:text-foreground"
+                                    size="icon-xs"
+                                    className="shrink-0 text-current/60 hover:text-current hover:bg-current/10 rounded-full"
                                     onClick={() => setUiNotice(null)}
                                     aria-label="Dismiss notice"
                                 >
-                                    <span className="text-base leading-none">x</span>
+                                    <X className="w-3.5 h-3.5" />
                                 </Button>
                             </div>
                         </div>
@@ -893,109 +965,104 @@ export function MainEditor() {
                                                     </div>
                                                 )}
                                             </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                {/* File Upload card */}
-                                                <div className={cn(editorSurface.card, "p-4 flex flex-col h-full overflow-hidden")}>
-                                                    <div className="flex items-start gap-3 mb-auto relative z-10">
-                                                        <div className="p-2.5 bg-primary/10 border border-primary/20 rounded-xl text-primary">
-                                                            <UploadCloud className="w-5 h-5" />
+                                            <div 
+                                                className={cn(
+                                                    editorSurface.card, 
+                                                    "p-5 relative overflow-hidden transition-all duration-300",
+                                                    isFallbackDropActive && "ring-2 ring-primary bg-primary/5 shadow-2xl"
+                                                )}
+                                                onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsFallbackDropActive(true); }}
+                                                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsFallbackDropActive(true); }}
+                                                onDragLeave={(e) => { 
+                                                    e.preventDefault(); 
+                                                    e.stopPropagation(); 
+                                                    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+                                                    setIsFallbackDropActive(false); 
+                                                }}
+                                                onDrop={(e) => { setIsFallbackDropActive(false); handleFallbackDrop(e); }}
+                                            >
+                                                {/* Drag Overlay */}
+                                                {isFallbackDropActive && (
+                                                    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-primary/10 backdrop-blur-[2px] pointer-events-none animate-in fade-in duration-200">
+                                                        <div className="bg-primary text-primary-foreground p-4 rounded-3xl shadow-2xl scale-110">
+                                                            <UploadCloud className="w-10 h-10 animate-bounce" />
                                                         </div>
-                                                        <div>
-                                                            <h4 className="text-sm font-medium text-foreground mb-0.5">Upload File</h4>
-                                                            <p className="text-xs text-foreground/70 leading-relaxed">
-                                                                Import from your <code className="text-xs bg-white/5 border border-white/10 px-1 py-0.5 rounded text-foreground">aiometadata-setup.json</code>
-                                                            </p>
+                                                        <p className="mt-4 text-primary font-bold text-lg">Drop JSON file to import</p>
+                                                    </div>
+                                                )}
+
+                                                <div className="flex items-start gap-4 mb-5 relative z-10">
+                                                    <div className="p-3 bg-primary/10 border border-primary/20 rounded-2xl text-primary">
+                                                        <UploadCloud className="w-6 h-6" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-base font-bold text-foreground">Import AIOMetadata</h4>
+                                                        <p className="text-sm text-foreground/70 leading-relaxed max-w-2xl">
+                                                            Directly paste your AIOMetadata manifest URL or raw catalogs JSON, or just drop a <code className="text-xs bg-white/5 border border-white/10 px-1 py-0.5 rounded text-foreground">.json</code> file here to import.
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex flex-col gap-3 relative z-10">
+                                                    <div className="relative group">
+                                                        <Textarea
+                                                            placeholder="Paste URL / JSON or drop .json file here..."
+                                                            className={cn(
+                                                                editorSurface.field, 
+                                                                "min-h-[120px] text-sm focus:border-primary/50 text-foreground resize-none font-sans placeholder:text-foreground/40 custom-scrollbar rounded-xl transition-all",
+                                                                isFallbackDropActive && "opacity-20"
+                                                            )}
+                                                            value={pastedJson}
+                                                            onChange={(e) => setPastedJson(e.target.value)}
+                                                        />
+                                                        <div className="absolute bottom-2 right-2 flex gap-1.5 translate-y-1 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all">
+                                                            <Button
+                                                                variant="secondary"
+                                                                size="sm"
+                                                                className="h-8 px-2.5 rounded-lg text-xs bg-white/10 hover:bg-white/20 border-white/5 backdrop-blur-sm"
+                                                                onClick={() => setPastedJson("")}
+                                                                disabled={!pastedJson.trim()}
+                                                            >
+                                                                Clear
+                                                            </Button>
                                                         </div>
                                                     </div>
-
-                                                    <div className="mt-4 flex-1 flex flex-col justify-end relative z-10">
-                                                        <div
-                                                            role="button"
-                                                            tabIndex={0}
-                                                            onClick={() => fallbackFileInputRef.current?.click()}
-                                                            onKeyDown={(e) => {
-                                                                if (e.key === "Enter" || e.key === " ") {
-                                                                    e.preventDefault();
-                                                                    fallbackFileInputRef.current?.click();
-                                                                }
-                                                            }}
-                                                            onDragEnter={(e) => {
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-                                                                setIsFallbackDropActive(true);
-                                                            }}
-                                                            onDragOver={(e) => {
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-                                                                setIsFallbackDropActive(true);
-                                                            }}
-                                                            onDragLeave={(e) => {
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-                                                                if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
-                                                                setIsFallbackDropActive(false);
-                                                            }}
-                                                            onDrop={handleFallbackDrop}
-                                                            className={cn(
-                                                                `flex-1 flex flex-col items-center justify-center border-2 rounded-lg mb-3 ${editorHover.transition} cursor-pointer group/drop min-h-[96px]`,
-                                                                editorSurface.dropzone,
-                                                                isFallbackDropActive
-                                                                    ? "border-primary/70 bg-primary/10 shadow-[0_0_0_1px_rgba(15,23,42,0.1),inset_0_1px_0_rgba(255,255,255,0.05)]"
-                                                                    : "hover:border-border/70"
-                                                            )}
+                                                    
+                                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
+                                                        <Button
+                                                            type="button"
+                                                            className="sm:min-w-[220px] font-bold h-11 rounded-xl bg-primary hover:bg-primary/92 text-primary-foreground shadow-lg shadow-primary/20 transition-transform active:scale-[0.98]"
+                                                            onClick={handlePasteImport}
+                                                            disabled={!pastedJson.trim() || isImportingUrl}
                                                         >
-                                                            <UploadCloud className={cn("w-5 h-5 mb-1.5 transition-colors", isFallbackDropActive ? "text-primary" : "text-foreground/36 group-hover/drop:text-foreground/58")} />
-                                                            <span className={cn("text-xs font-medium transition-colors", isFallbackDropActive ? "text-primary" : "text-foreground/44 group-hover/drop:text-foreground/64")}>Drop JSON file here</span>
-                                                        </div>
+                                                            {isImportingUrl ? (
+                                                                <span className="flex items-center gap-2">
+                                                                    <RotateCcw className="w-4 h-4 animate-spin" />
+                                                                    Fetching...
+                                                                </span>
+                                                            ) : (
+                                                                <>
+                                                                    <Check className="w-4 h-4 mr-2.5" />
+                                                                    Import Configuration
+                                                                </>
+                                                            )}
+                                                        </Button>
+
                                                         <input
                                                             type="file"
-                                                            id="main-fallback-upload"
+                                                            id="unified-fallback-upload"
                                                             accept=".json"
                                                             className="hidden"
                                                             ref={fallbackFileInputRef}
                                                             onChange={handleUploadFallbacks}
                                                         />
-                                                        <label
-                                                            htmlFor="main-fallback-upload"
-                                                            className="w-full inline-flex cursor-pointer items-center justify-center rounded-lg text-sm font-medium bg-primary hover:bg-primary/92 text-primary-foreground h-9 px-4 border border-transparent shadow-[0_0_15px_rgba(2,6,23,0.2)] transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 ease-out"
-                                                        >
-                                                            <UploadCloud className="w-4 h-4 mr-2" />
-                                                            Select JSON File
-                                                        </label>
-                                                    </div>
-                                                </div>
-
-                                                {/* Paste JSON card */}
-                                                <div className={cn(editorSurface.card, "p-4 flex flex-col h-full overflow-hidden")}>
-                                                    <div className="flex items-start gap-3 mb-3 relative z-10">
-                                                        <div className="p-2.5 bg-primary/10 border border-primary/20 rounded-xl text-primary">
-                                                            <ClipboardPaste className="w-5 h-5" />
-                                                        </div>
-                                                        <div>
-                                                            <h4 className="text-sm font-medium text-foreground mb-0.5">Paste Content</h4>
-                                                            <p className="text-xs text-foreground/70 leading-relaxed">
-                                                                Directly paste your raw JSON setup if you copied it to the clipboard.
-                                                            </p>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex flex-col gap-2 mt-auto relative z-10">
-                                                        <Textarea
-                                                            placeholder="Paste your JSON configuration here..."
-                                                            className={cn(editorSurface.field, "min-h-[60px] text-base focus:border-ring/55 text-foreground resize-none font-mono placeholder:text-foreground/50 custom-scrollbar rounded-lg")}
-                                                            value={pastedJson}
-                                                            onChange={(e) => setPastedJson(e.target.value)}
-                                                        />
                                                         <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            variant="secondary"
-                                                            className="w-full text-sm h-9 bg-primary hover:bg-primary/92 text-primary-foreground border-none rounded-lg shadow-[0_0_15px_rgba(2,6,23,0.2)] transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 ease-out"
-                                                            onClick={handlePasteImport}
-                                                            disabled={!pastedJson.trim()}
+                                                            variant="outline"
+                                                            className="h-11 px-5 rounded-xl border-border/60 hover:bg-muted/50 font-medium"
+                                                            onClick={() => fallbackFileInputRef.current?.click()}
                                                         >
-                                                            <Check className="w-4 h-4 mr-2" />
-                                                            Import Configuration
+                                                            <FileJson className="w-4 h-4 mr-2.5" />
+                                                            Select JSON File
                                                         </Button>
                                                     </div>
                                                 </div>
@@ -1033,7 +1100,7 @@ export function MainEditor() {
                                             <div className="flex flex-wrap gap-2 items-center">
                                                 <Button
                                                     onClick={() => setIsImportPatternsOpen(true)}
-                                                    className="mt-3 bg-primary hover:bg-primary/92 text-primary-foreground shadow-lg shadow-primary/20"
+                                                    className="mt-3 h-10 bg-primary hover:bg-primary/92 text-primary-foreground shadow-lg shadow-primary/20 px-6 font-bold"
                                                 >
                                                     <UploadCloud className="w-5 h-5 mr-2" />
                                                     Import from Template
@@ -1160,13 +1227,11 @@ export function MainEditor() {
                         <Button
                             onClick={handleDownloadClick}
                             className={cn(
-                                "h-11 rounded-full bg-primary font-bold text-primary-foreground shadow-[0_10px_24px_rgba(2,6,23,0.22)] hover:bg-primary/92",
-                                isIosDevice ? "size-11 px-0 flex items-center justify-center p-0" : "px-5"
+                                "size-11 rounded-full bg-primary font-bold text-primary-foreground shadow-[0_10px_24px_rgba(2,6,23,0.22)] hover:bg-primary/92 p-0 flex items-center justify-center shrink-0"
                             )}
-                            title={isIosDevice ? "Download JSON" : undefined}
+                            title="Download JSON"
                         >
-                            <Download className={cn("w-4 h-4", !isIosDevice && "mr-2")} />
-                            {!isIosDevice && "Download"}
+                            <Download className="w-4 h-4" />
                         </Button>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>

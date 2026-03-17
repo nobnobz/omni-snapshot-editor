@@ -166,6 +166,7 @@ interface ConfigContextType {
     manifest: TemplateManifest | null;
     manifestStatus: 'idle' | 'loading' | 'success' | 'error';
     fetchManifest: () => Promise<void>;
+    discardSession: () => void;
 }
 
 const ConfigContext = createContext<ConfigContextType | undefined>(undefined);
@@ -184,6 +185,78 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
 
     // Custom fallbacks from localStorage
     const [customFallbacks, setCustomFallbacks] = useState<Record<string, string | CatalogFallback>>({});
+
+    // Session Persistence Key
+    const SESSION_KEY = "omni_editor_session_v1";
+
+    // Auto-Recovery on Mount
+    React.useEffect(() => {
+        if (typeof window === "undefined") return;
+
+        // 1. Load Custom Fallbacks (Existing logic)
+        try {
+            const storedFallbacks = localStorage.getItem("omni_custom_fallbacks");
+            if (storedFallbacks) setCustomFallbacks(JSON.parse(storedFallbacks));
+        } catch (e) {
+            console.error("Failed to load custom fallbacks", e);
+        }
+
+        // 2. Load Session Draft
+        try {
+            const storedSession = localStorage.getItem(SESSION_KEY);
+            if (storedSession) {
+                const session = JSON.parse(storedSession);
+                if (session.originalConfig) {
+                    setOriginalConfig(session.originalConfig);
+                    setCurrentValues(session.currentValues || {});
+                    setInitialValues(session.initialValues || {});
+                    setDisabledKeys(new Set(session.disabledKeys || []));
+                    setDisabledCatalogs(new Set(session.disabledCatalogs || []));
+                    setDeletedSubgroups(session.deletedSubgroups || []);
+                    setDeletedMainGroups(session.deletedMainGroups || []);
+                    setCatalogs(session.catalogs || []);
+                    setFileName(session.fileName || "omni-config.json");
+                    console.log("Restored editor session from localStorage");
+                }
+            }
+        } catch (e) {
+            console.error("Failed to restore session", e);
+        }
+    }, []);
+
+    // Auto-Save Effect
+    React.useEffect(() => {
+        if (!originalConfig || typeof window === "undefined") return;
+
+        const timer = setTimeout(() => {
+            try {
+                const sessionData = {
+                    originalConfig,
+                    currentValues,
+                    initialValues,
+                    disabledKeys: Array.from(disabledKeys),
+                    disabledCatalogs: Array.from(disabledCatalogs),
+                    deletedSubgroups,
+                    deletedMainGroups,
+                    catalogs,
+                    fileName,
+                    savedAt: new Date().toISOString()
+                };
+                localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
+            } catch (e) {
+                console.error("Failed to save session", e);
+            }
+        }, 1000); // 1s debounce
+
+        return () => clearTimeout(timer);
+    }, [originalConfig, currentValues, initialValues, disabledKeys, disabledCatalogs, deletedSubgroups, deletedMainGroups, catalogs, fileName]);
+
+    const discardSession = () => {
+        if (typeof window !== "undefined") {
+            localStorage.removeItem(SESSION_KEY);
+        }
+        unloadConfig();
+    };
 
     // GitHub Manifest State
     const [manifest, setManifest] = useState<TemplateManifest | null>(null);
@@ -216,17 +289,6 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
             setManifestStatus('error');
         }
     };
-
-    React.useEffect(() => {
-        if (typeof window !== "undefined") {
-            try {
-                const stored = localStorage.getItem("omni_custom_fallbacks");
-                if (stored) setCustomFallbacks(JSON.parse(stored));
-            } catch (e) {
-                console.error("Failed to load custom fallbacks", e);
-            }
-        }
-    }, []);
 
     const loadConfig = (config: OmniConfig, fn = "omni-config.json") => {
         setOriginalConfig(config);
@@ -982,7 +1044,11 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         const encodedValues = encodeConfig(validatedValues, originalValues, disabledKeys);
 
         // Build the full config shell
-        const finalResult: ExportableConfig = { ...originalConfig };
+        const finalResult: ExportableConfig = { 
+            ...originalConfig,
+            exportedAt: new Date().toISOString()
+        };
+        
         if (originalConfig.values) {
             finalResult.values = encodedValues;
             finalResult.includedKeys = Object.keys(encodedValues);
@@ -1075,6 +1141,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
             manifest,
             manifestStatus,
             fetchManifest,
+            discardSession,
             toggleShelf,
             reorderShelves,
             toggleStreamElement,

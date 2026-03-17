@@ -391,29 +391,31 @@ export function validateAndFix(state: MutableState): MutableState {
     const validGroupNames = new Set(Object.keys(draft.catalog_groups || {}));
 
     // Ensure catalog_group_order exists and is cleaned
-    if (!Array.isArray(draft.catalog_group_order)) {
-        draft.catalog_group_order = [];
-    }
-
-    // Fix corruption where order might be ["_data"]
-    if (draft.catalog_group_order.length === 1 && draft.catalog_group_order[0] === "_data") {
-        draft.catalog_group_order = [];
-    }
-
-    // Dedupe & Clean
-    draft.catalog_group_order = Array.from(new Set(draft.catalog_group_order))
-        .filter((g: unknown): g is string => typeof g === 'string' && validGroupNames.has(g));
-
-    // Ensure every existing group appears
-    validGroupNames.forEach(name => {
-        if (!draft.catalog_group_order.includes(name)) {
-            draft.catalog_group_order.push(name);
+    if (draft.catalog_group_order !== undefined) {
+        if (!Array.isArray(draft.catalog_group_order)) {
+            draft.catalog_group_order = [];
         }
-    });
+
+        // Fix corruption where order might be ["_data"]
+        if (draft.catalog_group_order.length === 1 && draft.catalog_group_order[0] === "_data") {
+            draft.catalog_group_order = [];
+        }
+
+        // Dedupe & Clean
+        draft.catalog_group_order = Array.from(new Set(draft.catalog_group_order))
+            .filter((g: unknown): g is string => typeof g === 'string' && validGroupNames.has(g));
+
+        // Ensure every existing group appears
+        validGroupNames.forEach(name => {
+            if (!draft.catalog_group_order.includes(name)) {
+                draft.catalog_group_order.push(name);
+            }
+        });
+    }
 
     // CRITICAL: Reorder the keys in catalog_groups and related objects to match catalog_group_order
     // This ensures that modern JSON stringifiers preserve the order requested by the user.
-    if (draft.catalog_groups) {
+    if (draft.catalog_groups && Array.isArray(draft.catalog_group_order)) {
         const orderedGroups: MutableState = {};
         draft.catalog_group_order.forEach((name: string) => {
             if (draft.catalog_groups[name]) {
@@ -423,7 +425,7 @@ export function validateAndFix(state: MutableState): MutableState {
         draft.catalog_groups = orderedGroups;
     }
 
-    if (draft.catalog_group_image_urls) {
+    if (draft.catalog_group_image_urls && Array.isArray(draft.catalog_group_order)) {
         const orderedUrls: MutableState = {};
         draft.catalog_group_order.forEach((name: string) => {
             if (draft.catalog_group_image_urls[name] !== undefined) {
@@ -480,10 +482,12 @@ export function validateAndFix(state: MutableState): MutableState {
     // Handle shelf_order and disabled_shelves
     const shelfKeys = ["shelf_order", "disabled_shelves", "stream_button_elements_order", "hidden_stream_button_elements"];
     shelfKeys.forEach(key => {
-        if (!Array.isArray(draft[key])) {
-            draft[key] = [];
+        if (draft[key] !== undefined) {
+            if (!Array.isArray(draft[key])) {
+                draft[key] = [];
+            }
+            draft[key] = Array.from(new Set(draft[key].filter((s: unknown) => typeof s === 'string')));
         }
-        draft[key] = Array.from(new Set(draft[key].filter((s: unknown) => typeof s === 'string')));
     });
 
     return draft;

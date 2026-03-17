@@ -533,12 +533,17 @@ export function ConfigLoader() {
                     <div className={cn(editorLoader.heroPanel, "relative px-5 py-5 sm:px-8 sm:py-7 lg:px-10 lg:py-8") }>
                         <div className="relative space-y-4 sm:space-y-5 lg:space-y-6">
                             <div className="mx-auto max-w-[46rem] text-center">
-                                <div className="mx-auto flex h-[5.25rem] w-[5.25rem] items-center justify-center sm:h-[7rem] sm:w-[7rem]">
-                                    {/* eslint-disable-next-line @next/next/no-img-element -- Static local logo; preserving existing rendering behavior. */}
-                                    <img src="/omni-snapshot-editor/clown.png" alt="Logo" className="h-full w-full object-contain" />
+                                <div className="mx-auto flex items-center justify-center relative group overflow-visible" style={{ width: '140px', height: '110px' }}>
+                                    {/* eslint-disable-next-line @next/next/no-img-element -- Static local logo. */}
+                                    <img 
+                                        src="/omni-snapshot-editor/clown.png" 
+                                        alt="Logo" 
+                                        className="h-full w-full object-contain relative z-10 scale-[1.35]" 
+                                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                                    />
                                 </div>
 
-                                <div className="mt-3.5 space-y-1.5 sm:mt-4.5 sm:space-y-2.5">
+                                <div className="mt-2 space-y-1.5 sm:mt-2.5 sm:space-y-2.5">
                                     <h1 className="text-[2rem] font-black tracking-tight text-foreground sm:text-[2.62rem] xl:text-[2.88rem]">
                                         Omni Snapshot Manager
                                     </h1>

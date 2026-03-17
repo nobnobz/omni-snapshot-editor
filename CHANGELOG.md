@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.2] - 2026-03-17
+### Added
+- Branding: Restored enlarged logo dimensions across UI (140px landing, 64px sidebar, 48px mobile header).
+- UI: Implemented scroll-sync on resize and layout transitions to maintain visual focus.
+- UI: New icon-only mobile FAB for a cleaner, more modern navigation experience.
+
+### Changed
+- UI: Standardized all branding to a completely static presentation for maximum sharpness and stability.
+- UI: Unified button heights (h-10) and toolbar interactions across all editor sections.
+
+### Fixed
+- UI: Removed all accidental rendering artifacts ("Riverside" text, blue focus boxes, and interpolation blur).
+- UI: Resolved layout overlap issues on medium-sized tablets.
+
 ## [0.4.1] - 2026-03-16
 ### Added
 - General Settings: New "Shelf Ordering" editor with drag-and-drop support.
