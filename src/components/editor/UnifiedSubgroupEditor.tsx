@@ -433,7 +433,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                         <DropdownMenuContent align="end" className={cn(editorSurface.overlay, "w-56")}>
                             <DropdownMenuLabel className="text-[10px] font-bold uppercase tracking-widest text-foreground/50">Move to group</DropdownMenuLabel>
                             <DropdownMenuSeparator className="bg-primary/10" />
-                            {Object.entries(currentValues.main_catalog_groups || {}).map(([uuid, mg]: [string, { name: string }]) => (
+                            {(Object.entries(currentValues.main_catalog_groups || {}) as [string, { name: string }][]).map(([uuid, mg]) => (
                                 <DropdownMenuItem
                                     key={uuid}
                                     disabled={uuid === parentUUID}
@@ -553,7 +553,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                 <DropdownMenuContent align="start" className={cn(editorSurface.overlay, "w-[calc(100vw-3rem)]")}>
                                     <DropdownMenuLabel className="text-[10px] font-bold uppercase tracking-widest text-foreground/50">Move to group</DropdownMenuLabel>
                                     <DropdownMenuSeparator className="bg-primary/10" />
-                                    {Object.entries(currentValues.main_catalog_groups || {}).map(([uuid, mg]: [string, { name: string }]) => (
+                                    {(Object.entries(currentValues.main_catalog_groups || {}) as [string, { name: string }][]).map(([uuid, mg]) => (
                                         <DropdownMenuItem
                                             key={uuid}
                                             disabled={uuid === parentUUID}
