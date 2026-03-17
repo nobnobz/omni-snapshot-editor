@@ -2,17 +2,21 @@
 
 ## [0.4.2] - 2026-03-17
 ### Added
-- Branding: Restored enlarged logo dimensions across UI (140px landing, 64px sidebar, 48px mobile header).
-- UI: Implemented scroll-sync on resize and layout transitions to maintain visual focus.
-- UI: New icon-only mobile FAB for a cleaner, more modern navigation experience.
+- **AIOMetadata URL Import**: Support for importing catalogs directly via manifest URLs with integrated fetching.
+- **Session Persistence**: Implemented `localStorage` persistence (`omni_editor_session`) with auto-save and state recovery.
+- **Branding**: Restored enlarged logo dimensions across UI (140px landing, 64px sidebar, 48px mobile header).
+- **UX**: New scroll-sync logic to maintain reading position during window resize and layout transitions.
+- **UX**: Icon-only mobile FAB for a cleaner, non-overlapping navigation experience.
 
 ### Changed
-- UI: Standardized all branding to a completely static presentation for maximum sharpness and stability.
-- UI: Unified button heights (h-10) and toolbar interactions across all editor sections.
+- **AIOMetadata Integration**: Updated processing logic to support various export formats and improved catalog type extraction.
+- **UI Branding**: Standardized to a completely static logo presentation for maximum sharpness and stability.
+- **UI Consistency**: Unified toolbar button heights (h-10) and interaction states across all editor sections.
 
 ### Fixed
-- UI: Removed all accidental rendering artifacts ("Riverside" text, blue focus boxes, and interpolation blur).
-- UI: Resolved layout overlap issues on medium-sized tablets.
+- **Export Robustness**: Improved JSON export by rigorously pruning deleted catalogs and synchronizing manifest states with legacy side-arrays.
+- **UI Cleanup**: Removed all accidental rendering artifacts ("Riverside" text, blue focus boxes, and interpolation blur).
+- **Layout**: Resolved bottom-padding and overlap issues on medium-sized tablet displays.
 
 ## [0.4.1] - 2026-03-16
 ### Added
