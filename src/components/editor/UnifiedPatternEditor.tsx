@@ -564,7 +564,7 @@ export function UnifiedPatternEditor() {
                 <AccordionContent className="rounded-b-xl border-t border-border/30 p-5 pb-6 pt-5">
                     <div className="space-y-6">
                         <div className={`${editorSurface.panel} flex flex-col gap-3 p-4`}>
-                            <div className="flex sm:flex-row flex-col gap-3">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                                 <Input
                                     value={newPattern}
                                     onChange={e => setNewPattern(e.target.value)}
@@ -572,17 +572,33 @@ export function UnifiedPatternEditor() {
                                     placeholder="Enter new Regex string (e.g. (?i)uhd|4k)"
                                     className={cn(editorSurface.field, patternFieldSurface, "h-10 text-sm font-medium focus-visible:ring-[3px] focus-visible:ring-ring/50 transition-colors flex-1")}
                                 />
-                                <Button onClick={handleAddPattern} className="h-10 bg-primary hover:bg-primary/92 text-primary-foreground shadow-lg shadow-primary/20 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out font-semibold px-6 w-full sm:w-auto">
-                                    <Plus className="w-4 h-4 mr-2" /> Add Pattern
-                                </Button>
+                                <div className="flex items-center gap-2 sm:shrink-0">
+                                    <Button
+                                        onClick={handleAddPattern}
+                                        className="h-10 flex-1 bg-primary hover:bg-primary/92 text-primary-foreground shadow-lg shadow-primary/20 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out font-semibold px-4 sm:flex-none sm:px-6"
+                                    >
+                                        <Plus className="w-4 h-4 mr-2" /> Add Pattern
+                                    </Button>
+                                    {!confirmDeleteAll && (
+                                        <Button
+                                            variant="ghost"
+                                            onClick={() => setConfirmDeleteAll(true)}
+                                            className="h-10 w-10 shrink-0 rounded-xl border border-red-500/12 bg-red-500/[0.03] px-0 text-xs font-semibold text-red-500 hover:text-red-400 hover:bg-red-500/[0.08] hover:border-red-500/18 sm:w-auto sm:px-4"
+                                            aria-label="Delete all patterns"
+                                            title="Delete All"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5 sm:mr-2" />
+                                            <span className="hidden sm:inline">Delete All</span>
+                                            <span className="hidden md:inline"> Patterns</span>
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
-
-                            <div className="mx-1 mt-1 h-px bg-gradient-to-r from-transparent via-border/55 to-transparent" />
 
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
                                 {confirmDeleteAll ? (
                                     <div className="flex flex-col gap-2 rounded-xl border border-red-500/16 bg-red-500/[0.04] p-3 animate-in fade-in slide-in-from-right-2 sm:flex-row sm:items-center sm:justify-end sm:border-0 sm:bg-transparent sm:p-0">
-                                        <span className="text-xs font-medium text-red-500 sm:mr-1">Are you sure you want to delete all?</span>
+                                        <span className="text-xs font-medium text-red-500 sm:mr-1">Are you sure you want to delete all pattern?</span>
                                         <div className="flex items-center gap-2 sm:justify-end">
                                             <Button
                                                 variant="destructive"
@@ -605,17 +621,7 @@ export function UnifiedPatternEditor() {
                                             </Button>
                                         </div>
                                     </div>
-                                ) : (
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => setConfirmDeleteAll(true)}
-                                        className="h-9 self-end rounded-lg px-3 border border-transparent text-xs text-red-500 hover:text-red-400 hover:bg-red-500/10 sm:h-8"
-                                    >
-                                        <Trash2 className="w-3.5 h-3.5 mr-2" />
-                                        Delete All Patterns
-                                    </Button>
-                                )}
+                                ) : null}
                             </div>
                         </div>
 
