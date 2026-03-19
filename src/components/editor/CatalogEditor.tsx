@@ -276,7 +276,9 @@ function SortableCatalogItem({
                                 {catalog.showInHome && <Star className="w-3 h-3 text-amber-500 shrink-0" />}
                                 <Pencil className="w-3 h-3 text-foreground/45 opacity-0 group-hover/name:opacity-90 transition-opacity shrink-0" />
                             </h4>
-                            <p className="text-xs text-foreground/70 truncate font-mono mt-0.5">{catalog.id}</p>
+                            <p className="mt-0.5 truncate text-[11px] font-mono text-foreground/52 sm:text-xs">
+                                {catalog.id}
+                            </p>
                         </div>
                     )}
                 </div>

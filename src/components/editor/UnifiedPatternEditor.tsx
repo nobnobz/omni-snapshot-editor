@@ -583,13 +583,14 @@ export function UnifiedPatternEditor() {
                                         <Button
                                             variant="ghost"
                                             onClick={() => setConfirmDeleteAll(true)}
-                                            className="h-10 w-10 shrink-0 rounded-xl border border-red-500/12 bg-red-500/[0.03] px-0 text-xs font-semibold text-red-500 hover:text-red-400 hover:bg-red-500/[0.08] hover:border-red-500/18 sm:w-auto sm:px-4"
+                                            className={cn(
+                                                "h-10 w-10 shrink-0 rounded-[1.15rem] border border-transparent px-0",
+                                                editorHover.iconDanger
+                                            )}
                                             aria-label="Delete all patterns"
                                             title="Delete All"
                                         >
-                                            <Trash2 className="w-3.5 h-3.5 sm:mr-2" />
-                                            <span className="hidden sm:inline">Delete All</span>
-                                            <span className="hidden md:inline"> Patterns</span>
+                                            <Trash2 className="w-4 h-4" />
                                         </Button>
                                     )}
                                 </div>
@@ -597,8 +598,13 @@ export function UnifiedPatternEditor() {
 
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
                                 {confirmDeleteAll ? (
-                                    <div className="flex flex-col gap-2 rounded-xl border border-red-500/16 bg-red-500/[0.04] p-3 animate-in fade-in slide-in-from-right-2 sm:flex-row sm:items-center sm:justify-end sm:border-0 sm:bg-transparent sm:p-0">
-                                        <span className="text-xs font-medium text-red-500 sm:mr-1">Are you sure you want to delete all pattern?</span>
+                                    <div className="flex flex-col gap-3 rounded-xl border border-red-500/14 bg-red-500/[0.025] p-3 animate-in fade-in slide-in-from-right-2 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Trash2 className="h-4 w-4 shrink-0 text-red-500/90" />
+                                            <span className="text-sm font-medium text-foreground sm:text-xs">
+                                                Are you sure you want to delete all patterns?
+                                            </span>
+                                        </div>
                                         <div className="flex items-center gap-2 sm:justify-end">
                                             <Button
                                                 variant="destructive"
@@ -607,15 +613,15 @@ export function UnifiedPatternEditor() {
                                                     clearPatterns();
                                                     setConfirmDeleteAll(false);
                                                 }}
-                                                className="h-8 flex-1 px-3 text-xs sm:flex-none"
+                                                className="h-9 flex-1 rounded-lg px-3 text-xs sm:flex-none"
                                             >
                                                 Yes, Delete All
                                             </Button>
                                             <Button
-                                                variant="ghost"
+                                                variant="outline"
                                                 size="sm"
                                                 onClick={() => setConfirmDeleteAll(false)}
-                                                className="h-8 flex-1 px-3 text-xs sm:flex-none"
+                                                className="h-9 flex-1 rounded-lg px-3 text-xs sm:flex-none"
                                             >
                                                 Cancel
                                             </Button>
