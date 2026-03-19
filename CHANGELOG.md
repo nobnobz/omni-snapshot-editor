@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.4] - 2026-03-19
+### Changed
+- **AIOMetadata Sync**: Refined the success card to be more compact and privacy-conscious by hiding the source URL.
+- **AIOMetadata UI**: Improved mobile actions with compact header icon buttons and aligned import notices to a consistent emerald tone.
+- **AIOMetadata UX**: Simplified synced-state layout with tighter spacing and clearer visual hierarchy.
+- **Group Manager**: Optimized mobile toolbar by reducing visual weight and switching to a compact three-button action row (New, Add, Update).
+- **Group Manager**: Reduced mobile control heights and search field dimensions to preserve vertical space.
+- **Subgroup Selection**: Updated "Add to Existing Group" modal to filter out placeholder/template entries ([Discover], ❗ labels).
+- **Subgroup Selection**: Adjusted modal footer to only count visible entries in the selection total.
+- **Copy**: Tightened AIOMetadata import guidance for better readability.
+
 ## [0.4.3] - 2026-03-19
 ### Added
 - **Dynamic Template Discovery**: Implemented GitHub repository tree traversal for real-time UME template discovery, replacing static manifests.

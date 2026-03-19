@@ -30,7 +30,15 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
             : Object.keys(catalogGroups),
         [currentValues.catalog_group_order, catalogGroups]
     );
-    const allSubgroupNames: string[] = rawOrder.filter((name: string) => catalogGroups[name] !== undefined);
+    const isPlaceholderSubgroup = (name: string) => {
+        const normalized = name.trim();
+        const hasAlertMarker = normalized.includes("❗️") || normalized.includes("❗");
+        const hasBracketLabel = /\[.+\]/.test(normalized);
+        return hasAlertMarker && hasBracketLabel;
+    };
+    const allSubgroupNames: string[] = rawOrder.filter(
+        (name: string) => catalogGroups[name] !== undefined && !isPlaceholderSubgroup(name)
+    );
 
     const mainCatalogGroups = useMemo(
         () => (currentValues.main_catalog_groups || {}) as Record<string, { name?: string }>,
@@ -43,6 +51,10 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
     const subgroupOrder = useMemo(
         () => (currentValues.subgroup_order || {}) as Record<string, string[]>,
         [currentValues.subgroup_order]
+    );
+    const visibleSelectedCount = useMemo(
+        () => Array.from(selectedSubgroups).filter((name) => allSubgroupNames.includes(name)).length,
+        [allSubgroupNames, selectedSubgroups]
     );
 
     // Preselect first main group if available and not yet set
@@ -229,7 +241,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
 
                 <DialogFooter className="mt-4 shrink-0 flex flex-col gap-3 border-t border-border/50 pt-3 pb-[max(0px,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-xs text-foreground/70 sm:order-1">
-                        {selectedSubgroups.size} subgroup(s) checked
+                        {visibleSelectedCount} subgroup(s) checked
                     </p>
                     <div className="flex w-full sm:w-auto gap-2 sm:order-2">
                         <Button variant="outline" onClick={handleClose} className={cn(editorAction.secondary, editorSurface.field, "flex-1 sm:flex-none bg-white/42")}>Cancel</Button>

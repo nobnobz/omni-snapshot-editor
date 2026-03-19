@@ -40,6 +40,7 @@ import {
     LogOut,
     Info,
     AlertTriangle,
+    Pencil,
     MoreHorizontal,
     Monitor,
     X
@@ -1100,7 +1101,7 @@ export function MainEditor() {
                                 uiNotice.tone === "error"
                                     ? editorNoticeTone.danger
                                     : uiNotice.tone === "success"
-                                        ? editorNoticeTone.success
+                                        ? "border-emerald-500/16 bg-emerald-500/7 text-emerald-700 shadow-[0_8px_20px_rgba(34,197,94,0.06)] dark:text-emerald-300"
                                         : editorNoticeTone.info
                             )}
                             role="status"
@@ -1159,12 +1160,12 @@ export function MainEditor() {
                                         <div className="space-y-4">
                                             <div className="flex flex-col gap-1.5 px-1">
                                                 <p className="text-sm text-foreground/70 leading-relaxed">
-                                                    Import your catalogs by uploading an AIOMetadata config file or pasting the JSON. To export your catalogs in AIOMetadata, go to Catalogs &gt; Share Setup.
+                                                    Import your catalogs by uploading an AIOMetadata config.
                                                 </p>
                                                 <div className={cn("rounded-xl p-4 text-sm flex gap-4 items-start mt-4 shadow-sm border", editorNoticeTone.info)}>
                                                     <Info className="w-5 h-5 shrink-0 mt-0.5 text-primary dark:text-primary" />
                                                     <p className="leading-relaxed">
-                                                        <span className="font-bold">Note:</span> You can sync your AIOMetadata manifest URL to always keep your catalogs up to date in the manager.
+                                                        <span className="font-bold">Note:</span> You can sync your AIOMetadata manifest URL to always keep your catalogs up to date. Imported catalog names are stored locally in your browser.
                                                     </p>
                                                 </div>
                                                 {Object.keys(customFallbacks).length > 0 && (
@@ -1182,36 +1183,60 @@ export function MainEditor() {
                                                 )}
                                             </div>
                                             {showAioSyncedState ? (
-                                                <div className="rounded-2xl border border-emerald-500/18 bg-emerald-500/8 p-4 shadow-[0_10px_24px_rgba(34,197,94,0.08)]">
-                                                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                                                        <div className="flex items-start gap-3 min-w-0">
-                                                            <div className="rounded-2xl border border-emerald-500/18 bg-emerald-500/12 p-2.5 text-emerald-600 dark:text-emerald-400 shrink-0">
-                                                                <Check className="w-5 h-5" />
-                                                            </div>
-                                                            <div className="min-w-0">
-                                                                <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">AIOMetadata synced</p>
-                                                                <p className="mt-1 text-sm text-foreground/72 leading-relaxed">
-                                                                    Imported catalog names are active and stored locally in this browser.
-                                                                </p>
-                                                                <div className="mt-2 space-y-1 text-xs text-foreground/56">
-                                                                    <p className="truncate">
-                                                                        Source: {activeAIOMetadataSync.sourceType === "url" && activeAIOMetadataSync.sourceValue
-                                                                            ? activeAIOMetadataSync.sourceValue
-                                                                            : activeAIOMetadataSync.sourceLabel}
+                                                <div className="rounded-xl border border-emerald-500/16 bg-emerald-500/7 px-3.5 py-3 shadow-[0_8px_20px_rgba(34,197,94,0.06)]">
+                                                    <div className="flex flex-col gap-3">
+                                                        <div className="flex items-start justify-between gap-3">
+                                                            <div className="flex items-center gap-3 min-w-0">
+                                                                <div className="rounded-xl border border-emerald-500/16 bg-emerald-500/10 p-2 text-emerald-600 dark:text-emerald-400 shrink-0">
+                                                                    <Check className="w-4.5 h-4.5" />
+                                                                </div>
+                                                                <div className="min-w-0">
+                                                                    <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                                                                        AIOMetadata synced
                                                                     </p>
                                                                     {activeAIOMetadataSync.syncedAt && (
-                                                                        <p>Last synced: {formatAIOMetadataSyncTime(activeAIOMetadataSync.syncedAt)}</p>
+                                                                        <p className="mt-0.5 text-xs text-foreground/58">
+                                                                            Last synced: {formatAIOMetadataSyncTime(activeAIOMetadataSync.syncedAt)}
+                                                                        </p>
                                                                     )}
                                                                 </div>
                                                             </div>
+
+                                                            <div className="flex items-center gap-1 md:hidden">
+                                                                {activeAIOMetadataSync.sourceType === "url" && activeAIOMetadataSync.sourceValue && (
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="outline"
+                                                                        size="icon-sm"
+                                                                        className="size-8 rounded-lg border-emerald-500/22 bg-white/55 text-emerald-700 hover:bg-emerald-500/10 hover:text-emerald-700 dark:bg-background/30 dark:text-emerald-400"
+                                                                        onClick={() => void handleResyncAIOMetadata()}
+                                                                        disabled={isImportingUrl}
+                                                                        aria-label={isImportingUrl ? "Syncing AIOMetadata" : "Sync AIOMetadata again"}
+                                                                        title={isImportingUrl ? "Syncing..." : "Sync Again"}
+                                                                    >
+                                                                        <RotateCcw className={cn("w-4 h-4", isImportingUrl && "animate-spin")} />
+                                                                    </Button>
+                                                                )}
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="outline"
+                                                                    size="icon-sm"
+                                                                    className="size-8 rounded-lg border-border/60 hover:bg-muted/50"
+                                                                    onClick={handleEditAIOMetadataSource}
+                                                                    aria-label="Change AIOMetadata source"
+                                                                    title="Change Source"
+                                                                >
+                                                                    <Pencil className="w-4 h-4" />
+                                                                </Button>
+                                                            </div>
                                                         </div>
 
-                                                        <div className="flex flex-col sm:flex-row gap-2 lg:shrink-0">
+                                                        <div className="hidden md:flex md:flex-col lg:flex-row gap-2 md:shrink-0">
                                                             {activeAIOMetadataSync.sourceType === "url" && activeAIOMetadataSync.sourceValue && (
                                                                 <Button
                                                                     type="button"
                                                                     variant="outline"
-                                                                    className="h-10 rounded-xl border-emerald-500/22 bg-white/55 text-emerald-700 hover:bg-emerald-500/10 hover:text-emerald-700 dark:bg-background/30 dark:text-emerald-400"
+                                                                    className="h-9 rounded-lg border-emerald-500/22 bg-white/55 px-3 text-emerald-700 hover:bg-emerald-500/10 hover:text-emerald-700 dark:bg-background/30 dark:text-emerald-400"
                                                                     onClick={() => void handleResyncAIOMetadata()}
                                                                     disabled={isImportingUrl}
                                                                 >
@@ -1231,7 +1256,7 @@ export function MainEditor() {
                                                             <Button
                                                                 type="button"
                                                                 variant="outline"
-                                                                className="h-10 rounded-xl border-border/60 hover:bg-muted/50 font-medium"
+                                                                className="h-9 rounded-lg border-border/60 px-3 hover:bg-muted/50 font-medium"
                                                                 onClick={handleEditAIOMetadataSource}
                                                             >
                                                                 Change Source
@@ -1270,9 +1295,9 @@ export function MainEditor() {
                                                             <UploadCloud className="w-6 h-6" />
                                                         </div>
                                                         <div>
-                                                            <h4 className="text-base font-bold text-foreground">Import AIOMetadata</h4>
+                                                            <h4 className="text-base font-bold text-foreground">Import AIOMetadata Catalogs</h4>
                                                             <p className="text-sm text-foreground/70 leading-relaxed max-w-2xl">
-                                                                Directly paste your AIOMetadata manifest URL or raw catalogs JSON, or just drop a <code className="text-xs bg-white/5 border border-white/10 px-1 py-0.5 rounded text-foreground">.json</code> file here to import your AIOMetadata catalogs.
+                                                                Paste your AIOMetadata manifest URL, catalogs, or drop a <code className="text-xs bg-white/5 border border-white/10 px-1 py-0.5 rounded text-foreground">.json</code> file.
                                                             </p>
                                                         </div>
                                                     </div>

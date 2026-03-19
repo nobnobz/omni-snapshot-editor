@@ -1597,34 +1597,37 @@ export function UnifiedSubgroupEditor({ onOpenGuide }: { onOpenGuide?: (guide: "
             <div className={cn(editorSurface.card, "overflow-hidden")}>
                 {/* Unified Sticky Toolbar */}
                 <div className={cn(editorSurface.toolbar, "sticky top-0 z-30 rounded-none border-x-0 border-t-0 p-3 xl:flex xl:items-center xl:gap-2")}>
-                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 xl:flex xl:flex-1 xl:flex-wrap xl:items-center">
+                    <div className="grid grid-cols-3 gap-2 xl:flex xl:flex-1 xl:flex-wrap xl:items-center">
                         <Button
                             onClick={() => setIsCreateModalOpen(true)}
                             size="sm"
-                            className="bg-primary hover:bg-primary/92 text-primary-foreground font-bold h-10 px-5 shadow-lg shadow-primary/20 min-w-0 justify-center xl:justify-start"
+                            className="bg-primary hover:bg-primary/92 text-primary-foreground font-bold h-9 px-2.5 shadow-lg shadow-primary/20 min-w-0 justify-center xl:h-10 xl:px-5 xl:justify-start"
                         >
-                            <Plus className="w-4 h-4 mr-1.5 shrink-0" />
-                            <span className="xl:hidden">Create New</span>
+                            <Plus className="w-4 h-4 shrink-0 xl:mr-1.5" />
+                            <span className="sm:hidden">New</span>
+                            <span className="hidden sm:inline xl:hidden">Create New</span>
                             <span className="hidden xl:inline">Create New Group</span>
                         </Button>
                         <Button
                             onClick={() => setIsAddToGroupModalOpen(true)}
                             variant="outline"
                             size="sm"
-                            className="h-10 text-sm border-border/60 hover:bg-muted/60 dark:hover:bg-muted/40 text-foreground/80 hover:text-foreground transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out px-5 font-medium min-w-0 justify-center xl:justify-start"
+                            className="h-9 text-[13px] border-border/60 hover:bg-muted/60 dark:hover:bg-muted/40 text-foreground/80 hover:text-foreground transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out px-2.5 font-medium min-w-0 justify-center xl:h-10 xl:px-5 xl:text-sm xl:justify-start"
                         >
-                            <FolderPlus className="w-4 h-4 mr-1.5 shrink-0" />
-                            <span className="xl:hidden">Add to</span>
+                            <FolderPlus className="w-4 h-4 shrink-0 xl:mr-1.5" />
+                            <span className="sm:hidden">Add</span>
+                            <span className="hidden sm:inline xl:hidden">Add to</span>
                             <span className="hidden xl:inline">Add to Group</span>
                         </Button>
                         <Button
                             onClick={() => setIsImportModalOpen(true)}
                             variant="outline"
                             size="sm"
-                            className="h-10 text-sm border-border/60 hover:bg-muted/60 dark:hover:bg-muted/40 text-foreground/80 hover:text-foreground transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out px-5 font-medium min-w-0 justify-center xl:justify-start"
+                            className="h-9 text-[13px] border-border/60 hover:bg-muted/60 dark:hover:bg-muted/40 text-foreground/80 hover:text-foreground transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out px-2.5 font-medium min-w-0 justify-center xl:h-10 xl:px-5 xl:text-sm xl:justify-start"
                         >
-                            <UploadCloud className="w-4 h-4 mr-1.5 shrink-0" />
-                            <span className="xl:hidden">Update</span>
+                            <UploadCloud className="w-4 h-4 shrink-0 xl:mr-1.5" />
+                            <span className="sm:hidden">Update</span>
+                            <span className="hidden sm:inline xl:hidden">Update</span>
                             <span className="hidden xl:inline">Update from Template</span>
                         </Button>
                     </div>
@@ -1636,7 +1639,7 @@ export function UnifiedSubgroupEditor({ onOpenGuide }: { onOpenGuide?: (guide: "
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             placeholder="Search..."
-                            className="h-10 pl-9 pr-9 bg-background/50 border-border/50 focus-visible:ring-primary/30"
+                            className="h-9 pl-9 pr-9 bg-background/50 border-border/50 focus-visible:ring-primary/30 xl:h-10"
                         />
                         {searchTerm && (
                             <Button
