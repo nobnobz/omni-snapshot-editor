@@ -1377,7 +1377,7 @@ export function MainEditor() {
                                         <div className="space-y-6">
                                             <div className="space-y-5">
                                                 <p className="text-sm text-foreground/70 px-1 leading-relaxed">
-                                                    Create and organize groups, assign catalogs, and reorder items. To update your setup, use <strong>Update</strong>.
+                                                    Create and organize groups, assign catalogs, and update your setup.
                                                 </p>
                                                 <UnifiedSubgroupEditor onOpenGuide={(guide) => {
                                                     setActiveGuide(guide);
