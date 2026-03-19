@@ -542,7 +542,7 @@ export function toggleStreamElement(elementName: string, isVisible: boolean, sta
 export function importGroups(
     payload: {
         mainGroups: Record<string, LooseAny>;
-        subgroups: Record<string, { catalogs: string[], imageUrl?: string }>;
+        subgroups: Record<string, { catalogs?: string[], imageUrl?: string; overwriteCatalogs?: boolean; overwriteImage?: boolean }>;
         standaloneAssignments: Record<string, string>;
         metadata?: {
             custom_catalog_names?: Record<string, string>;
@@ -620,16 +620,20 @@ export function importGroups(
     // 2. Import / Ensure Subgroups exist in catalog_groups
     Object.keys(payload.subgroups).forEach(name => {
         const sg = payload.subgroups[name];
+        const subgroupAlreadyExists = Object.prototype.hasOwnProperty.call(draft.catalog_groups, name);
+        const shouldWriteCatalogs = sg.overwriteCatalogs === true || !subgroupAlreadyExists;
+        const shouldWriteImage = (sg.overwriteImage === true || !subgroupAlreadyExists) && !!sg.imageUrl;
 
-        // Always ensure the catalog entry exists (create or update)
-        const normalized = (sg.catalogs || []).map((id: string) => ensureCatalogPrefix(id, resolveCatalogName(id, draft.custom_catalog_names || {})));
-        draft.catalog_groups[name] = normalized;
+        if (shouldWriteCatalogs) {
+            const normalized = (sg.catalogs || []).map((id: string) => ensureCatalogPrefix(id, resolveCatalogName(id, draft.custom_catalog_names || {})));
+            draft.catalog_groups[name] = normalized;
+        }
 
         if (!draft.catalog_group_order.includes(name)) {
             draft.catalog_group_order.push(name);
         }
 
-        if (sg.imageUrl) {
+        if (shouldWriteImage) {
             draft.catalog_group_image_urls[name] = sg.imageUrl;
         }
 

@@ -680,7 +680,7 @@ export function CatalogEditor() {
         if (cat.action === 'reenable') {
             const patch: Partial<ManifestCatalog> = {
                 enabled: true,
-                showInHome: true,
+                showInHome: cat.originalCatalog?.showInHome === true,
                 // Restore any original metadata if we stashed it
                 metadata: { ...(cat.originalCatalog?.metadata || {}) }
             };

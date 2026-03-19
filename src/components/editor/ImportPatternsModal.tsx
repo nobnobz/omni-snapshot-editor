@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
     Dialog,
     DialogContent,
@@ -81,24 +81,37 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
         }
     }, [isOpen, fetchManifest]);
 
-    const templates: { label: string; url: string }[] = manifest?.templates?.length ?
-        manifest.templates
-            .filter(t => t.id.startsWith('ume-') && t.id !== 'ume-catalogs' && t.url)
-            .map(t => ({ label: t.name, url: t.url })) : [
-            {
-                label: "UME Omni Template",
-                url: "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/Older%20Versions/v1.7.1/omni-snapshot-unified-media-experience-v1.7.1-2026-03-02.json"
-            },
-        ];
+    const templates: { label: string; url: string }[] = useMemo(() => (
+        manifest?.templates?.length
+            ? manifest.templates
+                .filter(t => t.id.toLowerCase().includes('ume-') && t.url)
+                .map(t => ({ label: t.name, url: t.url }))
+            : []
+    ), [manifest]);
 
-    const [selectedVersion, setSelectedVersion] = useState(templates[0].label);
+    const [selectedVersion, setSelectedVersion] = useState("");
 
     useEffect(() => {
-        const defaultTemplate = manifest?.templates?.find(t => t.id === 'ume-main' || t.isDefault);
-        if (defaultTemplate) {
-            setSelectedVersion(defaultTemplate.name);
+        if (templates.length === 0) {
+            setSelectedVersion("");
+            return;
         }
-    }, [manifest]);
+
+        const defaultTemplate = manifest?.templates?.find(
+            t => (t.id === 'ume-main' || t.isDefault) && t.id.toLowerCase().includes('ume-') && t.url
+        );
+
+        if (defaultTemplate?.name) {
+            setSelectedVersion((current) => (current === defaultTemplate.name ? current : defaultTemplate.name));
+            return;
+        }
+
+        setSelectedVersion((current) => (
+            current && templates.some(template => template.label === current)
+                ? current
+                : templates[0]?.label ?? ""
+        ));
+    }, [manifest, templates]);
 
     const [templateLoading, setTemplateLoading] = useState(false);
 
@@ -352,7 +365,11 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                                 <h3 className="font-semibold text-sm text-foreground/90">Load from Template</h3>
                                 <div className="flex flex-col gap-3">
                                     <Select value={selectedVersion} onValueChange={setSelectedVersion}>
-                                        <SelectTrigger className={cn(editorSurface.field, "h-10 w-full text-base font-mono sm:h-9 sm:text-sm")}>
+                                        <SelectTrigger
+                                            className={cn(editorSurface.field, "h-10 w-full text-base font-mono sm:h-9 sm:text-sm")}
+                                            title={selectedVersion || "Select version"}
+                                            disabled={templates.length === 0}
+                                        >
                                             <SelectValue placeholder="Select version" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -382,11 +399,16 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                                                 setTemplateLoading(false);
                                             }
                                         }}
-                                        disabled={templateLoading}
+                                        disabled={templateLoading || templates.length === 0 || !selectedVersion}
                                         className={cn(editorAction.primary, "h-10 w-full font-bold sm:h-9")}
                                     >
                                         {templateLoading ? "Loading..." : "Fetch Template"}
                                     </Button>
+                                    {templates.length === 0 && (
+                                        <p className="text-xs text-foreground/60">
+                                            No UME templates are available right now. You can still upload a local config file below.
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 

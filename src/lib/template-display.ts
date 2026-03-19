@@ -9,34 +9,25 @@ export function getTemplateDisplay(templateName: string, templateId?: string): T
   const version = templateName.match(VERSION_REGEX)?.[0] ?? null;
   const normalizedId = (templateId || "").toLowerCase();
 
-  if (normalizedId === "ume-main") {
+  if (normalizedId.includes("ume-main") || normalizedId.includes("ume-omni") || /omni[- ]snapshot/i.test(templateName)) {
     return { label: "UME Omni Template", version };
   }
 
-  if (normalizedId === "aiometadata") {
-    return { label: "AIOMetadata Template", version };
+  if (normalizedId.includes("aiom") || /aiometadata/i.test(templateName)) {
+    if (normalizedId.includes("catalogs") || /catalogs/i.test(templateName)) {
+      return { label: "UME AIOMetadata (Catalogs Only)", version };
+    }
+    return { label: "UME AIOMetadata Template", version };
   }
 
-  if (normalizedId === "aiostreams") {
-    return { label: "AIOStreams Template", version };
-  }
-
-  if (normalizedId === "ume-catalogs") {
-    return { label: "AIOMetadata Catalogs", version };
+  if (normalizedId.includes("aios") || /aiostreams/i.test(templateName)) {
+    return { label: "UME AIOStreams Template", version };
   }
 
   let label = templateName.replace(VERSION_REGEX, "").trim();
   label = label.replace(/\s+/g, " ").trim();
 
-  if (/omni snapshot/i.test(label)) {
-    label = "UME Omni Template";
-  } else if (/aiometadata/i.test(label) && /catalogs?\s*only|catalogs?/i.test(label)) {
-    label = "AIOMetadata Catalogs";
-  } else if (/aiometadata/i.test(label) && !/template/i.test(label)) {
-    label = "AIOMetadata Template";
-  } else if (/aiostreams/i.test(label) && !/template/i.test(label)) {
-    label = "AIOStreams Template";
-  } else if (!/template/i.test(label)) {
+  if (!label.toLowerCase().includes("template")) {
     label = `${label} Template`.trim();
   }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
     Dialog,
     DialogContent,
@@ -115,24 +115,37 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         };
     }, [isOpen]);
 
-    const templates: { label: string; url: string }[] = manifest?.templates?.length ?
-        manifest.templates
-            .filter(t => t.id.startsWith('ume-') && t.id !== 'ume-catalogs' && t.url)
-            .map(t => ({ label: t.name, url: t.url })) : [
-            {
-                label: "UME Omni Template",
-                url: "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/Older%20Versions/v1.7.1/omni-snapshot-unified-media-experience-v1.7.1-2026-03-02.json"
-            },
-        ];
+    const templates: { label: string; url: string }[] = useMemo(() => (
+        manifest?.templates?.length
+            ? manifest.templates
+                .filter(t => t.id.toLowerCase().includes('ume-') && t.url)
+                .map(t => ({ label: t.name, url: t.url }))
+            : []
+    ), [manifest]);
 
-    const [selectedVersion, setSelectedVersion] = useState(templates[0].label);
+    const [selectedVersion, setSelectedVersion] = useState("");
 
     useEffect(() => {
-        const defaultTemplate = manifest?.templates?.find(t => t.id === 'ume-main' || t.isDefault);
-        if (defaultTemplate) {
-            setSelectedVersion(defaultTemplate.name);
+        if (templates.length === 0) {
+            setSelectedVersion("");
+            return;
         }
-    }, [manifest]);
+
+        const defaultTemplate = manifest?.templates?.find(
+            t => (t.id === 'ume-main' || t.isDefault) && t.id.toLowerCase().includes('ume-') && t.url
+        );
+
+        if (defaultTemplate?.name) {
+            setSelectedVersion((current) => (current === defaultTemplate.name ? current : defaultTemplate.name));
+            return;
+        }
+
+        setSelectedVersion((current) => (
+            current && templates.some(template => template.label === current)
+                ? current
+                : templates[0]?.label ?? ""
+        ));
+    }, [manifest, templates]);
 
     const [templateLoading, setTemplateLoading] = useState(false);
     const [isFileDropActive, setIsFileDropActive] = useState(false);
@@ -152,6 +165,8 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
     // Selections
     const [selectedMainGroupUuids, setSelectedMainGroupUuids] = useState<Set<string>>(new Set());
     const [selectedStandaloneSubgroups, setSelectedStandaloneSubgroups] = useState<Set<string>>(new Set());
+    const [selectedCatalogUpdateSubgroups, setSelectedCatalogUpdateSubgroups] = useState<Set<string>>(new Set());
+    const [selectedImageUpdateSubgroups, setSelectedImageUpdateSubgroups] = useState<Set<string>>(new Set());
 
     // assignments: subgroupName -> targetMainGroupUuid (from the CURRENT setup, not the parsed one)
     const [standaloneAssignments, setStandaloneAssignments] = useState<Record<string, string>>({});
@@ -164,6 +179,8 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         setParsedSubgroups([]);
         setSelectedMainGroupUuids(new Set());
         setSelectedStandaloneSubgroups(new Set());
+        setSelectedCatalogUpdateSubgroups(new Set());
+        setSelectedImageUpdateSubgroups(new Set());
         setStandaloneAssignments({});
         setImportedValues({});
         setSelectedGlobalKeys(new Set());
@@ -185,6 +202,10 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
             if (rawData.values) {
                 // Decode it like we do in ConfigContext
                 for (const [key, val] of Object.entries(rawData.values)) {
+                    imported[key] = decodeConfig(val);
+                }
+            } else if (rawData.config) {
+                for (const [key, val] of Object.entries(rawData.config)) {
                     imported[key] = decodeConfig(val);
                 }
             } else if (rawData.main_catalog_groups || rawData.catalog_groups) {
@@ -377,7 +398,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
 
     const handleImport = () => {
         const payloadMainGroups: Record<string, { name: string; subgroupNames: string[]; posterType: string; posterSize: string }> = {};
-        const payloadSubgroups: Record<string, { catalogs: string[], imageUrl?: string }> = {};
+        const payloadSubgroups: Record<string, { catalogs?: string[]; imageUrl?: string; overwriteCatalogs?: boolean; overwriteImage?: boolean }> = {};
         const associatedMetadata: {
             custom_catalog_names?: Record<string, string>;
             regex_pattern_image_urls?: Record<string, string>;
@@ -401,19 +422,27 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
 
                 mg.subgroupNames.forEach(sgName => {
                     subgroupsIncludedViaMainGroups.add(sgName);
-                    // Add the actual subgroup data to payload.
-                    // IMPORTANT: Only write catalog contents if the user ALSO explicitly selected
-                    // this subgroup in the Subgroups tab. Otherwise, write an empty list to preserve
-                    // the group structure without activating unwanted addon catalogs in Omni.
                     const parsedSg = parsedSubgroups.find(s => s.name === sgName);
                     if (parsedSg) {
-                        const userExplicitlySelectedCatalogs = selectedStandaloneSubgroups.has(sgName);
-                        const catalogsToImport = userExplicitlySelectedCatalogs ? parsedSg.catalogs : [];
-                        payloadSubgroups[sgName] = {
-                            catalogs: catalogsToImport,
-                            imageUrl: parsedSg.imageUrl
-                        };
-                        catalogsToImport.forEach(cId => importedCatalogIds.add(cId));
+                        const shouldOverwriteCatalogs = !parsedSg.isDuplicate || selectedCatalogUpdateSubgroups.has(sgName);
+                        const shouldOverwriteImage = !parsedSg.isDuplicate
+                            ? !!parsedSg.imageUrl
+                            : selectedImageUpdateSubgroups.has(sgName);
+                        const catalogsToImport = shouldOverwriteCatalogs ? parsedSg.catalogs : undefined;
+                        const imageToImport = shouldOverwriteImage ? parsedSg.imageUrl : undefined;
+
+                        if (!parsedSg.isDuplicate || shouldOverwriteCatalogs || shouldOverwriteImage) {
+                            payloadSubgroups[sgName] = {
+                                catalogs: catalogsToImport,
+                                imageUrl: imageToImport,
+                                overwriteCatalogs: shouldOverwriteCatalogs,
+                                overwriteImage: shouldOverwriteImage
+                            };
+                        }
+
+                        if (shouldOverwriteCatalogs) {
+                            catalogsToImport?.forEach(cId => importedCatalogIds.add(cId));
+                        }
                     }
                 });
             }
@@ -421,12 +450,23 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
 
         // 3. Gather Standalone Subgroups
         parsedSubgroups.forEach(sg => {
-            if (selectedStandaloneSubgroups.has(sg.name) && !subgroupsIncludedViaMainGroups.has(sg.name)) {
+            const shouldOverwriteCatalogs = sg.isDuplicate
+                ? selectedCatalogUpdateSubgroups.has(sg.name)
+                : selectedStandaloneSubgroups.has(sg.name);
+            const shouldOverwriteImage = sg.isDuplicate
+                ? selectedImageUpdateSubgroups.has(sg.name)
+                : selectedStandaloneSubgroups.has(sg.name) && !!sg.imageUrl;
+
+            if ((shouldOverwriteCatalogs || shouldOverwriteImage) && !subgroupsIncludedViaMainGroups.has(sg.name)) {
                 payloadSubgroups[sg.name] = {
-                    catalogs: sg.catalogs,
-                    imageUrl: sg.imageUrl
+                    catalogs: shouldOverwriteCatalogs ? sg.catalogs : undefined,
+                    imageUrl: shouldOverwriteImage ? sg.imageUrl : undefined,
+                    overwriteCatalogs: shouldOverwriteCatalogs,
+                    overwriteImage: shouldOverwriteImage
                 };
-                sg.catalogs.forEach(cId => importedCatalogIds.add(cId));
+                if (shouldOverwriteCatalogs) {
+                    sg.catalogs.forEach(cId => importedCatalogIds.add(cId));
+                }
             }
         });
 
@@ -495,25 +535,10 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
             next.add(uuid);
         }
         setSelectedMainGroupUuids(next);
-
-        // Auto-select linked subgroups (including existing ones, for re-linking purposes)
-        if (mg) {
-            const nextStandalone = new Set(selectedStandaloneSubgroups);
-            mg.subgroupNames.forEach(sgName => {
-                const sg = parsedSubgroups.find(s => s.name === sgName);
-                if (sg) {
-                    // Include even duplicates - needed to re-link existing subgroups
-                    if (isNowSelected) nextStandalone.add(sgName);
-                    else nextStandalone.delete(sgName);
-                }
-            });
-            setSelectedStandaloneSubgroups(nextStandalone);
-        }
     };
 
-    // Toggle Standalone Subgroup Selection
-    const toggleSubgroup = (name: string, isDuplicate: boolean) => {
-        if (isDuplicate) return;
+    const toggleStandaloneSubgroup = (name: string, isDisabled: boolean) => {
+        if (isDisabled) return;
         const next = new Set(selectedStandaloneSubgroups);
         if (next.has(name)) {
             next.delete(name);
@@ -522,6 +547,47 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         }
         setSelectedStandaloneSubgroups(next);
     };
+
+    const toggleCatalogUpdate = (name: string) => {
+        const next = new Set(selectedCatalogUpdateSubgroups);
+        if (next.has(name)) {
+            next.delete(name);
+        } else {
+            next.add(name);
+        }
+        setSelectedCatalogUpdateSubgroups(next);
+    };
+
+    const toggleImageUpdate = (name: string) => {
+        const next = new Set(selectedImageUpdateSubgroups);
+        if (next.has(name)) {
+            next.delete(name);
+        } else {
+            next.add(name);
+        }
+        setSelectedImageUpdateSubgroups(next);
+    };
+
+    const toggleAllDuplicateUpdates = (sg: ParsedSubgroup) => {
+        const hasAnySelection =
+            selectedCatalogUpdateSubgroups.has(sg.name) ||
+            selectedImageUpdateSubgroups.has(sg.name);
+
+        const nextCatalogs = new Set(selectedCatalogUpdateSubgroups);
+        const nextImages = new Set(selectedImageUpdateSubgroups);
+
+        if (hasAnySelection) {
+            nextCatalogs.delete(sg.name);
+            nextImages.delete(sg.name);
+        } else {
+            if (sg.hasNewCatalogs) nextCatalogs.add(sg.name);
+            if (sg.hasNewImage) nextImages.add(sg.name);
+        }
+
+        setSelectedCatalogUpdateSubgroups(nextCatalogs);
+        setSelectedImageUpdateSubgroups(nextImages);
+    };
+
     // Bulk Actions Main Groups
     const selectAllMain = () => {
         const next = new Set<string>();
@@ -539,47 +605,70 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
 
     // Bulk Actions Subgroups
     const selectAllSubgroups = () => {
-        const next = new Set<string>();
+        const nextStandalone = new Set<string>();
+        const nextCatalogs = new Set<string>();
+        const nextImages = new Set<string>();
         parsedSubgroups.forEach(sg => {
             const isFullyExisting = sg.isDuplicate && !sg.hasNewCatalogs && !sg.hasNewImage;
-            const includedInMain = parsedMainGroups.some(mg => selectedMainGroupUuids.has(mg.originalUuid) && mg.subgroupNames.includes(sg.name));
-            if (!isFullyExisting && !includedInMain) {
-                next.add(sg.name);
+            const includedInMain = isSubgroupIncludedViaSelectedMainGroup(sg.name);
+            if (isFullyExisting) return;
+
+            if (!sg.isDuplicate) {
+                if (!includedInMain) {
+                    nextStandalone.add(sg.name);
+                }
+                return;
             }
+
+            if (sg.hasNewCatalogs) nextCatalogs.add(sg.name);
+            if (sg.hasNewImage) nextImages.add(sg.name);
         });
-        setSelectedStandaloneSubgroups(next);
+        setSelectedStandaloneSubgroups(nextStandalone);
+        setSelectedCatalogUpdateSubgroups(nextCatalogs);
+        setSelectedImageUpdateSubgroups(nextImages);
     };
 
     const deselectAllSubgroups = () => {
         setSelectedStandaloneSubgroups(new Set());
+        setSelectedCatalogUpdateSubgroups(new Set());
+        setSelectedImageUpdateSubgroups(new Set());
     };
 
     const selectCatalogUpdates = () => {
         const next = new Set<string>();
         parsedSubgroups.forEach(sg => {
-            const includedInMain = parsedMainGroups.some(mg => selectedMainGroupUuids.has(mg.originalUuid) && mg.subgroupNames.includes(sg.name));
-            if (sg.isDuplicate && sg.hasNewCatalogs && !includedInMain) {
+            if (sg.isDuplicate && sg.hasNewCatalogs) {
                 next.add(sg.name);
             }
         });
-        setSelectedStandaloneSubgroups(next);
+        setSelectedStandaloneSubgroups(new Set());
+        setSelectedCatalogUpdateSubgroups(next);
+        setSelectedImageUpdateSubgroups(new Set());
     };
 
     const selectImageUpdates = () => {
         const next = new Set<string>();
         parsedSubgroups.forEach(sg => {
-            const includedInMain = parsedMainGroups.some(mg => selectedMainGroupUuids.has(mg.originalUuid) && mg.subgroupNames.includes(sg.name));
-            if (sg.isDuplicate && sg.hasNewImage && !includedInMain) {
+            if (sg.isDuplicate && sg.hasNewImage) {
                 next.add(sg.name);
             }
         });
-        setSelectedStandaloneSubgroups(next);
+        setSelectedStandaloneSubgroups(new Set());
+        setSelectedCatalogUpdateSubgroups(new Set());
+        setSelectedImageUpdateSubgroups(next);
     };
 
     const currentMainGroups = currentValues.main_catalog_groups || {};
     const currentMainGroupOrder = currentValues.main_group_order || [];
+    const isSubgroupIncludedViaSelectedMainGroup = (name: string) =>
+        parsedMainGroups.some(mg => selectedMainGroupUuids.has(mg.originalUuid) && mg.subgroupNames.includes(name));
 
-    const totalSelectedToImport = selectedMainGroupUuids.size + selectedStandaloneSubgroups.size;
+    const totalSelectedSubgroups = new Set([
+        ...selectedStandaloneSubgroups,
+        ...selectedCatalogUpdateSubgroups,
+        ...selectedImageUpdateSubgroups,
+    ]).size;
+    const totalSelectedToImport = selectedMainGroupUuids.size + totalSelectedSubgroups;
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
@@ -625,7 +714,8 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                     <Select value={selectedVersion} onValueChange={setSelectedVersion}>
                                         <SelectTrigger
                                             className={cn("w-full h-10 sm:h-9 rounded-md px-2.5 sm:px-3 text-sm text-foreground font-medium overflow-hidden", editorSurface.field)}
-                                            title={selectedVersion}
+                                            title={selectedVersion || "Select template version"}
+                                            disabled={templates.length === 0}
                                         >
                                             <SelectValue className="truncate" placeholder="Select template version" />
                                         </SelectTrigger>
@@ -657,12 +747,17 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                             setTemplateLoading(false);
                                         }
                                     }}
-                                    disabled={templateLoading}
+                                    disabled={templateLoading || templates.length === 0 || !selectedVersion}
                                     className="h-10 sm:h-9 w-full sm:w-auto px-4 sm:px-5 bg-primary hover:bg-primary/92 text-primary-foreground"
                                 >
                                     {templateLoading ? "Loading..." : "Load"}
                                 </Button>
                             </div>
+                            {templates.length === 0 && (
+                                <p className="mt-3 text-xs text-foreground/60">
+                                    No UME templates are available right now. You can still upload a local config file below.
+                                </p>
+                            )}
                         </div>
 
                         <div className="flex items-center gap-3">
@@ -816,7 +911,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                         <div className="flex flex-col divide-y divide-border/50">
                                             <div className="px-5 py-3 border-b border-border/40">
                                                 <p className="text-xs text-foreground/70 italic leading-relaxed">
-                                                    Select subgroups you want to import. You can assign them to your existing main groups below.
+                                                    Select new subgroups you want to import. For existing subgroups, you can now choose catalog and image updates separately.
                                                 </p>
                                             </div>
                                             <div className="p-3 bg-white/24 dark:bg-white/[0.03] border-b border-slate-200/80 dark:border-white/8">
@@ -865,24 +960,39 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                 const existingSgs = parsedSubgroups.filter(sg => sg.isDuplicate && !sg.hasNewCatalogs && !sg.hasNewImage);
 
                                                 const renderSubgroupRow = (sg: ParsedSubgroup) => {
-                                                    const isSelected = selectedStandaloneSubgroups.has(sg.name);
-                                                    const includedInMain = parsedMainGroups.some(mg => selectedMainGroupUuids.has(mg.originalUuid) && mg.subgroupNames.includes(sg.name));
+                                                    const isStandaloneSelected = selectedStandaloneSubgroups.has(sg.name);
+                                                    const isCatalogUpdateSelected = selectedCatalogUpdateSubgroups.has(sg.name);
+                                                    const isImageUpdateSelected = selectedImageUpdateSubgroups.has(sg.name);
+                                                    const includedInMain = isSubgroupIncludedViaSelectedMainGroup(sg.name);
                                                     const isFullyExisting = sg.isDuplicate && !sg.hasNewCatalogs && !sg.hasNewImage;
-                                                    const isDisabled = includedInMain || isFullyExisting;
+                                                    const isIncludedWithMain = includedInMain && !sg.isDuplicate;
+                                                    const hasAnyDuplicateUpdateSelection = isCatalogUpdateSelected || isImageUpdateSelected;
+                                                    const isCheckboxDisabled = isFullyExisting || isIncludedWithMain;
+                                                    const isChecked = sg.isDuplicate
+                                                        ? hasAnyDuplicateUpdateSelection
+                                                        : includedInMain
+                                                            ? true
+                                                            : isStandaloneSelected;
 
                                                     return (
                                                         <div
                                                             key={sg.name}
-                                                            className={`flex items-center p-4 transition-colors ${isDisabled ? 'opacity-55 bg-muted/[0.04]' : 'hover:bg-primary/10 dark:hover:bg-primary/16'}`}
+                                                            className={`flex items-center p-4 transition-colors ${isCheckboxDisabled ? 'opacity-55 bg-muted/[0.04]' : 'hover:bg-primary/10 dark:hover:bg-primary/16'}`}
                                                         >
                                                             <Checkbox
                                                                 id={`sg-${sg.name}`}
-                                                                checked={isSelected || includedInMain}
-                                                                disabled={isDisabled}
-                                                                onCheckedChange={() => toggleSubgroup(sg.name, isDisabled)}
+                                                                checked={isChecked}
+                                                                disabled={isCheckboxDisabled}
+                                                                onCheckedChange={() => {
+                                                                    if (sg.isDuplicate) {
+                                                                        toggleAllDuplicateUpdates(sg);
+                                                                        return;
+                                                                    }
+                                                                    toggleStandaloneSubgroup(sg.name, isCheckboxDisabled);
+                                                                }}
                                                             />
                                                             <div className="ml-3 flex-1 min-w-0 pr-4">
-                                                                <label htmlFor={`sg-${sg.name}`} className={`font-semibold text-sm block truncate ${isDisabled ? '' : 'cursor-pointer'}`}>
+                                                                <label htmlFor={`sg-${sg.name}`} className={`font-semibold text-sm block truncate ${isCheckboxDisabled ? '' : 'cursor-pointer'}`}>
                                                                     {formatDisplayName(sg.name)}
                                                                     {sg.isDuplicate && sg.hasNewCatalogs && <Badge variant="outline" className={cn("ml-2 text-xs uppercase", importSetupTone.warningBadge)}>Replace Catalogs</Badge>}
                                                                     {sg.isDuplicate && !sg.hasNewCatalogs && !sg.hasNewImage && <Badge variant="outline" className={cn("ml-2 text-xs uppercase", editorToneBadge.neutral)}>Existing</Badge>}
@@ -890,9 +1000,51 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                                     {includedInMain && !sg.isDuplicate && <Badge variant="outline" className={cn("ml-2 text-xs uppercase", importSetupTone.infoBadge)}>Included w/ Main</Badge>}
                                                                 </label>
                                                                 <div className="text-xs text-foreground/70 mt-0.5">{sg.catalogs.length} {sg.catalogs.length === 1 ? 'Catalog' : 'Catalogs'}</div>
+
+                                                                {sg.isDuplicate && (sg.hasNewCatalogs || sg.hasNewImage) && (
+                                                                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                                                                        {sg.hasNewCatalogs && (
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="outline"
+                                                                                size="sm"
+                                                                                onClick={() => toggleCatalogUpdate(sg.name)}
+                                                                                className={cn(
+                                                                                    "h-7 text-xs",
+                                                                                    isCatalogUpdateSelected
+                                                                                        ? importSetupTone.warningAction
+                                                                                        : "bg-background/50 border-border text-foreground/70 hover:bg-muted"
+                                                                                )}
+                                                                            >
+                                                                                Catalogs
+                                                                            </Button>
+                                                                        )}
+                                                                        {sg.hasNewImage && (
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="outline"
+                                                                                size="sm"
+                                                                                onClick={() => toggleImageUpdate(sg.name)}
+                                                                                className={cn(
+                                                                                    "h-7 text-xs",
+                                                                                    isImageUpdateSelected
+                                                                                        ? importSetupTone.infoAction
+                                                                                        : "bg-background/50 border-border text-foreground/70 hover:bg-muted"
+                                                                                )}
+                                                                            >
+                                                                                Image
+                                                                            </Button>
+                                                                        )}
+                                                                        {includedInMain && (
+                                                                            <span className="text-[11px] text-foreground/55">
+                                                                                Linked via selected main group
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                )}
                                                             </div>
 
-                                                            {isSelected && !isDisabled && !sg.isDuplicate && (
+                                                            {isStandaloneSelected && !isCheckboxDisabled && !sg.isDuplicate && (
                                                                 <DropdownMenu>
                                                                     <DropdownMenuTrigger asChild>
                                                                         <Button variant="outline" size="sm" className="h-7 text-xs bg-muted border-border shrink-0 min-w-[140px] justify-between">

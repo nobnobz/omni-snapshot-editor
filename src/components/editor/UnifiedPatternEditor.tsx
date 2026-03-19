@@ -577,36 +577,40 @@ export function UnifiedPatternEditor() {
                                 </Button>
                             </div>
 
-                            <div className="flex items-center justify-end pt-2 border-t border-border/20 mt-1">
+                            <div className="mx-1 mt-1 h-px bg-gradient-to-r from-transparent via-border/55 to-transparent" />
+
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
                                 {confirmDeleteAll ? (
-                                    <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2">
-                                        <span className="text-xs font-medium text-red-500">Are you sure you want to delete all?</span>
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={() => {
-                                                clearPatterns();
-                                                setConfirmDeleteAll(false);
-                                            }}
-                                            className="h-8 px-3 text-xs"
-                                        >
-                                            Yes, Delete All
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => setConfirmDeleteAll(false)}
-                                            className="h-8 px-3 text-xs"
-                                        >
-                                            Cancel
-                                        </Button>
+                                    <div className="flex flex-col gap-2 rounded-xl border border-red-500/16 bg-red-500/[0.04] p-3 animate-in fade-in slide-in-from-right-2 sm:flex-row sm:items-center sm:justify-end sm:border-0 sm:bg-transparent sm:p-0">
+                                        <span className="text-xs font-medium text-red-500 sm:mr-1">Are you sure you want to delete all?</span>
+                                        <div className="flex items-center gap-2 sm:justify-end">
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
+                                                onClick={() => {
+                                                    clearPatterns();
+                                                    setConfirmDeleteAll(false);
+                                                }}
+                                                className="h-8 flex-1 px-3 text-xs sm:flex-none"
+                                            >
+                                                Yes, Delete All
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setConfirmDeleteAll(false)}
+                                                className="h-8 flex-1 px-3 text-xs sm:flex-none"
+                                            >
+                                                Cancel
+                                            </Button>
+                                        </div>
                                     </div>
                                 ) : (
                                     <Button
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => setConfirmDeleteAll(true)}
-                                        className="h-8 px-3 border border-transparent text-xs text-red-500 hover:text-red-400 hover:bg-red-500/10"
+                                        className="h-9 self-end rounded-lg px-3 border border-transparent text-xs text-red-500 hover:text-red-400 hover:bg-red-500/10 sm:h-8"
                                     >
                                         <Trash2 className="w-3.5 h-3.5 mr-2" />
                                         Delete All Patterns

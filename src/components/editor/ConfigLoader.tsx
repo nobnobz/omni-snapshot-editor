@@ -1,7 +1,7 @@
 "use client";
 
 import { validateOmniConfig } from "@/lib/config-utils";
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, useMemo, type ReactNode } from "react";
 import { useConfig } from "@/context/ConfigContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,12 +37,13 @@ import {
 import { TemplateGuide } from "@/components/editor/TemplateGuide";
 import { Documentation } from "@/components/editor/Documentation";
 import { UpdateGuide } from "@/components/editor/UpdateGuide";
-import { APP_VERSION } from "@/lib/constants";
+import { FALLBACK_TEMPLATE_URLS, findTemplateByKind, isTemplateOfKind } from "@/lib/template-manifest";
 import type { OmniConfig } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { downloadTemplateFile } from "@/lib/template-download";
 import { getTemplateDisplay } from "@/lib/template-display";
 import { editorHover, editorLoader, editorNoticeTone, editorSurface } from "@/components/editor/ui/style-contract";
+import { AppMeta } from "@/components/editor/AppMeta";
 
 type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 type JsonObject = { [key: string]: JsonValue };
@@ -200,30 +201,33 @@ export function ConfigLoader() {
         fetchManifest();
     }, [fetchManifest]);
 
-    const templates: { label: string; url: string }[] = manifest?.templates?.length
-        ? manifest.templates
-              .filter(t => t.id.startsWith("ume-") && t.id !== "ume-catalogs" && t.url)
-              .map(t => ({ label: t.name, url: t.url }))
-        : [
-              {
-                  label: "UME Omni Template",
-                  url: "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/Older%20Versions/v1.7.1/omni-snapshot-unified-media-experience-v1.7.1-2026-03-02.json",
-              },
-          ];
+    const templates = useMemo(() => (
+        manifest?.templates?.length
+            ? manifest.templates
+                  .filter((template) => isTemplateOfKind(template, "omni") && !!template.url)
+                  .map((template) => ({ label: template.name, url: template.url }))
+            : [
+                  {
+                      label: "UME Omni Template v2.0.3",
+                      url: FALLBACK_TEMPLATE_URLS.omni,
+                  },
+              ]
+    ), [manifest]);
 
-    const [selectedVersion, setSelectedVersion] = useState(templates[0].label);
-    const [url, setUrl] = useState(templates[0].url);
+    const [url, setUrl] = useState(templates[0]?.url || "");
 
     useEffect(() => {
         if (manifest?.templates?.length) {
-            const umeTemplates = manifest.templates.filter(t => t.id.startsWith("ume-") && t.id !== "ume-catalogs" && t.url);
-            if (umeTemplates.length > 0) {
-                const latest = umeTemplates[0];
-                setSelectedVersion(latest.name);
-                setUrl(latest.url);
+            const defaultTemplate = manifest.templates.find((template) => template.isDefault && isTemplateOfKind(template, "omni"))
+                || findTemplateByKind(manifest.templates, "omni");
+            if (defaultTemplate) {
+                setUrl(defaultTemplate.url);
             }
+            return;
         }
-    }, [manifest]);
+
+        setUrl((currentUrl) => currentUrl || templates[0]?.url || "");
+    }, [manifest, templates]);
 
     useEffect(() => {
         const preventNavigationOnDrop = (event: DragEvent) => {
@@ -254,10 +258,8 @@ export function ConfigLoader() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const handleVersionChange = (version: string) => {
-        setSelectedVersion(version);
-        const template = templates.find((item) => item.label === version);
-        if (template) setUrl(template.url);
+    const handleVersionChange = (selectedUrl: string) => {
+        setUrl(selectedUrl);
     };
 
     const fetchFromGitHub = async () => {
@@ -439,25 +441,18 @@ export function ConfigLoader() {
     };
 
     const manifestTemplates = manifest?.templates?.filter((template) => template.url) || [];
-    const manifestUmeTemplates = manifestTemplates.filter((template) => template.id.startsWith("ume-") && template.id !== "ume-catalogs");
-    const latestUmeTemplate = manifestUmeTemplates.find((template) => template.isDefault || template.id === "ume-main") || manifestUmeTemplates[0];
-    const catalogsOnlyTemplate = manifestTemplates.find((template) => template.id === "ume-catalogs");
-    const nonLegacyTemplates = manifestTemplates.filter((template) => {
-        if (latestUmeTemplate && template.id === latestUmeTemplate.id) return false;
-        if (template.id.startsWith("ume-") && template.id !== "ume-catalogs") return false;
-        if (template.id === "ume-catalogs") return false;
-        return true;
-    });
-    const templateDownloads = latestUmeTemplate ? [latestUmeTemplate, ...nonLegacyTemplates] : [...nonLegacyTemplates];
+    const latestOmni = findTemplateByKind(manifestTemplates, "omni");
+    const latestAIOM = findTemplateByKind(manifestTemplates, "aiometadata");
+    const latestAIOS = findTemplateByKind(manifestTemplates, "aiostreams");
+    const latestCatalogs = findTemplateByKind(manifestTemplates, "catalogs");
 
-    if (catalogsOnlyTemplate) {
-        const aiometadataIndex = templateDownloads.findIndex((template) => template.id === "aiometadata");
-        if (aiometadataIndex >= 0) {
-            templateDownloads.splice(aiometadataIndex + 1, 0, catalogsOnlyTemplate);
-        } else {
-            templateDownloads.push(catalogsOnlyTemplate);
-        }
-    }
+    // Ensure we always have these categories, even if missing from GitHub
+    const templateDownloads = [
+        latestOmni || { id: "ume-omni-placeholder", name: "UME Omni Template", url: FALLBACK_TEMPLATE_URLS.omni },
+        latestAIOM || { id: "ume-aiom-placeholder", name: "UME AIOMetadata Template", url: "" },
+        latestAIOS || { id: "ume-aios-placeholder", name: "UME AIOStreams Template", url: "" },
+        latestCatalogs || { id: "ume-catalogs-placeholder", name: "UME AIOMetadata (Catalogs Only)", url: "" },
+    ].filter(Boolean) as typeof manifestTemplates;
 
     const loaderThemeToggleClass =
         "size-11 rounded-[1.2rem] border border-slate-200/76 bg-white/66 p-0 text-foreground/72 shadow-[0_10px_24px_rgba(15,23,42,0.08)] backdrop-blur-xl hover:border-slate-300/86 hover:bg-white/78 hover:text-foreground dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-white/14 dark:hover:bg-white/[0.08] sm:size-12 [&_svg]:size-[1.1rem]";
@@ -568,7 +563,7 @@ export function ConfigLoader() {
                                             <DropdownMenuContent
                                                 align="center"
                                                 sideOffset={8}
-                                                className={cn(editorSurface.overlay, "w-[min(22rem,calc(100vw-1.125rem))] sm:w-[28rem] rounded-[1.4rem] p-1.5")}
+                                                className={cn(editorSurface.overlay, "w-[min(22rem,calc(100vw-1.125rem))] sm:w-[28rem] rounded-[1.4rem] p-1.5 max-h-[320px] overflow-y-auto")}
                                             >
                                                 <DropdownMenuLabel className={cn(editorLoader.subtleMeta, "px-3 pt-1 pb-1 text-foreground/38")}>UME Templates</DropdownMenuLabel>
                                                 {templateDownloads.length === 0 ? (
@@ -578,23 +573,36 @@ export function ConfigLoader() {
                                                 ) : (
                                                     templateDownloads.map((template) => {
                                                         const display = getTemplateDisplay(template.name, template.id);
+                                                        const isAvailable = !!template.url;
 
                                                         return (
                                                             <DropdownMenuItem
                                                                 key={template.id}
-                                                                onSelect={() => {
+                                                                onSelect={(e) => {
+                                                                    if (!isAvailable) {
+                                                                        e.preventDefault();
+                                                                        return;
+                                                                    }
                                                                     handleDownloadTemplate(template.url, template.name);
                                                                 }}
-                                                                className={loaderDropdownItemClass}
+                                                                className={cn(loaderDropdownItemClass, !isAvailable && "opacity-60 cursor-default")}
                                                             >
                                                                 <LoaderIconBadge icon={FileJson} className={loaderDropdownIconClass} />
                                                                 <div className="min-w-0 flex-1">
                                                                     <span className="block truncate text-sm font-semibold text-foreground">{display.label}</span>
                                                                     {display.version ? (
                                                                         <span className="mt-0.5 block text-[10px] font-medium tracking-[0.04em] text-foreground/42">{display.version}</span>
+                                                                    ) : !isAvailable ? (
+                                                                        <span className="mt-0.5 block text-[10px] font-medium tracking-[0.04em] text-foreground/24 italic">Pending update</span>
                                                                     ) : null}
                                                                 </div>
-                                                                <LoaderIconBadge icon={FileDown} tone="neutral" className="size-8 shrink-0" />
+                                                                {isAvailable ? (
+                                                                    <LoaderIconBadge icon={FileDown} tone="neutral" className="size-8 shrink-0" />
+                                                                ) : (
+                                                                    <div className="flex px-1 items-center gap-1.5 opacity-40">
+                                                                        <span className="text-[9px] font-bold tracking-wider text-foreground uppercase whitespace-nowrap">Coming Soon</span>
+                                                                    </div>
+                                                                )}
                                                             </DropdownMenuItem>
                                                         );
                                                     })
@@ -765,7 +773,7 @@ export function ConfigLoader() {
                                             <div className={cn(editorLoader.bodyPanel, "flex flex-1 flex-col justify-center gap-4") }>
                                                 <div className="space-y-2.5">
                                                     <Label className={cn(editorLoader.subtleMeta, "text-foreground/48")}>Template</Label>
-                                                    <Select value={selectedVersion} onValueChange={handleVersionChange}>
+                                                    <Select value={url} onValueChange={handleVersionChange}>
                                                         <SelectTrigger
                                                             className={cn(
                                                                 "w-full font-medium focus:border-ring/50",
@@ -774,9 +782,9 @@ export function ConfigLoader() {
                                                         >
                                                             <SelectValue placeholder="Select version" />
                                                         </SelectTrigger>
-                                                        <SelectContent className={cn(editorSurface.overlay, "border-border/80 text-popover-foreground")}>
+                                                        <SelectContent className={cn(editorSurface.overlay, "border-border/80 text-popover-foreground max-h-[148px] overflow-y-auto")}>
                                                             {templates.map((template) => (
-                                                                <SelectItem key={template.label} value={template.label} className="text-sm font-mono focus:bg-accent focus:text-accent-foreground">
+                                                                <SelectItem key={template.url} value={template.url} className="text-sm font-mono focus:bg-accent focus:text-accent-foreground">
                                                                     {template.label}
                                                                 </SelectItem>
                                                             ))}
@@ -842,11 +850,10 @@ export function ConfigLoader() {
                                 </div>
                             </div>
 
-                            <div className="pt-1 text-center">
-                                <p className={cn(editorLoader.subtleMeta, "text-foreground/34") }>
-                                    <span className="block">v{APP_VERSION} • By Bot-Bid-Raiser</span>
-                                    <span className="mt-1 block">Built with Antigravity</span>
-                                </p>
+                            <div className="pt-2">
+                                <div className="mx-auto max-w-xl border-t border-slate-200/70 pt-4 dark:border-white/8">
+                                    <AppMeta align="center" />
+                                </div>
                             </div>
                         </div>
                     </div>

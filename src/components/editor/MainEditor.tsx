@@ -37,7 +37,6 @@ import {
     FileJson,
     Trash2,
     Heart,
-    Github,
     LogOut,
     Info,
     AlertTriangle,
@@ -63,15 +62,28 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { APP_VERSION } from "@/lib/constants";
 import { CatalogFallback } from "@/lib/catalog-fallbacks";
 import { cn, isIos } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import { editorAction, editorHover, editorNoticeTone, editorSurface } from "@/components/editor/ui/style-contract";
+import { AppMeta } from "@/components/editor/AppMeta";
 
 type UiNotice = {
     tone: "success" | "error" | "info";
     message: string;
+};
+
+type AIOMetadataSyncState = {
+    sourceType: "url" | "json" | "file";
+    sourceLabel: string;
+    sourceValue?: string;
+    syncedAt?: string;
+};
+
+type ScrollSnapshot = {
+    sectionId: string;
+    offsetWithinSection: number;
+    scrollPercent: number;
 };
 
 const EDITOR_SECTIONS = [
@@ -81,6 +93,8 @@ const EDITOR_SECTIONS = [
     { id: "settings", title: "General Settings", keys: ["shelf_order", "disabled_shelves", "hide_external_playback_prompt", "hide_spoilers", "small_continue_watching_shelf", "hidden_stream_button_elements", "oled_mode_enabled", "preferred_audio_language", "preferred_subtitle_language"] },
     { id: "patterns", title: "Patterns & Regex", keys: ["pattern_tag_enabled_patterns", "regex_pattern_custom_names", "regex_pattern_image_urls", "pattern_default_filter_enabled_patterns", "pattern_image_color_indices", "pattern_border_radius_indices", "pattern_background_opacities", "pattern_border_thickness_indices", "pattern_color_indices", "pattern_color_hex_values", "auto_play_enabled_patterns", "auto_play_patterns"] },
 ];
+
+const AIOMETADATA_SYNC_STORAGE_KEY = "omni_aiometadata_sync_v1";
 
 export function MainEditor() {
     const { originalConfig, currentValues, fileName, exportConfig, exportPartialConfig, customFallbacks, setCustomFallbacks, discardSession } = useConfig();
@@ -101,6 +115,8 @@ export function MainEditor() {
     const [isExitConfirmOpen, setIsExitConfirmOpen] = useState(false);
     const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
     const [isImportingUrl, setIsImportingUrl] = useState(false);
+    const [aioSyncState, setAioSyncState] = useState<AIOMetadataSyncState | null>(null);
+    const [isAioImportEditorOpen, setIsAioImportEditorOpen] = useState(true);
 
     const [activeSectionId, setActiveSectionId] = useState("aiometadata");
     const [isCopied, setIsCopied] = useState(false);
@@ -113,6 +129,47 @@ export function MainEditor() {
         setIsIosDevice(isIos());
     }, []);
     const scrollContainerRef = useRef<HTMLElement>(null);
+    const scrollSnapshotRef = useRef<ScrollSnapshot | null>(null);
+
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+
+        try {
+            const storedSyncState = localStorage.getItem(AIOMETADATA_SYNC_STORAGE_KEY);
+            if (storedSyncState) {
+                const parsed = JSON.parse(storedSyncState) as Partial<AIOMetadataSyncState>;
+                if (
+                    parsed &&
+                    (parsed.sourceType === "url" || parsed.sourceType === "json" || parsed.sourceType === "file") &&
+                    typeof parsed.sourceLabel === "string"
+                ) {
+                    setAioSyncState({
+                        sourceType: parsed.sourceType,
+                        sourceLabel: parsed.sourceLabel,
+                        sourceValue: typeof parsed.sourceValue === "string" ? parsed.sourceValue : undefined,
+                        syncedAt: typeof parsed.syncedAt === "string" ? parsed.syncedAt : undefined,
+                    });
+
+                    if (parsed.sourceType === "url" && typeof parsed.sourceValue === "string") {
+                        setPastedJson(parsed.sourceValue);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Failed to restore AIOMetadata sync state", error);
+        }
+
+        try {
+            const storedFallbacks = localStorage.getItem("omni_custom_fallbacks");
+            if (!storedFallbacks) return;
+            const parsedFallbacks = JSON.parse(storedFallbacks);
+            if (parsedFallbacks && typeof parsedFallbacks === "object" && Object.keys(parsedFallbacks).length > 0) {
+                setIsAioImportEditorOpen(false);
+            }
+        } catch (error) {
+            console.error("Failed to detect stored AIOMetadata fallbacks", error);
+        }
+    }, []);
 
     useEffect(() => {
         const preventNavigationOnDrop: EventListener = (event) => {
@@ -147,13 +204,80 @@ export function MainEditor() {
 
         let frameId = 0;
 
+        const getScrollMetrics = (target: HTMLElement | Window | null) => {
+            if (target === window) {
+                const scrollRoot = document.documentElement;
+                const scrollHeight = Math.max(
+                    scrollRoot.scrollHeight,
+                    document.body?.scrollHeight ?? 0
+                );
+
+                return {
+                    scroll: window.scrollY,
+                    scrollHeight,
+                    clientHeight: window.innerHeight,
+                };
+            }
+
+            const element = target as HTMLElement | null;
+
+            return {
+                scroll: element?.scrollTop ?? 0,
+                scrollHeight: element?.scrollHeight ?? 0,
+                clientHeight: element?.clientHeight ?? 0,
+            };
+        };
+
+        const getSectionTopInScrollRoot = (sectionElement: HTMLElement, target: HTMLElement | Window | null) => {
+            if (target === window || !target) {
+                return sectionElement.getBoundingClientRect().top + window.scrollY;
+            }
+
+            const element = target as HTMLElement;
+            const targetTop = element.getBoundingClientRect().top;
+            return sectionElement.getBoundingClientRect().top - targetTop + element.scrollTop;
+        };
+
+        const captureScrollSnapshot = (target: HTMLElement | Window | null) => {
+            if (!target) return null;
+
+            const isDesktopTarget = target !== window;
+            const activationOffset = isDesktopTarget ? 170 : 132;
+            const { scroll, scrollHeight, clientHeight } = getScrollMetrics(target);
+            const maxScrollable = Math.max(0, scrollHeight - clientHeight);
+
+            let anchorSection = sectionElements[0];
+
+            for (const sectionElement of sectionElements) {
+                const sectionTop = getSectionTopInScrollRoot(sectionElement, target);
+                if (sectionTop <= scroll + activationOffset) {
+                    anchorSection = sectionElement;
+                } else {
+                    break;
+                }
+            }
+
+            const anchorTop = getSectionTopInScrollRoot(anchorSection, target);
+            const snapshot: ScrollSnapshot = {
+                sectionId: anchorSection.id,
+                offsetWithinSection: Math.max(0, scroll - anchorTop),
+                scrollPercent: maxScrollable <= 0 ? 0 : scroll / maxScrollable,
+            };
+
+            scrollSnapshotRef.current = snapshot;
+            return snapshot;
+        };
+
         const updateActiveSection = () => {
             const isDesktopViewport = window.innerWidth >= 1024;
             const scrollRoot = isDesktopViewport ? scrollContainerRef.current : null;
+            const currentScrollTarget = isDesktopViewport ? scrollRoot : window;
             const activationOffset = isDesktopViewport ? 170 : 132;
             const viewportTop = isDesktopViewport
                 ? scrollRoot?.getBoundingClientRect().top ?? 0
                 : 0;
+
+            captureScrollSnapshot(currentScrollTarget);
 
             const lastSection = sectionElements[sectionElements.length - 1];
 
@@ -202,6 +326,7 @@ export function MainEditor() {
             const oldTarget = scrollTarget;
             const isOldWindow = oldTarget === window;
             const isNewWindow = nextScrollTarget === window;
+            const snapshot = scrollSnapshotRef.current ?? captureScrollSnapshot(oldTarget);
 
             const oldScroll = isOldWindow ? window.scrollY : (oldTarget as HTMLElement)?.scrollTop ?? 0;
             const oldHeight = isOldWindow ? document.documentElement.scrollHeight : (oldTarget as HTMLElement)?.scrollHeight ?? 0;
@@ -214,17 +339,34 @@ export function MainEditor() {
             scrollTarget = nextScrollTarget;
             scrollTarget?.addEventListener("scroll", requestUpdate, { passive: true });
 
-            // Apply sync after layout settles
-            requestAnimationFrame(() => {
-                const newHeight = isNewWindow ? document.documentElement.scrollHeight : (nextScrollTarget as HTMLElement)?.scrollHeight ?? 0;
-                const newClientHeight = isNewWindow ? window.innerHeight : (nextScrollTarget as HTMLElement)?.clientHeight ?? 0;
-                const newScroll = scrollPercent * (newHeight - newClientHeight);
+            const syncScrollPosition = () => {
+                const { scrollHeight: newHeight, clientHeight: newClientHeight } = getScrollMetrics(nextScrollTarget);
+                const maxScroll = Math.max(0, newHeight - newClientHeight);
+
+                let newScroll = Math.min(maxScroll, Math.max(0, scrollPercent * maxScroll));
+                const anchorSection = snapshot?.sectionId ? document.getElementById(snapshot.sectionId) : null;
+                const offsetWithinSection = snapshot?.offsetWithinSection ?? 0;
+
+                if (anchorSection instanceof HTMLElement) {
+                    const anchorTop = getSectionTopInScrollRoot(anchorSection, nextScrollTarget);
+                    newScroll = Math.min(
+                        maxScroll,
+                        Math.max(0, anchorTop + offsetWithinSection)
+                    );
+                }
 
                 if (isNewWindow) {
                     window.scrollTo({ top: newScroll, behavior: "auto" });
                 } else if (nextScrollTarget) {
                     (nextScrollTarget as HTMLElement).scrollTop = newScroll;
                 }
+            };
+
+            // Apply sync more than once because the scroll root and layout both change at the breakpoint.
+            requestAnimationFrame(() => {
+                syncScrollPosition();
+                requestAnimationFrame(syncScrollPosition);
+                window.setTimeout(syncScrollPosition, 120);
             });
 
             requestUpdate();
@@ -293,6 +435,33 @@ export function MainEditor() {
 
     const showNotice = (tone: UiNotice["tone"], message: string) => {
         setUiNotice({ tone, message });
+    };
+
+    const persistAIOMetadataSyncState = (nextState: AIOMetadataSyncState) => {
+        setAioSyncState(nextState);
+        if (typeof window !== "undefined") {
+            localStorage.setItem(AIOMETADATA_SYNC_STORAGE_KEY, JSON.stringify(nextState));
+        }
+    };
+
+    const clearAIOMetadataSyncState = () => {
+        setAioSyncState(null);
+        if (typeof window !== "undefined") {
+            localStorage.removeItem(AIOMETADATA_SYNC_STORAGE_KEY);
+        }
+    };
+
+    const formatAIOMetadataSyncTime = (value?: string) => {
+        if (!value) return "";
+
+        try {
+            return new Intl.DateTimeFormat(undefined, {
+                dateStyle: "medium",
+                timeStyle: "short",
+            }).format(new Date(value));
+        } catch {
+            return value;
+        }
     };
 
     const preserveScrollPosition = (work: () => void) => {
@@ -408,7 +577,13 @@ export function MainEditor() {
     };
 
 
-    const processAIOMetadata = (jsonText: string) => {
+    const processAIOMetadata = (
+        jsonText: string,
+        syncSource: Omit<AIOMetadataSyncState, "syncedAt"> = {
+            sourceType: "json",
+            sourceLabel: "Pasted JSON",
+        }
+    ) => {
         try {
             const data = JSON.parse(jsonText);
             
@@ -446,8 +621,17 @@ export function MainEditor() {
 
             setCustomFallbacks(newFallbacks);
             localStorage.setItem("omni_custom_fallbacks", JSON.stringify(newFallbacks));
+            persistAIOMetadataSyncState({
+                ...syncSource,
+                syncedAt: new Date().toISOString(),
+            });
+            setIsAioImportEditorOpen(false);
             showNotice("success", `Imported ${addedCount} catalogs with type info from AIOMetadata.`);
-            setPastedJson(""); // clear on success
+            if (syncSource.sourceType === "url" && syncSource.sourceValue) {
+                setPastedJson(syncSource.sourceValue);
+            } else {
+                setPastedJson("");
+            }
         } catch (err: unknown) {
             console.error(err);
             showNotice("error", "Failed to parse JSON. Please ensure it is valid JSON.");
@@ -465,7 +649,10 @@ export function MainEditor() {
         const reader = new FileReader();
         reader.onload = (event) => {
             preserveScrollPosition(() => {
-                processAIOMetadata(event.target?.result as string);
+                processAIOMetadata(event.target?.result as string, {
+                    sourceType: "file",
+                    sourceLabel: file.name,
+                });
             });
         };
         reader.readAsText(file);
@@ -507,7 +694,11 @@ export function MainEditor() {
                 }
                 const text = await response.text();
                 preserveScrollPosition(() => {
-                    processAIOMetadata(text);
+                    processAIOMetadata(text, {
+                        sourceType: "url",
+                        sourceLabel: "Manifest URL",
+                        sourceValue: input,
+                    });
                 });
             } catch (err: unknown) {
                 console.error(err);
@@ -519,8 +710,28 @@ export function MainEditor() {
         }
 
         preserveScrollPosition(() => {
-            processAIOMetadata(input);
+            processAIOMetadata(input, {
+                sourceType: "json",
+                sourceLabel: "Pasted JSON",
+            });
         });
+    };
+
+    const handleResyncAIOMetadata = async () => {
+        if (aioSyncState?.sourceType === "url" && aioSyncState.sourceValue) {
+            setPastedJson(aioSyncState.sourceValue);
+            await handlePasteImport();
+            return;
+        }
+
+        setIsAioImportEditorOpen(true);
+    };
+
+    const handleEditAIOMetadataSource = () => {
+        if (aioSyncState?.sourceType === "url" && aioSyncState.sourceValue) {
+            setPastedJson(aioSyncState.sourceValue);
+        }
+        setIsAioImportEditorOpen(true);
     };
 
     const handleResetCatalogNames = () => {
@@ -530,6 +741,9 @@ export function MainEditor() {
     const confirmResetCatalogNames = () => {
         setCustomFallbacks({});
         localStorage.removeItem("omni_custom_fallbacks");
+        clearAIOMetadataSyncState();
+        setIsAioImportEditorOpen(true);
+        setPastedJson("");
         showNotice("info", "Imported AIOMetadata names were cleared.");
         setIsResetConfirmOpen(false);
     };
@@ -549,6 +763,16 @@ export function MainEditor() {
         setActiveGuide(guide);
         setIsGuideDialogOpen(true);
     };
+
+    const activeAIOMetadataSync =
+        aioSyncState ||
+        (Object.keys(customFallbacks).length > 0
+            ? {
+                sourceType: "json" as const,
+                sourceLabel: "Imported data stored locally in this browser",
+            }
+            : null);
+    const showAioSyncedState = !!activeAIOMetadataSync && !isAioImportEditorOpen;
 
     return (
         <div className="relative flex min-h-screen lg:h-[100dvh] w-full max-w-[100vw] overflow-x-hidden lg:overflow-y-hidden bg-transparent text-foreground font-sans">
@@ -707,24 +931,17 @@ export function MainEditor() {
                             </div>
 
 
-                            <div className="mt-4 flex flex-col gap-2.5 border-t border-slate-200/80 pt-3 pb-1 dark:border-white/6">
-                                <div className="flex items-center justify-between">
-                                    <a href="https://github.com/nobnobz/omni-snapshot-editor" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-foreground/62 hover:text-foreground transition-colors font-medium">
-                                        <Github className="w-3.5 h-3.5" />
-                                        GitHub
-                                    </a>
-                                    <div className="scale-[0.80] origin-right -my-1">
-                                        <ThemeToggle />
-                                    </div>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <div className="text-xs text-foreground/36 font-medium leading-none scale-95 origin-left">
-                                        Made by Bot-Bid-Raiser
-                                    </div>
-                                    <div className="text-xs text-foreground/36 font-mono leading-none scale-95 origin-right">
-                                        v{APP_VERSION}
-                                    </div>
-                                </div>
+                            <div className="mt-4 border-t border-slate-200/80 pt-3 pb-1 dark:border-white/6">
+                                <AppMeta
+                                    align="start"
+                                    mode="stacked"
+                                    showGitHub
+                                    trailing={
+                                        <div className="scale-[0.80] origin-right -my-1">
+                                            <ThemeToggle />
+                                        </div>
+                                    }
+                                />
                             </div>
                         </div>
                     </div>
@@ -947,7 +1164,7 @@ export function MainEditor() {
                                                 <div className={cn("rounded-xl p-4 text-sm flex gap-4 items-start mt-4 shadow-sm border", editorNoticeTone.info)}>
                                                     <Info className="w-5 h-5 shrink-0 mt-0.5 text-primary dark:text-primary" />
                                                     <p className="leading-relaxed">
-                                                        <span className="font-bold">Note:</span> You can skip this step if you don’t want to import additional catalogs from your AIOMetadata setup.
+                                                        <span className="font-bold">Note:</span> You can sync your AIOMetadata manifest URL to always keep your catalogs up to date in the manager.
                                                     </p>
                                                 </div>
                                                 {Object.keys(customFallbacks).length > 0 && (
@@ -964,114 +1181,178 @@ export function MainEditor() {
                                                     </div>
                                                 )}
                                             </div>
-                                            <div 
-                                                className={cn(
-                                                    editorSurface.card, 
-                                                    "p-5 relative overflow-hidden transition-all duration-300",
-                                                    isFallbackDropActive && "ring-2 ring-primary bg-primary/5 shadow-2xl"
-                                                )}
-                                                onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsFallbackDropActive(true); }}
-                                                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsFallbackDropActive(true); }}
-                                                onDragLeave={(e) => { 
-                                                    e.preventDefault(); 
-                                                    e.stopPropagation(); 
-                                                    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
-                                                    setIsFallbackDropActive(false); 
-                                                }}
-                                                onDrop={(e) => { setIsFallbackDropActive(false); handleFallbackDrop(e); }}
-                                            >
-                                                {/* Drag Overlay */}
-                                                {isFallbackDropActive && (
-                                                    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-primary/10 backdrop-blur-[2px] pointer-events-none animate-in fade-in duration-200">
-                                                        <div className="bg-primary text-primary-foreground p-4 rounded-3xl shadow-2xl scale-110">
-                                                            <UploadCloud className="w-10 h-10 animate-bounce" />
+                                            {showAioSyncedState ? (
+                                                <div className="rounded-2xl border border-emerald-500/18 bg-emerald-500/8 p-4 shadow-[0_10px_24px_rgba(34,197,94,0.08)]">
+                                                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                                        <div className="flex items-start gap-3 min-w-0">
+                                                            <div className="rounded-2xl border border-emerald-500/18 bg-emerald-500/12 p-2.5 text-emerald-600 dark:text-emerald-400 shrink-0">
+                                                                <Check className="w-5 h-5" />
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">AIOMetadata synced</p>
+                                                                <p className="mt-1 text-sm text-foreground/72 leading-relaxed">
+                                                                    Imported catalog names are active and stored locally in this browser.
+                                                                </p>
+                                                                <div className="mt-2 space-y-1 text-xs text-foreground/56">
+                                                                    <p className="truncate">
+                                                                        Source: {activeAIOMetadataSync.sourceType === "url" && activeAIOMetadataSync.sourceValue
+                                                                            ? activeAIOMetadataSync.sourceValue
+                                                                            : activeAIOMetadataSync.sourceLabel}
+                                                                    </p>
+                                                                    {activeAIOMetadataSync.syncedAt && (
+                                                                        <p>Last synced: {formatAIOMetadataSyncTime(activeAIOMetadataSync.syncedAt)}</p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                        <p className="mt-4 text-primary font-bold text-lg">Drop JSON file to import</p>
-                                                    </div>
-                                                )}
 
-                                                <div className="flex items-start gap-4 mb-5 relative z-10">
-                                                    <div className="p-3 bg-primary/10 border border-primary/20 rounded-2xl text-primary">
-                                                        <UploadCloud className="w-6 h-6" />
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="text-base font-bold text-foreground">Import AIOMetadata</h4>
-                                                        <p className="text-sm text-foreground/70 leading-relaxed max-w-2xl">
-                                                            Directly paste your AIOMetadata manifest URL or raw catalogs JSON, or just drop a <code className="text-xs bg-white/5 border border-white/10 px-1 py-0.5 rounded text-foreground">.json</code> file here to import.
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex flex-col gap-3 relative z-10">
-                                                    <div className="relative group">
-                                                        <Textarea
-                                                            placeholder="Paste URL / JSON or drop .json file here..."
-                                                            className={cn(
-                                                                editorSurface.field, 
-                                                                "min-h-[120px] text-sm focus:border-primary/50 text-foreground resize-none font-sans placeholder:text-foreground/40 custom-scrollbar rounded-xl transition-all",
-                                                                isFallbackDropActive && "opacity-20"
+                                                        <div className="flex flex-col sm:flex-row gap-2 lg:shrink-0">
+                                                            {activeAIOMetadataSync.sourceType === "url" && activeAIOMetadataSync.sourceValue && (
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="outline"
+                                                                    className="h-10 rounded-xl border-emerald-500/22 bg-white/55 text-emerald-700 hover:bg-emerald-500/10 hover:text-emerald-700 dark:bg-background/30 dark:text-emerald-400"
+                                                                    onClick={() => void handleResyncAIOMetadata()}
+                                                                    disabled={isImportingUrl}
+                                                                >
+                                                                    {isImportingUrl ? (
+                                                                        <>
+                                                                            <RotateCcw className="w-4 h-4 mr-2 animate-spin" />
+                                                                            Syncing...
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <RotateCcw className="w-4 h-4 mr-2" />
+                                                                            Sync Again
+                                                                        </>
+                                                                    )}
+                                                                </Button>
                                                             )}
-                                                            value={pastedJson}
-                                                            onChange={(e) => setPastedJson(e.target.value)}
-                                                        />
-                                                        <div className="absolute bottom-2 right-2 flex gap-1.5 translate-y-1 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all">
                                                             <Button
-                                                                variant="secondary"
-                                                                size="sm"
-                                                                className="h-8 px-2.5 rounded-lg text-xs bg-white/10 hover:bg-white/20 border-white/5 backdrop-blur-sm"
-                                                                onClick={() => setPastedJson("")}
-                                                                disabled={!pastedJson.trim()}
+                                                                type="button"
+                                                                variant="outline"
+                                                                className="h-10 rounded-xl border-border/60 hover:bg-muted/50 font-medium"
+                                                                onClick={handleEditAIOMetadataSource}
                                                             >
-                                                                Clear
+                                                                Change Source
                                                             </Button>
                                                         </div>
                                                     </div>
-                                                    
-                                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
-                                                        <Button
-                                                            type="button"
-                                                            className="sm:min-w-[220px] font-bold h-11 rounded-xl bg-primary hover:bg-primary/92 text-primary-foreground shadow-lg shadow-primary/20 transition-transform active:scale-[0.98]"
-                                                            onClick={handlePasteImport}
-                                                            disabled={!pastedJson.trim() || isImportingUrl}
-                                                        >
-                                                            {isImportingUrl ? (
-                                                                <span className="flex items-center gap-2">
-                                                                    <RotateCcw className="w-4 h-4 animate-spin" />
-                                                                    Fetching...
-                                                                </span>
-                                                            ) : (
-                                                                <>
-                                                                    <Check className="w-4 h-4 mr-2.5" />
-                                                                    Import Configuration
-                                                                </>
-                                                            )}
-                                                        </Button>
+                                                </div>
+                                            ) : (
+                                                <div
+                                                    className={cn(
+                                                        editorSurface.card,
+                                                        "p-5 relative overflow-hidden transition-all duration-300",
+                                                        isFallbackDropActive && "ring-2 ring-primary bg-primary/5 shadow-2xl"
+                                                    )}
+                                                    onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsFallbackDropActive(true); }}
+                                                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsFallbackDropActive(true); }}
+                                                    onDragLeave={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+                                                        setIsFallbackDropActive(false);
+                                                    }}
+                                                    onDrop={(e) => { setIsFallbackDropActive(false); handleFallbackDrop(e); }}
+                                                >
+                                                    {isFallbackDropActive && (
+                                                        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-primary/10 backdrop-blur-[2px] pointer-events-none animate-in fade-in duration-200">
+                                                            <div className="bg-primary text-primary-foreground p-4 rounded-3xl shadow-2xl scale-110">
+                                                                <UploadCloud className="w-10 h-10 animate-bounce" />
+                                                            </div>
+                                                            <p className="mt-4 text-primary font-bold text-lg">Drop JSON file to import</p>
+                                                        </div>
+                                                    )}
 
-                                                        <input
-                                                            type="file"
-                                                            id="unified-fallback-upload"
-                                                            accept=".json"
-                                                            className="hidden"
-                                                            ref={fallbackFileInputRef}
-                                                            onChange={handleUploadFallbacks}
-                                                        />
-                                                        <Button
-                                                            variant="outline"
-                                                            className="h-11 px-5 rounded-xl border-border/60 hover:bg-muted/50 font-medium"
-                                                            onClick={() => fallbackFileInputRef.current?.click()}
-                                                        >
-                                                            <FileJson className="w-4 h-4 mr-2.5" />
-                                                            Select JSON File
-                                                        </Button>
+                                                    <div className="flex items-start gap-4 mb-5 relative z-10">
+                                                        <div className="p-3 bg-primary/10 border border-primary/20 rounded-2xl text-primary">
+                                                            <UploadCloud className="w-6 h-6" />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="text-base font-bold text-foreground">Import AIOMetadata</h4>
+                                                            <p className="text-sm text-foreground/70 leading-relaxed max-w-2xl">
+                                                                Directly paste your AIOMetadata manifest URL or raw catalogs JSON, or just drop a <code className="text-xs bg-white/5 border border-white/10 px-1 py-0.5 rounded text-foreground">.json</code> file here to import your AIOMetadata catalogs.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex flex-col gap-3 relative z-10">
+                                                        {activeAIOMetadataSync && (
+                                                            <div className="rounded-xl border border-border/60 bg-background/40 px-4 py-3 text-xs text-foreground/60">
+                                                                Updating the source will replace the currently synced AIOMetadata data.
+                                                            </div>
+                                                        )}
+                                                        <div className="relative group">
+                                                            <Textarea
+                                                                placeholder="Paste URL / JSON or drop .json file here..."
+                                                                className={cn(
+                                                                    editorSurface.field,
+                                                                    "min-h-[120px] text-sm focus:border-primary/50 text-foreground resize-none font-sans placeholder:text-foreground/40 custom-scrollbar rounded-xl transition-all",
+                                                                    isFallbackDropActive && "opacity-20"
+                                                                )}
+                                                                value={pastedJson}
+                                                                onChange={(e) => setPastedJson(e.target.value)}
+                                                            />
+                                                            <div className="absolute bottom-2 right-2 flex gap-1.5 translate-y-1 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all">
+                                                                <Button
+                                                                    variant="secondary"
+                                                                    size="sm"
+                                                                    className="h-8 px-2.5 rounded-lg text-xs bg-white/10 hover:bg-white/20 border-white/5 backdrop-blur-sm"
+                                                                    onClick={() => setPastedJson("")}
+                                                                    disabled={!pastedJson.trim()}
+                                                                >
+                                                                    Clear
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
+                                                            <Button
+                                                                type="button"
+                                                                className="sm:min-w-[220px] font-bold h-11 rounded-xl bg-primary hover:bg-primary/92 text-primary-foreground shadow-lg shadow-primary/20 transition-transform active:scale-[0.98]"
+                                                                onClick={handlePasteImport}
+                                                                disabled={!pastedJson.trim() || isImportingUrl}
+                                                            >
+                                                                {isImportingUrl ? (
+                                                                    <span className="flex items-center gap-2">
+                                                                        <RotateCcw className="w-4 h-4 animate-spin" />
+                                                                        Fetching...
+                                                                    </span>
+                                                                ) : (
+                                                                    <>
+                                                                        <Check className="w-4 h-4 mr-2.5" />
+                                                                        Import Configuration
+                                                                    </>
+                                                                )}
+                                                            </Button>
+
+                                                            <input
+                                                                type="file"
+                                                                id="unified-fallback-upload"
+                                                                accept=".json"
+                                                                className="hidden"
+                                                                ref={fallbackFileInputRef}
+                                                                onChange={handleUploadFallbacks}
+                                                            />
+                                                            <Button
+                                                                variant="outline"
+                                                                className="h-11 px-5 rounded-xl border-border/60 hover:bg-muted/50 font-medium"
+                                                                onClick={() => fallbackFileInputRef.current?.click()}
+                                                            >
+                                                                <FileJson className="w-4 h-4 mr-2.5" />
+                                                                Select JSON File
+                                                            </Button>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
+                                            )}
                                         </div>
                                     ) : section.id === "groups" ? (
                                         <div className="space-y-6">
                                             <div className="space-y-5">
                                                 <p className="text-sm text-foreground/70 px-1 leading-relaxed">
-                                                    Create and organize groups, assign catalogs, and reorder items. To update your setup, use <strong>Update from Template</strong>.
+                                                    Create and organize groups, assign catalogs, and reorder items. To update your setup, use <strong>Update</strong>.
                                                 </p>
                                                 <UnifiedSubgroupEditor onOpenGuide={(guide) => {
                                                     setActiveGuide(guide);
@@ -1155,6 +1436,12 @@ export function MainEditor() {
                             </section>
                         );
                     })}
+
+                    <div className="lg:hidden pt-1">
+                        <div className="rounded-[1.15rem] border border-slate-200/72 bg-[linear-gradient(180deg,rgba(255,255,255,0.5),rgba(248,250,252,0.36))] px-4 py-3 shadow-[0_10px_26px_rgba(15,23,42,0.045)] backdrop-blur-md dark:border-white/8 dark:bg-[linear-gradient(180deg,rgba(20,23,29,0.82),rgba(16,19,25,0.78))] dark:shadow-[0_10px_22px_rgba(2,6,23,0.12)]">
+                            <AppMeta align="center" showGitHub />
+                        </div>
+                    </div>
 
                 </div>
             </main>
@@ -1299,6 +1586,13 @@ export function MainEditor() {
                                 >
                                     <RotateCcw className="w-4 h-4" />
                                     Back to Start
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator className="mx-1 my-1 bg-border/60" />
+                                <DropdownMenuItem asChild className="cursor-pointer rounded-xl px-3 py-2.5 text-foreground/72 focus:text-foreground focus:bg-muted/60">
+                                    <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer">
+                                        <Heart className="w-4 h-4" />
+                                        <span className="flex-1">Support</span>
+                                    </a>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>

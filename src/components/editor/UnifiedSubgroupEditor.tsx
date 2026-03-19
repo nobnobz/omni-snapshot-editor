@@ -34,7 +34,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from "@/components/ui/button";
-import { GripVertical, ImageIcon, LinkIcon, ChevronRight, ChevronDown, RotateCcw, Search, Layout, Plus, Pencil, Trash2, FolderPlus, FolderInput, UploadCloud, AlertTriangle, Check } from "lucide-react";
+import { GripVertical, ImageIcon, LinkIcon, ChevronRight, ChevronDown, RotateCcw, Search, X, Layout, Plus, Pencil, Trash2, FolderPlus, FolderInput, UploadCloud, AlertTriangle, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
@@ -63,6 +63,7 @@ const stringArraysEqual = (a: string[], b: string[]) => (
     a.length === b.length && a.every((item, idx) => item === b[idx])
 );
 const EMPTY_STRING_ARRAY: string[] = [];
+const EMPTY_RECORD: Record<string, never> = {};
 type ThumbnailAspect = "portrait" | "landscape" | "square";
 
 // Catalog reorder is vertical-only; locking X prevents visible sideways jumps while dragging.
@@ -99,12 +100,27 @@ function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => vo
 
     // Construct effective custom names (Config Custom Names > AIOMetadata > Default)
     const configCustomNames = currentValues["custom_catalog_names"] || {};
-    let aioFallbacks: Record<string, string> = {};
+    let aioFallbacks: Record<string, string | CatalogFallback> = {};
     if (typeof window !== "undefined") {
         try {
             aioFallbacks = JSON.parse(localStorage.getItem("omni_custom_fallbacks") || "{}");
         } catch { }
     }
+
+    const getCustomName = (value: unknown) => {
+        if (typeof value === "string") {
+            return value.trim() !== "" ? value : undefined;
+        }
+
+        if (value && typeof value === "object" && "name" in value) {
+            const name = value.name;
+            if (typeof name === "string" && name.trim() !== "") {
+                return name;
+            }
+        }
+
+        return undefined;
+    };
 
     // Some IDs have prefixes like 'movie:mdblist.12306', AIOMetadata uses 'mdblist.12306'
     let baseId = id;
@@ -122,13 +138,13 @@ function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => vo
     // Specific match for AIO Trakt format if necessary (this is a best effort)
     const strippedTraktId = id.replace(/^(movie|series|anime|all):/, "");
 
-    const customNameFromConfig = configCustomNames[id] || configCustomNames[baseId];
-    const customNameFromAIO = aioFallbacks[id] || aioFallbacks[baseId] || aioFallbacks[strippedTraktId];
+    const customNameFromConfig = getCustomName(configCustomNames[id] || configCustomNames[baseId]);
+    const customNameFromAIO = getCustomName(aioFallbacks[id] || aioFallbacks[baseId] || aioFallbacks[strippedTraktId]);
 
     let displayName = "";
-    if (customNameFromConfig && customNameFromConfig.trim() !== "" && customNameFromConfig !== id) {
+    if (customNameFromConfig && customNameFromConfig !== id) {
         displayName = formatDisplayName(customNameFromConfig);
-    } else if (customNameFromAIO && customNameFromAIO.trim() !== "" && customNameFromAIO !== id) {
+    } else if (customNameFromAIO && customNameFromAIO !== id) {
         displayName = formatDisplayName(customNameFromAIO);
     } else {
         // use standard resolveCatalogName mapped values or Fallbacks
@@ -757,7 +773,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
 // ----------------------------------------------------------------------
 // 3. Main Group View (Outer)
 // ----------------------------------------------------------------------
-function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSubgroup }: { uuid: string, name: string, subgroupNames: string[], onUnassignSubgroup?: (name: string, parentId: string) => void, onAddSubgroup?: (uuid: string) => void }) {
+function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSubgroup, searchTerm }: { uuid: string, name: string, subgroupNames: string[], onUnassignSubgroup?: (name: string, parentId: string) => void, onAddSubgroup?: (uuid: string) => void, searchTerm: string }) {
     const { currentValues, updateValue, renameMainCatalogGroup, removeMainCatalogGroup } = useConfig();
     const [isRenaming, setIsRenaming] = useState(false);
 
@@ -782,13 +798,19 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
     };
 
     // We maintain local subgroup ordering state
-    const [subgroups, setSubgroups] = useState(subgroupNames);
+    const filteredSubgroups = React.useMemo(() => {
+        if (!searchTerm) return subgroupNames;
+        const q = searchTerm.toLowerCase();
+        return subgroupNames.filter(sg => sg.toLowerCase().includes(q));
+    }, [subgroupNames, searchTerm]);
+
+    const [subgroups, setSubgroups] = useState(filteredSubgroups);
     const [activeSubgroupId, setActiveSubgroupId] = useState<string | null>(null);
     const [expandedSubgroup, setExpandedSubgroup] = useState<string | null>(null);
 
     React.useEffect(() => {
-        setSubgroups(prev => (stringArraysEqual(prev, subgroupNames) ? prev : subgroupNames));
-    }, [subgroupNames]);
+        setSubgroups(prev => (stringArraysEqual(prev, filteredSubgroups) ? prev : filteredSubgroups));
+    }, [filteredSubgroups]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -864,40 +886,48 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
 
                     <AccordionTrigger className={`flex-1 text-foreground px-4 py-4 transition-colors group/trigger ${editorHover.rowSubtle}`}>
                         <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            {/* Name + Subgroup Count */}
-                            <div className="flex flex-col min-w-0 gap-1.5">
-                                <span className="min-w-0 truncate font-bold text-base text-foreground group-hover/trigger:text-primary transition-colors">
-                                    {formatDisplayName(name)}
-                                </span>
-                                <div className="text-xs text-foreground/50 font-medium leading-none flex items-center gap-2">
-                                    <span>{subgroupNames.length} Subgroups</span>
+                            <div className="flex flex-col min-w-0 gap-1">
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <span className="min-w-0 truncate font-bold text-base text-foreground group-hover/trigger:text-primary transition-colors">
+                                        {formatDisplayName(name)}
+                                    </span>
                                 </div>
-                            </div>
-
-                            {/* Badges */}
-                            <div className="flex items-center gap-1 shrink-0 flex-wrap sm:justify-end">
-                                {posterSize !== "Default" && (
+                                <div className="flex items-center gap-1 shrink-0 flex-wrap sm:justify-start">
+                                    {posterSize !== "Default" && (
+                                        <Badge
+                                            variant="outline"
+                                            className={cn(
+                                                "text-xs font-bold px-1.5 py-0 rounded-md h-5",
+                                                posterSize === "Small"
+                                                    ? "bg-primary/10 text-primary dark:text-primary border-primary/30"
+                                                    : "bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20"
+                                            )}
+                                        >
+                                            {posterSize}
+                                        </Badge>
+                                    )}
+                                    {posterType === "Poster" && (
+                                        <Badge variant="outline" className="text-xs font-bold px-1.5 py-0 rounded-md h-5 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/25">Poster</Badge>
+                                    )}
+                                    {posterType === "Square" && (
+                                        <Badge variant="outline" className="text-xs font-bold px-1.5 py-0 rounded-md h-5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">Square</Badge>
+                                    )}
+                                    {posterType === "Landscape" && (
+                                        <Badge variant="outline" className="text-xs font-bold px-1.5 py-0 rounded-md h-5 bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20">Landscape</Badge>
+                                    )}
                                     <Badge
                                         variant="outline"
                                         className={cn(
-                                            "text-xs font-bold px-2 py-0.5 rounded-md",
-                                            posterSize === "Small"
-                                                ? "bg-primary/10 text-primary dark:text-primary border-primary/30"
-                                                : "bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20"
+                                            "text-xs font-bold px-1.5 py-0 rounded-md h-5",
+                                            "bg-slate-400/8 text-slate-600 dark:text-slate-400 border-slate-400/18"
                                         )}
                                     >
-                                        {posterSize}
+                                        {subgroupNames.length} {subgroupNames.length === 1 ? "Group" : "Groups"}
                                     </Badge>
-                                )}
-                                {posterType === "Poster" && (
-                                    <Badge variant="outline" className="text-xs font-bold px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/25">Poster</Badge>
-                                )}
-                                {posterType === "Square" && (
-                                    <Badge variant="outline" className="text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">Square</Badge>
-                                )}
-                                {posterType === "Landscape" && (
-                                    <Badge variant="outline" className="text-xs font-bold px-2 py-0.5 rounded-md bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20">Landscape</Badge>
-                                )}
+                                    {subgroupNames.length === 0 && (
+                                        <span className="text-[10px] text-foreground/30 font-bold uppercase tracking-wider">Empty Group</span>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </AccordionTrigger>
@@ -996,7 +1026,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                     className="h-8 shrink-0 text-xs sm:text-sm text-primary hover:text-primary hover:bg-primary/10 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out flex items-center gap-1.5 px-2.5 rounded-lg font-bold"
                                 >
                                     <Plus className="w-4 h-4" />
-                                    <span className="hidden sm:inline">New Subgroup</span>
+                                    <span className="hidden sm:inline">New</span>
                                 </Button>
                             </div>
                         </div>
@@ -1085,8 +1115,8 @@ function UnassignedSubgroupRow({
     restoreParentName?: string
 }) {
     const { updateValue, currentValues, assignCatalogGroup, removeCatalogGroup, catalogs: fullCatalogs, customFallbacks } = useConfig();
-    const mainCatalogGroups = currentValues["main_catalog_groups"] || {};
-    const mainGroupOrder = currentValues["main_group_order"] || [];
+    const mainCatalogGroups = (currentValues["main_catalog_groups"] as Record<string, { name?: string; subgroupNames?: string[] }> | undefined) ?? EMPTY_RECORD;
+    const mainGroupOrder = (currentValues["main_group_order"] as string[] | undefined) ?? EMPTY_STRING_ARRAY;
     const [isExpanded, setIsExpanded] = useState(false);
 
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
@@ -1456,7 +1486,7 @@ function UnassignedSubgroupRow({
 export function UnifiedSubgroupEditor({ onOpenGuide }: { onOpenGuide?: (guide: "install" | "update" | "use") => void }) {
     const { currentValues, updateValue, assignCatalogGroup } = useConfig();
     const subgroupOrder = currentValues["subgroup_order"] || {};
-    const mainCatalogGroups = currentValues["main_catalog_groups"] || {};
+    const mainCatalogGroups = (currentValues["main_catalog_groups"] as Record<string, { name?: string; subgroupNames?: string[] }> | undefined) ?? EMPTY_RECORD;
     const mainGroupOrderFromConfig = Array.isArray(currentValues["main_group_order"])
         ? (currentValues["main_group_order"] as string[])
         : EMPTY_STRING_ARRAY;
@@ -1468,6 +1498,8 @@ export function UnifiedSubgroupEditor({ onOpenGuide }: { onOpenGuide?: (guide: "
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [activeMainGroupId, setActiveMainGroupId] = useState<string | null>(null);
     const [recentUnassigns, setRecentUnassigns] = useState<Record<string, string>>({}); // subgroupName -> parentUuid
+    const [searchTerm, setSearchTerm] = useState("");
+    const searchInputRef = useRef<HTMLInputElement>(null);
 
     const handleUnassignSubgroup = (subgroupName: string, parentUuid: string) => {
         setRecentUnassigns(prev => ({ ...prev, [subgroupName]: parentUuid }));
@@ -1476,6 +1508,20 @@ export function UnifiedSubgroupEditor({ onOpenGuide }: { onOpenGuide?: (guide: "
     React.useEffect(() => {
         setMainGroupOrder(prev => (stringArraysEqual(prev, mainGroupOrderFromConfig) ? prev : mainGroupOrderFromConfig));
     }, [mainGroupOrderFromConfig]);
+
+    const filteredMainGroupOrder = React.useMemo(() => {
+        if (!searchTerm) return mainGroupOrder;
+        const q = searchTerm.toLowerCase();
+        return mainGroupOrder.filter(uuid => {
+            const mg = mainCatalogGroups[uuid];
+            if (!mg) return false;
+            if (mg.name?.toLowerCase().includes(q)) return true;
+            
+            // Check if any of its subgroups match
+            const sgs = mg.subgroupNames || [];
+            return sgs.some((sg: string) => sg.toLowerCase().includes(q));
+        });
+    }, [mainGroupOrder, mainCatalogGroups, searchTerm]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -1550,32 +1596,62 @@ export function UnifiedSubgroupEditor({ onOpenGuide }: { onOpenGuide?: (guide: "
         <div className="space-y-4">
             <div className={cn(editorSurface.card, "overflow-hidden")}>
                 {/* Unified Sticky Toolbar */}
-                <div className={cn(editorSurface.toolbar, "sticky top-0 z-30 grid grid-cols-2 items-center gap-2 rounded-none border-x-0 border-t-0 p-3 sm:flex sm:flex-wrap")}>
-                    <Button
-                        onClick={() => setIsCreateModalOpen(true)}
-                        size="sm"
-                        className="col-span-2 sm:col-auto bg-primary hover:bg-primary/92 text-primary-foreground font-bold h-10 px-5 shadow-lg shadow-primary/20 whitespace-nowrap justify-center sm:justify-start"
-                    >
-                        <Plus className="w-4 h-4 mr-1.5" /> Create New Group
-                    </Button>
-                    <Button
-                        onClick={() => setIsAddToGroupModalOpen(true)}
-                        variant="outline"
-                        size="sm"
-                        className="h-10 text-sm border-border/60 hover:bg-muted/60 dark:hover:bg-muted/40 text-foreground/80 hover:text-foreground transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out px-5 font-medium whitespace-nowrap justify-center sm:justify-start"
-                    >
-                        <FolderPlus className="w-4 h-4 mr-1.5" /> Add to Group
-                    </Button>
-                    <Button
-                        onClick={() => setIsImportModalOpen(true)}
-                        variant="outline"
-                        size="sm"
-                        className="h-10 text-sm border-border/60 hover:bg-muted/60 dark:hover:bg-muted/40 text-foreground/80 hover:text-foreground transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out px-5 font-medium whitespace-nowrap justify-center sm:justify-start"
-                    >
-                        <UploadCloud className="w-4 h-4 mr-1.5" />
-                        <span className="sm:hidden">Update</span>
-                        <span className="hidden sm:inline">Update from Template</span>
-                    </Button>
+                <div className={cn(editorSurface.toolbar, "sticky top-0 z-30 rounded-none border-x-0 border-t-0 p-3 xl:flex xl:items-center xl:gap-2")}>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 xl:flex xl:flex-1 xl:flex-wrap xl:items-center">
+                        <Button
+                            onClick={() => setIsCreateModalOpen(true)}
+                            size="sm"
+                            className="bg-primary hover:bg-primary/92 text-primary-foreground font-bold h-10 px-5 shadow-lg shadow-primary/20 min-w-0 justify-center xl:justify-start"
+                        >
+                            <Plus className="w-4 h-4 mr-1.5 shrink-0" />
+                            <span className="xl:hidden">Create New</span>
+                            <span className="hidden xl:inline">Create New Group</span>
+                        </Button>
+                        <Button
+                            onClick={() => setIsAddToGroupModalOpen(true)}
+                            variant="outline"
+                            size="sm"
+                            className="h-10 text-sm border-border/60 hover:bg-muted/60 dark:hover:bg-muted/40 text-foreground/80 hover:text-foreground transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out px-5 font-medium min-w-0 justify-center xl:justify-start"
+                        >
+                            <FolderPlus className="w-4 h-4 mr-1.5 shrink-0" />
+                            <span className="xl:hidden">Add to</span>
+                            <span className="hidden xl:inline">Add to Group</span>
+                        </Button>
+                        <Button
+                            onClick={() => setIsImportModalOpen(true)}
+                            variant="outline"
+                            size="sm"
+                            className="h-10 text-sm border-border/60 hover:bg-muted/60 dark:hover:bg-muted/40 text-foreground/80 hover:text-foreground transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out px-5 font-medium min-w-0 justify-center xl:justify-start"
+                        >
+                            <UploadCloud className="w-4 h-4 mr-1.5 shrink-0" />
+                            <span className="xl:hidden">Update</span>
+                            <span className="hidden xl:inline">Update from Template</span>
+                        </Button>
+                    </div>
+
+                    <div className="relative mt-2 w-full xl:ml-auto xl:mt-0 xl:w-64">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/45 pointer-events-none" />
+                        <Input
+                            ref={searchInputRef}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="Search..."
+                            className="h-10 pl-9 pr-9 bg-background/50 border-border/50 focus-visible:ring-primary/30"
+                        />
+                        {searchTerm && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                    setSearchTerm("");
+                                    searchInputRef.current?.focus();
+                                }}
+                                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-foreground/40 hover:text-foreground"
+                            >
+                                <X className="w-3.5 h-3.5" />
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
                 <div className="p-4 bg-transparent">
@@ -1586,44 +1662,52 @@ export function UnifiedSubgroupEditor({ onOpenGuide }: { onOpenGuide?: (guide: "
                         onDragStart={handleMainDragStart}
                         onDragEnd={handleMainDragEnd}
                     >
-                        <SortableContext items={mainGroupOrder} strategy={verticalListSortingStrategy}>
-                            <Accordion 
-                                type="single" 
-                                collapsible 
-                                className="w-full space-y-0"
-                                onValueChange={(value) => {
-                                    if (value) {
-                                        const targetId = `main-group-${value}`;
-                                        window.requestAnimationFrame(() => {
-                                            window.requestAnimationFrame(() => {
-                                                const target = document.getElementById(targetId);
-                                                if (target) {
-                                                    target.scrollIntoView({ behavior: "smooth", block: "start" });
-                                                }
-                                            });
-                                        });
-                                    }
-                                }}
-                            >
-                                {mainGroupOrder.map(uuid => {
-                                    const name = mainCatalogGroups[uuid]?.name || `Group ${uuid.slice(0, 4)}`;
-                                    const subgroupNames = subgroupOrder[uuid] || [];
-                                    return (
-                                        <MainGroupNode
-                                            key={uuid}
-                                            uuid={uuid}
-                                            name={name}
-                                            subgroupNames={subgroupNames}
-                                            onUnassignSubgroup={handleUnassignSubgroup}
-                                            onAddSubgroup={(id) => {
-                                                setCreateParentUUID(id);
-                                                setIsCreateModalOpen(true);
-                                            }}
-                                        />
-                                    );
-                                })}
-                            </Accordion>
-                        </SortableContext>
+                        <div className="space-y-3">
+                            {filteredMainGroupOrder.length === 0 && searchTerm ? (
+                                <div className="flex flex-col items-center justify-center py-12 text-center">
+                                    <div className="bg-muted/50 p-4 rounded-full mb-4">
+                                        <Search className="w-8 h-8 text-foreground/30" />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-foreground mb-1">No matches found</h3>
+                                    <p className="text-sm text-foreground/50 max-w-xs">
+                                        We couldn&apos;t find any groups or subgroups matching &quot;{searchTerm}&quot;.
+                                    </p>
+                                    <Button 
+                                        variant="link" 
+                                        className="mt-2 text-primary hover:text-primary/80 font-bold"
+                                        onClick={() => setSearchTerm("")}
+                                    >
+                                        Clear search
+                                    </Button>
+                                </div>
+                            ) : (
+                                <SortableContext items={filteredMainGroupOrder} strategy={verticalListSortingStrategy}>
+                                    <Accordion 
+                                        type="multiple" 
+                                        className="w-full space-y-3"
+                                    >
+                                        {filteredMainGroupOrder.map(uuid => {
+                                            const mg = mainCatalogGroups[uuid];
+                                            if (!mg) return null;
+                                            return (
+                                                <MainGroupNode
+                                                    key={uuid}
+                                                    uuid={uuid}
+                                                    name={mg.name || `Group ${uuid.slice(0, 4)}`}
+                                                    subgroupNames={mg.subgroupNames || []}
+                                                    onUnassignSubgroup={handleUnassignSubgroup}
+                                                    onAddSubgroup={(id) => {
+                                                        setCreateParentUUID(id);
+                                                        setIsCreateModalOpen(true);
+                                                    }}
+                                                    searchTerm={searchTerm}
+                                                />
+                                            );
+                                        })}
+                                    </Accordion>
+                                </SortableContext>
+                            )}
+                        </div>
 
                         {activeMainGroupId && typeof document !== 'undefined' ? createPortal(
                             <DragOverlay dropAnimation={{

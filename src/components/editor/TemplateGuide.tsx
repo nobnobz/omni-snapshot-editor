@@ -20,7 +20,7 @@ import {
 import { useConfig } from "@/context/ConfigContext";
 import { cn } from "@/lib/utils";
 import { downloadTemplateFile } from "@/lib/template-download";
-import { getTemplateDisplay } from "@/lib/template-display";
+import { FALLBACK_TEMPLATE_URLS, findTemplateByKind } from "@/lib/template-manifest";
 import { editorHover } from "@/components/editor/ui/style-contract";
 import { GuideHeader } from "@/components/editor/GuideHeader";
 import {
@@ -40,6 +40,7 @@ type TemplateAsset = {
     name: string;
     id: string;
     url: string;
+    version?: string;
 };
 
 type InstanceGroup = {
@@ -68,27 +69,35 @@ type DeviceGuide = {
 export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
     const { manifest } = useConfig();
 
-    const templates: TemplateAsset[] = [
+    const omniTemplate = manifest?.templates?.find((template) => template.isDefault) || findTemplateByKind(manifest?.templates, "omni");
+    const aiomTemplate = findTemplateByKind(manifest?.templates, "aiometadata");
+    const catalogsTemplate = findTemplateByKind(manifest?.templates, "catalogs");
+    const aiosTemplate = findTemplateByKind(manifest?.templates, "aiostreams");
+
+    const coreTemplates: TemplateAsset[] = [
         {
-            name: "Omni Snapshot",
-            id: "ume-main",
-            url:
-                manifest?.templates?.find((t) => t.id === "ume-main")?.url ||
-                "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/fusion-template-bot-bid-raiser-v1.6.2.json",
+            name: "UME Omni Template",
+            id: omniTemplate?.id || "ume-omni-main",
+            url: omniTemplate?.url || FALLBACK_TEMPLATE_URLS.omni,
+            version: omniTemplate?.version,
         },
         {
-            name: "AIOMetadata",
-            id: "aiometadata",
-            url:
-                manifest?.templates?.find((t) => t.id === "aiometadata")?.url ||
-                "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/aiometadata-patterns-v1.json",
+            name: "UME AIOMetadata Template",
+            id: aiomTemplate?.id || "ume-aiometadata-main",
+            url: aiomTemplate?.url || "",
+            version: aiomTemplate?.version,
         },
         {
-            name: "AIOStreams",
-            id: "aiostreams",
-            url:
-                manifest?.templates?.find((t) => t.id === "aiostreams")?.url ||
-                "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/aiostreams-patterns-v1.json",
+            name: "UME AIOMetadata (Catalogs Only)",
+            id: catalogsTemplate?.id || "ume-catalogs-main",
+            url: catalogsTemplate?.url || "",
+            version: catalogsTemplate?.version,
+        },
+        {
+            name: "UME AIOStreams Template",
+            id: aiosTemplate?.id || "ume-aiostreams-main",
+            url: aiosTemplate?.url || "",
+            version: aiosTemplate?.version,
         },
     ];
 
@@ -179,9 +188,6 @@ export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
             console.error("Download failed:", err);
         }
     };
-
-    const getTemplateName = (id: string, fallback: string) =>
-        manifest?.templates?.find((t) => t.id === id)?.name || fallback;
 
     const guideActionButtonClass = cn(
         "group flex items-center justify-between gap-3 rounded-2xl border border-primary/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.58),rgba(239,246,255,0.46))] px-4 py-3 shadow-[0_6px_14px_rgba(148,163,184,0.08)] hover:border-primary/24 hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.62),rgba(224,242,254,0.56))] dark:border-primary/28 dark:bg-[linear-gradient(180deg,rgba(14,33,52,0.9),rgba(8,22,38,0.86))] dark:shadow-[0_10px_20px_rgba(2,6,23,0.24)] dark:hover:border-primary/42 dark:hover:bg-[linear-gradient(180deg,rgba(18,41,66,0.94),rgba(10,28,48,0.9))]",
@@ -282,31 +288,41 @@ export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
                             description="Download the template files below."
                         >
                             <div className="space-y-2.5">
-                                {templates.map((item) => {
-                                    const manifestName = getTemplateName(item.id, item.name);
-                                    const display = getTemplateDisplay(manifestName, item.id);
+                                {coreTemplates.map((item) => {
+                                    const isAvailable = !!item.url;
 
                                     return (
                                         <button
                                             key={item.id}
                                             type="button"
-                                            onClick={() => handleDownload(item.url, manifestName)}
-                                            className={cn(guideActionButtonClass, "w-full text-left")}
+                                            onClick={() => {
+                                                if (!isAvailable) return;
+                                                const fileName = item.version ? `${item.name} ${item.version}` : item.name;
+                                                handleDownload(item.url, fileName);
+                                            }}
+                                            disabled={!isAvailable}
+                                            className={cn(
+                                                guideActionButtonClass, 
+                                                "w-full text-left",
+                                                !isAvailable && "opacity-60 cursor-not-allowed grayscale-[0.5]"
+                                            )}
                                         >
                                             <span className="flex min-w-0 items-center gap-3">
                                                 <span className={guideActionIconShellClass}>
                                                     <FileJson className="h-4 w-4 text-primary dark:text-primary" />
                                                 </span>
                                                 <span className="min-w-0">
-                                                    <span className="block text-sm font-bold tracking-tight text-foreground">{display.label}</span>
-                                                    {display.version && (
-                                                        <span className="mt-0.5 block text-[10px] leading-tight text-foreground/46 font-medium tracking-[0.04em]">
-                                                            {display.version}
-                                                        </span>
-                                                    )}
+                                                    <span className="block text-sm font-bold tracking-tight text-foreground">{item.name}</span>
+                                                    <span className="mt-0.5 block text-[10px] leading-tight text-foreground/46 font-medium tracking-[0.04em]">
+                                                        {item.version || (isAvailable ? "Latest" : "Coming Soon")}
+                                                    </span>
                                                 </span>
                                             </span>
-                                            <ChevronRight className="h-4 w-4 shrink-0 text-foreground/36 transition-transform group-hover:translate-x-0.5 group-hover:text-primary dark:group-hover:text-primary" />
+                                            {isAvailable ? (
+                                                <ChevronRight className="h-4 w-4 shrink-0 text-foreground/36 transition-transform group-hover:translate-x-0.5 group-hover:text-primary dark:group-hover:text-primary" />
+                                            ) : (
+                                                <div className="text-[9px] font-bold uppercase tracking-wider text-foreground/30 px-1.5 py-0.5 border border-border/40 rounded-md">Pending</div>
+                                            )}
                                         </button>
                                     );
                                 })}

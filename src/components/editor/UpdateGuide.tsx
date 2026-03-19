@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useConfig } from "@/context/ConfigContext";
 import {
     CheckCircle2,
     Copy,
@@ -22,22 +23,27 @@ import {
     GuideSection,
     GuideStepList,
 } from "@/components/editor/GuidePrimitives";
+import { findTemplateByKind } from "@/lib/template-manifest";
 
 type UpdateGuideProps = {
     headerAction?: React.ReactNode;
 };
 
-const CATALOGS_ONLY_URL =
-    "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/AIOM%20Catalogs%20Only/aiometadata-catalogs-only.json";
-
 const subtleAmberPanelClass = "border-amber-500/24 bg-[linear-gradient(180deg,rgba(255,248,241,0.98),rgba(255,239,216,0.9))] dark:border-amber-500/14 dark:bg-card/40";
 
 export function UpdateGuide({ headerAction }: UpdateGuideProps = {}) {
+    const { manifest } = useConfig();
     const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
 
+    const latestCatalogsTemplate = findTemplateByKind(manifest?.templates, "catalogs");
+    const catalogsOnlyUrl = latestCatalogsTemplate?.url || "";
+    const isCatalogsUrlAvailable = catalogsOnlyUrl.length > 0;
+    const displayedCatalogsValue = catalogsOnlyUrl || "Template URL is currently unavailable. Reopen once the template manifest has loaded.";
+
     const handleCopyUrl = async () => {
+        if (!isCatalogsUrlAvailable) return;
         try {
-            await navigator.clipboard.writeText(CATALOGS_ONLY_URL);
+            await navigator.clipboard.writeText(catalogsOnlyUrl);
             setCopyState("copied");
             window.setTimeout(() => setCopyState("idle"), 1800);
         } catch (error) {
@@ -91,8 +97,10 @@ export function UpdateGuide({ headerAction }: UpdateGuideProps = {}) {
 
                         <GuideCodeBlock
                             label="Catalogs-only URL"
-                            value={CATALOGS_ONLY_URL}
-                            helperText="Use this only to pull new catalogs into your existing AIOMetadata setup."
+                            value={displayedCatalogsValue}
+                            helperText={isCatalogsUrlAvailable
+                                ? "Use this only to pull new catalogs into your existing AIOMetadata setup."
+                                : "The catalogs-only template has not loaded yet, so copying is disabled for now."}
                             tone="amber"
                             className={subtleAmberPanelClass}
                             action={
@@ -100,6 +108,7 @@ export function UpdateGuide({ headerAction }: UpdateGuideProps = {}) {
                                     type="button"
                                     variant="outline"
                                     onClick={handleCopyUrl}
+                                    disabled={!isCatalogsUrlAvailable}
                                     className="h-9 w-full border-amber-500/20 bg-background/60 hover:bg-amber-500/8 sm:w-auto"
                                 >
                                     {copyState === "copied" ? "Copied" : "Copy URL"}

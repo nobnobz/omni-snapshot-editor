@@ -1,11 +1,14 @@
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useCallback, useContext, useRef, useState, ReactNode } from "react";
 import { OmniConfig } from "../lib/types";
 import { resolveCatalogName, ensureCatalogPrefix } from '@/lib/utils';
 import { CatalogFallback } from "@/lib/catalog-fallbacks";
-import { decodeConfig, encodeConfig, pruneDisabledCatalogs, pruneDisabledKeys } from "../lib/config-utils";
+import { decodeConfig, encodeConfig } from "../lib/config-utils";
 import { renameGroup, renameMainGroup, disableGroup, disableMainGroup, disableCatalog, bulkDisableCatalogs, validateAndFix, countGroupReferences, countMainGroupReferences, unassignSubgroup, assignSubgroup, createMainGroup, createSubgroup, importGroups, getAllCatalogIds, reorderCatalogGroupOrder } from "../lib/mutations";
+import { buildExportConfig } from "../lib/export-config";
+import { fetchGithubTemplates } from "../lib/github-fetch";
+import { APP_VERSION } from "@/lib/constants";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Omni configs are user-defined dynamic JSON blobs.
 type LooseAny = any;
@@ -39,7 +42,7 @@ type DeletedMainGroup = {
 
 type ImportGroupsPayload = {
     mainGroups: Record<string, LooseAny>;
-    subgroups: Record<string, { catalogs: string[]; imageUrl?: string }>;
+    subgroups: Record<string, { catalogs?: string[]; imageUrl?: string; overwriteCatalogs?: boolean; overwriteImage?: boolean }>;
     standaloneAssignments: Record<string, string>;
     metadata?: {
         custom_catalog_names?: Record<string, string>;
@@ -216,7 +219,6 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
                     setDeletedMainGroups(session.deletedMainGroups || []);
                     setCatalogs(session.catalogs || []);
                     setFileName(session.fileName || "omni-config.json");
-                    console.log("Restored editor session from localStorage");
                 }
             }
         } catch (e) {
@@ -261,34 +263,33 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
     // GitHub Manifest State
     const [manifest, setManifest] = useState<TemplateManifest | null>(null);
     const [manifestStatus, setManifestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+    const manifestStatusRef = useRef<'idle' | 'loading' | 'success' | 'error'>('idle');
 
-    const fetchManifest = async () => {
-        if (manifestStatus === 'loading' || manifestStatus === 'success') return;
+    const fetchManifest = useCallback(async () => {
+        if (manifestStatusRef.current === 'loading' || manifestStatusRef.current === 'success') return;
 
+        manifestStatusRef.current = 'loading';
         setManifestStatus('loading');
         try {
-            // Add cache-busting to bypass GitHub Raw cache (5 min)
-            const cacheBuster = `?t=${Date.now()}`;
-            const url = 'https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/manifest.json' + cacheBuster;
+            const templates = await fetchGithubTemplates();
+            
+            if (templates.length === 0) throw new Error("No templates found on GitHub");
 
-            const response = await fetch(url);
-            if (!response.ok) throw new Error("Failed to fetch manifest");
+            const data: TemplateManifest = {
+                version: APP_VERSION,
+                lastUpdated: new Date().toISOString(),
+                templates: templates
+            };
 
-            // Fetch as text first to handle potential parsing issues more gracefully
-            const text = await response.text();
-            try {
-                const data = JSON.parse(text);
-                setManifest(data);
-                setManifestStatus('success');
-            } catch (parseErr) {
-                console.error("Manifest JSON parse failed:", parseErr, text);
-                throw new Error("Invalid JSON format in manifest.json");
-            }
+            setManifest(data);
+            manifestStatusRef.current = 'success';
+            setManifestStatus('success');
         } catch (err) {
             console.error("Manifest fetch failed:", err);
+            manifestStatusRef.current = 'error';
             setManifestStatus('error');
         }
-    };
+    }, []);
 
     const loadConfig = (config: OmniConfig, fn = "omni-config.json") => {
         setOriginalConfig(config);
@@ -300,10 +301,6 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
 
         // Decode fields if they use the base64 wrapper format (_data)
         for (const [key, val] of Object.entries(rawValues)) {
-            // Remove mdblist setting for imported setups (keep only for clean template)
-            if (fn !== "clear-config.json" && key === "mdblist_enabled_ratings") {
-                continue;
-            }
             decodedValues[key] = decodeConfig(val);
         }
 
@@ -423,10 +420,25 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         } else {
             setIsSyntheticSession(false);
         }
+        // Ensure shelf_order and disabled_shelves are present
+        if (!Array.isArray(decodedValues.shelf_order)) {
+            decodedValues.shelf_order = ["Continue Watching", "Top Row", "Catalog Groups", "Catalog", "Live TV", "AI Recommendations"];
+        }
+        if (!Array.isArray(decodedValues.disabled_shelves)) {
+            decodedValues.disabled_shelves = [];
+        }
+        if (!Array.isArray(decodedValues.stream_button_elements_order) || decodedValues.stream_button_elements_order.length === 0) {
+            decodedValues.stream_button_elements_order = ["Title", "Metadata Tags", "Pattern Tags", "Addon Name"];
+        }
+        if (!Array.isArray(decodedValues.hidden_stream_button_elements)) {
+            decodedValues.hidden_stream_button_elements = [];
+        }
+
         setCatalogs(extractedCatalogs);
 
-        setCurrentValues(decodedValues);
-        setInitialValues(JSON.parse(JSON.stringify(decodedValues))); // Deep clone for safety
+        const finalizedValues = JSON.parse(JSON.stringify(decodedValues)) as ConfigValues;
+        setCurrentValues(finalizedValues);
+        setInitialValues(JSON.parse(JSON.stringify(finalizedValues)));
 
         // Populate disabledKeys from includedKeys if present
         const newDisabledKeys = new Set<string>();
@@ -445,20 +457,6 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         setDisabledCatalogs(new Set());
         setDeletedSubgroups([]);
         setDeletedMainGroups([]);
-
-        // Ensure shelf_order and disabled_shelves are present
-        if (!Array.isArray(decodedValues.shelf_order)) {
-            decodedValues.shelf_order = ["Continue Watching", "Top Row", "Catalog Groups", "Catalog", "Live TV", "AI Recommendations"];
-        }
-        if (!Array.isArray(decodedValues.disabled_shelves)) {
-            decodedValues.disabled_shelves = [];
-        }
-        if (!Array.isArray(decodedValues.stream_button_elements_order) || decodedValues.stream_button_elements_order.length === 0) {
-            decodedValues.stream_button_elements_order = ["Title", "Metadata Tags", "Pattern Tags", "Addon Name"];
-        }
-        if (!Array.isArray(decodedValues.hidden_stream_button_elements)) {
-            decodedValues.hidden_stream_button_elements = [];
-        }
     };
 
     const updateValuePath = (obj: LooseAny, path: string[], value: LooseAny): LooseAny => {
@@ -503,11 +501,13 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
             return next;
         });
 
-        if (isEnabled && originalConfig?.values) {
+        const originalValues = (originalConfig?.values || originalConfig?.config) as ConfigValues | undefined;
+
+        if (isEnabled && originalValues) {
             // Only restore if it is NOT in currentValues (preserving session-level deletions/changes)
             const currentVal = getValuePath(currentValues, keyPath);
             if (currentVal === undefined) {
-                const origVal = getValuePath(originalConfig.values, keyPath);
+                const origVal = getValuePath(originalValues, keyPath);
                 if (origVal !== undefined) {
                     // Need to decode it just in case it was a base64 originally
                     updateValue(keyPath, decodeConfig(origVal));
@@ -853,146 +853,14 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
 
     const exportConfig = (): OmniConfig | null => {
         if (!originalConfig) return null;
-
-        // 1. Start with deep clone of current decoded values
-        let clonedValues = JSON.parse(JSON.stringify(currentValues));
-
-        // 2. Prune explicitly disabled keys (from GenericRenderer toggles)
-        clonedValues = pruneDisabledKeys(clonedValues, disabledKeys);
-
-        // 3. Prune disabled and deleted catalogs
-        // Determine "dead" catalogs: they existed during load (or were added) but are NO LONGER in the catalogs state array.
-        // OR they are explicitly disabled and not used as headers.
-        const currentIdSet = new Set(catalogs.map(c => c.id));
-        const originalIdSet = new Set([
-            ...(initialValues.selected_catalogs || []),
-            ...(initialValues.catalog_ordering || []),
-            ...(initialValues.top_row_catalogs || []),
-            ...(initialValues.small_toprow_catalogs || []),
-            ...(initialValues.pinned_catalogs || []),
-            ...(initialValues.starred_catalogs || []),
-        ]);
-
-        const starred = new Set(clonedValues.starred_catalogs || []);
-        const deadCatalogs = new Set<string>();
-
-        // Catalogs explicitly disabled in manager (AND NOT headers)
-        catalogs.forEach(c => {
-            if (c.enabled === false && c.showInHome !== true && !starred.has(c.id)) {
-                deadCatalogs.add(c.id);
-            }
+        return buildExportConfig({
+            originalConfig,
+            currentValues,
+            initialValues,
+            disabledKeys,
+            catalogs,
+            isSyntheticSession,
         });
-
-        // Catalogs entirely REMOVED (Delete All)
-        originalIdSet.forEach(id => {
-            if (!currentIdSet.has(id)) {
-                deadCatalogs.add(id);
-            }
-        });
-
-        clonedValues = pruneDisabledCatalogs(clonedValues, deadCatalogs);
-
-        // 4. Validate, Fix and Reorder keys
-        // This also MUST happen while decoded
-        const validatedValues = validateAndFix(clonedValues);
-
-        // EXTRA: Set specifically ordered catalog_group_order
-        validatedValues.catalog_group_order = reorderCatalogGroupOrder(validatedValues);
-
-        // Reorder object keys to match the final catalog_group_order for sequence-dependent parsers
-        if (validatedValues.catalog_groups) {
-            const orderedGroups: Record<string, LooseAny> = {};
-            validatedValues.catalog_group_order.forEach((name: string) => {
-                if (validatedValues.catalog_groups[name]) {
-                    orderedGroups[name] = validatedValues.catalog_groups[name];
-                }
-            });
-            validatedValues.catalog_groups = orderedGroups;
-        }
-        if (validatedValues.catalog_group_image_urls) {
-            const orderedUrls: Record<string, LooseAny> = {};
-            validatedValues.catalog_group_order.forEach((name: string) => {
-                if (validatedValues.catalog_group_image_urls[name] !== undefined) {
-                    orderedUrls[name] = validatedValues.catalog_group_image_urls[name];
-                }
-            });
-            validatedValues.catalog_group_image_urls = orderedUrls;
-        }
-
-        // 5a. If manifest mode (config.catalogs[]) — real objects, not synthetic
-        const finalResult: ExportableConfig = { ...originalConfig };
-        const isSynthetic = isSyntheticSession;
-
-        if (originalConfig.config && !isSynthetic && catalogs.length > 0) {
-            // Manifest format: write catalogs back into config.catalogs[]
-            const cleanCatalogs = catalogs.map(c => { const out = { ...c }; delete out._synthetic; return out; });
-
-            // Also merge any side-array changes from currentValues (e.g. landscape_catalogs added by editor)
-            // These live in currentValues but aren't catalog objects
-            const sideArrayKeys = ['landscape_catalogs', 'small_catalogs', 'small_toprow_catalogs', 'pinned_catalogs', 'starred_catalogs', 'custom_catalog_names', 'top_row_item_limits'];
-            const mergedConfig: ConfigValues = { ...((originalConfig.config || {}) as ConfigValues) };
-            for (const key of sideArrayKeys) {
-                if (currentValues[key] !== undefined) {
-                    mergedConfig[key] = currentValues[key];
-                }
-            }
-
-            finalResult.config = { ...mergedConfig, catalogs: cleanCatalogs };
-            return finalResult;
-        }
-
-        // 5b. State format (or synthetic): encode values with updated state arrays
-        // Sync the synthetic catalog state back to currentValues arrays before encoding
-        const valuesToExport = { ...validatedValues };
-        
-        const activeIds = catalogs.map(c => c.id);
-        const enabledIds = catalogs.filter(c => c.enabled !== false).map(c => c.id);
-        const topRowIds = catalogs.filter(c => c.showInHome).map(c => c.id);
-        const customNamesOut: Record<string, string> = {};
-        const limitsOut: Record<string, number> = {};
-        
-        catalogs.forEach(c => {
-            if (c.name && c.name !== c.id) customNamesOut[c.id] = c.name;
-            if (c.metadata?.itemCount) limitsOut[c.id] = c.metadata.itemCount;
-        });
-
-        // Always update these primary source arrays regardless of session type
-        // to ensure manager changes are reflected in both catalogs[] and legacy arrays.
-        let finalEnabledIds = enabledIds;
-        if (finalEnabledIds.length > 1 && finalEnabledIds.includes("omni_empty_setup_placeholder")) {
-            finalEnabledIds = finalEnabledIds.filter(id => id !== "omni_empty_setup_placeholder");
-        }
-        valuesToExport.selected_catalogs = finalEnabledIds;
-        
-        // Also update catalog_ordering. It MUST contain all catalogs (including hidden ones) to preserve order
-        if (valuesToExport.catalog_ordering !== undefined || !isSynthetic) {
-            valuesToExport.catalog_ordering = activeIds;
-        }
-        
-        valuesToExport.top_row_catalogs = topRowIds;
-        
-        if (Object.keys(customNamesOut).length) {
-            valuesToExport.custom_catalog_names = { ...(valuesToExport.custom_catalog_names || {}), ...customNamesOut };
-        }
-        
-        if (Object.keys(limitsOut).length) {
-            valuesToExport.top_row_item_limits = { ...(valuesToExport.top_row_item_limits || {}), ...limitsOut };
-        }
-
-        const originalValues = originalConfig.values || originalConfig.config || {};
-        const encodedValues = encodeConfig(valuesToExport, originalValues, disabledKeys);
-
-        if (originalConfig.values) {
-            finalResult.values = encodedValues;
-            finalResult.includedKeys = Object.keys(encodedValues);
-        } else if (originalConfig.config) {
-            finalResult.config = encodedValues;
-        } else {
-            finalResult.values = encodedValues;
-            finalResult.includedKeys = Object.keys(encodedValues);
-        }
-
-        return finalResult;
     };
 
     const exportPartialConfig = (sectionKeys: string[]): OmniConfig | null => {

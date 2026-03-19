@@ -32,6 +32,7 @@ import { Button } from "@/components/ui/button";
 import { useConfig } from "@/context/ConfigContext";
 import { downloadTemplateFile } from "@/lib/template-download";
 import { getTemplateDisplay } from "@/lib/template-display";
+import { FALLBACK_TEMPLATE_URLS, findTemplateByKind } from "@/lib/template-manifest";
 import { editorHover } from "@/components/editor/ui/style-contract";
 import { GuideHeader } from "@/components/editor/GuideHeader";
 import {
@@ -56,27 +57,28 @@ type FeatureCard = {
 export function Documentation({ headerAction, onOpenInstallGuide }: DocumentationProps = {}) {
     const { manifest } = useConfig();
 
+    const omniTemplate = findTemplateByKind(manifest?.templates, "omni");
+    const aiomTemplate = findTemplateByKind(manifest?.templates, "aiometadata");
+    const aiosTemplate = findTemplateByKind(manifest?.templates, "aiostreams");
+
     const templates = [
         {
             name: "Omni Snapshot",
             id: "ume-main",
-            url:
-                manifest?.templates?.find((t) => t.id === "ume-main")?.url ||
-                "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/fusion-template-bot-bid-raiser-v1.6.2.json",
+            manifestName: omniTemplate?.name || "UME Omni Template",
+            url: omniTemplate?.url || FALLBACK_TEMPLATE_URLS.omni,
         },
         {
             name: "AIOMetadata",
             id: "aiometadata",
-            url:
-                manifest?.templates?.find((t) => t.id === "aiometadata")?.url ||
-                "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/aiometadata-patterns-v1.json",
+            manifestName: aiomTemplate?.name || "UME AIOMetadata Template",
+            url: aiomTemplate?.url || "",
         },
         {
             name: "AIOStreams",
             id: "aiostreams",
-            url:
-                manifest?.templates?.find((t) => t.id === "aiostreams")?.url ||
-                "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/aiostreams-patterns-v1.json",
+            manifestName: aiosTemplate?.name || "UME AIOStreams Template",
+            url: aiosTemplate?.url || "",
         },
     ];
 
@@ -374,14 +376,18 @@ export function Documentation({ headerAction, onOpenInstallGuide }: Documentatio
                 >
                     <div className="flex flex-wrap gap-2.5">
                         {templates.map((item) => {
-                            const manifestName = manifest?.templates?.find((t) => t.id === item.id)?.name || item.name;
-                            const display = getTemplateDisplay(manifestName, item.id);
+                            const isAvailable = !!item.url;
+                            const display = getTemplateDisplay(item.manifestName, item.id);
 
                             return (
                                 <Button
                                     key={item.id}
-                                    onClick={() => handleDownload(item.url, manifestName)}
+                                    onClick={() => {
+                                        if (!isAvailable) return;
+                                        handleDownload(item.url, item.manifestName);
+                                    }}
                                     variant="outline"
+                                    disabled={!isAvailable}
                                     className={guideActionButtonClass}
                                 >
                                     <span className="flex min-w-0 items-center gap-3">
@@ -393,6 +399,11 @@ export function Documentation({ headerAction, onOpenInstallGuide }: Documentatio
                                             {display.version && (
                                                 <span className="mt-0.5 block text-[10px] leading-tight text-foreground/46 font-medium tracking-[0.04em]">
                                                     {display.version}
+                                                </span>
+                                            )}
+                                            {!isAvailable && (
+                                                <span className="mt-0.5 block text-[10px] leading-tight text-foreground/40 font-medium tracking-[0.04em] italic">
+                                                    Currently unavailable
                                                 </span>
                                             )}
                                         </span>

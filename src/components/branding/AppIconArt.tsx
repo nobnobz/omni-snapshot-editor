@@ -38,6 +38,7 @@ export function AppIconArt({ size, maskable = false, imageData }: AppIconArtProp
       >
         {imageData ? (
           // Use custom image if provided (clown.png)
+          // eslint-disable-next-line @next/next/no-img-element -- This component is rendered into generated icon assets, not a normal page image.
           <img
             src={imageData}
             alt="App Icon"

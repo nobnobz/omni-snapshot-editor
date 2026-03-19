@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.4.3] - 2026-03-19
+### Added
+- **Dynamic Template Discovery**: Implemented GitHub repository tree traversal for real-time UME template discovery, replacing static manifests.
+- **Export Consolidation**: New export logic via `export-config.ts` ensuring semantic consistency between `values`- and `config`-based Omni snapshots.
+- **Group Manager Search**: Added localized search/filter functionality for Main Groups and Subgroup sections.
+- **Granular Updates**: Implemented separate import toggles for Catalog updates and Image updates during Subgroup synchronization.
+- **Template Infrastructure**: Unified template management via a new manifest helper module for consistent logic across loaders, guides, and downloads.
+- **Tab Bar Identity**: Integrated a custom high-quality clown icon for browser tabs with Safari cache-busting compatibility.
+
+### Changed
+- **Home Screen Overhaul**: Refined template selection to use URL-based matching and category-based download lists for improved reliability.
+- **UI Refinements**: Optimized Group Manager toolbar responsiveness and enhanced Main Group card layouts.
+- **Interaction Model**: Switched from single to multiple-open support for accordion sections in the Group Manager.
+- **Catalog Management**: Improved re-activation behavior to preserve `showInHome` settings from the original manifest state.
+
+### Fixed
+- **Discovery Reliability**: Fixed a critical issue where `catalogs-only` templates weren't consistently identified from GitHub.
+- **Data Integrity**: Ensured Config-Root exports preserve critical fields like `mdblist_enabled_ratings`.
+- **Legacy Compatibility**: Automated backfilling of default values for `shelf_order`, `disabled_shelves`, and stream button settings in older configurations.
+- **Stability**: Hardened guide and download flows against empty or missing URLs; cleared all pending Hook and TypeScript type warnings.
+
+### Technical
+- Cleaned up ESLint warnings and TypeScript type errors.
+- Verified successful production build and passing test suite.
+
 ## [0.4.2] - 2026-03-17
 ### Added
 - **AIOMetadata URL Import**: Support for importing catalogs directly via manifest URLs with integrated fetching.
