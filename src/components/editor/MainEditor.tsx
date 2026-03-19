@@ -1208,7 +1208,7 @@ export function MainEditor() {
                                                                         type="button"
                                                                         variant="outline"
                                                                         size="icon-sm"
-                                                                        className="size-8 rounded-lg border-emerald-500/22 bg-white/55 text-emerald-700 hover:bg-emerald-500/10 hover:text-emerald-700 dark:bg-background/30 dark:text-emerald-400"
+                                                                        className="size-8 rounded-xl border-emerald-500/18 bg-emerald-500/[0.06] text-emerald-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] hover:border-emerald-500/28 hover:bg-emerald-500/[0.1] hover:text-emerald-700 dark:bg-emerald-500/[0.08] dark:text-emerald-400"
                                                                         onClick={() => void handleResyncAIOMetadata()}
                                                                         disabled={isImportingUrl}
                                                                         aria-label={isImportingUrl ? "Syncing AIOMetadata" : "Sync AIOMetadata again"}
@@ -1221,7 +1221,7 @@ export function MainEditor() {
                                                                     type="button"
                                                                     variant="outline"
                                                                     size="icon-sm"
-                                                                    className="size-8 rounded-lg border-border/60 hover:bg-muted/50"
+                                                                    className="size-8 rounded-xl border-emerald-500/14 bg-emerald-500/[0.04] text-emerald-700/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] hover:border-emerald-500/24 hover:bg-emerald-500/[0.08] hover:text-emerald-700 dark:bg-emerald-500/[0.06] dark:text-emerald-400/90"
                                                                     onClick={handleEditAIOMetadataSource}
                                                                     aria-label="Change AIOMetadata source"
                                                                     title="Change Source"
