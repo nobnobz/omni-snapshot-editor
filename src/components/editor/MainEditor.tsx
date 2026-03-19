@@ -1389,7 +1389,7 @@ export function MainEditor() {
                                         <div className="space-y-6">
                                             <div className="space-y-5">
                                                 <p className="text-sm text-foreground/70 px-1 leading-relaxed">
-                                                    Manage global catalogs that appear below your groups. Enable/disable them, adjust appearance (e.g. landscape), and configure the ranked Top Row display.
+                                                    Manage global catalogs that appear below your groups. Enable/disable them, adjust appearance and configure the ranked Top Row or Header display.
                                                 </p>
                                                 <CatalogEditor />
                                             </div>
