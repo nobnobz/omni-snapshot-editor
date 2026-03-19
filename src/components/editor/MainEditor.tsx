@@ -1101,7 +1101,7 @@ export function MainEditor() {
                                 uiNotice.tone === "error"
                                     ? editorNoticeTone.danger
                                     : uiNotice.tone === "success"
-                                        ? "border-emerald-500/16 bg-emerald-500/7 text-emerald-700 shadow-[0_8px_20px_rgba(34,197,94,0.06)] dark:text-emerald-300"
+                                        ? "border-emerald-500/16 bg-emerald-500/7 text-emerald-700 shadow-[0_8px_20px_rgba(34,197,94,0.06)] dark:text-emerald-400"
                                         : editorNoticeTone.info
                             )}
                             role="status"
