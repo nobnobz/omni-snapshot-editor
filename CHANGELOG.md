@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.6] - 2026-03-20
+### Fixed
+- **Catalog Export**: Refined export semantics for empty catalog selections. `selected_catalogs` is now explicitly exported as a real empty array (`[]`) and included in `includedKeys` to preserve state across sessions.
+- **Template Updates**: Fixed `Update From Template` to ensure it only affects the Group Manager, preventing unintended activation of large numbers of catalogs in the Catalog Manager.
+- **Catalog Deletion**: Resolved an issue where deleting catalogs would unintentionally mutate Group Manager subgroup links. Deletion now strictly cleans manager-side entries.
+
+### Improved
+- **Update Flow**: Reworked the `Update From Existing Setup` UI for better clarity, adding search functionality for groups, reducing redundant controls, and implementing sticky headers.
+- **Granular Imports**: Enhanced Main Group imports to allow explicit selection of linked subgroups instead of implicit full-group imports.
+- **UI Consistency**: Standardized `Unassigned Subgroups` interaction with the same chevron-based expand/collapse behavior used throughout the editor.
+
 ## [0.4.5] - 2026-03-20
 ### Fixed
 - **iCloud Sync**: Resolved an issue where disabled catalogs were incorrectly re-enabled during synchronization.

@@ -10,9 +10,10 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useConfig } from "@/context/ConfigContext";
 import { formatDisplayName, cn } from "@/lib/utils";
-import { UploadCloud, AlertTriangle, ChevronDown, CheckSquare, Square, RefreshCw, Image as ImageIcon, BookOpen } from "lucide-react";
+import { UploadCloud, AlertTriangle, ChevronDown, BookOpen, Search, RefreshCw, Image as ImageIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { decodeConfig } from "@/lib/config-utils";
@@ -79,6 +80,11 @@ const importSetupTone = {
     warningBadge: "border-orange-500/20 bg-orange-500/10 text-orange-700 dark:text-orange-400",
     infoBadge: "border-primary/30 bg-primary/10 text-primary dark:text-primary",
 } as const;
+
+const importSetupChipBase =
+    "h-6 rounded-full border px-2.5 text-[11px] font-medium transition-[background-color,border-color,color,box-shadow] duration-150";
+const importSetupChipIdle =
+    "border-border/70 bg-background/35 text-foreground/72 hover:text-foreground hover:bg-muted/65 hover:border-border";
 
 export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupModalProps) {
     const { currentValues, importGroups, manifest, fetchManifest } = useConfig();
@@ -169,9 +175,12 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
 
     // Selections
     const [selectedMainGroupUuids, setSelectedMainGroupUuids] = useState<Set<string>>(new Set());
+    const [selectedMainGroupSubgroups, setSelectedMainGroupSubgroups] = useState<Record<string, string[]>>({});
     const [selectedStandaloneSubgroups, setSelectedStandaloneSubgroups] = useState<Set<string>>(new Set());
     const [selectedCatalogUpdateSubgroups, setSelectedCatalogUpdateSubgroups] = useState<Set<string>>(new Set());
     const [selectedImageUpdateSubgroups, setSelectedImageUpdateSubgroups] = useState<Set<string>>(new Set());
+    const [activeReviewTab, setActiveReviewTab] = useState<"subgroups" | "main">("subgroups");
+    const [reviewSearch, setReviewSearch] = useState("");
 
     // assignments: subgroupName -> targetMainGroupUuid (from the CURRENT setup, not the parsed one)
     const [standaloneAssignments, setStandaloneAssignments] = useState<Record<string, string>>({});
@@ -183,9 +192,12 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         setParsedMainGroups([]);
         setParsedSubgroups([]);
         setSelectedMainGroupUuids(new Set());
+        setSelectedMainGroupSubgroups({});
         setSelectedStandaloneSubgroups(new Set());
         setSelectedCatalogUpdateSubgroups(new Set());
         setSelectedImageUpdateSubgroups(new Set());
+        setActiveReviewTab("subgroups");
+        setReviewSearch("");
         setStandaloneAssignments({});
         setImportedValues({});
         setSelectedGlobalKeys(new Set());
@@ -418,14 +430,17 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
 
         parsedMainGroups.forEach(mg => {
             if (selectedMainGroupUuids.has(mg.originalUuid)) {
+                const selectedSubgroups = selectedMainGroupSubgroups[mg.originalUuid] || mg.subgroupNames;
+                if (selectedSubgroups.length === 0) return;
+
                 payloadMainGroups[mg.originalUuid] = {
                     name: mg.name,
-                    subgroupNames: mg.subgroupNames,
+                    subgroupNames: selectedSubgroups,
                     posterType: mg.posterType,
                     posterSize: mg.posterSize
                 };
 
-                mg.subgroupNames.forEach(sgName => {
+                selectedSubgroups.forEach(sgName => {
                     subgroupsIncludedViaMainGroups.add(sgName);
                     const parsedSg = parsedSubgroups.find(s => s.name === sgName);
                     if (parsedSg) {
@@ -536,10 +551,61 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
 
         if (!isNowSelected) {
             next.delete(uuid);
+            setSelectedMainGroupSubgroups(prev => {
+                const nextSubgroups = { ...prev };
+                delete nextSubgroups[uuid];
+                return nextSubgroups;
+            });
         } else {
             next.add(uuid);
+            if (mg) {
+                setSelectedMainGroupSubgroups(prev => ({
+                    ...prev,
+                    [uuid]: [...mg.subgroupNames]
+                }));
+            }
         }
         setSelectedMainGroupUuids(next);
+    };
+
+    const toggleMainGroupSubgroup = (uuid: string, subgroupName: string) => {
+        const mg = parsedMainGroups.find(group => group.originalUuid === uuid);
+        if (!mg) return;
+
+        const isMainSelected = selectedMainGroupUuids.has(uuid);
+        const currentSelection = selectedMainGroupSubgroups[uuid] || mg.subgroupNames;
+
+        if (!isMainSelected) {
+            setSelectedMainGroupUuids(prev => new Set(prev).add(uuid));
+            setSelectedMainGroupSubgroups(prev => ({
+                ...prev,
+                [uuid]: [subgroupName]
+            }));
+            return;
+        }
+
+        const nextSelection = currentSelection.includes(subgroupName)
+            ? currentSelection.filter(name => name !== subgroupName)
+            : [...currentSelection, subgroupName];
+
+        if (nextSelection.length === 0) {
+            setSelectedMainGroupUuids(prev => {
+                const next = new Set(prev);
+                next.delete(uuid);
+                return next;
+            });
+            setSelectedMainGroupSubgroups(prev => {
+                const next = { ...prev };
+                delete next[uuid];
+                return next;
+            });
+            return;
+        }
+
+        setSelectedMainGroupSubgroups(prev => ({
+            ...prev,
+            [uuid]: nextSelection
+        }));
     };
 
     const toggleStandaloneSubgroup = (name: string, isDisabled: boolean) => {
@@ -573,39 +639,23 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         setSelectedImageUpdateSubgroups(next);
     };
 
-    const toggleAllDuplicateUpdates = (sg: ParsedSubgroup) => {
-        const hasAnySelection =
-            selectedCatalogUpdateSubgroups.has(sg.name) ||
-            selectedImageUpdateSubgroups.has(sg.name);
-
-        const nextCatalogs = new Set(selectedCatalogUpdateSubgroups);
-        const nextImages = new Set(selectedImageUpdateSubgroups);
-
-        if (hasAnySelection) {
-            nextCatalogs.delete(sg.name);
-            nextImages.delete(sg.name);
-        } else {
-            if (sg.hasNewCatalogs) nextCatalogs.add(sg.name);
-            if (sg.hasNewImage) nextImages.add(sg.name);
-        }
-
-        setSelectedCatalogUpdateSubgroups(nextCatalogs);
-        setSelectedImageUpdateSubgroups(nextImages);
-    };
-
     // Bulk Actions Main Groups
     const selectAllMain = () => {
         const next = new Set<string>();
+        const nextSubgroups: Record<string, string[]> = {};
         parsedMainGroups.forEach(mg => {
             if (!mg.isDuplicate || mg.hasChanges) {
                 next.add(mg.originalUuid);
+                nextSubgroups[mg.originalUuid] = [...mg.subgroupNames];
             }
         });
         setSelectedMainGroupUuids(next);
+        setSelectedMainGroupSubgroups(nextSubgroups);
     };
 
     const deselectAllMain = () => {
         setSelectedMainGroupUuids(new Set());
+        setSelectedMainGroupSubgroups({});
     };
 
     // Bulk Actions Subgroups
@@ -666,7 +716,32 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
     const currentMainGroups = currentValues.main_catalog_groups || {};
     const currentMainGroupOrder = currentValues.main_group_order || [];
     const isSubgroupIncludedViaSelectedMainGroup = (name: string) =>
-        parsedMainGroups.some(mg => selectedMainGroupUuids.has(mg.originalUuid) && mg.subgroupNames.includes(name));
+        parsedMainGroups.some(mg => {
+            if (!selectedMainGroupUuids.has(mg.originalUuid)) return false;
+            const selectedSubgroups = selectedMainGroupSubgroups[mg.originalUuid] || mg.subgroupNames;
+            return selectedSubgroups.includes(name);
+        });
+
+    const normalizedReviewSearch = reviewSearch.trim().toLowerCase();
+    const matchesReviewSearch = (...values: Array<string | undefined>) => {
+        if (!normalizedReviewSearch) return true;
+        return values.some(value => value?.toLowerCase().includes(normalizedReviewSearch));
+    };
+
+    const filteredMainGroups = parsedMainGroups.filter(mg =>
+        matchesReviewSearch(
+            mg.name,
+            ...mg.subgroupNames,
+        )
+    );
+
+    const filteredSubgroups = parsedSubgroups.filter(sg =>
+        matchesReviewSearch(
+            sg.name,
+            sg.category,
+            ...sg.catalogs,
+        )
+    );
 
     const totalSelectedSubgroups = new Set([
         ...selectedStandaloneSubgroups,
@@ -826,7 +901,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                 )}
 
                 {step === 2 && (
-                    <Tabs defaultValue="subgroups" className="w-full flex-1 min-h-0 flex flex-col">
+                    <Tabs value={activeReviewTab} onValueChange={(value) => setActiveReviewTab(value as "subgroups" | "main")} className="w-full flex-1 min-h-0 flex flex-col">
                         <TabsList className={cn(editorSurface.toolbar, "grid w-full grid-cols-2 p-1 h-11 rounded-xl shrink-0")}>
                             <TabsTrigger
                                 value="subgroups"
@@ -842,28 +917,64 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                             </TabsTrigger>
                         </TabsList>
 
-                        <div className={cn(editorSurface.card, "mt-4 flex-1 min-h-0 overflow-y-auto custom-scrollbar")}>
+                        <div className="mt-4 relative shrink-0">
+                            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/45" />
+                            <Input
+                                value={reviewSearch}
+                                onChange={(e) => setReviewSearch(e.target.value)}
+                                placeholder={activeReviewTab === "subgroups" ? "Search subgroups, categories or catalog IDs..." : "Search main groups or linked subgroups..."}
+                                className={cn(editorSurface.field, "h-10 pl-9")}
+                            />
+                        </div>
+
+                        <div className={cn(editorSurface.card, "relative mt-4 flex-1 min-h-0 overflow-x-hidden overflow-y-auto custom-scrollbar")}>
                             <div className="h-full">
                                 <TabsContent value="main" className="p-0 m-0">
                                     {parsedMainGroups.length === 0 ? (
                                         <div className="p-8 text-center text-foreground/70 italic">No Main Groups found in this file.</div>
+                                    ) : filteredMainGroups.length === 0 ? (
+                                        <div className="p-8 text-center text-foreground/70 italic">No main groups match your search.</div>
                                     ) : (
                                         <div className="flex flex-col divide-y divide-border/50">
-                                            <div className="px-3 py-2 bg-white/26 dark:bg-white/[0.03] border-b border-slate-200/80 dark:border-white/8 flex items-center gap-2">
-                                                <Button variant="outline" size="sm" onClick={selectAllMain} className="h-10 sm:h-8 text-sm sm:text-xs bg-background/50 border-border text-foreground/80 hover:bg-muted">Select All New</Button>
-                                                <Button variant="ghost" size="sm" onClick={deselectAllMain} className="h-10 sm:h-8 text-sm sm:text-xs text-foreground/70 hover:text-foreground hover:bg-muted/50">Deselect All</Button>
+                                            <div className={cn(editorSurface.cardInteractive, "rounded-none border-x-0 border-t-0 shadow-none flex items-center justify-end gap-2 px-4 py-3")}>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={selectAllMain}
+                                                    className={cn(importSetupChipBase, importSetupChipIdle, "px-2.5")}
+                                                >
+                                                    All new
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={deselectAllMain}
+                                                    className={cn(importSetupChipBase, importSetupChipIdle, "px-2.5")}
+                                                >
+                                                    None
+                                                </Button>
                                             </div>
-                                            {parsedMainGroups.map(mg => {
+                                            {filteredMainGroups.map(mg => {
                                                 const isFullyImported = mg.isDuplicate && !mg.hasChanges;
+                                                const isSelected = selectedMainGroupUuids.has(mg.originalUuid);
+                                                const selectedSubgroups = isSelected
+                                                    ? (selectedMainGroupSubgroups[mg.originalUuid] || mg.subgroupNames)
+                                                    : [];
                                                 return (
                                                     <div
                                                         key={mg.originalUuid}
-                                                        className={`flex items-start p-4 transition-colors ${isFullyImported ? 'opacity-55 bg-muted/[0.04] cursor-not-allowed' : 'hover:bg-primary/10 dark:hover:bg-primary/16 cursor-pointer'}`}
-                                                        onClick={() => !isFullyImported && toggleMainGroup(mg.originalUuid)}
+                                                        className={cn(
+                                                            "flex items-start p-4 transition-colors",
+                                                            isSelected
+                                                                ? "bg-primary/10 dark:bg-primary/16"
+                                                                : isFullyImported
+                                                                    ? "opacity-55 bg-muted/[0.04]"
+                                                                    : "hover:bg-primary/6 dark:hover:bg-primary/10"
+                                                        )}
                                                     >
                                                         <Checkbox
                                                             id={`mg-${mg.originalUuid}`}
-                                                            checked={selectedMainGroupUuids.has(mg.originalUuid) || isFullyImported}
+                                                            checked={isSelected || isFullyImported}
                                                             disabled={isFullyImported}
                                                             onCheckedChange={() => !isFullyImported && toggleMainGroup(mg.originalUuid)}
                                                             className="mt-1"
@@ -877,22 +988,40 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                                     <Badge variant="outline" className={cn("ml-2 text-xs uppercase", importSetupTone.warningBadge)}>Update</Badge>
                                                                 ) : null}
                                                             </label>
+                                                            {mg.subgroupNames.length > 0 && (
+                                                                <div className="mt-1 text-xs text-foreground/60">
+                                                                    {selectedSubgroups.length} of {mg.subgroupNames.length} subgroups selected
+                                                                </div>
+                                                            )}
 
                                                             {mg.subgroupNames.length > 0 && (
-                                                                <div className="mt-2 pl-3 border-l-2 border-border space-y-1">
+                                                                <div className="mt-3 pl-3 border-l-2 border-border space-y-2">
                                                                     {mg.subgroupNames.map(sg => {
                                                                         const parsedSg = parsedSubgroups.find(p => p.name === sg);
                                                                         const isSgDup = parsedSg?.isDuplicate;
                                                                         const hasSgCatalogUpdate = !!parsedSg?.hasNewCatalogs;
                                                                         const hasSgImageUpdate = !!parsedSg?.hasNewImage;
                                                                         const hasSgUpdate = hasSgCatalogUpdate || hasSgImageUpdate;
+                                                                        const isSgSelected = isSelected && selectedSubgroups.includes(sg);
                                                                         return (
-                                                                            <div key={sg} className="flex items-center text-xs text-foreground/70">
-                                                                                <span className={`truncate ${isSgDup && !hasSgUpdate ? 'line-through opacity-70' : ''}`}>{formatDisplayName(sg)}</span>
-                                                                                {isSgDup && !hasSgUpdate && <span className="ml-2 text-xs text-foreground/70/70">(Will use existing)</span>}
-                                                                                {isSgDup && hasSgCatalogUpdate && !hasSgImageUpdate && <span className="ml-2 text-xs text-orange-400/90">(Update catalogs)</span>}
-                                                                                {isSgDup && !hasSgCatalogUpdate && hasSgImageUpdate && <span className="ml-2 text-xs text-primary/90">(Update image)</span>}
-                                                                                {isSgDup && hasSgCatalogUpdate && hasSgImageUpdate && <span className="ml-2 text-xs text-orange-400/90">(Update catalogs + image)</span>}
+                                                                            <div key={sg} className="flex items-start gap-2 text-xs">
+                                                                                <Checkbox
+                                                                                    checked={isSgSelected}
+                                                                                    disabled={isFullyImported}
+                                                                                    onCheckedChange={() => !isFullyImported && toggleMainGroupSubgroup(mg.originalUuid, sg)}
+                                                                                    className="mt-0.5"
+                                                                                />
+                                                                                <div className="min-w-0 flex-1">
+                                                                                    <div className={cn("truncate text-foreground/80", !isSgSelected && "text-foreground/55")}>
+                                                                                        {formatDisplayName(sg)}
+                                                                                    </div>
+                                                                                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-foreground/55">
+                                                                                        {isSgDup && !hasSgUpdate && <span>Use existing subgroup</span>}
+                                                                                        {isSgDup && hasSgCatalogUpdate && <span className="text-orange-400/90">Catalog changes</span>}
+                                                                                        {isSgDup && hasSgImageUpdate && <span className="text-primary/90">Image changes</span>}
+                                                                                        {!isSgDup && <span>New subgroup</span>}
+                                                                                    </div>
+                                                                                </div>
                                                                             </div>
                                                                         );
                                                                     })}
@@ -909,57 +1038,14 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                 <TabsContent value="subgroups" className="p-0 m-0">
                                     {parsedSubgroups.length === 0 ? (
                                         <div className="p-8 text-center text-foreground/70 italic">No Subgroups found in this file.</div>
+                                    ) : filteredSubgroups.length === 0 ? (
+                                        <div className="p-8 text-center text-foreground/70 italic">No subgroups match your search.</div>
                                     ) : (
-                                        <div className="flex flex-col divide-y divide-border/50">
-                                            <div className="px-5 py-3 border-b border-border/40">
-                                                <p className="text-xs text-foreground/70 italic leading-relaxed">
-                                                    Select new subgroups you want to import. For existing subgroups, you can now choose catalog and image updates separately.
-                                                </p>
-                                            </div>
-                                            <div className="p-3 bg-white/24 dark:bg-white/[0.03] border-b border-slate-200/80 dark:border-white/8">
-                                                <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row">
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={selectAllSubgroups}
-                                                        className="flex-1 h-10 sm:h-9 text-xs sm:text-sm bg-background/50 border-border hover:bg-muted text-foreground/80 font-semibold justify-center"
-                                                    >
-                                                        <CheckSquare className="w-3.5 h-3.5 mr-2 opacity-70" />
-                                                        Select All
-                                                    </Button>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={deselectAllSubgroups}
-                                                        className="flex-1 h-10 sm:h-9 text-xs sm:text-sm bg-background/50 border-border hover:bg-muted text-foreground/70 font-semibold justify-center"
-                                                    >
-                                                        <Square className="w-3.5 h-3.5 mr-2 opacity-70" />
-                                                        Deselect All
-                                                    </Button>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={selectCatalogUpdates}
-                                                        className={cn("flex-1 h-10 sm:h-9 text-xs sm:text-sm font-semibold justify-center", importSetupTone.warningAction)}
-                                                    >
-                                                        <RefreshCw className="w-3.5 h-3.5 mr-2 opacity-90" />
-                                                        Update Catalogs
-                                                    </Button>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={selectImageUpdates}
-                                                        className={cn("flex-1 h-10 sm:h-9 text-xs sm:text-sm font-semibold justify-center", importSetupTone.infoAction)}
-                                                    >
-                                                        <ImageIcon className="w-3.5 h-3.5 mr-2 opacity-90" />
-                                                        Update Images
-                                                    </Button>
-                                                </div>
-                                            </div>
+                                        <div className="flex flex-col">
                                             {(() => {
-                                                const newSgs = parsedSubgroups.filter(sg => !sg.isDuplicate);
-                                                const mergeSgs = parsedSubgroups.filter(sg => sg.isDuplicate && (sg.hasNewCatalogs || sg.hasNewImage));
-                                                const existingSgs = parsedSubgroups.filter(sg => sg.isDuplicate && !sg.hasNewCatalogs && !sg.hasNewImage);
+                                                const newSgs = filteredSubgroups.filter(sg => !sg.isDuplicate);
+                                                const mergeSgs = filteredSubgroups.filter(sg => sg.isDuplicate && (sg.hasNewCatalogs || sg.hasNewImage));
+                                                const existingSgs = filteredSubgroups.filter(sg => sg.isDuplicate && !sg.hasNewCatalogs && !sg.hasNewImage);
 
                                                 const renderSubgroupRow = (sg: ParsedSubgroup) => {
                                                     const isStandaloneSelected = selectedStandaloneSubgroups.has(sg.name);
@@ -967,44 +1053,39 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                     const isImageUpdateSelected = selectedImageUpdateSubgroups.has(sg.name);
                                                     const includedInMain = isSubgroupIncludedViaSelectedMainGroup(sg.name);
                                                     const isFullyExisting = sg.isDuplicate && !sg.hasNewCatalogs && !sg.hasNewImage;
+                                                    const isUpdateRow = sg.isDuplicate && (sg.hasNewCatalogs || sg.hasNewImage);
                                                     const isIncludedWithMain = includedInMain && !sg.isDuplicate;
                                                     const hasAnyDuplicateUpdateSelection = isCatalogUpdateSelected || isImageUpdateSelected;
                                                     const isCheckboxDisabled = isFullyExisting || isIncludedWithMain;
-                                                    const isChecked = sg.isDuplicate
-                                                        ? hasAnyDuplicateUpdateSelection
-                                                        : includedInMain
-                                                            ? true
-                                                            : isStandaloneSelected;
+                                                    const isChecked = includedInMain ? true : isStandaloneSelected;
+                                                    const isSelected = isUpdateRow ? hasAnyDuplicateUpdateSelection : isChecked;
+                                                    const showCheckbox = !sg.isDuplicate;
+                                                    const metaBits = [
+                                                        `${sg.catalogs.length} ${sg.catalogs.length === 1 ? "catalog" : "catalogs"}`,
+                                                        sg.category,
+                                                    ].filter(Boolean);
 
-                                                    return (
-                                                        <div
-                                                            key={sg.name}
-                                                            className={`flex items-center p-4 transition-colors ${isCheckboxDisabled ? 'opacity-55 bg-muted/[0.04]' : 'hover:bg-primary/10 dark:hover:bg-primary/16'}`}
-                                                        >
-                                                            <Checkbox
-                                                                id={`sg-${sg.name}`}
-                                                                checked={isChecked}
-                                                                disabled={isCheckboxDisabled}
-                                                                onCheckedChange={() => {
-                                                                    if (sg.isDuplicate) {
-                                                                        toggleAllDuplicateUpdates(sg);
-                                                                        return;
-                                                                    }
-                                                                    toggleStandaloneSubgroup(sg.name, isCheckboxDisabled);
-                                                                }}
-                                                            />
-                                                            <div className="ml-3 flex-1 min-w-0 pr-4">
-                                                                <label htmlFor={`sg-${sg.name}`} className={`font-semibold text-sm block truncate ${isCheckboxDisabled ? '' : 'cursor-pointer'}`}>
-                                                                    {formatDisplayName(sg.name)}
-                                                                    {sg.isDuplicate && sg.hasNewCatalogs && <Badge variant="outline" className={cn("ml-2 text-xs uppercase", importSetupTone.warningBadge)}>Replace Catalogs</Badge>}
-                                                                    {sg.isDuplicate && !sg.hasNewCatalogs && !sg.hasNewImage && <Badge variant="outline" className={cn("ml-2 text-xs uppercase", editorToneBadge.neutral)}>Existing</Badge>}
-                                                                    {sg.hasNewImage && <Badge variant="outline" className={cn("ml-2 text-xs uppercase", importSetupTone.infoBadge)}>Update Image</Badge>}
-                                                                    {includedInMain && !sg.isDuplicate && <Badge variant="outline" className={cn("ml-2 text-xs uppercase", importSetupTone.infoBadge)}>Included w/ Main</Badge>}
-                                                                </label>
-                                                                <div className="text-xs text-foreground/70 mt-0.5">{sg.catalogs.length} {sg.catalogs.length === 1 ? 'Catalog' : 'Catalogs'}</div>
-
-                                                                {sg.isDuplicate && (sg.hasNewCatalogs || sg.hasNewImage) && (
-                                                                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                                                    if (isUpdateRow) {
+                                                        return (
+                                                            <div
+                                                                key={sg.name}
+                                                                className={cn(
+                                                                    "px-4 py-3 transition-colors",
+                                                                    isSelected
+                                                                        ? "bg-primary/[0.045] border-l-2 border-primary/35"
+                                                                        : "hover:bg-primary/6 dark:hover:bg-primary/10 border-l-2 border-transparent"
+                                                                )}
+                                                            >
+                                                                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                                                                    <div className="min-w-0 flex-1">
+                                                                        <div className="truncate text-sm font-semibold text-foreground">
+                                                                            {formatDisplayName(sg.name)}
+                                                                        </div>
+                                                                        <div className="mt-0.5 text-xs text-foreground/65">
+                                                                            {metaBits.join(" • ")}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                                                                         {sg.hasNewCatalogs && (
                                                                             <Button
                                                                                 type="button"
@@ -1012,13 +1093,14 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                                                 size="sm"
                                                                                 onClick={() => toggleCatalogUpdate(sg.name)}
                                                                                 className={cn(
-                                                                                    "h-7 text-xs",
+                                                                                    importSetupChipBase,
                                                                                     isCatalogUpdateSelected
                                                                                         ? importSetupTone.warningAction
-                                                                                        : "bg-background/50 border-border text-foreground/70 hover:bg-muted"
+                                                                                        : importSetupChipIdle
                                                                                 )}
                                                                             >
-                                                                                Catalogs
+                                                                                <RefreshCw className="mr-1.5 h-3 w-3" />
+                                                                                Update catalogs
                                                                             </Button>
                                                                         )}
                                                                         {sg.hasNewImage && (
@@ -1028,22 +1110,52 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                                                 size="sm"
                                                                                 onClick={() => toggleImageUpdate(sg.name)}
                                                                                 className={cn(
-                                                                                    "h-7 text-xs",
+                                                                                    importSetupChipBase,
                                                                                     isImageUpdateSelected
                                                                                         ? importSetupTone.infoAction
-                                                                                        : "bg-background/50 border-border text-foreground/70 hover:bg-muted"
+                                                                                        : importSetupChipIdle
                                                                                 )}
                                                                             >
-                                                                                Image
+                                                                                <ImageIcon className="mr-1.5 h-3 w-3" />
+                                                                                Update image
                                                                             </Button>
                                                                         )}
-                                                                        {includedInMain && (
-                                                                            <span className="text-[11px] text-foreground/55">
-                                                                                Linked via selected main group
-                                                                            </span>
-                                                                        )}
                                                                     </div>
-                                                                )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    return (
+                                                        <div
+                                                            key={sg.name}
+                                                            className={cn(
+                                                                "flex items-start p-4 transition-colors",
+                                                                isSelected
+                                                                    ? "bg-primary/[0.055] ring-1 ring-inset ring-primary/15"
+                                                                    : isCheckboxDisabled
+                                                                        ? "opacity-55 bg-muted/[0.04]"
+                                                                        : "hover:bg-primary/6 dark:hover:bg-primary/10"
+                                                            )}
+                                                        >
+                                                            {showCheckbox ? (
+                                                                <Checkbox
+                                                                    id={`sg-${sg.name}`}
+                                                                    checked={isChecked}
+                                                                    disabled={isCheckboxDisabled}
+                                                                    onCheckedChange={() => toggleStandaloneSubgroup(sg.name, isCheckboxDisabled)}
+                                                                    className="mt-1"
+                                                                />
+                                                            ) : null}
+                                                            <div className={cn("flex-1 min-w-0 pr-4", showCheckbox ? "ml-3" : "")}>
+                                                                <label htmlFor={`sg-${sg.name}`} className={`font-semibold text-sm block truncate ${isCheckboxDisabled ? '' : 'cursor-pointer'}`}>
+                                                                    {formatDisplayName(sg.name)}
+                                                                    {includedInMain && !sg.isDuplicate && <Badge variant="outline" className={cn("ml-2 text-xs uppercase", importSetupTone.infoBadge)}>Included w/ Main</Badge>}
+                                                                </label>
+                                                                <div className="mt-0.5 text-xs text-foreground/65">
+                                                                    {metaBits.join(" • ")}
+                                                                </div>
+
                                                             </div>
 
                                                             {isStandaloneSelected && !isCheckboxDisabled && !sg.isDuplicate && (
@@ -1083,16 +1195,49 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                 return (
                                                     <div className="flex flex-col">
                                                         {mergeSgs.length > 0 && (
-                                                            <>
-                                                                <div className={cn(editorSurface.sticky, "sticky top-0 z-10 border-y border-y-border p-2 text-xs font-semibold uppercase tracking-wider text-foreground/70")}>
-                                                                    Updates ({mergeSgs.length})
+                                                            <section className="flex flex-col">
+                                                                <div className={cn(editorSurface.cardInteractive, "sticky top-0 z-30 -mx-px rounded-none border-x-0 border-t-0 flex items-center justify-between gap-3 px-4 py-3 shadow-none")}>
+                                                                    <div className="text-xs font-semibold uppercase tracking-wider text-foreground/70">
+                                                                        Updates ({mergeSgs.length})
+                                                                    </div>
+                                                                    <DropdownMenu>
+                                                                        <DropdownMenuTrigger asChild>
+                                                                            <Button
+                                                                                variant="outline"
+                                                                                size="sm"
+                                                                                className={cn(importSetupChipBase, importSetupChipIdle, "px-2.5")}
+                                                                            >
+                                                                                Bulk actions
+                                                                                <ChevronDown className="ml-1.5 h-3 w-3 opacity-60" />
+                                                                            </Button>
+                                                                        </DropdownMenuTrigger>
+                                                                        <DropdownMenuContent align="end" className="w-44">
+                                                                            <DropdownMenuLabel className="text-[11px] uppercase tracking-wider text-foreground/55">
+                                                                                Update selection
+                                                                            </DropdownMenuLabel>
+                                                                            <DropdownMenuItem onClick={selectAllSubgroups} className="text-sm">
+                                                                                Select all
+                                                                            </DropdownMenuItem>
+                                                                            <DropdownMenuItem onClick={deselectAllSubgroups} className="text-sm">
+                                                                                Clear selection
+                                                                            </DropdownMenuItem>
+                                                                            <DropdownMenuItem onClick={selectCatalogUpdates} className="text-sm">
+                                                                                Catalog updates
+                                                                            </DropdownMenuItem>
+                                                                            <DropdownMenuItem onClick={selectImageUpdates} className="text-sm">
+                                                                                Image updates
+                                                                            </DropdownMenuItem>
+                                                                        </DropdownMenuContent>
+                                                                    </DropdownMenu>
                                                                 </div>
-                                                                {mergeSgs.map(renderSubgroupRow)}
-                                                            </>
+                                                                <div className="divide-y divide-border/50">
+                                                                    {mergeSgs.map(renderSubgroupRow)}
+                                                                </div>
+                                                            </section>
                                                         )}
                                                         {newSgs.length > 0 && (
-                                                            <>
-                                                                <div className={cn(editorSurface.sticky, "sticky top-0 z-10 border-y border-y-border p-2 text-xs font-semibold uppercase tracking-wider text-foreground/70")}>
+                                                            <section className="flex flex-col">
+                                                                <div className={cn(editorSurface.cardInteractive, "sticky top-0 z-20 -mx-px rounded-none border-x-0 border-t-0 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-foreground/70 shadow-none")}>
                                                                     New Subgroups ({newSgs.length})
                                                                 </div>
                                                                 {(() => {
@@ -1115,7 +1260,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                                         if (catSgs.length === 0) return null;
                                                                         return (
                                                                             <React.Fragment key={cat}>
-                                                                                <div className={cn(editorSurface.sticky, "flex items-center gap-2 border-b border-border px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-foreground/70")}>
+                                                                                <div className={cn(editorSurface.cardInteractive, "-mx-px rounded-none border-x-0 border-t-0 flex items-center gap-2 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-foreground/70 shadow-none")}>
                                                                                     <div className="w-1 h-3 bg-primary/50 rounded-full" />
                                                                                     {cat}
                                                                                 </div>
@@ -1124,15 +1269,17 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                                         );
                                                                     });
                                                                 })()}
-                                                            </>
+                                                            </section>
                                                         )}
                                                         {existingSgs.length > 0 && (
-                                                            <>
-                                                                <div className={cn(editorSurface.sticky, "sticky top-0 z-10 border-y border-y-border p-2 text-xs font-semibold uppercase tracking-wider text-foreground/70")}>
+                                                            <section className="flex flex-col">
+                                                                <div className={cn(editorSurface.cardInteractive, "sticky top-0 z-20 -mx-px rounded-none border-x-0 border-t-0 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-foreground/70 shadow-none")}>
                                                                     Existing ({existingSgs.length})
                                                                 </div>
-                                                                {existingSgs.map(renderSubgroupRow)}
-                                                            </>
+                                                                <div className="divide-y divide-border/50">
+                                                                    {existingSgs.map(renderSubgroupRow)}
+                                                                </div>
+                                                            </section>
                                                         )}
                                                     </div>
                                                 );

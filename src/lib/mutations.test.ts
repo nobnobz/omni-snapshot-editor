@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { renameGroup, disableGroup, disableCatalog, importGroups, validateAndFix } from './mutations';
+import { renameGroup, disableGroup, disableCatalog, pruneCatalogFromManager, importGroups, validateAndFix } from './mutations';
 
 describe('Mutations Library', () => {
 
@@ -103,6 +103,26 @@ describe('Mutations Library', () => {
         expect(newState.catalog_groups["Comedy"]).toEqual([]);
         expect(newState.selected_catalogs).toEqual(["cat3"]);
         expect(newState.pinned_catalogs).toEqual([]);
+    });
+
+    it('pruneCatalogFromManager keeps subgroup links while removing manager-owned catalog references', () => {
+        const initialState = {
+            catalog_groups: {
+                "Action": ["cat1", "cat2"],
+                "Comedy": ["cat1"]
+            },
+            selected_catalogs: ["cat1", "cat3"],
+            pinned_catalogs: ["cat1"],
+            top_row_catalogs: ["cat1"]
+        };
+
+        const newState = pruneCatalogFromManager("cat1", initialState);
+
+        expect(newState.catalog_groups["Action"]).toEqual(["cat1", "cat2"]);
+        expect(newState.catalog_groups["Comedy"]).toEqual(["cat1"]);
+        expect(newState.selected_catalogs).toEqual(["cat3"]);
+        expect(newState.pinned_catalogs).toEqual([]);
+        expect(newState.top_row_catalogs).toEqual([]);
     });
 
     it('validateAndFix removes missing references & dupes', () => {
@@ -238,5 +258,44 @@ describe('Mutations Library', () => {
         expect(newState.catalog_groups["New Subgroup"]).toEqual(["movie:fresh-id"]);
         expect(newState.catalog_group_order).toContain("New Subgroup");
         expect(newState.subgroup_order["incoming-main"]).toEqual(["New Subgroup"]);
+    });
+
+    it('importGroups leaves catalog selection arrays untouched', () => {
+        const initialState = {
+            main_catalog_groups: {},
+            main_group_order: [],
+            subgroup_order: {},
+            catalog_groups: {
+                Existing: ["movie:keep-me"]
+            },
+            catalog_group_order: ["Existing"],
+            catalog_group_image_urls: {},
+            custom_catalog_names: {},
+            selected_catalogs: ["movie:keep-me"],
+            pinned_catalogs: ["movie:pinned"],
+            top_row_catalogs: ["movie:top-row"],
+        };
+
+        const newState = importGroups({
+            mainGroups: {
+                "incoming-main": {
+                    name: "Incoming Main",
+                    subgroupNames: ["Imported Subgroup"],
+                    posterType: "Poster",
+                    posterSize: "Default"
+                }
+            },
+            subgroups: {
+                "Imported Subgroup": {
+                    catalogs: ["fresh-id"],
+                    overwriteCatalogs: true
+                }
+            },
+            standaloneAssignments: {},
+        }, initialState);
+
+        expect(newState.selected_catalogs).toEqual(["movie:keep-me"]);
+        expect(newState.pinned_catalogs).toEqual(["movie:pinned"]);
+        expect(newState.top_row_catalogs).toEqual(["movie:top-row"]);
     });
 });

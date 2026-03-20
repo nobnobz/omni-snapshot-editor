@@ -5,7 +5,7 @@ import { OmniConfig } from "../lib/types";
 import { resolveCatalogName, ensureCatalogPrefix } from '@/lib/utils';
 import { CatalogFallback } from "@/lib/catalog-fallbacks";
 import { decodeConfig } from "../lib/config-utils";
-import { renameGroup, renameMainGroup, disableGroup, disableMainGroup, disableCatalog, bulkDisableCatalogs, validateAndFix, countGroupReferences, countMainGroupReferences, unassignSubgroup, assignSubgroup, createMainGroup, createSubgroup, importGroups, getAllCatalogIds } from "../lib/mutations";
+import { renameGroup, renameMainGroup, disableGroup, disableMainGroup, disableCatalog, pruneCatalogFromManager, validateAndFix, countGroupReferences, countMainGroupReferences, unassignSubgroup, assignSubgroup, createMainGroup, createSubgroup, importGroups } from "../lib/mutations";
 import { buildExportConfig, buildPartialExportConfig } from "../lib/export-config";
 import { fetchGithubTemplates } from "../lib/github-fetch";
 import { APP_VERSION } from "@/lib/constants";
@@ -658,37 +658,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const importGroupsToState = (payload: ImportGroupsPayload) => {
-        setCurrentValues(prev => {
-            const next = importGroups(payload, prev);
-
-            // Sync the manifest-style catalogs state so Catalog Manager sees the new items
-            // We scan all IDs from the newly merged state
-            const allIds = getAllCatalogIds(next);
-            const customNames = (next.custom_catalog_names || {}) as Record<string, string>;
-
-            setCatalogs(prevCats => {
-                const existingIds = new Set(prevCats.map(c => normalizeCatalogIdValue(c.id, customNames)));
-                const newCats = [...prevCats];
-
-                allIds.forEach((id: string) => {
-                    const normalizedId = normalizeCatalogIdValue(id, customNames);
-                    if (!existingIds.has(normalizedId)) {
-                        const name = resolveCatalogName(normalizedId, customNames);
-                        newCats.push({
-                            id: normalizedId,
-                            name: name === normalizedId ? normalizedId : name,
-                            enabled: true,
-                            showInHome: false,
-                            _synthetic: isSyntheticSession
-                        });
-                        existingIds.add(normalizedId);
-                    }
-                });
-                return newCats;
-            });
-
-            return next;
-        });
+        setCurrentValues(prev => importGroups(payload, prev));
     };
 
     const restoreSubgroup = (item: DeletedSubgroup) => {
@@ -809,8 +779,8 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
     const removeManifestCatalog = (id: string) => {
         // Soft delete: set enabled=false and showInHome=false
         setCatalogs(prev => prev.map(c => c.id === id ? { ...c, enabled: false, showInHome: false } : c));
-        // Also sweep from all side arrays (including starred_catalogs) so it properly moves to DisabledCatalogs
-        setCurrentValues(prev => disableCatalog(id, prev));
+        // Catalog manager deletes must not mutate group-manager subgroup links.
+        setCurrentValues(prev => pruneCatalogFromManager(id, prev));
     };
 
     const reorderManifestCatalogs = (newCatalogs: ManifestCatalog[]) => {
@@ -820,7 +790,6 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
     const bulkRemoveManifestCatalogs = (ids: string[]) => {
         const idSet = new Set(ids);
         setCatalogs(prev => prev.filter(c => !idSet.has(c.id)));
-        setCurrentValues(prev => bulkDisableCatalogs(ids, prev));
     };
 
     const removeCatalog = (id: string) => {

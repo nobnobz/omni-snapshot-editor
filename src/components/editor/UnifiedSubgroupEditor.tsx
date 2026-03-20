@@ -34,7 +34,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from "@/components/ui/button";
-import { GripVertical, ImageIcon, LinkIcon, ChevronRight, ChevronDown, RotateCcw, Search, X, Layout, Plus, Pencil, Trash2, FolderPlus, FolderInput, UploadCloud, AlertTriangle, Check } from "lucide-react";
+import { GripVertical, ImageIcon, LinkIcon, ChevronRight, ChevronDown, RotateCcw, Search, X, Plus, Pencil, Trash2, FolderPlus, FolderInput, UploadCloud, AlertTriangle, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
@@ -1234,15 +1234,26 @@ function UnassignedSubgroupRow({
 
     return (
         <div className={`${editorSurface.cardInteractive} flex flex-col rounded-xl overflow-hidden transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out hover:border-border/80 w-full mb-3`}>
-            <div className="flex items-center justify-between p-3 gap-4">
-                {/* Left: Name */}
-                <div className="flex-1 min-w-0 pr-2">
-                    <span className="font-medium text-foreground text-sm truncate block" title={formatDisplayName(groupName)}>
+            <div className="group/unassigned flex items-center justify-between p-3 gap-4">
+                <button
+                    type="button"
+                    onClick={() => setIsExpanded((prev) => !prev)}
+                    className="flex flex-1 min-w-0 items-center gap-2 rounded-md px-1 py-1.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                    aria-expanded={isExpanded}
+                    aria-label={`Toggle subgroup ${formatDisplayName(groupName)}`}
+                >
+                    {isExpanded ? (
+                        <ChevronDown className="h-4 w-4 shrink-0 text-foreground/70 transition-colors group-hover/unassigned:text-foreground" />
+                    ) : (
+                        <ChevronRight className="h-4 w-4 shrink-0 text-foreground/70 transition-colors group-hover/unassigned:text-foreground" />
+                    )}
+                    <span
+                        className="truncate font-medium text-foreground text-sm transition-colors group-hover/unassigned:text-primary dark:group-hover/unassigned:text-primary"
+                        title={formatDisplayName(groupName)}
+                    >
                         {formatDisplayName(groupName)}
                     </span>
-                </div>
-
-                {/* Middle: Removed to give Name full space */}
+                </button>
 
                 {/* Right: Actions */}
                 <div className="flex items-center gap-2 justify-end shrink-0">
@@ -1288,16 +1299,6 @@ function UnassignedSubgroupRow({
                             )}
                         </DropdownMenuContent>
                     </DropdownMenu>
-
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setIsExpanded(!isExpanded)}
-                        className={`h-7 px-2 text-xs font-semibold uppercase tracking-tight flex items-center gap-1 rounded-md transition-colors ${isExpanded ? 'bg-white/60 dark:bg-white/[0.05] text-foreground' : 'text-foreground/70 hover:text-foreground hover:bg-muted/60 dark:hover:bg-muted/40'}`}
-                    >
-                        <Layout className="w-3.5 h-3.5" />
-                        <span className="hidden md:inline">Edit</span>
-                    </Button>
 
                     <AlertDialog>
                         <AlertDialogTrigger asChild>

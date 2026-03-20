@@ -382,6 +382,32 @@ export function disableCatalog(catalogId: string, state: MutableState): MutableS
 }
 
 /**
+ * Removes a catalog from catalog-manager-owned arrays while preserving subgroup links.
+ */
+export function pruneCatalogFromManager(catalogId: string, state: MutableState): MutableState {
+    const draft = JSON.parse(JSON.stringify(state));
+
+    const managerLists = [
+        "selected_catalogs",
+        "pinned_catalogs",
+        "small_catalogs",
+        "top_row_catalogs",
+        "starred_catalogs",
+        "randomized_catalogs",
+        "small_toprow_catalogs",
+        "catalog_ordering"
+    ];
+
+    managerLists.forEach(listName => {
+        if (Array.isArray(draft[listName])) {
+            draft[listName] = draft[listName].filter((c: string) => c !== catalogId);
+        }
+    });
+
+    return draft;
+}
+
+/**
  * Dedupe & Validation Pass
  * Ensures arrays don't have dupes, and ordering arrays don't hold references to non-existent groups.
  */
