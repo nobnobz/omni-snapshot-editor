@@ -26,6 +26,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { editorAction, editorLayout, editorSurface, editorToneBadge, editorNoticeTone } from "@/components/editor/ui/style-contract";
+import { FALLBACK_TEMPLATE_URLS, findTemplateByKind, isTemplateOfKind } from "@/lib/template-manifest";
 
 interface ImportSetupModalProps {
     isOpen: boolean;
@@ -118,9 +119,14 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
     const templates: { label: string; url: string }[] = useMemo(() => (
         manifest?.templates?.length
             ? manifest.templates
-                .filter(t => t.id.toLowerCase().includes('ume-') && t.url)
-                .map(t => ({ label: t.name, url: t.url }))
-            : []
+                .filter((template) => isTemplateOfKind(template, "omni") && !!template.url)
+                .map((template) => ({ label: template.name, url: template.url }))
+            : [
+                {
+                    label: "UME Omni Template v2.0.3",
+                    url: FALLBACK_TEMPLATE_URLS.omni,
+                },
+            ]
     ), [manifest]);
 
     const [selectedVersion, setSelectedVersion] = useState("");
@@ -131,11 +137,10 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
             return;
         }
 
-        const defaultTemplate = manifest?.templates?.find(
-            t => (t.id === 'ume-main' || t.isDefault) && t.id.toLowerCase().includes('ume-') && t.url
-        );
+        const defaultTemplate = manifest?.templates?.find((template) => template.isDefault && isTemplateOfKind(template, "omni"))
+            || findTemplateByKind(manifest?.templates, "omni");
 
-        if (defaultTemplate?.name) {
+        if (defaultTemplate?.name && defaultTemplate.url) {
             setSelectedVersion((current) => (current === defaultTemplate.name ? current : defaultTemplate.name));
             return;
         }
@@ -795,15 +800,12 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                             )}
                         >
                             <UploadCloud className={cn("w-10 h-10 mb-3 transition-colors", isFileDropActive ? "text-primary" : "text-foreground/65")} />
-                            <h3 className="font-medium text-sm text-foreground mb-1">Upload configuration file</h3>
-                            <p className="text-xs text-foreground/70 mb-4 max-w-sm">
-                                Paste your AIOMetadata <strong>Share Setup</strong> JSON or drop the exported <code>.json</code> file below.
-                            </p>
+                            <h3 className="font-medium text-sm text-foreground mb-4">Upload JSON file</h3>
                             <div className={cn("mb-4 text-xs font-semibold transition-colors", isFileDropActive ? "text-primary" : "text-foreground/60")}>
-                                Drop JSON file here
+                                Drop file here
                             </div>
                             <Button onClick={() => fileInputRef.current?.click()} variant="outline" className="bg-muted border-border hover:bg-muted/80 text-foreground text-xs font-semibold">
-                                Select JSON File
+                                Select file
                             </Button>
                             <input
                                 type="file"

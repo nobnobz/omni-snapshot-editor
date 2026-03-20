@@ -1191,7 +1191,7 @@ export function MainEditor() {
                                                                     <Check className="w-4.5 h-4.5" />
                                                                 </div>
                                                                 <div className="min-w-0">
-                                                                    <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                                                                    <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400 md:whitespace-nowrap">
                                                                         AIOMetadata synced
                                                                     </p>
                                                                     {activeAIOMetadataSync.syncedAt && (
@@ -1202,13 +1202,13 @@ export function MainEditor() {
                                                                 </div>
                                                             </div>
 
-                                                            <div className="flex items-center gap-1 md:hidden">
+                                                            <div className="flex items-center gap-1 md:gap-2">
                                                                 {activeAIOMetadataSync.sourceType === "url" && activeAIOMetadataSync.sourceValue && (
                                                                     <Button
                                                                         type="button"
                                                                         variant="outline"
                                                                         size="icon-sm"
-                                                                        className="size-8 rounded-xl border-emerald-500/18 bg-emerald-500/[0.06] text-emerald-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] hover:border-emerald-500/28 hover:bg-emerald-500/[0.1] hover:text-emerald-700 dark:bg-emerald-500/[0.08] dark:text-emerald-400"
+                                                                        className="size-8 rounded-xl border-emerald-500/18 bg-emerald-500/[0.06] text-emerald-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] hover:border-emerald-500/28 hover:bg-emerald-500/[0.1] hover:text-emerald-700 dark:bg-emerald-500/[0.08] dark:text-emerald-400 md:size-9"
                                                                         onClick={() => void handleResyncAIOMetadata()}
                                                                         disabled={isImportingUrl}
                                                                         aria-label={isImportingUrl ? "Syncing AIOMetadata" : "Sync AIOMetadata again"}
@@ -1221,7 +1221,7 @@ export function MainEditor() {
                                                                     type="button"
                                                                     variant="outline"
                                                                     size="icon-sm"
-                                                                    className="size-8 rounded-xl border-emerald-500/14 bg-emerald-500/[0.04] text-emerald-700/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] hover:border-emerald-500/24 hover:bg-emerald-500/[0.08] hover:text-emerald-700 dark:bg-emerald-500/[0.06] dark:text-emerald-400/90"
+                                                                    className="size-8 rounded-xl border-emerald-500/14 bg-emerald-500/[0.04] text-emerald-700/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] hover:border-emerald-500/24 hover:bg-emerald-500/[0.08] hover:text-emerald-700 dark:bg-emerald-500/[0.06] dark:text-emerald-400/90 md:size-9"
                                                                     onClick={handleEditAIOMetadataSource}
                                                                     aria-label="Change AIOMetadata source"
                                                                     title="Change Source"
@@ -1229,38 +1229,6 @@ export function MainEditor() {
                                                                     <Pencil className="w-4 h-4" />
                                                                 </Button>
                                                             </div>
-                                                        </div>
-
-                                                        <div className="hidden md:flex md:flex-col lg:flex-row gap-2 md:shrink-0">
-                                                            {activeAIOMetadataSync.sourceType === "url" && activeAIOMetadataSync.sourceValue && (
-                                                                <Button
-                                                                    type="button"
-                                                                    variant="outline"
-                                                                    className="h-9 rounded-lg border-emerald-500/22 bg-white/55 px-3 text-emerald-700 hover:bg-emerald-500/10 hover:text-emerald-700 dark:bg-background/30 dark:text-emerald-400"
-                                                                    onClick={() => void handleResyncAIOMetadata()}
-                                                                    disabled={isImportingUrl}
-                                                                >
-                                                                    {isImportingUrl ? (
-                                                                        <>
-                                                                            <RotateCcw className="w-4 h-4 mr-2 animate-spin" />
-                                                                            Syncing...
-                                                                        </>
-                                                                    ) : (
-                                                                        <>
-                                                                            <RotateCcw className="w-4 h-4 mr-2" />
-                                                                            Sync Again
-                                                                        </>
-                                                                    )}
-                                                                </Button>
-                                                            )}
-                                                            <Button
-                                                                type="button"
-                                                                variant="outline"
-                                                                className="h-9 rounded-lg border-border/60 px-3 hover:bg-muted/50 font-medium"
-                                                                onClick={handleEditAIOMetadataSource}
-                                                            >
-                                                                Change Source
-                                                            </Button>
                                                         </div>
                                                     </div>
                                                 </div>

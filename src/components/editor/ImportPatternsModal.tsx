@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { editorAction, editorLayout, editorNoticeTone, editorSurface, editorToneBadge } from "@/components/editor/ui/style-contract";
+import { FALLBACK_TEMPLATE_URLS, findTemplateByKind, isTemplateOfKind } from "@/lib/template-manifest";
 
 interface ImportPatternsModalProps {
     isOpen: boolean;
@@ -81,12 +82,43 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
         }
     }, [isOpen, fetchManifest]);
 
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const preventNavigationOnDrop: EventListener = (event) => {
+            const dragEvent = event as DragEvent;
+            if (!dragEvent.dataTransfer) return;
+            dragEvent.preventDefault();
+            dragEvent.dataTransfer.dropEffect = "copy";
+        };
+
+        const targets: EventTarget[] = [window, document, document.documentElement, document.body];
+        targets.forEach((target) => {
+            target.addEventListener("dragenter", preventNavigationOnDrop, true);
+            target.addEventListener("dragover", preventNavigationOnDrop, true);
+            target.addEventListener("drop", preventNavigationOnDrop, true);
+        });
+
+        return () => {
+            targets.forEach((target) => {
+                target.removeEventListener("dragenter", preventNavigationOnDrop, true);
+                target.removeEventListener("dragover", preventNavigationOnDrop, true);
+                target.removeEventListener("drop", preventNavigationOnDrop, true);
+            });
+        };
+    }, [isOpen]);
+
     const templates: { label: string; url: string }[] = useMemo(() => (
         manifest?.templates?.length
             ? manifest.templates
-                .filter(t => t.id.toLowerCase().includes('ume-') && t.url)
-                .map(t => ({ label: t.name, url: t.url }))
-            : []
+                .filter((template) => isTemplateOfKind(template, "omni") && !!template.url)
+                .map((template) => ({ label: template.name, url: template.url }))
+            : [
+                {
+                    label: "UME Omni Template v2.0.3",
+                    url: FALLBACK_TEMPLATE_URLS.omni,
+                },
+            ]
     ), [manifest]);
 
     const [selectedVersion, setSelectedVersion] = useState("");
@@ -97,11 +129,10 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
             return;
         }
 
-        const defaultTemplate = manifest?.templates?.find(
-            t => (t.id === 'ume-main' || t.isDefault) && t.id.toLowerCase().includes('ume-') && t.url
-        );
+        const defaultTemplate = manifest?.templates?.find((template) => template.isDefault && isTemplateOfKind(template, "omni"))
+            || findTemplateByKind(manifest?.templates, "omni");
 
-        if (defaultTemplate?.name) {
+        if (defaultTemplate?.name && defaultTemplate.url) {
             setSelectedVersion((current) => (current === defaultTemplate.name ? current : defaultTemplate.name));
             return;
         }
@@ -119,6 +150,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
     const [fileName, setFileName] = useState("");
     const [error, setError] = useState("");
     const [searchFilter, setSearchFilter] = useState("");
+    const [isFileDropActive, setIsFileDropActive] = useState(false);
 
     const [importedValues, setImportedValues] = useState<Record<string, unknown>>({});
     const [parsedPatterns, setParsedPatterns] = useState<ParsedPattern[]>([]);
@@ -133,6 +165,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
         setParsedPatterns([]);
         setSelectedPatterns(new Set());
         setTemplateLoading(false);
+        setIsFileDropActive(false);
         if (fileInputRef.current) fileInputRef.current.value = "";
     };
 
@@ -245,13 +278,23 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
         }
     };
 
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
+    const processFile = (file: File | undefined) => {
         if (!file) return;
         setFileName(file.name);
         const reader = new FileReader();
         reader.onload = (ev) => processUploadedJson(ev.target?.result as string);
         reader.readAsText(file);
+    };
+
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        processFile(e.target.files?.[0]);
+    };
+
+    const handleFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsFileDropActive(false);
+        processFile(e.dataTransfer.files?.[0]);
     };
 
     const handleImport = () => {
@@ -419,14 +462,40 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                             </div>
 
                             <div
-                                onClick={() => fileInputRef.current?.click()}
-                                className={cn(editorSurface.dropzone, "group flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 p-8 text-center transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out hover:border-primary/50 hover:bg-primary/8")}
+                                onDragEnter={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setIsFileDropActive(true);
+                                }}
+                                onDragOver={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setIsFileDropActive(true);
+                                    if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+                                }}
+                                onDragLeave={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+                                    setIsFileDropActive(false);
+                                }}
+                                onDrop={handleFileDrop}
+                                className={cn(
+                                    editorSurface.dropzone,
+                                    "flex flex-col items-center justify-center rounded-xl border-2 p-8 text-center transition-[border-color,background-color,box-shadow]",
+                                    isFileDropActive
+                                        ? "border-primary/70 bg-primary/10 shadow-[0_0_0_1px_rgba(15,23,42,0.1),inset_0_1px_0_rgba(255,255,255,0.05)]"
+                                        : "hover:border-primary/30 hover:bg-primary/[0.035]"
+                                )}
                             >
-                                <UploadCloud className="w-12 h-12 text-foreground/40 mb-3 group-hover:text-primary/70 transition-colors" />
-                                <h3 className="font-semibold text-sm text-foreground/90 mb-1">Configuration File</h3>
-                                <p className="text-xs text-foreground/50 max-w-xs mx-auto">
-                                    Extract pattern data from an existing <code>omni-config.json</code> file.
-                                </p>
+                                <UploadCloud className={cn("mb-3 h-10 w-10 transition-colors", isFileDropActive ? "text-primary" : "text-foreground/65")} />
+                                <h3 className="mb-4 text-sm font-medium text-foreground">Upload JSON file</h3>
+                                <div className={cn("mb-4 text-xs font-semibold transition-colors", isFileDropActive ? "text-primary" : "text-foreground/60")}>
+                                    Drop file here
+                                </div>
+                                <Button onClick={() => fileInputRef.current?.click()} variant="outline" className="bg-muted border-border hover:bg-muted/80 text-foreground text-xs font-semibold">
+                                    Select file
+                                </Button>
                                 <input type="file" accept=".json" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
                             </div>
                         </div>
