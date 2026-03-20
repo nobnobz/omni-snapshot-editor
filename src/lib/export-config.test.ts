@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { decodeConfig } from "./config-utils";
-import { buildExportConfig } from "./export-config";
+import { buildExportConfig, buildPartialExportConfig } from "./export-config";
 
 const wrap = (value: unknown) => ({
     _data: Buffer.from(JSON.stringify(value), "utf8").toString("base64")
@@ -9,6 +9,11 @@ const wrap = (value: unknown) => ({
 const baseCatalogs = [
     { id: "movie:one", name: "One", enabled: true, showInHome: false },
     { id: "movie:two", name: "Two", enabled: true, showInHome: true }
+];
+
+const noSelectedCatalogs = [
+    { id: "movie:one", name: "One", enabled: false, showInHome: false },
+    { id: "movie:two", name: "Two", enabled: false, showInHome: false }
 ];
 
 const baseCurrentValues = {
@@ -125,6 +130,83 @@ describe("buildExportConfig", () => {
         expect(decodeConfig(result.config?.selected_catalogs)).toEqual(["movie:one", "movie:two"]);
         expect(decodeConfig(result.config?.catalog_ordering)).toEqual(["movie:one", "movie:two"]);
         expect(decodeConfig(result.config?.top_row_catalogs)).toEqual(["movie:two"]);
+    });
+
+    it("exports selected_catalogs explicitly as an empty wrapped array when no catalogs are selected", () => {
+        const result = buildExportConfig({
+            originalConfig: {
+                values: {
+                    catalog_ordering: wrap(["movie:one", "movie:two"]),
+                    top_row_catalogs: wrap([]),
+                    main_catalog_groups: wrap({}),
+                    catalog_groups: wrap({}),
+                }
+            },
+            currentValues: {
+                catalog_ordering: ["movie:one", "movie:two"],
+                top_row_catalogs: [],
+                main_catalog_groups: {},
+                catalog_groups: {},
+            },
+            initialValues: {
+                catalog_ordering: ["movie:one", "movie:two"],
+                top_row_catalogs: [],
+            },
+            disabledKeys: new Set<string>(),
+            catalogs: noSelectedCatalogs,
+            isSyntheticSession: false,
+        });
+
+        expect(result.values?.selected_catalogs).toEqual({ _data: "W10=" });
+        expect(result.includedKeys).toContain("selected_catalogs");
+        expect(decodeConfig(result.values?.selected_catalogs)).toEqual([]);
+    });
+
+    it("partial catalog export materializes selected_catalogs even when legacy input omitted it", () => {
+        const result = buildPartialExportConfig({
+            originalConfig: {
+                values: {
+                    catalog_ordering: wrap(["movie:one", "movie:two"]),
+                    top_row_catalogs: wrap([]),
+                    custom_catalog_names: wrap({}),
+                },
+                includedKeys: ["catalog_ordering", "top_row_catalogs", "custom_catalog_names"],
+            },
+            currentValues: {
+                catalog_ordering: ["movie:one", "movie:two"],
+                top_row_catalogs: [],
+                custom_catalog_names: {},
+            },
+            disabledKeys: new Set<string>(),
+            sectionKeys: ["selected_catalogs", "catalog_ordering", "top_row_catalogs", "custom_catalog_names"],
+            catalogs: noSelectedCatalogs,
+        });
+
+        expect(result.values?.selected_catalogs).toEqual({ _data: "W10=" });
+        expect(result.includedKeys).toContain("selected_catalogs");
+        expect(decodeConfig(result.values?.selected_catalogs)).toEqual([]);
+    });
+
+    it("partial catalog export preserves non-empty selected_catalogs semantics", () => {
+        const result = buildPartialExportConfig({
+            originalConfig: {
+                values: {
+                    selected_catalogs: wrap(["movie:one"]),
+                    catalog_ordering: wrap(["movie:one", "movie:two"]),
+                    top_row_catalogs: wrap([]),
+                }
+            },
+            currentValues: {
+                catalog_ordering: ["movie:one", "movie:two"],
+                top_row_catalogs: [],
+            },
+            disabledKeys: new Set<string>(),
+            sectionKeys: ["selected_catalogs", "catalog_ordering", "top_row_catalogs"],
+            catalogs: baseCatalogs,
+        });
+
+        expect(decodeConfig(result.values?.selected_catalogs)).toEqual(["movie:one", "movie:two"]);
+        expect(result.includedKeys).toContain("selected_catalogs");
     });
 
     it("config-root export does not reintroduce pruned keys", () => {

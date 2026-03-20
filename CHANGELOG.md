@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.5] - 2026-03-20
+### Fixed
+- **iCloud Sync**: Resolved an issue where disabled catalogs were incorrectly re-enabled during synchronization.
+
 ## [0.4.4] - 2026-03-19
 ### Changed
 - **AIOMetadata Sync**: Refined the success card to be more compact and privacy-conscious by hiding the source URL.

@@ -4,9 +4,9 @@ import React, { createContext, useCallback, useContext, useRef, useState, ReactN
 import { OmniConfig } from "../lib/types";
 import { resolveCatalogName, ensureCatalogPrefix } from '@/lib/utils';
 import { CatalogFallback } from "@/lib/catalog-fallbacks";
-import { decodeConfig, encodeConfig } from "../lib/config-utils";
-import { renameGroup, renameMainGroup, disableGroup, disableMainGroup, disableCatalog, bulkDisableCatalogs, validateAndFix, countGroupReferences, countMainGroupReferences, unassignSubgroup, assignSubgroup, createMainGroup, createSubgroup, importGroups, getAllCatalogIds, reorderCatalogGroupOrder } from "../lib/mutations";
-import { buildExportConfig } from "../lib/export-config";
+import { decodeConfig } from "../lib/config-utils";
+import { renameGroup, renameMainGroup, disableGroup, disableMainGroup, disableCatalog, bulkDisableCatalogs, validateAndFix, countGroupReferences, countMainGroupReferences, unassignSubgroup, assignSubgroup, createMainGroup, createSubgroup, importGroups, getAllCatalogIds } from "../lib/mutations";
+import { buildExportConfig, buildPartialExportConfig } from "../lib/export-config";
 import { fetchGithubTemplates } from "../lib/github-fetch";
 import { APP_VERSION } from "@/lib/constants";
 
@@ -865,70 +865,13 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
 
     const exportPartialConfig = (sectionKeys: string[]): OmniConfig | null => {
         if (!originalConfig) return null;
-
-        // Build a filtered values map containing only the specified section keys
-        const filteredValues: Record<string, unknown> = {};
-        for (const key of sectionKeys) {
-            if (currentValues[key] !== undefined) {
-                filteredValues[key] = JSON.parse(JSON.stringify(currentValues[key]));
-            }
-        }
-
-        // Also include main_group_order if exporting group keys
-        if (sectionKeys.includes('main_catalog_groups') && currentValues.main_group_order) {
-            filteredValues.main_group_order = JSON.parse(JSON.stringify(currentValues.main_group_order));
-        }
-
-        // Validate & fix the filtered subset
-        const validatedValues = validateAndFix(filteredValues);
-
-        // EXTRA: Set specifically ordered catalog_group_order if present
-        if (sectionKeys.includes('catalog_groups') || sectionKeys.includes('catalog_group_order')) {
-            validatedValues.catalog_group_order = reorderCatalogGroupOrder(validatedValues);
-
-            // Reorder keys
-            if (validatedValues.catalog_groups) {
-                const orderedGroups: Record<string, LooseAny> = {};
-                validatedValues.catalog_group_order.forEach((name: string) => {
-                    if (validatedValues.catalog_groups[name]) {
-                        orderedGroups[name] = validatedValues.catalog_groups[name];
-                    }
-                });
-                validatedValues.catalog_groups = orderedGroups;
-            }
-            if (validatedValues.catalog_group_image_urls) {
-                const orderedUrls: Record<string, LooseAny> = {};
-                validatedValues.catalog_group_order.forEach((name: string) => {
-                    if (validatedValues.catalog_group_image_urls[name] !== undefined) {
-                        orderedUrls[name] = validatedValues.catalog_group_image_urls[name];
-                    }
-                });
-                validatedValues.catalog_group_image_urls = orderedUrls;
-            }
-        }
-
-        // Encode using the original values for format detection
-        const originalValues = originalConfig.values || originalConfig.config || {};
-        const encodedValues = encodeConfig(validatedValues, originalValues, disabledKeys);
-
-        // Build the full config shell
-        const finalResult: ExportableConfig = { 
-            ...originalConfig,
-            exportedAt: new Date().toISOString()
-        };
-        
-        if (originalConfig.values) {
-            finalResult.values = encodedValues;
-            finalResult.includedKeys = Object.keys(encodedValues);
-        } else if (originalConfig.config) {
-            // Preserve config structure but only with partial values
-            finalResult.config = encodedValues;
-        } else {
-            finalResult.values = encodedValues;
-            finalResult.includedKeys = Object.keys(encodedValues);
-        }
-
-        return finalResult;
+        return buildPartialExportConfig({
+            originalConfig,
+            currentValues,
+            disabledKeys,
+            sectionKeys,
+            catalogs,
+        });
     };
 
     const clearPatterns = () => {
