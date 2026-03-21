@@ -994,7 +994,7 @@ export function MainEditor() {
                 className="flex-1 overflow-x-hidden lg:overflow-y-auto scroll-smooth relative z-10 pb-32 lg:pb-40"
             >
                 <div className="mx-auto max-w-5xl px-4 py-8 pb-[calc(12rem+env(safe-area-inset-bottom))] sm:px-10 sm:pt-10 lg:max-w-6xl lg:px-8 xl:max-w-[76rem] xl:px-6 space-y-10">
-                    <div className="hidden lg:flex justify-end p-2 -mb-6">
+                    <div className="hidden lg:flex justify-end p-2 mb-2">
                         <Button
                             variant="ghost"
                             size="sm"

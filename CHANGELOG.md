@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.8] - 2026-03-21
+### Fixed
+- **UI Layout**: Standardized toolbar spacing in `MainEditor` to prevent overlapping with content on large screens.
+
 ## [0.4.7] - 2026-03-21
 ### Fixed
 - **Main Group Ordering**: Implemented automated sanitization and synchronization of `main_group_order` to ensure consistency with existing groups.
