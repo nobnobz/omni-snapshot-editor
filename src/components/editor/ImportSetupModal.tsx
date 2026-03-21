@@ -82,9 +82,13 @@ const importSetupTone = {
 } as const;
 
 const importSetupChipBase =
-    "h-6 rounded-full border px-2.5 text-[11px] font-medium transition-[background-color,border-color,color,box-shadow] duration-150";
+    "h-7 rounded-full border px-3 text-[11px] font-medium transition-[background-color,border-color,color,box-shadow,transform] duration-150 shadow-sm";
 const importSetupChipIdle =
-    "border-border/70 bg-background/35 text-foreground/72 hover:text-foreground hover:bg-muted/65 hover:border-border";
+    "border-border/80 bg-background/45 text-foreground/78 hover:text-foreground hover:bg-muted/78 hover:border-border/95 hover:shadow-md";
+const importSetupChipSelected =
+    "shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_8px_18px_rgba(0,0,0,0.12)]";
+const importSetupStickySurface =
+    "border-slate-200/85 bg-white dark:border-white/8 dark:bg-[rgb(23,26,33)]";
 
 export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupModalProps) {
     const { currentValues, importGroups, manifest, fetchManifest } = useConfig();
@@ -936,7 +940,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                         <div className="p-8 text-center text-foreground/70 italic">No main groups match your search.</div>
                                     ) : (
                                         <div className="flex flex-col divide-y divide-border/50">
-                                            <div className={cn(editorSurface.cardInteractive, "rounded-none border-x-0 border-t-0 shadow-none flex items-center justify-end gap-2 px-4 py-3")}>
+                                            <div className={cn(importSetupStickySurface, "rounded-none border-x-0 border-t-0 shadow-none flex items-center justify-end gap-2 px-4 py-3")}>
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
@@ -1066,23 +1070,30 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                     ].filter(Boolean);
 
                                                     if (isUpdateRow) {
+                                                        const selectedUpdateCount = Number(isCatalogUpdateSelected) + Number(isImageUpdateSelected);
+                                                        const selectionSummary = selectedUpdateCount === 0
+                                                            ? "Choose updates"
+                                                            : selectedUpdateCount === 1
+                                                                ? "1 update selected"
+                                                                : "2 updates selected";
+
                                                         return (
                                                             <div
                                                                 key={sg.name}
                                                                 className={cn(
-                                                                    "px-4 py-3 transition-colors",
+                                                                    "px-4 py-3 transition-[background-color,box-shadow] duration-150",
                                                                     isSelected
-                                                                        ? "bg-primary/[0.045] border-l-2 border-primary/35"
-                                                                        : "hover:bg-primary/6 dark:hover:bg-primary/10 border-l-2 border-transparent"
+                                                                        ? "bg-primary/[0.035] shadow-[inset_3px_0_0_rgba(59,130,246,0.34)]"
+                                                                        : "hover:bg-primary/6 dark:hover:bg-primary/10"
                                                                 )}
                                                             >
-                                                                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                                                                <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                                                                     <div className="min-w-0 flex-1">
                                                                         <div className="truncate text-sm font-semibold text-foreground">
                                                                             {formatDisplayName(sg.name)}
                                                                         </div>
                                                                         <div className="mt-0.5 text-xs text-foreground/65">
-                                                                            {metaBits.join(" • ")}
+                                                                            {[...metaBits, selectionSummary].join(" • ")}
                                                                         </div>
                                                                     </div>
                                                                     <div className="flex flex-wrap items-center gap-2 sm:justify-end">
@@ -1096,11 +1107,13 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                                                     importSetupChipBase,
                                                                                     isCatalogUpdateSelected
                                                                                         ? importSetupTone.warningAction
-                                                                                        : importSetupChipIdle
+                                                                                        : importSetupChipIdle,
+                                                                                    isCatalogUpdateSelected && importSetupChipSelected
                                                                                 )}
+                                                                                aria-pressed={isCatalogUpdateSelected}
                                                                             >
                                                                                 <RefreshCw className="mr-1.5 h-3 w-3" />
-                                                                                Update catalogs
+                                                                                Catalogs
                                                                             </Button>
                                                                         )}
                                                                         {sg.hasNewImage && (
@@ -1113,11 +1126,13 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                                                     importSetupChipBase,
                                                                                     isImageUpdateSelected
                                                                                         ? importSetupTone.infoAction
-                                                                                        : importSetupChipIdle
+                                                                                        : importSetupChipIdle,
+                                                                                    isImageUpdateSelected && importSetupChipSelected
                                                                                 )}
+                                                                                aria-pressed={isImageUpdateSelected}
                                                                             >
                                                                                 <ImageIcon className="mr-1.5 h-3 w-3" />
-                                                                                Update image
+                                                                                Image
                                                                             </Button>
                                                                         )}
                                                                     </div>
@@ -1196,7 +1211,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                     <div className="flex flex-col">
                                                         {mergeSgs.length > 0 && (
                                                             <section className="flex flex-col">
-                                                                <div className={cn(editorSurface.cardInteractive, "sticky top-0 z-30 -mx-px rounded-none border-x-0 border-t-0 flex items-center justify-between gap-3 px-4 py-3 shadow-none")}>
+                                                                <div className={cn(importSetupStickySurface, "sticky top-0 z-30 -mx-px rounded-none border-x-0 border-t-0 flex items-center justify-between gap-3 px-4 py-3 shadow-none")}>
                                                                     <div className="text-xs font-semibold uppercase tracking-wider text-foreground/70">
                                                                         Updates ({mergeSgs.length})
                                                                     </div>
@@ -1205,7 +1220,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                                             <Button
                                                                                 variant="outline"
                                                                                 size="sm"
-                                                                                className={cn(importSetupChipBase, importSetupChipIdle, "px-2.5")}
+                                                                                className={cn(importSetupChipBase, importSetupChipIdle, "h-7 px-2.5 text-[11px] font-medium")}
                                                                             >
                                                                                 Bulk actions
                                                                                 <ChevronDown className="ml-1.5 h-3 w-3 opacity-60" />
@@ -1237,7 +1252,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                         )}
                                                         {newSgs.length > 0 && (
                                                             <section className="flex flex-col">
-                                                                <div className={cn(editorSurface.cardInteractive, "sticky top-0 z-20 -mx-px rounded-none border-x-0 border-t-0 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-foreground/70 shadow-none")}>
+                                                                <div className={cn(importSetupStickySurface, "sticky top-0 z-20 -mx-px rounded-none border-x-0 border-t-0 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-foreground/70 shadow-none")}>
                                                                     New Subgroups ({newSgs.length})
                                                                 </div>
                                                                 {(() => {
@@ -1260,7 +1275,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                                         if (catSgs.length === 0) return null;
                                                                         return (
                                                                             <React.Fragment key={cat}>
-                                                                                <div className={cn(editorSurface.cardInteractive, "-mx-px rounded-none border-x-0 border-t-0 flex items-center gap-2 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-foreground/70 shadow-none")}>
+                                                                                <div className={cn(importSetupStickySurface, "-mx-px rounded-none border-x-0 border-t-0 flex items-center gap-2 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-foreground/70 shadow-none")}>
                                                                                     <div className="w-1 h-3 bg-primary/50 rounded-full" />
                                                                                     {cat}
                                                                                 </div>
@@ -1273,7 +1288,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                         )}
                                                         {existingSgs.length > 0 && (
                                                             <section className="flex flex-col">
-                                                                <div className={cn(editorSurface.cardInteractive, "sticky top-0 z-20 -mx-px rounded-none border-x-0 border-t-0 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-foreground/70 shadow-none")}>
+                                                                <div className={cn(importSetupStickySurface, "sticky top-0 z-20 -mx-px rounded-none border-x-0 border-t-0 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-foreground/70 shadow-none")}>
                                                                     Existing ({existingSgs.length})
                                                                 </div>
                                                                 <div className="divide-y divide-border/50">
