@@ -1107,19 +1107,22 @@ function UnassignedSubgroupRow({
     groupName,
     catalogs: subgroupCatalogsProp,
     onRestore,
-    restoreParentName
+    restoreParentName,
+    isExpanded: propIsExpanded,
+    onToggle,
 }: {
     groupName: string,
     catalogs: string[],
     onRestore?: () => void,
-    restoreParentName?: string
+    restoreParentName?: string,
+    isExpanded?: boolean,
+    onToggle?: () => void,
 }) {
     const { updateValue, currentValues, assignCatalogGroup, removeCatalogGroup, renameCatalogGroup, catalogs: fullCatalogs, customFallbacks } = useConfig();
     const mainCatalogGroups = (currentValues["main_catalog_groups"] as Record<string, { name?: string; subgroupNames?: string[] }> | undefined) ?? EMPTY_RECORD;
     const mainGroupOrder = (currentValues["main_group_order"] as string[] | undefined) ?? EMPTY_STRING_ARRAY;
     const rawImageUrl = currentValues.catalog_group_image_urls?.[groupName];
     const imageUrl: string = typeof rawImageUrl === "string" ? rawImageUrl : "";
-    const [isExpanded, setIsExpanded] = useState(false);
 
     const [urlInput, setUrlInput] = useState(imageUrl);
     const [thumbAspect, setThumbAspect] = useState<ThumbnailAspect>("square");
@@ -1247,6 +1250,10 @@ function UnassignedSubgroupRow({
         ? resolveCatalogName(activeCatalogId, currentValues.custom_catalog_names || {})
         : "";
 
+    const [localExpanded, setLocalExpanded] = useState(false);
+    const isExpanded = propIsExpanded !== undefined ? propIsExpanded : localExpanded;
+    const toggleExpanded = onToggle || (() => setLocalExpanded(prev => !prev));
+
     const handleUrlBlur = () => {
         if (urlInput !== imageUrl) {
             updateValue(["catalog_group_image_urls", groupName], urlInput);
@@ -1265,7 +1272,7 @@ function UnassignedSubgroupRow({
             <div className="group/unassigned flex items-center justify-between p-3 gap-4">
                 <button
                     type="button"
-                    onClick={() => setIsExpanded((prev) => !prev)}
+                    onClick={toggleExpanded}
                     className="flex flex-1 min-w-0 items-center gap-2 rounded-md px-1 py-1.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                     aria-expanded={isExpanded}
                     aria-label={`Toggle subgroup ${formatDisplayName(groupName)}`}
@@ -1660,6 +1667,7 @@ export function UnifiedSubgroupEditor({ onOpenGuide }: { onOpenGuide?: (guide: "
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [activeMainGroupId, setActiveMainGroupId] = useState<string | null>(null);
     const [recentUnassigns, setRecentUnassigns] = useState<Record<string, string>>({}); // subgroupName -> parentUuid
+    const [expandedUnassignedSubgroup, setExpandedUnassignedSubgroup] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -1750,9 +1758,9 @@ export function UnifiedSubgroupEditor({ onOpenGuide }: { onOpenGuide?: (guide: "
         return n.includes("❗️") || n.includes("❗") || /\[.+\]/.test(n);
     };
 
-    const unassignedGroups = Object.keys(catalogGroups).filter(
-        name => !assignedGroups.has(name) && !isPlaceholder(name)
-    );
+    const unassignedGroups = Object.keys(catalogGroups)
+        .filter(name => !assignedGroups.has(name) && !isPlaceholder(name))
+        .sort((a, b) => a.localeCompare(b));
 
     return (
         <div className="space-y-4">
@@ -1956,8 +1964,11 @@ export function UnifiedSubgroupEditor({ onOpenGuide }: { onOpenGuide?: (guide: "
                                         key={name}
                                         groupName={name}
                                         catalogs={catalogGroups[name] || []}
+                                        isExpanded={expandedUnassignedSubgroup === name}
+                                        onToggle={() => setExpandedUnassignedSubgroup(prev => prev === name ? null : name)}
                                         onRestore={restoreParentUuid ? () => {
                                             assignCatalogGroup(name, restoreParentUuid);
+                                            setExpandedUnassignedSubgroup(prev => prev === name ? null : prev);
                                             setRecentUnassigns(prev => {
                                                 const next = { ...prev };
                                                 delete next[name];
