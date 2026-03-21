@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useConfig } from "@/context/ConfigContext";
 import { formatDisplayName, cn } from "@/lib/utils";
-import { UploadCloud, AlertTriangle, ChevronDown, BookOpen, Search, RefreshCw, Image as ImageIcon } from "lucide-react";
+import { UploadCloud, AlertTriangle, ChevronDown, BookOpen, Search, RefreshCw, Image as ImageIcon, Check, X } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { decodeConfig } from "@/lib/config-utils";
@@ -93,6 +93,10 @@ const importSetupStickySurface =
 export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupModalProps) {
     const { currentValues, importGroups, manifest, fetchManifest } = useConfig();
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const subgroupReviewContainerRef = useRef<HTMLDivElement>(null);
+    const updateSectionRef = useRef<HTMLElement>(null);
+    const newSectionRef = useRef<HTMLElement>(null);
+    const existingSectionRef = useRef<HTMLElement>(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -663,57 +667,65 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
     };
 
     // Bulk Actions Subgroups
-    const selectAllSubgroups = () => {
-        const nextStandalone = new Set<string>();
+    const selectAllUpdates = () => {
         const nextCatalogs = new Set<string>();
         const nextImages = new Set<string>();
         parsedSubgroups.forEach(sg => {
-            const isFullyExisting = sg.isDuplicate && !sg.hasNewCatalogs && !sg.hasNewImage;
-            const includedInMain = isSubgroupIncludedViaSelectedMainGroup(sg.name);
-            if (isFullyExisting) return;
-
-            if (!sg.isDuplicate) {
-                if (!includedInMain) {
-                    nextStandalone.add(sg.name);
-                }
-                return;
-            }
+            if (!sg.isDuplicate) return;
 
             if (sg.hasNewCatalogs) nextCatalogs.add(sg.name);
             if (sg.hasNewImage) nextImages.add(sg.name);
         });
-        setSelectedStandaloneSubgroups(nextStandalone);
         setSelectedCatalogUpdateSubgroups(nextCatalogs);
         setSelectedImageUpdateSubgroups(nextImages);
     };
 
-    const deselectAllSubgroups = () => {
-        setSelectedStandaloneSubgroups(new Set());
+    const clearUpdateSelection = () => {
         setSelectedCatalogUpdateSubgroups(new Set());
         setSelectedImageUpdateSubgroups(new Set());
     };
 
+    const selectAllNewSubgroups = () => {
+        setSelectedStandaloneSubgroups(prev => {
+            const next = new Set(prev);
+            parsedSubgroups.forEach(sg => {
+                if (sg.isDuplicate) return;
+                if (isSubgroupIncludedViaSelectedMainGroup(sg.name)) return;
+                next.add(sg.name);
+            });
+            return next;
+        });
+    };
+
+    const deselectAllNewSubgroups = () => {
+        setSelectedStandaloneSubgroups(prev => {
+            const next = new Set(prev);
+            parsedSubgroups.forEach(sg => {
+                if (!sg.isDuplicate) {
+                    next.delete(sg.name);
+                }
+            });
+            return next;
+        });
+    };
+
     const selectCatalogUpdates = () => {
-        const next = new Set<string>();
+        const next = new Set(selectedCatalogUpdateSubgroups);
         parsedSubgroups.forEach(sg => {
             if (sg.isDuplicate && sg.hasNewCatalogs) {
                 next.add(sg.name);
             }
         });
-        setSelectedStandaloneSubgroups(new Set());
         setSelectedCatalogUpdateSubgroups(next);
-        setSelectedImageUpdateSubgroups(new Set());
     };
 
     const selectImageUpdates = () => {
-        const next = new Set<string>();
+        const next = new Set(selectedImageUpdateSubgroups);
         parsedSubgroups.forEach(sg => {
             if (sg.isDuplicate && sg.hasNewImage) {
                 next.add(sg.name);
             }
         });
-        setSelectedStandaloneSubgroups(new Set());
-        setSelectedCatalogUpdateSubgroups(new Set());
         setSelectedImageUpdateSubgroups(next);
     };
 
@@ -746,6 +758,33 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
             ...sg.catalogs,
         )
     );
+
+    const filteredNewSubgroups = useMemo(
+        () => filteredSubgroups.filter((sg) => !sg.isDuplicate),
+        [filteredSubgroups]
+    );
+    const filteredUpdatedSubgroups = useMemo(
+        () => filteredSubgroups.filter((sg) => sg.isDuplicate && (sg.hasNewCatalogs || sg.hasNewImage)),
+        [filteredSubgroups]
+    );
+    const filteredExistingSubgroups = useMemo(
+        () => filteredSubgroups.filter((sg) => sg.isDuplicate && !sg.hasNewCatalogs && !sg.hasNewImage),
+        [filteredSubgroups]
+    );
+
+    const scrollToSubgroupReviewSection = (section: "updates" | "new" | "existing") => {
+        const container = subgroupReviewContainerRef.current;
+        const target = section === "updates"
+            ? updateSectionRef.current
+            : section === "new"
+                ? newSectionRef.current
+                : existingSectionRef.current;
+
+        if (!container || !target) return;
+
+        const nextTop = Math.max(target.offsetTop - 8, 0);
+        container.scrollTo({ top: nextTop, behavior: "smooth" });
+    };
 
     const totalSelectedSubgroups = new Set([
         ...selectedStandaloneSubgroups,
@@ -931,7 +970,48 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                             />
                         </div>
 
-                        <div className={cn(editorSurface.card, "relative mt-4 flex-1 min-h-0 overflow-x-hidden overflow-y-auto custom-scrollbar")}>
+                        {activeReviewTab === "subgroups" && [filteredUpdatedSubgroups.length, filteredNewSubgroups.length, filteredExistingSubgroups.length].filter(Boolean).length > 1 ? (
+                            <div className={cn(editorSurface.cardInteractive, "mt-3 flex shrink-0 items-center gap-2 rounded-xl px-3 py-2")}>
+                                {filteredUpdatedSubgroups.length > 0 ? (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => scrollToSubgroupReviewSection("updates")}
+                                        className={cn(importSetupChipBase, importSetupChipIdle, "px-2.5")}
+                                    >
+                                        Updates ({filteredUpdatedSubgroups.length})
+                                    </Button>
+                                ) : null}
+                                {filteredNewSubgroups.length > 0 ? (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => scrollToSubgroupReviewSection("new")}
+                                        className={cn(importSetupChipBase, importSetupChipIdle, "px-2.5")}
+                                    >
+                                        New ({filteredNewSubgroups.length})
+                                    </Button>
+                                ) : null}
+                                {filteredExistingSubgroups.length > 0 ? (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => scrollToSubgroupReviewSection("existing")}
+                                        className={cn(importSetupChipBase, importSetupChipIdle, "px-2.5")}
+                                    >
+                                        Existing ({filteredExistingSubgroups.length})
+                                    </Button>
+                                ) : null}
+                            </div>
+                        ) : null}
+
+                        <div
+                            ref={activeReviewTab === "subgroups" ? subgroupReviewContainerRef : undefined}
+                            className={cn(editorSurface.card, "relative mt-4 flex-1 min-h-0 overflow-x-hidden overflow-y-auto custom-scrollbar")}
+                        >
                             <div className="h-full">
                                 <TabsContent value="main" className="p-0 m-0">
                                     {parsedMainGroups.length === 0 ? (
@@ -947,7 +1027,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                     onClick={selectAllMain}
                                                     className={cn(importSetupChipBase, importSetupChipIdle, "px-2.5")}
                                                 >
-                                                    All new
+                                                    All
                                                 </Button>
                                                 <Button
                                                     variant="outline"
@@ -1047,9 +1127,9 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                     ) : (
                                         <div className="flex flex-col">
                                             {(() => {
-                                                const newSgs = filteredSubgroups.filter(sg => !sg.isDuplicate);
-                                                const mergeSgs = filteredSubgroups.filter(sg => sg.isDuplicate && (sg.hasNewCatalogs || sg.hasNewImage));
-                                                const existingSgs = filteredSubgroups.filter(sg => sg.isDuplicate && !sg.hasNewCatalogs && !sg.hasNewImage);
+                                                const newSgs = filteredNewSubgroups;
+                                                const mergeSgs = filteredUpdatedSubgroups;
+                                                const existingSgs = filteredExistingSubgroups;
 
                                                 const renderSubgroupRow = (sg: ParsedSubgroup) => {
                                                     const isStandaloneSelected = selectedStandaloneSubgroups.has(sg.name);
@@ -1210,7 +1290,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                 return (
                                                     <div className="flex flex-col">
                                                         {mergeSgs.length > 0 && (
-                                                            <section className="flex flex-col">
+                                                            <section ref={updateSectionRef} className="flex flex-col">
                                                                 <div className={cn(importSetupStickySurface, "sticky top-0 z-30 -mx-px rounded-none border-x-0 border-t-0 flex items-center justify-between gap-3 px-4 py-3 shadow-none")}>
                                                                     <div className="text-xs font-semibold uppercase tracking-wider text-foreground/70">
                                                                         Updates ({mergeSgs.length})
@@ -1230,17 +1310,21 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                                             <DropdownMenuLabel className="text-[11px] uppercase tracking-wider text-foreground/55">
                                                                                 Update selection
                                                                             </DropdownMenuLabel>
-                                                                            <DropdownMenuItem onClick={selectAllSubgroups} className="text-sm">
-                                                                                Select all
-                                                                            </DropdownMenuItem>
-                                                                            <DropdownMenuItem onClick={deselectAllSubgroups} className="text-sm">
-                                                                                Clear selection
+                                                                            <DropdownMenuItem onClick={selectAllUpdates} className="text-sm">
+                                                                                <Check className="mr-2 h-3.5 w-3.5" />
+                                                                                Select all updates
                                                                             </DropdownMenuItem>
                                                                             <DropdownMenuItem onClick={selectCatalogUpdates} className="text-sm">
-                                                                                Catalog updates
+                                                                                <RefreshCw className="mr-2 h-3.5 w-3.5" />
+                                                                                Add catalog updates
                                                                             </DropdownMenuItem>
                                                                             <DropdownMenuItem onClick={selectImageUpdates} className="text-sm">
-                                                                                Image updates
+                                                                                <ImageIcon className="mr-2 h-3.5 w-3.5" />
+                                                                                Add image updates
+                                                                            </DropdownMenuItem>
+                                                                            <DropdownMenuItem onClick={clearUpdateSelection} className="text-sm">
+                                                                                <X className="mr-2 h-3.5 w-3.5" />
+                                                                                Clear selection
                                                                             </DropdownMenuItem>
                                                                         </DropdownMenuContent>
                                                                     </DropdownMenu>
@@ -1251,9 +1335,31 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                             </section>
                                                         )}
                                                         {newSgs.length > 0 && (
-                                                            <section className="flex flex-col">
-                                                                <div className={cn(importSetupStickySurface, "sticky top-0 z-20 -mx-px rounded-none border-x-0 border-t-0 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-foreground/70 shadow-none")}>
-                                                                    New Subgroups ({newSgs.length})
+                                                            <section ref={newSectionRef} className="flex flex-col">
+                                                                <div className={cn(importSetupStickySurface, "sticky top-0 z-20 -mx-px rounded-none border-x-0 border-t-0 flex items-center justify-between gap-3 px-4 py-2 shadow-none")}>
+                                                                    <div className="text-xs font-semibold uppercase tracking-wider text-foreground/70">
+                                                                        New Subgroups ({newSgs.length})
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Button
+                                                                            type="button"
+                                                                            variant="outline"
+                                                                            size="sm"
+                                                                            onClick={selectAllNewSubgroups}
+                                                                            className={cn(importSetupChipBase, importSetupChipIdle, "h-7 px-2.5 text-[11px] font-medium")}
+                                                                        >
+                                                                            All
+                                                                        </Button>
+                                                                        <Button
+                                                                            type="button"
+                                                                            variant="outline"
+                                                                            size="sm"
+                                                                            onClick={deselectAllNewSubgroups}
+                                                                            className={cn(importSetupChipBase, importSetupChipIdle, "h-7 px-2.5 text-[11px] font-medium")}
+                                                                        >
+                                                                            None
+                                                                        </Button>
+                                                                    </div>
                                                                 </div>
                                                                 {(() => {
                                                                     // Get unique categories present in newSgs
@@ -1287,7 +1393,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                             </section>
                                                         )}
                                                         {existingSgs.length > 0 && (
-                                                            <section className="flex flex-col">
+                                                            <section ref={existingSectionRef} className="flex flex-col">
                                                                 <div className={cn(importSetupStickySurface, "sticky top-0 z-20 -mx-px rounded-none border-x-0 border-t-0 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-foreground/70 shadow-none")}>
                                                                     Existing ({existingSgs.length})
                                                                 </div>

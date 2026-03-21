@@ -1114,11 +1114,17 @@ function UnassignedSubgroupRow({
     onRestore?: () => void,
     restoreParentName?: string
 }) {
-    const { updateValue, currentValues, assignCatalogGroup, removeCatalogGroup, catalogs: fullCatalogs, customFallbacks } = useConfig();
+    const { updateValue, currentValues, assignCatalogGroup, removeCatalogGroup, renameCatalogGroup, catalogs: fullCatalogs, customFallbacks } = useConfig();
     const mainCatalogGroups = (currentValues["main_catalog_groups"] as Record<string, { name?: string; subgroupNames?: string[] }> | undefined) ?? EMPTY_RECORD;
     const mainGroupOrder = (currentValues["main_group_order"] as string[] | undefined) ?? EMPTY_STRING_ARRAY;
+    const rawImageUrl = currentValues.catalog_group_image_urls?.[groupName];
+    const imageUrl: string = typeof rawImageUrl === "string" ? rawImageUrl : "";
     const [isExpanded, setIsExpanded] = useState(false);
 
+    const [urlInput, setUrlInput] = useState(imageUrl);
+    const [thumbAspect, setThumbAspect] = useState<ThumbnailAspect>("square");
+    const [thumbLoadError, setThumbLoadError] = useState(false);
+    const [isRenaming, setIsRenaming] = useState(false);
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
     const [catalogSearch, setCatalogSearch] = useState("");
     const [activeCatalogId, setActiveCatalogId] = useState<string | null>(null);
@@ -1134,6 +1140,15 @@ function UnassignedSubgroupRow({
             window.clearTimeout(timeoutId);
         };
     }, [isAddMenuOpen]);
+
+    React.useEffect(() => {
+        setUrlInput(prev => (prev === imageUrl ? prev : imageUrl));
+    }, [imageUrl]);
+
+    React.useEffect(() => {
+        setThumbAspect("square");
+        setThumbLoadError(false);
+    }, [urlInput]);
 
     const customNames: Record<string, string> = React.useMemo(() => currentValues["custom_catalog_names"] || {}, [currentValues]);
     const catalogOptions = React.useMemo(() => {
@@ -1232,6 +1247,19 @@ function UnassignedSubgroupRow({
         ? resolveCatalogName(activeCatalogId, currentValues.custom_catalog_names || {})
         : "";
 
+    const handleUrlBlur = () => {
+        if (urlInput !== imageUrl) {
+            updateValue(["catalog_group_image_urls", groupName], urlInput);
+        }
+    };
+
+    const hasThumbPreview = /^https?:\/\//i.test(urlInput.trim()) && !thumbLoadError;
+    const thumbFrameClass = thumbAspect === "landscape"
+        ? "h-10 w-16"
+        : thumbAspect === "portrait"
+            ? "h-14 w-10"
+            : "h-10 w-10";
+
     return (
         <div className={`${editorSurface.cardInteractive} flex flex-col rounded-xl overflow-hidden transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out hover:border-border/80 w-full mb-3`}>
             <div className="group/unassigned flex items-center justify-between p-3 gap-4">
@@ -1300,6 +1328,17 @@ function UnassignedSubgroupRow({
                         </DropdownMenuContent>
                     </DropdownMenu>
 
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setIsRenaming(true)}
+                        className={`hidden sm:inline-flex h-9 w-9 p-0 items-center justify-center rounded-md ${editorHover.iconAction}`}
+                        aria-label="Rename subgroup"
+                        title="Rename subgroup"
+                    >
+                        <Pencil className="w-3.5 h-3.5" />
+                    </Button>
+
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon" className={`h-9 w-9 p-0 flex items-center justify-center rounded-md ${editorHover.iconDanger}`} aria-label="Delete subgroup">
@@ -1327,8 +1366,130 @@ function UnassignedSubgroupRow({
                 </div>
             </div>
 
+            <RenameGroupModal
+                isOpen={isRenaming}
+                onClose={() => setIsRenaming(false)}
+                oldName={groupName}
+                isMainGroup={false}
+                onRename={(oldN, newN) => {
+                    setIsRenaming(false);
+                    renameCatalogGroup(oldN, newN);
+                }}
+            />
+
             {isExpanded && (
                 <div className="border-t border-slate-200/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(248,250,252,0.1))] p-4 dark:border-white/8 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.008))]">
+                    <div className="space-y-2 mb-4">
+                        <div className={`${editorSurface.panel} flex items-center gap-3 p-3`}>
+                            <div
+                                className={`${thumbFrameClass} rounded-md shrink-0 overflow-hidden shadow-sm flex items-center justify-center transition-[width,height] duration-200 border border-white/10 p-1`}
+                                style={{ backgroundColor: '#020617' }}
+                            >
+                                {hasThumbPreview ? (
+                                    <>
+                                        {/* eslint-disable-next-line @next/next/no-img-element -- Dynamic subgroup thumbnail preview from user-provided URL. */}
+                                        <img
+                                            src={urlInput}
+                                            alt="Thumb"
+                                            className="h-full w-full object-contain"
+                                            onLoad={(e) => {
+                                                const { naturalWidth, naturalHeight } = e.currentTarget;
+                                                if (!naturalWidth || !naturalHeight) {
+                                                    setThumbAspect("square");
+                                                    return;
+                                                }
+                                                const ratio = naturalWidth / naturalHeight;
+                                                if (ratio > 1.2) setThumbAspect("landscape");
+                                                else if (ratio < 0.82) setThumbAspect("portrait");
+                                                else setThumbAspect("square");
+                                            }}
+                                            onError={() => {
+                                                setThumbLoadError(true);
+                                            }}
+                                        />
+                                    </>
+                                ) : (
+                                    <ImageIcon className="w-4 h-4 text-foreground/70" />
+                                )}
+                            </div>
+                            <div className="flex-1 space-y-1">
+                                <Label className="text-xs uppercase font-bold tracking-widest text-foreground/70">Poster Image URL</Label>
+                                <Input
+                                    placeholder="https://..."
+                                    value={urlInput}
+                                    onChange={e => setUrlInput(e.target.value)}
+                                    onBlur={handleUrlBlur}
+                                    className={`${editorSurface.field} h-10 sm:h-8 text-base sm:text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 transition-colors font-mono`}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="sm:hidden grid grid-cols-3 gap-2 pt-1">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className={`${editorSurface.field} h-9 text-xs text-foreground/70 hover:text-foreground`}
+                                    >
+                                        <FolderInput className="w-3.5 h-3.5 mr-2" /> Move
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start" className={cn(editorSurface.overlay, "w-[calc(100vw-3rem)]")}>
+                                    {onRestore && restoreParentName && (
+                                        <>
+                                            <DropdownMenuItem
+                                                onClick={onRestore}
+                                                className="cursor-pointer py-3 text-amber-500 focus:bg-amber-500/20 focus:text-amber-400 font-semibold"
+                                            >
+                                                <RotateCcw className="w-3.5 h-3.5 mr-2" />
+                                                Restore to {formatDisplayName(restoreParentName)}
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator className="bg-border" />
+                                        </>
+                                    )}
+                                    <DropdownMenuLabel className="text-[10px] font-bold uppercase tracking-widest text-foreground/50">Move to group</DropdownMenuLabel>
+                                    <DropdownMenuSeparator className="bg-primary/10" />
+                                    {mainGroupOrder.length === 0 ? (
+                                        <DropdownMenuItem disabled className="text-xs text-foreground/70/50">
+                                            No Main Groups
+                                        </DropdownMenuItem>
+                                    ) : (
+                                        mainGroupOrder.map((uuid: string) => {
+                                            const name = mainCatalogGroups[uuid]?.name || "Unnamed Group";
+                                            return (
+                                                <DropdownMenuItem
+                                                    key={uuid}
+                                                    onSelect={() => assignCatalogGroup(groupName, uuid)}
+                                                    className="cursor-pointer py-3"
+                                                >
+                                                    {formatDisplayName(name)}
+                                                </DropdownMenuItem>
+                                            );
+                                        })
+                                    )}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setIsRenaming(true)}
+                                className={`${editorSurface.field} h-9 text-xs text-foreground/70 hover:text-foreground`}
+                            >
+                                <Pencil className="w-3.5 h-3.5 mr-2" /> Rename
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => removeCatalogGroup(groupName)}
+                                className={`${editorSurface.field} h-9 text-xs text-red-400 hover:text-red-300`}
+                            >
+                                <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
+                            </Button>
+                        </div>
+                    </div>
+
                     <div className={`${editorSurface.panel} mb-4 p-3 sm:p-3.5`}>
                         <div className="mb-3 flex items-center justify-between rounded-lg border border-slate-200/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.34),rgba(248,250,252,0.2))] px-3 py-2 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))]">
                             <h5 className="inline-flex items-center gap-2 text-xs font-bold text-foreground/80 uppercase tracking-widest">
