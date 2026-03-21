@@ -151,6 +151,33 @@ describe('Mutations Library', () => {
         expect(newState.selected_catalogs).toEqual(["c1", "c2"]); // Dupes removed
     });
 
+    it('validateAndFix appends main groups missing from main_group_order', () => {
+        const initialState = {
+            catalog_groups: {
+                "Streaming": ["c1"],
+                "Collections": ["c2"]
+            },
+            main_group_order: ["streaming-uuid"],
+            subgroup_order: {
+                "streaming-uuid": ["Streaming"]
+            },
+            main_catalog_groups: {
+                "streaming-uuid": {
+                    name: "Streaming Services",
+                    subgroupNames: ["Streaming"]
+                },
+                "collections-uuid": {
+                    name: "Collections",
+                    subgroupNames: ["Collections"]
+                }
+            }
+        };
+
+        const newState = validateAndFix(initialState);
+
+        expect(newState.main_group_order).toEqual(["streaming-uuid", "collections-uuid"]);
+    });
+
     it('importGroups preserves existing subgroup catalogs when only relinking a duplicate subgroup', () => {
         const initialState = {
             main_catalog_groups: {

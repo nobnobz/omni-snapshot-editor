@@ -25,6 +25,7 @@ import { GripVertical, ArrowDownAZ, ArrowUpZA, Edit2, Star } from "lucide-react"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { RenameGroupModal } from "./RenameGroupModal";
+import { normalizeMainGroupOrder } from "@/lib/main-group-utils";
 import { resolveCatalogName } from "@/lib/utils";
 import { editorHover, editorSurface } from "@/components/editor/ui/style-contract";
 
@@ -363,18 +364,11 @@ export function MainGroupEditor() {
         [hasMainGroups, mainGroupsValue]
     );
     const customNames = (currentValues["custom_catalog_names"] || {}) as Record<string, string>;
-    const mainGroupOrder = Array.isArray(currentValues["main_group_order"])
-        ? (currentValues["main_group_order"] as string[])
-        : Object.keys(mainGroups);
-
-    // Sync order if new groups were added but not in order yet
-    const orderedGroups = useMemo(() => {
-        const orderSet = new Set(mainGroupOrder);
-        const allKeys = Object.keys(mainGroups);
-        const missing = allKeys.filter((k: string) => !orderSet.has(k));
-        const filtered = mainGroupOrder.filter((k: string) => mainGroups[k]);
-        return [...filtered, ...missing];
-    }, [mainGroups, mainGroupOrder]);
+    const mainGroupOrderValue = currentValues["main_group_order"];
+    const orderedGroups = useMemo(
+        () => normalizeMainGroupOrder(mainGroups, mainGroupOrderValue),
+        [mainGroups, mainGroupOrderValue]
+    );
 
     const handleUpdateSubgroups = (groupId: string, newSubgroups: string[]) => {
         const newGroupsMap = { ...mainGroups };

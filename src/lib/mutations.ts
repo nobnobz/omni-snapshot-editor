@@ -1,4 +1,5 @@
 import { ensureCatalogPrefix, resolveCatalogName } from "./utils";
+import { normalizeMainGroupOrder } from "./main-group-utils";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mutation layer edits arbitrary user-defined config trees.
 type LooseAny = any;
@@ -415,6 +416,14 @@ export function validateAndFix(state: MutableState): MutableState {
     const draft = JSON.parse(JSON.stringify(state));
 
     const validGroupNames = new Set(Object.keys(draft.catalog_groups || {}));
+    const validMainGroupIds = new Set(Object.keys(draft.main_catalog_groups || {}));
+
+    if (draft.main_catalog_groups || draft.main_group_order !== undefined) {
+        draft.main_group_order = normalizeMainGroupOrder(
+            (draft.main_catalog_groups || {}) as Record<string, unknown>,
+            draft.main_group_order
+        ).filter((uuid: string) => validMainGroupIds.has(uuid));
+    }
 
     // Ensure catalog_group_order exists and is cleaned
     if (draft.catalog_group_order !== undefined) {

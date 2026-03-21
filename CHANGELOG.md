@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.7] - 2026-03-21
+### Fixed
+- **Main Group Ordering**: Implemented automated sanitization and synchronization of `main_group_order` to ensure consistency with existing groups.
+
+### Improved
+- **Configuration Validation**: Integrated automatic validation and fixing of configuration values during the decoding phase via `ConfigContext`, enhancing overall data integrity.
+
 ## [0.4.6] - 2026-03-20
 ### Fixed
 - **Catalog Export**: Refined export semantics for empty catalog selections. `selected_catalogs` is now explicitly exported as a real empty array (`[]`) and included in `includedKeys` to preserve state across sessions.

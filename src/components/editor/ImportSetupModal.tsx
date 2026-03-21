@@ -28,6 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { editorAction, editorLayout, editorSurface, editorToneBadge, editorNoticeTone } from "@/components/editor/ui/style-contract";
 import { FALLBACK_TEMPLATE_URLS, findTemplateByKind, isTemplateOfKind } from "@/lib/template-manifest";
+import { normalizeMainGroupOrder } from "@/lib/main-group-utils";
 
 interface ImportSetupModalProps {
     isOpen: boolean;
@@ -263,7 +264,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                 posterType?: string;
                 posterSize?: string;
             }>;
-            const inMainGroupOrder = (imported.main_group_order as string[] | undefined) || Object.keys(inMainGroups);
+            const inMainGroupOrder = normalizeMainGroupOrder(inMainGroups, imported.main_group_order);
             const inCatalogsGroups = (imported.catalog_groups || {}) as Record<string, string[]>;
             const subgroupOrder = (imported.subgroup_order || {}) as Record<string, string[]>;
 

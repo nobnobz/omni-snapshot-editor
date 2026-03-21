@@ -436,7 +436,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
 
         setCatalogs(extractedCatalogs);
 
-        const finalizedValues = JSON.parse(JSON.stringify(decodedValues)) as ConfigValues;
+        const finalizedValues = validateAndFix(JSON.parse(JSON.stringify(decodedValues)) as ConfigValues);
         setCurrentValues(finalizedValues);
         setInitialValues(JSON.parse(JSON.stringify(finalizedValues)));
 
