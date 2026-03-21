@@ -1264,13 +1264,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                                         </Button>
                                                                     </DropdownMenuTrigger>
                                                                     <DropdownMenuContent>
-                                                                        <DropdownMenuItem
-                                                                            onClick={() => setStandaloneAssignments(prev => { const n = { ...prev }; delete n[sg.name]; return n; })}
-                                                                            className="text-xs focus:bg-amber-500/20 focus:text-amber-400 font-semibold"
-                                                                        >
-                                                                            None (Unassigned)
-                                                                        </DropdownMenuItem>
-                                                                        <DropdownMenuLabel className="text-xs uppercase text-foreground/70 font-bold mt-2">Assign to Current Match</DropdownMenuLabel>
+                                                                        <DropdownMenuLabel className="text-xs uppercase text-foreground/70 font-bold">Assign to</DropdownMenuLabel>
                                                                         {currentMainGroupOrder.map((uuid: string) => (
                                                                             <DropdownMenuItem
                                                                                 key={uuid}
@@ -1280,6 +1274,12 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                                                 {formatDisplayName(currentMainGroups[uuid]?.name || "Unnamed")}
                                                                             </DropdownMenuItem>
                                                                         ))}
+                                                                        <DropdownMenuItem
+                                                                            onClick={() => setStandaloneAssignments(prev => { const n = { ...prev }; delete n[sg.name]; return n; })}
+                                                                            className="mt-1 text-xs focus:bg-amber-500/20 focus:text-amber-400 font-semibold"
+                                                                        >
+                                                                            None (Unassigned)
+                                                                        </DropdownMenuItem>
                                                                     </DropdownMenuContent>
                                                                 </DropdownMenu>
                                                             )}
