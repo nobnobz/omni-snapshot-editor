@@ -13,6 +13,7 @@ import {
     HelpCircle,
     Image as ImageIcon,
     Layers,
+    Laptop,
     Layout,
     LayoutGrid,
     Maximize,
@@ -423,6 +424,18 @@ export function Documentation({ headerAction, onOpenInstallGuide }: Documentatio
                             <p className="mt-3 flex items-start gap-2 text-xs leading-relaxed text-foreground/78">
                                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
                                 If the backup does not appear, force close Omni and reopen.
+                            </p>
+                        </GuidePanel>
+
+                        <GuidePanel title="macOS Installation" icon={Laptop} tone="indigo">
+                            <p className="text-sm leading-relaxed text-foreground/72">
+                                In Finder, press Shift+Command+G and open Omni&apos;s local backup folder. Drop the downloaded snapshot JSON into Backups, then reopen Omni if needed.
+                            </p>
+                            <div className="mt-3 rounded-xl border border-primary/20 bg-primary/8 px-3.5 py-3 font-mono text-xs text-primary dark:text-primary">
+                                ~/Library/Containers/Omni/Data/Documents/Backups
+                            </div>
+                            <p className="mt-3 text-xs leading-relaxed text-foreground/78">
+                                Fallback path: <span className="font-mono text-[11px] text-foreground/74">/Users/USERNAME/Library/Containers/win.stkc.omni/Data/Documents/Backups</span>
                             </p>
                         </GuidePanel>
 

@@ -2,12 +2,12 @@
 
 import React from "react";
 import {
-    CheckCircle2,
     ChevronRight,
     Cloud,
     Download,
     FileJson,
     Info,
+    Laptop,
     Link2,
     MousePointer2,
     Search,
@@ -61,8 +61,10 @@ type DeviceGuide = {
     title: string;
     icon: React.ComponentType<{ className?: string }>;
     description: string;
-    note: string;
-    noteLabel: string;
+    details: {
+        label: string;
+        value: string;
+    }[];
     tone: "blue";
 };
 
@@ -167,16 +169,40 @@ export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
             title: "Import on iPhone / iPad",
             icon: Smartphone,
             description: "Move the downloaded Omni snapshot JSON file into Omni’s local backup folder. If it doesn’t appear right away, restart Omni. Then select the imported snapshot and restore it.",
-            note: "Files > On My iPhone > Omni > Backups",
-            noteLabel: "Path",
+            details: [
+                {
+                    label: "Path",
+                    value: "Files > On My iPhone > Omni > Backups",
+                },
+            ],
+            tone: "blue",
+        },
+        {
+            title: "Import on macOS",
+            icon: Laptop,
+            description: "Open Finder, press Shift+Command+G, and paste the Omni backup folder path below. Move the downloaded snapshot JSON into Backups, then restart Omni if it does not appear immediately.",
+            details: [
+                {
+                    label: "Go to Folder",
+                    value: "~/Library/Containers/Omni/Data/Documents/Backups",
+                },
+                {
+                    label: "Fallback path",
+                    value: "/Users/USERNAME/Library/Containers/win.stkc.omni/Data/Documents/Backups",
+                },
+            ],
             tone: "blue",
         },
         {
             title: "Sync to Apple TV",
             icon: Cloud,
             description: "Import the backup on iOS first, enable iCloud Sync in Omni settings, then pull the synced setup on Apple TV.",
-            note: "iCloud Sync must be enabled on the same Apple account.",
-            noteLabel: "Note",
+            details: [
+                {
+                    label: "Note",
+                    value: "iCloud Sync must be enabled on the same Apple account.",
+                },
+            ],
             tone: "blue",
         },
     ];
@@ -375,45 +401,39 @@ export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
                     icon={Info}
                     tone="blue"
                 >
-                    <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-                        <GuidePanel title="Checklist" icon={CheckCircle2} tone="blue">
-                            <GuideStepList
-                                items={[
-                                    "AIOStreams manifest URL added in Omni",
-                                    "AIOMetadata manifest URL added in Omni",
-                                    "Both addon configs saved with password",
-                                    "Snapshot template downloaded to your device",
-                                ]}
-                                ordered={false}
-                                tone="blue"
-                                className="mt-1"
-                            />
-                        </GuidePanel>
-
-                        <div className="grid gap-4 lg:auto-rows-fr lg:grid-cols-2">
-                            {deviceGuides.map((item) => {
-                                const Icon = item.icon;
-                                return (
-                                    <GuidePanel
-                                        key={item.title}
-                                        title={item.title}
-                                        icon={Icon}
-                                        tone={item.tone}
-                                        className="h-full"
-                                    >
-                                        <div className="flex h-full flex-col">
-                                            <p className="flex-1 text-sm leading-relaxed text-foreground/72">
-                                                {item.description}
-                                            </p>
-                                            <div className="mt-6 lg:mt-8 rounded-xl border border-border/60 bg-background/55 p-3.5 lg:mt-auto">
-                                                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground/48">{item.noteLabel}</p>
-                                                <p className="mt-2 break-words font-mono text-xs text-foreground/74">{item.note}</p>
-                                            </div>
+                    <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3 xl:items-start">
+                        {deviceGuides.map((item) => {
+                            const Icon = item.icon;
+                            return (
+                                <GuidePanel
+                                    key={item.title}
+                                    title={item.title}
+                                    icon={Icon}
+                                    tone={item.tone}
+                                >
+                                    <div>
+                                        <p className="text-sm leading-relaxed text-foreground/72">
+                                            {item.description}
+                                        </p>
+                                        <div className="mt-5 space-y-3">
+                                            {item.details.map((detail) => (
+                                                <div
+                                                    key={`${item.title}-${detail.label}`}
+                                                    className="rounded-xl border border-border/60 bg-background/55 p-3"
+                                                >
+                                                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground/48">
+                                                        {detail.label}
+                                                    </p>
+                                                    <p className="mt-2 break-words font-mono text-xs text-foreground/74">
+                                                        {detail.value}
+                                                    </p>
+                                                </div>
+                                            ))}
                                         </div>
-                                    </GuidePanel>
-                                );
-                            })}
-                        </div>
+                                    </div>
+                                </GuidePanel>
+                            );
+                        })}
                     </div>
                 </GuideSection>
             </GuideBody>
