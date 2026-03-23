@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.5.0] - 2026-03-23
+### Added
+- **Manager Switcher**: Integrated a welcome-page-only manager switcher to Omni Snapshot Manager, matching the Fusion pattern for seamless linking between Omni and Fusion with Omni marked as the current manager.
+
+### Improved
+- **Welcome Header**: Reworked header utilities to integrate the switcher, aligning the utility group to the main content width and refining spacing. Header utilities remain hidden during active editing.
+- **Documentation Discoverability**: Moved the documentation shortcut out of the top-right utilities and placed it next to the primary template download action for better contextual discoverability.
+- **Welcome Hero**: Refined presentation by increasing the clown logo size, tightening its spacing to the headline, and adding a subtle hover glow effect for enhanced interactivity.
+- **Visual Polish**: Polished light and dark mode styling for the welcome screen, including calmer light-mode shadows/glows and improved visual consistency between the primary download CTA and the documentation shortcut.
+- **Favicon**: Aligned browser tab icon size with Fusion Manager for a consistent cross-product experience.
+
 ## [0.4.8] - 2026-03-21
 ### Fixed
 - **UI Layout**: Standardized toolbar spacing in `MainEditor` to prevent overlapping with content on large screens.
