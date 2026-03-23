@@ -72,6 +72,7 @@ import { AppMeta } from "@/components/editor/AppMeta";
 type UiNotice = {
     tone: "success" | "error" | "info";
     message: string;
+    placement?: "global" | "aiometadata" | "aiometadata-editor";
 };
 
 type AIOMetadataSyncState = {
@@ -434,9 +435,41 @@ export function MainEditor() {
 
     const sections = EDITOR_SECTIONS;
 
-    const showNotice = (tone: UiNotice["tone"], message: string) => {
-        setUiNotice({ tone, message });
+    const showNotice = (
+        tone: UiNotice["tone"],
+        message: string,
+        placement: UiNotice["placement"] = "global"
+    ) => {
+        setUiNotice({ tone, message, placement });
     };
+
+    const renderNotice = (notice: UiNotice) => (
+        <div
+            className={cn(
+                "rounded-xl border px-4 py-3 text-sm leading-relaxed animate-in fade-in slide-in-from-top-2 duration-300",
+                notice.tone === "error"
+                    ? editorNoticeTone.danger
+                    : notice.tone === "success"
+                        ? "border-emerald-500/16 bg-emerald-500/7 text-emerald-700 shadow-[0_8px_20px_rgba(34,197,94,0.06)] dark:text-emerald-400"
+                        : editorNoticeTone.info
+            )}
+            role="status"
+            aria-live="polite"
+        >
+            <div className="flex items-center justify-between gap-3">
+                <span className="font-medium tracking-tight">{notice.message}</span>
+                <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    className="shrink-0 text-current/60 hover:text-current hover:bg-current/10 rounded-full"
+                    onClick={() => setUiNotice(null)}
+                    aria-label="Dismiss notice"
+                >
+                    <X className="w-3.5 h-3.5" />
+                </Button>
+            </div>
+        </div>
+    );
 
     const persistAIOMetadataSyncState = (nextState: AIOMetadataSyncState) => {
         setAioSyncState(nextState);
@@ -597,7 +630,7 @@ export function MainEditor() {
                 : (data?.config?.catalogs || data?.catalogs);
 
             if (!catalogsList || !Array.isArray(catalogsList)) {
-                showNotice("error", "Invalid JSON format. Could not find catalogs array.");
+                showNotice("error", "Invalid JSON format. Could not find catalogs array.", "aiometadata");
                 return;
             }
 
@@ -627,7 +660,7 @@ export function MainEditor() {
                 syncedAt: new Date().toISOString(),
             });
             setIsAioImportEditorOpen(false);
-            showNotice("success", `Imported ${addedCount} catalogs with type info from AIOMetadata.`);
+            showNotice("success", `Imported ${addedCount} catalogs from AIOMetadata.`, "aiometadata");
             if (syncSource.sourceType === "url" && syncSource.sourceValue) {
                 setPastedJson(syncSource.sourceValue);
             } else {
@@ -635,7 +668,7 @@ export function MainEditor() {
             }
         } catch (err: unknown) {
             console.error(err);
-            showNotice("error", "Failed to parse JSON. Please ensure it is valid JSON.");
+            showNotice("error", "Failed to parse JSON. Please ensure it is valid JSON.", "aiometadata");
         }
     };
 
@@ -643,7 +676,7 @@ export function MainEditor() {
 
     const processFallbackFile = (file: File) => {
         if (!isJsonFile(file)) {
-            showNotice("error", "Please drop a valid JSON file.");
+            showNotice("error", "Please drop a valid JSON file.", "aiometadata");
             return;
         }
 
@@ -703,7 +736,7 @@ export function MainEditor() {
                 });
             } catch (err: unknown) {
                 console.error(err);
-                showNotice("error", err instanceof Error ? err.message : "Failed to fetch AIOMetadata manifest.");
+                showNotice("error", err instanceof Error ? err.message : "Failed to fetch AIOMetadata manifest.", "aiometadata");
             } finally {
                 setIsImportingUrl(false);
             }
@@ -745,7 +778,7 @@ export function MainEditor() {
         clearAIOMetadataSyncState();
         setIsAioImportEditorOpen(true);
         setPastedJson("");
-        showNotice("info", "Imported AIOMetadata names were cleared.");
+        showNotice("info", "Imported AIOMetadata names were cleared.", "aiometadata-editor");
         setIsResetConfirmOpen(false);
     };
 
@@ -1094,33 +1127,7 @@ export function MainEditor() {
                         </div>
                     </section>
 
-                    {uiNotice && (
-                        <div
-                            className={cn(
-                                "rounded-xl border px-4 py-3 text-sm leading-relaxed animate-in fade-in slide-in-from-top-2 duration-300",
-                                uiNotice.tone === "error"
-                                    ? editorNoticeTone.danger
-                                    : uiNotice.tone === "success"
-                                        ? "border-emerald-500/16 bg-emerald-500/7 text-emerald-700 shadow-[0_8px_20px_rgba(34,197,94,0.06)] dark:text-emerald-400"
-                                        : editorNoticeTone.info
-                            )}
-                            role="status"
-                            aria-live="polite"
-                        >
-                            <div className="flex items-center justify-between gap-3">
-                                <span className="font-medium tracking-tight">{uiNotice.message}</span>
-                                <Button
-                                    variant="ghost"
-                                    size="icon-xs"
-                                    className="shrink-0 text-current/60 hover:text-current hover:bg-current/10 rounded-full"
-                                    onClick={() => setUiNotice(null)}
-                                    aria-label="Dismiss notice"
-                                >
-                                    <X className="w-3.5 h-3.5" />
-                                </Button>
-                            </div>
-                        </div>
-                    )}
+                    {uiNotice && !["aiometadata", "aiometadata-editor"].includes(uiNotice.placement ?? "global") && renderNotice(uiNotice)}
 
                     {sections.map(section => {
                         // For predefined sections, show all specified keys
@@ -1182,6 +1189,7 @@ export function MainEditor() {
                                                     </div>
                                                 )}
                                             </div>
+                                            {uiNotice && uiNotice.placement === "aiometadata" && renderNotice(uiNotice)}
                                             {showAioSyncedState ? (
                                                 <div className="rounded-xl border border-emerald-500/16 bg-emerald-500/7 px-3.5 py-3 shadow-[0_8px_20px_rgba(34,197,94,0.06)]">
                                                     <div className="flex flex-col gap-3">
@@ -1276,6 +1284,7 @@ export function MainEditor() {
                                                                 Updating the source will replace the currently synced AIOMetadata data.
                                                             </div>
                                                         )}
+                                                        {uiNotice && uiNotice.placement === "aiometadata-editor" && renderNotice(uiNotice)}
                                                         <div className="relative group">
                                                             <Textarea
                                                                 placeholder="Paste URL / JSON or drop .json file here..."

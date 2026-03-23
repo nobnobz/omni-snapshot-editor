@@ -464,13 +464,16 @@ export function ConfigLoader() {
     ].filter(Boolean) as typeof manifestTemplates;
 
     const loaderUtilityButtonClass =
-        "size-10 rounded-[1.2rem] border border-slate-200/76 bg-white/66 p-0 text-foreground/64 shadow-[0_10px_24px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 ease-out hover:-translate-y-px hover:border-slate-300/86 hover:bg-white/78 hover:text-foreground dark:border-white/10 dark:bg-white/[0.04] dark:text-foreground/72 dark:hover:border-white/14 dark:hover:bg-white/[0.08] dark:hover:text-foreground sm:size-11";
+        "size-10 rounded-[1.2rem] border border-slate-200/82 bg-white/78 p-0 text-foreground/62 shadow-[0_8px_18px_rgba(15,23,42,0.055)] backdrop-blur-xl transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 ease-out hover:-translate-y-px hover:border-slate-300/88 hover:bg-white/88 hover:text-foreground hover:shadow-[0_10px_22px_rgba(15,23,42,0.075)] dark:border-white/10 dark:bg-white/[0.04] dark:text-foreground/72 dark:shadow-[0_10px_24px_rgba(2,6,23,0.22)] dark:hover:border-white/14 dark:hover:bg-white/[0.08] dark:hover:text-foreground dark:hover:shadow-[0_12px_26px_rgba(2,6,23,0.28)] sm:size-11";
     const loaderThemeToggleClass = cn(loaderUtilityButtonClass, "[&_svg]:size-[1.05rem] sm:[&_svg]:size-[1.1rem]");
     const loaderUtilityIconButtonClass = loaderUtilityButtonClass;
     const loaderUtilityDividerClass = "h-4 w-px bg-slate-300/80 dark:bg-white/10";
+    const loaderTemplateShortcutClass = cn(
+        editorLoader.resourceButtonPrimary,
+        "shadow-[0_8px_16px_rgba(37,99,235,0.05)] hover:shadow-[0_10px_20px_rgba(37,99,235,0.07)] dark:shadow-[0_18px_38px_rgba(37,99,235,0.26)]"
+    );
     const loaderGuideShortcutClass = cn(
-        editorLoader.resourceButtonSecondary,
-        "h-[3.35rem] w-[3.35rem] shrink-0 rounded-[1.6rem] px-0 sm:h-[3.55rem] sm:w-[3.55rem] [&_svg]:size-[1.08rem] sm:[&_svg]:size-[1.14rem]"
+        "h-[3.35rem] w-[3.35rem] shrink-0 rounded-[1.6rem] border border-slate-300/74 bg-[linear-gradient(180deg,rgba(255,255,255,0.985),rgba(249,250,251,0.96))] px-0 text-foreground shadow-[0_10px_20px_rgba(15,23,42,0.045)] backdrop-blur-xl transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 ease-out hover:-translate-y-px hover:border-amber-300/84 hover:bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(255,248,237,0.97))] hover:text-amber-700 hover:shadow-[0_12px_24px_rgba(217,119,6,0.08)] dark:border-amber-400/44 dark:bg-[linear-gradient(180deg,rgba(57,41,16,0.88),rgba(43,31,12,0.94))] dark:text-amber-50 dark:shadow-[0_16px_34px_rgba(217,119,6,0.22)] dark:hover:border-amber-400/58 dark:hover:bg-[linear-gradient(180deg,rgba(64,46,19,0.92),rgba(49,35,14,0.98))] dark:hover:text-amber-50 dark:hover:shadow-[0_18px_36px_rgba(217,119,6,0.24)] sm:h-[3.55rem] sm:w-[3.55rem] [&_svg]:size-[1.08rem] sm:[&_svg]:size-[1.14rem]"
     );
 
     const loaderDropdownItemClass = cn(
@@ -517,9 +520,9 @@ export function ConfigLoader() {
     return (
         <div className="min-h-app-screen relative overflow-x-hidden font-sans text-foreground selection:bg-primary/30">
             <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                <div className="absolute inset-x-[-16%] top-[-14rem] h-[28rem] bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.06),transparent_60%)] dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.11),transparent_62%)]" />
+                <div className="absolute inset-x-[-16%] top-[-14rem] h-[28rem] bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.04),transparent_58%)] dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.11),transparent_62%)]" />
                 <div className="absolute inset-x-0 top-0 h-[16rem] bg-[linear-gradient(180deg,rgba(15,23,42,0.04),rgba(15,23,42,0)_86%)] dark:bg-[linear-gradient(180deg,rgba(2,6,23,0.12),rgba(2,6,23,0)_86%)]" />
-                <div className="absolute left-1/2 top-16 h-[16rem] w-[34rem] -translate-x-1/2 rounded-full bg-primary/4 blur-[120px] dark:bg-primary/8" />
+                <div className="absolute left-1/2 top-16 h-[16rem] w-[34rem] -translate-x-1/2 rounded-full bg-primary/[0.025] blur-[108px] dark:bg-primary/8 dark:blur-[120px]" />
             </div>
 
             <Dialog open={isGuideDialogOpen} onOpenChange={setIsGuideDialogOpen}>
@@ -530,7 +533,7 @@ export function ConfigLoader() {
 
             <div className="relative z-10 flex min-h-app-screen w-full items-start justify-center px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:px-5 sm:items-center xl:px-6">
                 <div className="relative z-10 mx-auto w-full max-w-[88rem] py-3 sm:py-4 lg:py-5 xl:max-w-[92rem]">
-                    <div className="pointer-events-none absolute inset-x-0 top-0 z-50">
+                    <div className="pointer-events-none absolute inset-x-0 top-2 z-50 sm:top-3">
                         <div className="mx-auto flex w-full max-w-[72rem] justify-end">
                             <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2">
                                 <ManagerSwitcher currentManager="omni" align="end" />
@@ -550,17 +553,18 @@ export function ConfigLoader() {
                     <div className={cn(editorLoader.heroPanel, "relative px-5 py-5 sm:px-8 sm:py-7 lg:px-10 lg:py-8") }>
                         <div className="relative space-y-4 sm:space-y-5 lg:space-y-6">
                             <div className="mx-auto max-w-[46rem] text-center">
-                                <div className="relative mx-auto flex h-[128px] w-[162px] items-center justify-center overflow-visible sm:h-[136px] sm:w-[172px]">
+                                <div className="group relative mx-auto flex h-[128px] w-[162px] items-center justify-center overflow-visible sm:h-[136px] sm:w-[172px]">
+                                    <div className="pointer-events-none absolute inset-[-1.5rem] rounded-full bg-[radial-gradient(circle,rgba(96,165,250,0.14)_0%,rgba(59,130,246,0.08)_34%,rgba(59,130,246,0.015)_68%,transparent_100%)] opacity-0 blur-3xl transition-[opacity,transform] duration-700 ease-out group-hover:scale-105 group-hover:opacity-100 dark:inset-[-1.75rem] dark:bg-[radial-gradient(circle,rgba(59,130,246,0.28)_0%,rgba(37,99,235,0.18)_34%,rgba(59,130,246,0.05)_68%,transparent_100%)] dark:group-hover:scale-110" />
                                     {/* eslint-disable-next-line @next/next/no-img-element -- Static local logo. */}
                                     <img 
                                         src="/omni-snapshot-editor/clown.png" 
                                         alt="Logo" 
-                                        className="relative z-10 h-full w-full scale-[1.48] object-contain sm:scale-[1.52]" 
+                                        className="relative z-10 h-full w-full scale-[1.48] object-contain transition-transform duration-500 ease-out group-hover:scale-[1.52] sm:scale-[1.52] sm:group-hover:scale-[1.56]" 
                                         style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                                     />
                                 </div>
 
-                                <div className="mt-1.5 space-y-1.5 sm:mt-2 sm:space-y-2.5">
+                                <div className="mt-0.5 space-y-1.5 sm:mt-1 sm:space-y-2.5">
                                     <h1 className="text-[2rem] font-black tracking-tight text-foreground sm:text-[2.62rem] xl:text-[2.88rem]">
                                         Omni Snapshot Manager
                                     </h1>
@@ -574,7 +578,7 @@ export function ConfigLoader() {
                                         <div className="min-w-0 flex-1">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button type="button" variant="outline" className={cn(editorLoader.resourceButtonPrimary, "group/resource w-full")}>
+                                                    <Button type="button" variant="outline" className={cn(loaderTemplateShortcutClass, "group/resource w-full")}>
                                                         <LoaderResourceButtonContent
                                                             icon={FileDown}
                                                             label="Download UME Templates"
