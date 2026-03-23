@@ -40,10 +40,11 @@ import { UpdateGuide } from "@/components/editor/UpdateGuide";
 import { FALLBACK_TEMPLATE_URLS, findTemplateByKind, isTemplateOfKind } from "@/lib/template-manifest";
 import type { OmniConfig } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { downloadTemplateFile } from "@/lib/template-download";
+import { downloadTemplateFile, shouldOfferTemplateUrlChoice } from "@/lib/template-download";
 import { getTemplateDisplay } from "@/lib/template-display";
 import { editorHover, editorLoader, editorNoticeTone, editorSurface } from "@/components/editor/ui/style-contract";
 import { AppMeta } from "@/components/editor/AppMeta";
+import { TemplateDownloadChoiceDialog } from "@/components/editor/TemplateDownloadChoiceDialog";
 
 type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 type JsonObject = { [key: string]: JsonValue };
@@ -257,6 +258,7 @@ export function ConfigLoader() {
     const [activeGuide, setActiveGuide] = useState<"install" | "update" | "use">("use");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [downloadChoiceTemplate, setDownloadChoiceTemplate] = useState<{ name: string; url: string } | null>(null);
 
     const handleVersionChange = (selectedUrl: string) => {
         setUrl(selectedUrl);
@@ -293,7 +295,13 @@ export function ConfigLoader() {
         }
     };
 
-    const handleDownloadTemplate = async (templateUrl: string, templateName: string) => {
+    const handleDownloadTemplate = async (templateId: string, templateUrl: string, templateName: string) => {
+        if (shouldOfferTemplateUrlChoice(templateId, templateName)) {
+            setError(null);
+            setDownloadChoiceTemplate({ name: templateName, url: templateUrl });
+            return;
+        }
+
         try {
             setLoading(true);
             await downloadTemplateFile(templateUrl, templateName);
@@ -450,8 +458,8 @@ export function ConfigLoader() {
     const templateDownloads = [
         latestOmni || { id: "ume-omni-placeholder", name: "UME Omni Template", url: FALLBACK_TEMPLATE_URLS.omni },
         latestAIOM || { id: "ume-aiom-placeholder", name: "UME AIOMetadata Template", url: "" },
-        latestAIOS || { id: "ume-aios-placeholder", name: "UME AIOStreams Template", url: "" },
         latestCatalogs || { id: "ume-catalogs-placeholder", name: "UME AIOMetadata (Catalogs Only)", url: "" },
+        latestAIOS || { id: "ume-aios-placeholder", name: "UME AIOStreams Template", url: "" },
     ].filter(Boolean) as typeof manifestTemplates;
 
     const loaderThemeToggleClass =
@@ -574,6 +582,7 @@ export function ConfigLoader() {
                                                     templateDownloads.map((template) => {
                                                         const display = getTemplateDisplay(template.name, template.id);
                                                         const isAvailable = !!template.url;
+                                                        const version = template.version || display.version;
 
                                                         return (
                                                             <DropdownMenuItem
@@ -583,15 +592,15 @@ export function ConfigLoader() {
                                                                         e.preventDefault();
                                                                         return;
                                                                     }
-                                                                    handleDownloadTemplate(template.url, template.name);
+                                                                    handleDownloadTemplate(template.id, template.url, template.name);
                                                                 }}
                                                                 className={cn(loaderDropdownItemClass, !isAvailable && "opacity-60 cursor-default")}
                                                             >
                                                                 <LoaderIconBadge icon={FileJson} className={loaderDropdownIconClass} />
                                                                 <div className="min-w-0 flex-1">
                                                                     <span className="block truncate text-sm font-semibold text-foreground">{display.label}</span>
-                                                                    {display.version ? (
-                                                                        <span className="mt-0.5 block text-[10px] font-medium tracking-[0.04em] text-foreground/42">{display.version}</span>
+                                                                    {version ? (
+                                                                        <span className="mt-0.5 block text-[10px] font-medium tracking-[0.04em] text-foreground/42">{version}</span>
                                                                     ) : !isAvailable ? (
                                                                         <span className="mt-0.5 block text-[10px] font-medium tracking-[0.04em] text-foreground/24 italic">Pending update</span>
                                                                     ) : null}
@@ -859,6 +868,24 @@ export function ConfigLoader() {
                     </div>
                 </div>
             </div>
+
+            <TemplateDownloadChoiceDialog
+                open={!!downloadChoiceTemplate}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setDownloadChoiceTemplate(null);
+                    }
+                }}
+                templateName={downloadChoiceTemplate?.name || ""}
+                templateUrl={downloadChoiceTemplate?.url || ""}
+                onBusyChange={setLoading}
+                onError={(message, error) => {
+                    setError(message);
+                    if (error) {
+                        console.error(error);
+                    }
+                }}
+            />
         </div>
     );
 }

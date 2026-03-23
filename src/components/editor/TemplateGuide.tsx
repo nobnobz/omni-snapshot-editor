@@ -19,10 +19,11 @@ import {
 } from "lucide-react";
 import { useConfig } from "@/context/ConfigContext";
 import { cn } from "@/lib/utils";
-import { downloadTemplateFile } from "@/lib/template-download";
+import { downloadTemplateFile, shouldOfferTemplateUrlChoice } from "@/lib/template-download";
 import { FALLBACK_TEMPLATE_URLS, findTemplateByKind } from "@/lib/template-manifest";
 import { editorHover } from "@/components/editor/ui/style-contract";
 import { GuideHeader } from "@/components/editor/GuideHeader";
+import { TemplateDownloadChoiceDialog } from "@/components/editor/TemplateDownloadChoiceDialog";
 import {
     GuideBody,
     GuideDialog,
@@ -70,6 +71,7 @@ type DeviceGuide = {
 
 export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
     const { manifest } = useConfig();
+    const [downloadChoiceTemplate, setDownloadChoiceTemplate] = React.useState<TemplateAsset | null>(null);
 
     const omniTemplate = manifest?.templates?.find((template) => template.isDefault) || findTemplateByKind(manifest?.templates, "omni");
     const aiomTemplate = findTemplateByKind(manifest?.templates, "aiometadata");
@@ -145,8 +147,8 @@ export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
             title: "Configure AIOStreams",
             icon: Zap,
             steps: [
-                "Open the AIOStreams instance and start the install flow.",
-                "Choose Import Template and upload the AIOStreams template.",
+                "Open AIOStreams, go to Save & Install, and select Import.",
+                "Paste the template URL or upload the AIOStreams .json file.",
                 "Fill in your required API keys and provider credentials.",
                 "Create the config, set a password, and keep UUID + password saved.",
             ],
@@ -207,9 +209,18 @@ export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
         },
     ];
 
-    const handleDownload = async (url: string, templateName: string) => {
+    const handleDownload = async (template: TemplateAsset) => {
+        const templateName = template.version ? `${template.name} ${template.version}` : template.name;
+        if (shouldOfferTemplateUrlChoice(template.id, templateName)) {
+            setDownloadChoiceTemplate({
+                ...template,
+                name: templateName,
+            });
+            return;
+        }
+
         try {
-            await downloadTemplateFile(url, templateName);
+            await downloadTemplateFile(template.url, templateName);
         } catch (err) {
             console.error("Download failed:", err);
         }
@@ -323,8 +334,7 @@ export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
                                             type="button"
                                             onClick={() => {
                                                 if (!isAvailable) return;
-                                                const fileName = item.version ? `${item.name} ${item.version}` : item.name;
-                                                handleDownload(item.url, fileName);
+                                                handleDownload(item);
                                             }}
                                             disabled={!isAvailable}
                                             className={cn(
@@ -437,6 +447,17 @@ export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
                     </div>
                 </GuideSection>
             </GuideBody>
+
+            <TemplateDownloadChoiceDialog
+                open={!!downloadChoiceTemplate}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setDownloadChoiceTemplate(null);
+                    }
+                }}
+                templateName={downloadChoiceTemplate?.name || ""}
+                templateUrl={downloadChoiceTemplate?.url || ""}
+            />
         </GuideDialog>
     );
 }

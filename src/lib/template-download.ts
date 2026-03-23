@@ -1,3 +1,5 @@
+import { matchesTemplateKind } from "./template-manifest";
+
 export const buildTemplateDownloadFilename = (templateName: string) => {
   let safeName = templateName
     .toLowerCase()
@@ -13,6 +15,17 @@ export const buildTemplateDownloadFilename = (templateName: string) => {
   }
 
   return safeName.endsWith(".json") ? safeName : `${safeName}.json`;
+};
+
+export const shouldOfferTemplateUrlChoice = (templateId: string, templateName: string) =>
+  matchesTemplateKind(`${templateId} ${templateName}`, "aiostreams");
+
+export const copyTemplateUrl = async (templateUrl: string) => {
+  if (typeof navigator === "undefined" || !navigator.clipboard) {
+    throw new Error("Clipboard copy is not supported in this browser.");
+  }
+
+  await navigator.clipboard.writeText(templateUrl);
 };
 
 export const downloadTemplateFile = async (templateUrl: string, templateName: string) => {

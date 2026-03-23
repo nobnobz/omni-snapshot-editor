@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConfig } from "@/context/ConfigContext";
-import { downloadTemplateFile } from "@/lib/template-download";
+import { downloadTemplateFile, shouldOfferTemplateUrlChoice } from "@/lib/template-download";
 import { getTemplateDisplay } from "@/lib/template-display";
 import { FALLBACK_TEMPLATE_URLS, findTemplateByKind } from "@/lib/template-manifest";
 import { editorHover } from "@/components/editor/ui/style-contract";
@@ -43,6 +43,7 @@ import {
     GuideSection,
     GuideStepList,
 } from "@/components/editor/GuidePrimitives";
+import { TemplateDownloadChoiceDialog } from "@/components/editor/TemplateDownloadChoiceDialog";
 
 type DocumentationProps = {
     headerAction?: React.ReactNode;
@@ -57,6 +58,7 @@ type FeatureCard = {
 
 export function Documentation({ headerAction, onOpenInstallGuide }: DocumentationProps = {}) {
     const { manifest } = useConfig();
+    const [downloadChoiceTemplate, setDownloadChoiceTemplate] = React.useState<{ name: string; url: string } | null>(null);
 
     const omniTemplate = findTemplateByKind(manifest?.templates, "omni");
     const aiomTemplate = findTemplateByKind(manifest?.templates, "aiometadata");
@@ -68,18 +70,21 @@ export function Documentation({ headerAction, onOpenInstallGuide }: Documentatio
             id: "ume-main",
             manifestName: omniTemplate?.name || "UME Omni Template",
             url: omniTemplate?.url || FALLBACK_TEMPLATE_URLS.omni,
+            version: omniTemplate?.version,
         },
         {
             name: "AIOMetadata",
             id: "aiometadata",
             manifestName: aiomTemplate?.name || "UME AIOMetadata Template",
             url: aiomTemplate?.url || "",
+            version: aiomTemplate?.version,
         },
         {
             name: "AIOStreams",
             id: "aiostreams",
             manifestName: aiosTemplate?.name || "UME AIOStreams Template",
             url: aiosTemplate?.url || "",
+            version: aiosTemplate?.version,
         },
     ];
 
@@ -180,9 +185,14 @@ export function Documentation({ headerAction, onOpenInstallGuide }: Documentatio
         },
     ];
 
-    const handleDownload = async (url: string, templateName: string) => {
+    const handleDownload = async (template: typeof templates[number]) => {
+        if (shouldOfferTemplateUrlChoice(template.id, template.manifestName)) {
+            setDownloadChoiceTemplate({ name: template.manifestName, url: template.url });
+            return;
+        }
+
         try {
-            await downloadTemplateFile(url, templateName);
+            await downloadTemplateFile(template.url, template.manifestName);
         } catch (err) {
             console.error("Download failed:", err);
         }
@@ -379,13 +389,14 @@ export function Documentation({ headerAction, onOpenInstallGuide }: Documentatio
                         {templates.map((item) => {
                             const isAvailable = !!item.url;
                             const display = getTemplateDisplay(item.manifestName, item.id);
+                            const version = "version" in item ? item.version || display.version : display.version;
 
                             return (
                                 <Button
                                     key={item.id}
                                     onClick={() => {
                                         if (!isAvailable) return;
-                                        handleDownload(item.url, item.manifestName);
+                                        handleDownload(item);
                                     }}
                                     variant="outline"
                                     disabled={!isAvailable}
@@ -397,9 +408,9 @@ export function Documentation({ headerAction, onOpenInstallGuide }: Documentatio
                                         </span>
                                         <span className="min-w-0">
                                             <span className="block text-sm font-bold tracking-tight text-foreground">{display.label}</span>
-                                            {display.version && (
+                                            {version && (
                                                 <span className="mt-0.5 block text-[10px] leading-tight text-foreground/46 font-medium tracking-[0.04em]">
-                                                    {display.version}
+                                                    {version}
                                                 </span>
                                             )}
                                             {!isAvailable && (
@@ -447,6 +458,17 @@ export function Documentation({ headerAction, onOpenInstallGuide }: Documentatio
                     </div>
                 </GuideSection>
             </GuideBody>
+
+            <TemplateDownloadChoiceDialog
+                open={!!downloadChoiceTemplate}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setDownloadChoiceTemplate(null);
+                    }
+                }}
+                templateName={downloadChoiceTemplate?.name || ""}
+                templateUrl={downloadChoiceTemplate?.url || ""}
+            />
         </GuideDialog>
     );
 }
