@@ -1,5 +1,5 @@
 import { ensureCatalogPrefix, resolveCatalogName } from "./utils";
-import { normalizeMainGroupOrder } from "./main-group-utils";
+import { normalizeMainGroupOrder, normalizeSubgroupNames } from "./main-group-utils";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mutation layer edits arbitrary user-defined config trees.
 type LooseAny = any;
@@ -470,28 +470,34 @@ export function validateAndFix(state: MutableState): MutableState {
         draft.catalog_group_image_urls = orderedUrls;
     }
 
-    // Dedupe & Clean subgroup_order
-    if (draft.subgroup_order) {
-        Object.keys(draft.subgroup_order).forEach(uuid => {
-            let arr = draft.subgroup_order[uuid];
-            if (Array.isArray(arr)) {
-                arr = Array.from(new Set(arr)).filter(g => typeof g === 'string' && validGroupNames.has(g));
-                draft.subgroup_order[uuid] = arr;
-
-                if (arr.length === 0) {
-                    delete draft.subgroup_order[uuid];
-                }
-            }
-        });
+    if (!draft.subgroup_order || Array.isArray(draft.subgroup_order)) {
+        draft.subgroup_order = {};
     }
 
-    // Clean main_catalog_groups references
+    // Remove orphan subgroup_order entries and synchronize both subgroup sources.
+    Object.keys(draft.subgroup_order).forEach((uuid) => {
+        if (!validMainGroupIds.has(uuid)) {
+            delete draft.subgroup_order[uuid];
+        }
+    });
+
     if (draft.main_catalog_groups) {
         Object.keys(draft.main_catalog_groups).forEach(uuid => {
             const group = draft.main_catalog_groups[uuid];
-            if (group && Array.isArray(group.subgroupNames)) {
-                group.subgroupNames = Array.from(new Set(group.subgroupNames))
-                    .filter((g: unknown): g is string => typeof g === 'string' && validGroupNames.has(g));
+            if (group && typeof group === "object") {
+                const canonicalSubgroups = normalizeSubgroupNames(
+                    group.subgroupNames,
+                    draft.subgroup_order[uuid],
+                    validGroupNames
+                );
+
+                group.subgroupNames = canonicalSubgroups;
+
+                if (canonicalSubgroups.length > 0) {
+                    draft.subgroup_order[uuid] = canonicalSubgroups;
+                } else {
+                    delete draft.subgroup_order[uuid];
+                }
             }
         });
     }

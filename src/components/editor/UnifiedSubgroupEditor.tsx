@@ -58,6 +58,7 @@ import { cn, formatDisplayName, resolveCatalogName, ensureCatalogPrefix } from "
 import { editorHover, editorSurface } from "@/components/editor/ui/style-contract";
 import { CATALOG_FALLBACKS, CatalogFallback } from "@/lib/catalog-fallbacks";
 import { Label } from "@/components/ui/label";
+import { normalizeSubgroupNames } from "@/lib/main-group-utils";
 
 const stringArraysEqual = (a: string[], b: string[]) => (
     a.length === b.length && a.every((item, idx) => item === b[idx])
@@ -1688,10 +1689,10 @@ export function UnifiedSubgroupEditor({ onOpenGuide }: { onOpenGuide?: (guide: "
             if (mg.name?.toLowerCase().includes(q)) return true;
             
             // Check if any of its subgroups match
-            const sgs = mg.subgroupNames || [];
+            const sgs = normalizeSubgroupNames(mg.subgroupNames, subgroupOrder[uuid]);
             return sgs.some((sg: string) => sg.toLowerCase().includes(q));
         });
-    }, [mainGroupOrder, mainCatalogGroups, searchTerm]);
+    }, [mainGroupOrder, mainCatalogGroups, searchTerm, subgroupOrder]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -1862,12 +1863,16 @@ export function UnifiedSubgroupEditor({ onOpenGuide }: { onOpenGuide?: (guide: "
                                         {filteredMainGroupOrder.map(uuid => {
                                             const mg = mainCatalogGroups[uuid];
                                             if (!mg) return null;
+                                            const resolvedSubgroupNames = normalizeSubgroupNames(
+                                                mg.subgroupNames,
+                                                subgroupOrder[uuid]
+                                            );
                                             return (
                                                 <MainGroupNode
                                                     key={uuid}
                                                     uuid={uuid}
                                                     name={mg.name || `Group ${uuid.slice(0, 4)}`}
-                                                    subgroupNames={mg.subgroupNames || []}
+                                                    subgroupNames={resolvedSubgroupNames}
                                                     onUnassignSubgroup={handleUnassignSubgroup}
                                                     onAddSubgroup={(id) => {
                                                         setCreateParentUUID(id);

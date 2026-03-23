@@ -146,8 +146,8 @@ describe('Mutations Library', () => {
         const newState = validateAndFix(initialState);
 
         expect(newState.catalog_group_order).toEqual(["Action", "Comedy"]); // "Comedy" auto appended because it exists but was missing
-        expect(newState.subgroup_order["uuid-1"]).toEqual(["Action"]); // Missing deleted
-        expect(newState.main_catalog_groups["uuid-1"].subgroupNames).toEqual(["Comedy"]); // Dupes and missing removed
+        expect(newState.subgroup_order["uuid-1"]).toEqual(["Action", "Comedy"]); // Missing deleted and sources synchronized
+        expect(newState.main_catalog_groups["uuid-1"].subgroupNames).toEqual(["Action", "Comedy"]); // Dupes removed and order synchronized
         expect(newState.selected_catalogs).toEqual(["c1", "c2"]); // Dupes removed
     });
 
@@ -176,6 +176,30 @@ describe('Mutations Library', () => {
         const newState = validateAndFix(initialState);
 
         expect(newState.main_group_order).toEqual(["streaming-uuid", "collections-uuid"]);
+    });
+
+    it('validateAndFix prefers subgroup_order and syncs main_catalog_groups subgroupNames', () => {
+        const initialState = {
+            catalog_groups: {
+                "Action": ["c1"],
+                "Comedy": ["c2"],
+                "Drama": ["c3"]
+            },
+            subgroup_order: {
+                "uuid-1": ["Comedy", "Action"]
+            },
+            main_catalog_groups: {
+                "uuid-1": {
+                    name: "Movies",
+                    subgroupNames: ["Action", "Drama"]
+                }
+            }
+        };
+
+        const newState = validateAndFix(initialState);
+
+        expect(newState.subgroup_order["uuid-1"]).toEqual(["Comedy", "Action", "Drama"]);
+        expect(newState.main_catalog_groups["uuid-1"].subgroupNames).toEqual(["Comedy", "Action", "Drama"]);
     });
 
     it('importGroups preserves existing subgroup catalogs when only relinking a duplicate subgroup', () => {
