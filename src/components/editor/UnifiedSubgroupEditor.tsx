@@ -1669,6 +1669,7 @@ export function UnifiedSubgroupEditor({ onOpenGuide }: { onOpenGuide?: (guide: "
     const [activeMainGroupId, setActiveMainGroupId] = useState<string | null>(null);
     const [recentUnassigns, setRecentUnassigns] = useState<Record<string, string>>({}); // subgroupName -> parentUuid
     const [expandedUnassignedSubgroup, setExpandedUnassignedSubgroup] = useState<string | null>(null);
+    const [isUnassignedSectionOpen, setIsUnassignedSectionOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -1945,7 +1946,13 @@ export function UnifiedSubgroupEditor({ onOpenGuide }: { onOpenGuide?: (guide: "
             {unassignedGroups.length > 0 && (
                 <div className="mt-8 border border-border rounded-xl bg-card/20 overflow-hidden shadow-inner animate-in fade-in slide-in-from-bottom-2 duration-300">
                     <div className="p-4 sm:p-5 bg-muted/5">
-                        <div className="mb-4 flex items-start justify-between gap-3">
+                        <button
+                            type="button"
+                            onClick={() => setIsUnassignedSectionOpen((prev) => !prev)}
+                            className="mb-4 flex w-full items-start justify-between gap-3 rounded-xl text-left transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                            aria-expanded={isUnassignedSectionOpen}
+                            aria-controls="unassigned-subgroups-panel"
+                        >
                             <div className="flex items-center gap-3">
                                 <div className="bg-amber-500/10 p-2 rounded-lg border border-amber-500/25">
                                     <AlertTriangle className="w-5 h-5 text-amber-400" />
@@ -1955,36 +1962,43 @@ export function UnifiedSubgroupEditor({ onOpenGuide }: { onOpenGuide?: (guide: "
                                     <p className="text-sm text-foreground/70">Subgroups that are defined but not linked to any main group yet.</p>
                                 </div>
                             </div>
-                            <span className="inline-flex h-7 items-center rounded-full border border-border bg-muted px-2.5 text-xs font-semibold text-foreground/70">
-                                {unassignedGroups.length}
-                            </span>
-                        </div>
-                        <div className="flex flex-col">
-                            {unassignedGroups.map(name => {
-                                const restoreParentUuid = recentUnassigns[name];
-                                const restoreParentName = restoreParentUuid ? (mainCatalogGroups[restoreParentUuid]?.name || "Original Group") : undefined;
+                            <div className="flex items-center gap-2">
+                                <span className="inline-flex h-7 items-center rounded-full border border-border bg-muted px-2.5 text-xs font-semibold text-foreground/70">
+                                    {unassignedGroups.length}
+                                </span>
+                                <span className="flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-background/60 text-foreground/55">
+                                    <ChevronDown className={cn("h-4 w-4 transition-transform duration-200", !isUnassignedSectionOpen && "-rotate-90")} />
+                                </span>
+                            </div>
+                        </button>
+                        {isUnassignedSectionOpen && (
+                            <div id="unassigned-subgroups-panel" className="flex flex-col">
+                                {unassignedGroups.map(name => {
+                                    const restoreParentUuid = recentUnassigns[name];
+                                    const restoreParentName = restoreParentUuid ? (mainCatalogGroups[restoreParentUuid]?.name || "Original Group") : undefined;
 
-                                return (
-                                    <UnassignedSubgroupRow
-                                        key={name}
-                                        groupName={name}
-                                        catalogs={catalogGroups[name] || []}
-                                        isExpanded={expandedUnassignedSubgroup === name}
-                                        onToggle={() => setExpandedUnassignedSubgroup(prev => prev === name ? null : name)}
-                                        onRestore={restoreParentUuid ? () => {
-                                            assignCatalogGroup(name, restoreParentUuid);
-                                            setExpandedUnassignedSubgroup(prev => prev === name ? null : prev);
-                                            setRecentUnassigns(prev => {
-                                                const next = { ...prev };
-                                                delete next[name];
-                                                return next;
-                                            });
-                                        } : undefined}
-                                        restoreParentName={restoreParentName}
-                                    />
-                                );
-                            })}
-                        </div>
+                                    return (
+                                        <UnassignedSubgroupRow
+                                            key={name}
+                                            groupName={name}
+                                            catalogs={catalogGroups[name] || []}
+                                            isExpanded={expandedUnassignedSubgroup === name}
+                                            onToggle={() => setExpandedUnassignedSubgroup(prev => prev === name ? null : name)}
+                                            onRestore={restoreParentUuid ? () => {
+                                                assignCatalogGroup(name, restoreParentUuid);
+                                                setExpandedUnassignedSubgroup(prev => prev === name ? null : prev);
+                                                setRecentUnassigns(prev => {
+                                                    const next = { ...prev };
+                                                    delete next[name];
+                                                    return next;
+                                                });
+                                            } : undefined}
+                                            restoreParentName={restoreParentName}
+                                        />
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
