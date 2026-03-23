@@ -14,12 +14,12 @@ export const metadata = {
   manifest: "/omni-snapshot-editor/manifest.json",
   icons: {
     icon: [
-      { url: "/omni-snapshot-editor/tab-bar-icon.png?v=2", type: "image/png" },
+      { url: "/omni-snapshot-editor/tab-bar-icon.png?v=3", type: "image/png" },
     ],
     apple: [
       { url: "/omni-snapshot-editor/pwa-ios-icon-180.png", sizes: "180x180", type: "image/png" },
     ],
-    shortcut: "/omni-snapshot-editor/tab-bar-icon.png?v=2",
+    shortcut: "/omni-snapshot-editor/tab-bar-icon.png?v=3",
   },
 };
 

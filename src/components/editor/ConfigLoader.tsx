@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ManagerSwitcher } from "@/components/manager-switcher";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import {
     DropdownMenu,
@@ -462,8 +463,15 @@ export function ConfigLoader() {
         latestAIOS || { id: "ume-aios-placeholder", name: "UME AIOStreams Template", url: "" },
     ].filter(Boolean) as typeof manifestTemplates;
 
-    const loaderThemeToggleClass =
-        "size-11 rounded-[1.2rem] border border-slate-200/76 bg-white/66 p-0 text-foreground/72 shadow-[0_10px_24px_rgba(15,23,42,0.08)] backdrop-blur-xl hover:border-slate-300/86 hover:bg-white/78 hover:text-foreground dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-white/14 dark:hover:bg-white/[0.08] sm:size-12 [&_svg]:size-[1.1rem]";
+    const loaderUtilityButtonClass =
+        "size-10 rounded-[1.2rem] border border-slate-200/76 bg-white/66 p-0 text-foreground/64 shadow-[0_10px_24px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 ease-out hover:-translate-y-px hover:border-slate-300/86 hover:bg-white/78 hover:text-foreground dark:border-white/10 dark:bg-white/[0.04] dark:text-foreground/72 dark:hover:border-white/14 dark:hover:bg-white/[0.08] dark:hover:text-foreground sm:size-11";
+    const loaderThemeToggleClass = cn(loaderUtilityButtonClass, "[&_svg]:size-[1.05rem] sm:[&_svg]:size-[1.1rem]");
+    const loaderUtilityIconButtonClass = loaderUtilityButtonClass;
+    const loaderUtilityDividerClass = "h-4 w-px bg-slate-300/80 dark:bg-white/10";
+    const loaderGuideShortcutClass = cn(
+        editorLoader.resourceButtonSecondary,
+        "h-[3.35rem] w-[3.35rem] shrink-0 rounded-[1.6rem] px-0 sm:h-[3.55rem] sm:w-[3.55rem] [&_svg]:size-[1.08rem] sm:[&_svg]:size-[1.14rem]"
+    );
 
     const loaderDropdownItemClass = cn(
         "group/item flex cursor-pointer items-center gap-3 rounded-[1rem] px-3 py-2.5 text-foreground",
@@ -473,7 +481,6 @@ export function ConfigLoader() {
     const loaderDropdownIconClass = "size-9 shrink-0";
     const loaderResourceAffordanceClass = "size-4 text-foreground/48 transition-[transform,color] duration-200 ease-out group-hover/resource:text-foreground/68";
     const loaderActionCardClass = cn(editorLoader.actionCard, "group/card flex h-full flex-col overflow-hidden");
-    const loaderDocsButtonClass = editorLoader.resourceButtonSecondary;
 
     const baseCtaClass = cn(editorLoader.primaryCta, loading && "pointer-events-none opacity-70");
     const loaderEmeraldCtaClass = cn(
@@ -521,32 +528,39 @@ export function ConfigLoader() {
                 {activeGuide === "use" && <Documentation onOpenInstallGuide={() => setActiveGuide("install")} />}
             </Dialog>
 
-            <div
-                className="absolute z-50"
-                style={{
-                    top: "max(0.75rem, env(safe-area-inset-top))",
-                    right: "max(0.75rem, env(safe-area-inset-right))",
-                }}
-            >
-                <ThemeToggle buttonClassName={loaderThemeToggleClass} />
-            </div>
-
             <div className="relative z-10 flex min-h-app-screen w-full items-start justify-center px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:px-5 sm:items-center xl:px-6">
                 <div className="relative z-10 mx-auto w-full max-w-[88rem] py-3 sm:py-4 lg:py-5 xl:max-w-[92rem]">
+                    <div className="pointer-events-none absolute inset-x-0 top-0 z-50">
+                        <div className="mx-auto flex w-full max-w-[72rem] justify-end">
+                            <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2">
+                                <ManagerSwitcher currentManager="omni" align="end" />
+                                <div className={loaderUtilityDividerClass} />
+                                <Button asChild type="button" variant="ghost" size="icon" className={loaderUtilityIconButtonClass}>
+                                    <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer" title="Support My Work">
+                                        <Heart className="size-[1.05rem] sm:size-[1.1rem]" strokeWidth={2.05} />
+                                        <span className="sr-only">Support My Work</span>
+                                    </a>
+                                </Button>
+                                <div className={loaderUtilityDividerClass} />
+                                <ThemeToggle buttonClassName={loaderThemeToggleClass} />
+                            </div>
+                        </div>
+                    </div>
+
                     <div className={cn(editorLoader.heroPanel, "relative px-5 py-5 sm:px-8 sm:py-7 lg:px-10 lg:py-8") }>
                         <div className="relative space-y-4 sm:space-y-5 lg:space-y-6">
                             <div className="mx-auto max-w-[46rem] text-center">
-                                <div className="mx-auto flex items-center justify-center relative group overflow-visible" style={{ width: '140px', height: '110px' }}>
+                                <div className="relative mx-auto flex h-[128px] w-[162px] items-center justify-center overflow-visible sm:h-[136px] sm:w-[172px]">
                                     {/* eslint-disable-next-line @next/next/no-img-element -- Static local logo. */}
                                     <img 
                                         src="/omni-snapshot-editor/clown.png" 
                                         alt="Logo" 
-                                        className="h-full w-full object-contain relative z-10 scale-[1.35]" 
+                                        className="relative z-10 h-full w-full scale-[1.48] object-contain sm:scale-[1.52]" 
                                         style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                                     />
                                 </div>
 
-                                <div className="mt-2 space-y-1.5 sm:mt-2.5 sm:space-y-2.5">
+                                <div className="mt-1.5 space-y-1.5 sm:mt-2 sm:space-y-2.5">
                                     <h1 className="text-[2rem] font-black tracking-tight text-foreground sm:text-[2.62rem] xl:text-[2.88rem]">
                                         Omni Snapshot Manager
                                     </h1>
@@ -556,123 +570,106 @@ export function ConfigLoader() {
                                 </div>
 
                                 <div className="mx-auto mt-5 flex w-full max-w-[33.5rem] flex-col gap-3 sm:mt-5.5">
-                                    <div className="w-full">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button type="button" variant="outline" className={cn(editorLoader.resourceButtonPrimary, "group/resource w-full")}>
-                                                    <LoaderResourceButtonContent
-                                                        icon={FileDown}
-                                                        label="Download UME Templates"
-                                                        mobileLabel="UME Templates"
-                                                        affordance={<ChevronDown className={cn(loaderResourceAffordanceClass, "group-hover/resource:translate-y-px")} strokeWidth={2.2} />}
-                                                    />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent
-                                                align="center"
-                                                sideOffset={8}
-                                                className={cn(editorSurface.overlay, "w-[min(22rem,calc(100vw-1.125rem))] sm:w-[28rem] rounded-[1.4rem] p-1.5 max-h-[320px] overflow-y-auto")}
-                                            >
-                                                <DropdownMenuLabel className={cn(editorLoader.subtleMeta, "px-3 pt-1 pb-1 text-foreground/38")}>UME Templates</DropdownMenuLabel>
-                                                {templateDownloads.length === 0 ? (
-                                                    <div className="px-3 py-6 text-center">
-                                                        <p className="text-sm italic text-foreground/45">No templates found.</p>
-                                                    </div>
-                                                ) : (
-                                                    templateDownloads.map((template) => {
-                                                        const display = getTemplateDisplay(template.name, template.id);
-                                                        const isAvailable = !!template.url;
-                                                        const version = template.version || display.version;
+                                    <div className="flex items-stretch gap-2.5 sm:gap-3">
+                                        <div className="min-w-0 flex-1">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button type="button" variant="outline" className={cn(editorLoader.resourceButtonPrimary, "group/resource w-full")}>
+                                                        <LoaderResourceButtonContent
+                                                            icon={FileDown}
+                                                            label="Download UME Templates"
+                                                            mobileLabel="UME Templates"
+                                                            affordance={<ChevronDown className={cn(loaderResourceAffordanceClass, "group-hover/resource:translate-y-px")} strokeWidth={2.2} />}
+                                                        />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent
+                                                    align="center"
+                                                    sideOffset={8}
+                                                    className={cn(editorSurface.overlay, "w-[min(22rem,calc(100vw-1.125rem))] sm:w-[28rem] rounded-[1.4rem] p-1.5 max-h-[320px] overflow-y-auto")}
+                                                >
+                                                    <DropdownMenuLabel className={cn(editorLoader.subtleMeta, "px-3 pt-1 pb-1 text-foreground/38")}>UME Templates</DropdownMenuLabel>
+                                                    {templateDownloads.length === 0 ? (
+                                                        <div className="px-3 py-6 text-center">
+                                                            <p className="text-sm italic text-foreground/45">No templates found.</p>
+                                                        </div>
+                                                    ) : (
+                                                        templateDownloads.map((template) => {
+                                                            const display = getTemplateDisplay(template.name, template.id);
+                                                            const isAvailable = !!template.url;
+                                                            const version = template.version || display.version;
 
-                                                        return (
-                                                            <DropdownMenuItem
-                                                                key={template.id}
-                                                                onSelect={(e) => {
-                                                                    if (!isAvailable) {
-                                                                        e.preventDefault();
-                                                                        return;
-                                                                    }
-                                                                    handleDownloadTemplate(template.id, template.url, template.name);
-                                                                }}
-                                                                className={cn(loaderDropdownItemClass, !isAvailable && "opacity-60 cursor-default")}
-                                                            >
-                                                                <LoaderIconBadge icon={FileJson} className={loaderDropdownIconClass} />
-                                                                <div className="min-w-0 flex-1">
-                                                                    <span className="block truncate text-sm font-semibold text-foreground">{display.label}</span>
-                                                                    {version ? (
-                                                                        <span className="mt-0.5 block text-[10px] font-medium tracking-[0.04em] text-foreground/42">{version}</span>
-                                                                    ) : !isAvailable ? (
-                                                                        <span className="mt-0.5 block text-[10px] font-medium tracking-[0.04em] text-foreground/24 italic">Pending update</span>
-                                                                    ) : null}
-                                                                </div>
-                                                                {isAvailable ? (
-                                                                    <LoaderIconBadge icon={FileDown} tone="neutral" className="size-8 shrink-0" />
-                                                                ) : (
-                                                                    <div className="flex px-1 items-center gap-1.5 opacity-40">
-                                                                        <span className="text-[9px] font-bold tracking-wider text-foreground uppercase whitespace-nowrap">Coming Soon</span>
+                                                            return (
+                                                                <DropdownMenuItem
+                                                                    key={template.id}
+                                                                    onSelect={(e) => {
+                                                                        if (!isAvailable) {
+                                                                            e.preventDefault();
+                                                                            return;
+                                                                        }
+                                                                        handleDownloadTemplate(template.id, template.url, template.name);
+                                                                    }}
+                                                                    className={cn(loaderDropdownItemClass, !isAvailable && "opacity-60 cursor-default")}
+                                                                >
+                                                                    <LoaderIconBadge icon={FileJson} className={loaderDropdownIconClass} />
+                                                                    <div className="min-w-0 flex-1">
+                                                                        <span className="block truncate text-sm font-semibold text-foreground">{display.label}</span>
+                                                                        {version ? (
+                                                                            <span className="mt-0.5 block text-[10px] font-medium tracking-[0.04em] text-foreground/42">{version}</span>
+                                                                        ) : !isAvailable ? (
+                                                                            <span className="mt-0.5 block text-[10px] font-medium tracking-[0.04em] text-foreground/24 italic">Pending update</span>
+                                                                        ) : null}
                                                                     </div>
-                                                                )}
-                                                            </DropdownMenuItem>
-                                                        );
-                                                    })
-                                                )}
+                                                                    {isAvailable ? (
+                                                                        <LoaderIconBadge icon={FileDown} tone="neutral" className="size-8 shrink-0" />
+                                                                    ) : (
+                                                                        <div className="flex px-1 items-center gap-1.5 opacity-40">
+                                                                            <span className="text-[9px] font-bold tracking-wider text-foreground uppercase whitespace-nowrap">Coming Soon</span>
+                                                                        </div>
+                                                                    )}
+                                                                </DropdownMenuItem>
+                                                            );
+                                                        })
+                                                    )}
 
-                                                <DropdownMenuSeparator className="mx-2 my-1 bg-border/60 dark:bg-white/8" />
+                                                    <DropdownMenuSeparator className="mx-2 my-1 bg-border/60 dark:bg-white/8" />
 
-                                                <DropdownMenuLabel className={cn(editorLoader.subtleMeta, "px-3 py-1 text-foreground/38")}>Guide</DropdownMenuLabel>
-                                                <div className="px-0.5">
-                                                    <Dialog>
-                                                        <DialogTrigger asChild>
-                                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className={loaderDropdownItemClass}>
-                                                                <LoaderIconBadge icon={UploadCloud} className={loaderDropdownIconClass} />
-                                                                <span className="text-sm font-semibold text-foreground">How to Install</span>
-                                                                <ChevronRight className="ml-auto size-4 text-foreground/32 transition-colors duration-200 ease-out group-hover/item:text-foreground/62" />
-                                                            </DropdownMenuItem>
-                                                        </DialogTrigger>
-                                                        <TemplateGuide />
-                                                    </Dialog>
-                                                </div>
+                                                    <DropdownMenuLabel className={cn(editorLoader.subtleMeta, "px-3 py-1 text-foreground/38")}>GitHub</DropdownMenuLabel>
+                                                    <div className="space-y-0.5 px-0.5">
+                                                        <DropdownMenuItem asChild className={cn(loaderDropdownItemClass, "text-foreground/82")}>
+                                                            <a href="https://github.com/nobnobz/Omni-Template-Bot-Bid-Raiser" target="_blank" rel="noopener noreferrer">
+                                                                <LoaderIconBadge icon={Github} tone="neutral" className={loaderDropdownIconClass} />
+                                                                <span className="text-sm font-semibold text-foreground/82">UME Templates</span>
+                                                                <ExternalLink className="ml-auto size-4 text-foreground/30 transition-colors duration-200 ease-out group-hover/item:text-foreground/58" />
+                                                            </a>
+                                                        </DropdownMenuItem>
 
-                                                <DropdownMenuSeparator className="mx-2 my-1 bg-border/60 dark:bg-white/8" />
+                                                        <DropdownMenuItem asChild className={cn(loaderDropdownItemClass, "text-foreground/82")}>
+                                                            <a href="https://github.com/nobnobz/omni-snapshot-editor" target="_blank" rel="noopener noreferrer">
+                                                                <LoaderIconBadge icon={Github} tone="neutral" className={loaderDropdownIconClass} />
+                                                                <span className="text-sm font-semibold text-foreground/82">Omni Snapshot Manager</span>
+                                                                <ExternalLink className="ml-auto size-4 text-foreground/30 transition-colors duration-200 ease-out group-hover/item:text-foreground/58" />
+                                                            </a>
+                                                        </DropdownMenuItem>
+                                                    </div>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
 
-                                                <DropdownMenuLabel className={cn(editorLoader.subtleMeta, "px-3 py-1 text-foreground/38")}>GitHub</DropdownMenuLabel>
-                                                <div className="space-y-0.5 px-0.5">
-                                                    <DropdownMenuItem asChild className={cn(loaderDropdownItemClass, "text-foreground/82")}>
-                                                        <a href="https://github.com/nobnobz/Omni-Template-Bot-Bid-Raiser" target="_blank" rel="noopener noreferrer">
-                                                            <LoaderIconBadge icon={Github} tone="neutral" className={loaderDropdownIconClass} />
-                                                            <span className="text-sm font-semibold text-foreground/82">UME Templates</span>
-                                                            <ExternalLink className="ml-auto size-4 text-foreground/30 transition-colors duration-200 ease-out group-hover/item:text-foreground/58" />
-                                                        </a>
-                                                    </DropdownMenuItem>
-
-                                                    <DropdownMenuItem asChild className={cn(loaderDropdownItemClass, "text-foreground/82")}>
-                                                        <a href="https://github.com/nobnobz/omni-snapshot-editor" target="_blank" rel="noopener noreferrer">
-                                                            <LoaderIconBadge icon={Github} tone="neutral" className={loaderDropdownIconClass} />
-                                                            <span className="text-sm font-semibold text-foreground/82">Omni Snapshot Manager</span>
-                                                            <ExternalLink className="ml-auto size-4 text-foreground/30 transition-colors duration-200 ease-out group-hover/item:text-foreground/58" />
-                                                        </a>
-                                                    </DropdownMenuItem>
-                                                </div>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
-
-                                    <div className="mx-auto grid w-full max-w-[31rem] grid-cols-2 gap-2.5 sm:gap-3">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <Button type="button" variant="outline" className={cn(loaderDocsButtonClass, "group/resource w-full")}>
-                                                    <LoaderResourceButtonContent
-                                                        icon={BookOpen}
-                                                        label="Documentation"
-                                                        mobileLabel="Docs"
-                                                        tone="amber"
-                                                        size="sm"
-                                                        affordance={<ChevronDown className={cn(loaderResourceAffordanceClass, "group-hover/resource:translate-y-px")} strokeWidth={2.2} />}
-                                                    />
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    className={loaderGuideShortcutClass}
+                                                    title="Open guides"
+                                                >
+                                                    <BookOpen strokeWidth={2.05} />
+                                                    <span className="sr-only">Open guides</span>
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent
-                                                align="center"
+                                                align="end"
                                                 sideOffset={8}
                                                 className={cn(editorSurface.overlay, "w-[min(17rem,calc(100vw-1.125rem))] rounded-[1.25rem] p-2")}
                                             >
@@ -693,19 +690,8 @@ export function ConfigLoader() {
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
-
-                                        <Button asChild type="button" variant="outline" className={cn(editorLoader.resourceButtonUtility, "group/resource w-full") }>
-                                            <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer">
-                                                <LoaderResourceButtonContent
-                                                    icon={Heart}
-                                                    label="Support My Work"
-                                                    mobileLabel="Support"
-                                                    tone="pink"
-                                                    size="sm"
-                                                />
-                                            </a>
-                                        </Button>
                                     </div>
+
                                 </div>
                             </div>
 
