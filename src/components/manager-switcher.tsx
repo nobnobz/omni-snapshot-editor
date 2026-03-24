@@ -98,7 +98,7 @@ export function ManagerSwitcher({
                                     key={manager.id}
                                     className="flex items-start gap-3 rounded-[1.2rem] border border-primary/14 bg-primary/[0.06] px-3.5 py-3 dark:border-primary/16 dark:bg-primary/[0.1]"
                                 >
-                                    <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-[1rem] border border-primary/14 bg-white/72 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] dark:border-primary/16 dark:bg-white/[0.06]">
+                                    <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-[1rem] border border-primary/14 bg-white/72 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] dark:border-primary/18 dark:bg-primary/[0.12] dark:text-primary dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
                                         <Check className="size-4" />
                                     </span>
                                     <div className="min-w-0 flex-1">
@@ -130,7 +130,7 @@ export function ManagerSwitcher({
                                     rel="noopener noreferrer"
                                     className="flex items-start gap-3 rounded-[1.2rem] px-3.5 py-3 transition-[background-color,color,transform] duration-150 ease-out hover:bg-black/[0.03] hover:text-foreground dark:hover:bg-white/[0.04]"
                                 >
-                                    <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-[1rem] border border-slate-200/84 bg-white/72 text-foreground/56 shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] dark:border-white/10 dark:bg-white/[0.04] dark:text-foreground/66">
+                                    <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-[1rem] border border-slate-200/84 bg-white/72 text-foreground/56 shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] dark:border-white/8 dark:bg-white/[0.025] dark:text-foreground/60 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.015)]">
                                         <ArrowUpRight className="size-4" />
                                     </span>
                                     <div className="min-w-0 flex-1">
