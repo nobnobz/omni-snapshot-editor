@@ -349,4 +349,54 @@ describe('Mutations Library', () => {
         expect(newState.pinned_catalogs).toEqual(["movie:pinned"]);
         expect(newState.top_row_catalogs).toEqual(["movie:top-row"]);
     });
+
+    it('importGroups renames an existing subgroup in place when the payload targets a renamed match', () => {
+        const initialState = {
+            main_catalog_groups: {
+                "main-1": {
+                    name: "Movies",
+                    subgroupNames: ["Old Name", "Second"]
+                }
+            },
+            main_group_order: ["main-1"],
+            subgroup_order: {
+                "main-1": ["Old Name", "Second"]
+            },
+            catalog_groups: {
+                "Old Name": ["movie:a", "movie:b"],
+                "Second": ["movie:c"]
+            },
+            catalog_group_order: ["Old Name", "Second"],
+            catalog_group_image_urls: {
+                "Old Name": "https://example.com/old-image.png"
+            },
+            custom_catalog_names: {}
+        };
+
+        const newState = importGroups({
+            mainGroups: {
+                "incoming-main": {
+                    name: "Movies",
+                    subgroupNames: ["New Name", "Second"],
+                    posterType: "Poster",
+                    posterSize: "Default"
+                }
+            },
+            subgroups: {
+                "New Name": {
+                    renameFrom: "Old Name",
+                    overwriteCatalogs: false,
+                    overwriteImage: false
+                }
+            },
+            standaloneAssignments: {},
+        }, initialState);
+
+        expect(newState.catalog_groups["Old Name"]).toBeUndefined();
+        expect(newState.catalog_groups["New Name"]).toEqual(["movie:a", "movie:b"]);
+        expect(newState.catalog_group_image_urls["New Name"]).toBe("https://example.com/old-image.png");
+        expect(newState.catalog_group_order).toEqual(["New Name", "Second"]);
+        expect(newState.subgroup_order["main-1"]).toEqual(["New Name", "Second"]);
+        expect(newState.main_catalog_groups["main-1"].subgroupNames).toEqual(["New Name", "Second"]);
+    });
 });

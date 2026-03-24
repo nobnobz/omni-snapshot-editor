@@ -583,7 +583,7 @@ export function toggleStreamElement(elementName: string, isVisible: boolean, sta
 export function importGroups(
     payload: {
         mainGroups: Record<string, LooseAny>;
-        subgroups: Record<string, { catalogs?: string[], imageUrl?: string; overwriteCatalogs?: boolean; overwriteImage?: boolean }>;
+        subgroups: Record<string, { catalogs?: string[], imageUrl?: string; renameFrom?: string; overwriteCatalogs?: boolean; overwriteImage?: boolean }>;
         standaloneAssignments: Record<string, string>;
         metadata?: {
             custom_catalog_names?: Record<string, string>;
@@ -594,7 +594,7 @@ export function importGroups(
     },
     state: MutableState
 ): MutableState {
-    const draft = JSON.parse(JSON.stringify(state));
+    let draft = JSON.parse(JSON.stringify(state));
 
     if (!draft.main_catalog_groups) draft.main_catalog_groups = {};
     if (!draft.main_group_order) draft.main_group_order = [];
@@ -604,6 +604,13 @@ export function importGroups(
     if (!draft.subgroup_order || Array.isArray(draft.subgroup_order)) {
         draft.subgroup_order = {};
     }
+
+    Object.entries(payload.subgroups).forEach(([incomingName, subgroup]) => {
+        const previousName = subgroup.renameFrom;
+        if (!previousName || previousName === incomingName) return;
+        if (!Object.prototype.hasOwnProperty.call(draft.catalog_groups, previousName)) return;
+        draft = renameGroup(previousName, incomingName, draft);
+    });
 
     // Build a reverse lookup: main group name -> existing UUID in current config
     const existingMgByName: Record<string, string> = {};

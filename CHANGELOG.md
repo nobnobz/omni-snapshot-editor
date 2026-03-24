@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.5.1] - 2026-03-24
+### Improved
+- **Template Updates**: Enhanced subgroup matching during "Update from Template". Subgroups are now correctly identified as updates even if renamed, provided their contained catalogs match exactly.
+- **Subgroup Management**: Prevented the creation of duplicate subgroups during template updates when only the name has changed.
+- **Import Handling**: Added robust subgroup rename handling during imports, preserving subgroup order and existing assignments.
+- **AIOMetadata Documentation**: Updated documentation copy to clarify the setup import process and catalog synchronization flow.
+
+### Fixed
+- **Update Consistency**: Maintained existing update behavior for name matches where catalogs or images have changed.
+
 ## [0.5.0] - 2026-03-23
 ### Added
 - **Manager Switcher**: Integrated a welcome-page-only manager switcher to Omni Snapshot Manager, matching the Fusion pattern for seamless linking between Omni and Fusion with Omni marked as the current manager.

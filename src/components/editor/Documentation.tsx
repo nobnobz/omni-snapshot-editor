@@ -251,7 +251,7 @@ export function Documentation({ headerAction, onOpenInstallGuide }: Documentatio
                 <GuideSection
                     eyebrow="Section 2"
                     title="AIOMetadata Integration"
-                    description="Import your personal AIOMetadata mapping if you want custom catalog names instead of fallback labels."
+                    description="Import your personal AIOMetadata setup if you want to sync your catalogs."
                     icon={Database}
                     tone="indigo"
                 >
@@ -263,13 +263,11 @@ export function Documentation({ headerAction, onOpenInstallGuide }: Documentatio
                             tone="indigo"
                         />
 
-                        <GuidePanel title="Export steps from AIOMetadata" icon={HelpCircle} tone="indigo">
+                        <GuidePanel title="Import your AIOMetadata setup" icon={HelpCircle} tone="indigo">
                             <GuideStepList
                                 items={[
-                                    "Open AIOMetadata and go to Catalogs.",
-                                    "Tap Share Setup.",
-                                    "Choose Download JSON or Copy to Clipboard.",
-                                    "Import that mapping into this editor.",
+                                    "Recommended way to import your setup is by pasting your AIOMetadata manifest URL.",
+                                    "This will sync all your catalogs automatically.",
                                 ]}
                                 tone="indigo"
                                 className="mt-1"

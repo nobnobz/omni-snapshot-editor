@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useConfig } from "@/context/ConfigContext";
 import { formatDisplayName, cn } from "@/lib/utils";
-import { UploadCloud, AlertTriangle, ChevronDown, BookOpen, Search, RefreshCw, Image as ImageIcon, Check, X } from "lucide-react";
+import { UploadCloud, AlertTriangle, ChevronDown, BookOpen, Search, RefreshCw, Image as ImageIcon, Check, X, Type } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { decodeConfig } from "@/lib/config-utils";
@@ -51,6 +51,8 @@ interface ParsedSubgroup {
     catalogs: string[];
     imageUrl?: string;
     isDuplicate: boolean;
+    matchedExistingName?: string;
+    hasRename?: boolean;
     hasNewImage?: boolean;
     hasNewCatalogs?: boolean;
     category?: string;
@@ -74,6 +76,12 @@ const getSubgroupCategory = (name: string) => {
     if (name.includes("[Streaming Services]")) return "Streaming Services";
     return "Other";
 };
+
+const buildCatalogSignature = (catalogs: string[]) =>
+    JSON.stringify([...catalogs].sort((a, b) => a.localeCompare(b)));
+
+const catalogListsEqual = (left: string[], right: string[]) =>
+    left.length === right.length && left.every((catalogId, index) => catalogId === right[index]);
 
 const importSetupTone = {
     warningAction: "border-orange-500/20 bg-orange-500/10 text-orange-700 dark:text-orange-400 hover:bg-orange-500/16 hover:border-orange-500/35",
@@ -188,6 +196,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
     const [selectedStandaloneSubgroups, setSelectedStandaloneSubgroups] = useState<Set<string>>(new Set());
     const [selectedCatalogUpdateSubgroups, setSelectedCatalogUpdateSubgroups] = useState<Set<string>>(new Set());
     const [selectedImageUpdateSubgroups, setSelectedImageUpdateSubgroups] = useState<Set<string>>(new Set());
+    const [selectedRenameUpdateSubgroups, setSelectedRenameUpdateSubgroups] = useState<Set<string>>(new Set());
     const [activeReviewTab, setActiveReviewTab] = useState<"subgroups" | "main">("subgroups");
     const [reviewSearch, setReviewSearch] = useState("");
 
@@ -205,6 +214,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         setSelectedStandaloneSubgroups(new Set());
         setSelectedCatalogUpdateSubgroups(new Set());
         setSelectedImageUpdateSubgroups(new Set());
+        setSelectedRenameUpdateSubgroups(new Set());
         setActiveReviewTab("subgroups");
         setReviewSearch("");
         setStandaloneAssignments({});
@@ -253,9 +263,15 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                     })
                     .filter((name): name is string => !!name)
             );
-            const currentSubgroupNames = new Set(
-                Object.keys(currentValues.catalog_groups || {})
-            );
+            const currentCatalogGroups = (currentValues.catalog_groups || {}) as Record<string, string[]>;
+            const currentSubgroupsBySignature: Record<string, string[]> = {};
+            Object.entries(currentCatalogGroups).forEach(([name, catalogs]) => {
+                const signature = buildCatalogSignature(Array.isArray(catalogs) ? catalogs : []);
+                if (!currentSubgroupsBySignature[signature]) {
+                    currentSubgroupsBySignature[signature] = [];
+                }
+                currentSubgroupsBySignature[signature].push(name);
+            });
 
             // Parse Main Groups
             const inMainGroups = (imported.main_catalog_groups || {}) as Record<string, {
@@ -297,18 +313,35 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
             const inImageUrls = (imported.catalog_group_image_urls || {}) as Record<string, string>;
             const inCatalogGroupOrder = (imported.catalog_group_order as string[] | undefined) || Object.keys(inCatalogsGroups);
             const parsedSGs: ParsedSubgroup[] = [];
+            const directNameMatches = new Set(
+                inCatalogGroupOrder.filter((sgName) => Object.prototype.hasOwnProperty.call(currentCatalogGroups, sgName))
+            );
+            const claimedExistingSubgroups = new Set(directNameMatches);
 
             for (const sgName of inCatalogGroupOrder) {
                 if (!inCatalogsGroups[sgName]) continue;
                 if (isPlaceholderSg(sgName, inCatalogsGroups[sgName])) continue;
-                const newImage = inImageUrls[sgName];
-                const existingImage = currentValues.catalog_group_image_urls?.[sgName];
-                const isDup = currentSubgroupNames.has(sgName);
                 const parsedCats = Array.isArray(inCatalogsGroups[sgName]) ? inCatalogsGroups[sgName] : [];
-                const existCats = currentValues.catalog_groups?.[sgName] || [];
+                let matchedExistingName = Object.prototype.hasOwnProperty.call(currentCatalogGroups, sgName) ? sgName : undefined;
+
+                if (!matchedExistingName) {
+                    const signature = buildCatalogSignature(parsedCats);
+                    const unmatchedCandidates = (currentSubgroupsBySignature[signature] || [])
+                        .filter((candidate) => !claimedExistingSubgroups.has(candidate));
+
+                    if (unmatchedCandidates.length === 1) {
+                        matchedExistingName = unmatchedCandidates[0];
+                        claimedExistingSubgroups.add(matchedExistingName);
+                    }
+                }
+
+                const newImage = inImageUrls[sgName];
+                const existingImage = matchedExistingName ? currentValues.catalog_group_image_urls?.[matchedExistingName] : undefined;
+                const isDup = !!matchedExistingName;
+                const existCats = matchedExistingName ? (currentCatalogGroups[matchedExistingName] || []) : [];
 
                 // Compare arrays for exact match to know if an update is actually needed
-                const isCatsDiff = parsedCats.length !== existCats.length || parsedCats.some((c: string, i: number) => c !== existCats[i]);
+                const isCatsDiff = !catalogListsEqual(parsedCats, existCats);
                 const hasNewCats = isDup && isCatsDiff;
 
                 parsedSGs.push({
@@ -316,6 +349,8 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                     catalogs: parsedCats,
                     imageUrl: newImage,
                     isDuplicate: isDup,
+                    matchedExistingName,
+                    hasRename: isDup && matchedExistingName !== sgName,
                     hasNewImage: isDup && !!newImage && newImage !== existingImage,
                     hasNewCatalogs: hasNewCats,
                     category: sgCategoryMap[sgName] || getSubgroupCategory(sgName)
@@ -358,13 +393,13 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                 const hasSgChanges = mg.subgroupNames.some(sgName => {
                     const sg = parsedSGs.find(s => s.name === sgName);
                     if (!sg) return false;
-                    return !sg.isDuplicate || sg.hasNewCatalogs || sg.hasNewImage;
+                    return !sg.isDuplicate || sg.hasNewCatalogs || sg.hasNewImage || sg.hasRename;
                 });
 
                 mg.hasChanges = hasSgChanges;
             });
 
-            const getSgWeight = (sg: ParsedSubgroup) => sg.isDuplicate ? ((sg.hasNewCatalogs || sg.hasNewImage) ? 1 : 2) : 0;
+            const getSgWeight = (sg: ParsedSubgroup) => sg.isDuplicate ? ((sg.hasNewCatalogs || sg.hasNewImage || sg.hasRename) ? 1 : 2) : 0;
 
             parsedMGs.sort((a, b) => Number(a.isDuplicate) - Number(b.isDuplicate));
             parsedSGs.sort((a, b) => getSgWeight(a) - getSgWeight(b));
@@ -424,7 +459,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
 
     const handleImport = () => {
         const payloadMainGroups: Record<string, { name: string; subgroupNames: string[]; posterType: string; posterSize: string }> = {};
-        const payloadSubgroups: Record<string, { catalogs?: string[]; imageUrl?: string; overwriteCatalogs?: boolean; overwriteImage?: boolean }> = {};
+        const payloadSubgroups: Record<string, { catalogs?: string[]; imageUrl?: string; renameFrom?: string; overwriteCatalogs?: boolean; overwriteImage?: boolean }> = {};
         const associatedMetadata: {
             custom_catalog_names?: Record<string, string>;
             regex_pattern_image_urls?: Record<string, string>;
@@ -457,13 +492,15 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                         const shouldOverwriteImage = !parsedSg.isDuplicate
                             ? !!parsedSg.imageUrl
                             : selectedImageUpdateSubgroups.has(sgName);
+                        const shouldRename = !!parsedSg?.hasRename;
                         const catalogsToImport = shouldOverwriteCatalogs ? parsedSg.catalogs : undefined;
                         const imageToImport = shouldOverwriteImage ? parsedSg.imageUrl : undefined;
 
-                        if (!parsedSg.isDuplicate || shouldOverwriteCatalogs || shouldOverwriteImage) {
+                        if (!parsedSg.isDuplicate || shouldOverwriteCatalogs || shouldOverwriteImage || shouldRename) {
                             payloadSubgroups[sgName] = {
                                 catalogs: catalogsToImport,
                                 imageUrl: imageToImport,
+                                renameFrom: shouldRename ? parsedSg?.matchedExistingName : undefined,
                                 overwriteCatalogs: shouldOverwriteCatalogs,
                                 overwriteImage: shouldOverwriteImage
                             };
@@ -485,11 +522,13 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
             const shouldOverwriteImage = sg.isDuplicate
                 ? selectedImageUpdateSubgroups.has(sg.name)
                 : selectedStandaloneSubgroups.has(sg.name) && !!sg.imageUrl;
+            const shouldRename = sg.isDuplicate && !!sg.hasRename && selectedRenameUpdateSubgroups.has(sg.name);
 
-            if ((shouldOverwriteCatalogs || shouldOverwriteImage) && !subgroupsIncludedViaMainGroups.has(sg.name)) {
+            if ((shouldOverwriteCatalogs || shouldOverwriteImage || shouldRename) && !subgroupsIncludedViaMainGroups.has(sg.name)) {
                 payloadSubgroups[sg.name] = {
                     catalogs: shouldOverwriteCatalogs ? sg.catalogs : undefined,
                     imageUrl: shouldOverwriteImage ? sg.imageUrl : undefined,
+                    renameFrom: shouldRename ? sg.matchedExistingName : undefined,
                     overwriteCatalogs: shouldOverwriteCatalogs,
                     overwriteImage: shouldOverwriteImage
                 };
@@ -648,6 +687,16 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         setSelectedImageUpdateSubgroups(next);
     };
 
+    const toggleRenameUpdate = (name: string) => {
+        const next = new Set(selectedRenameUpdateSubgroups);
+        if (next.has(name)) {
+            next.delete(name);
+        } else {
+            next.add(name);
+        }
+        setSelectedRenameUpdateSubgroups(next);
+    };
+
     // Bulk Actions Main Groups
     const selectAllMain = () => {
         const next = new Set<string>();
@@ -679,11 +728,17 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         });
         setSelectedCatalogUpdateSubgroups(nextCatalogs);
         setSelectedImageUpdateSubgroups(nextImages);
+        setSelectedRenameUpdateSubgroups(new Set(
+            parsedSubgroups
+                .filter((sg) => sg.isDuplicate && sg.hasRename)
+                .map((sg) => sg.name)
+        ));
     };
 
     const clearUpdateSelection = () => {
         setSelectedCatalogUpdateSubgroups(new Set());
         setSelectedImageUpdateSubgroups(new Set());
+        setSelectedRenameUpdateSubgroups(new Set());
     };
 
     const selectAllNewSubgroups = () => {
@@ -730,6 +785,16 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         setSelectedImageUpdateSubgroups(next);
     };
 
+    const selectRenameUpdates = () => {
+        const next = new Set(selectedRenameUpdateSubgroups);
+        parsedSubgroups.forEach(sg => {
+            if (sg.isDuplicate && sg.hasRename) {
+                next.add(sg.name);
+            }
+        });
+        setSelectedRenameUpdateSubgroups(next);
+    };
+
     const currentMainGroups = currentValues.main_catalog_groups || {};
     const currentMainGroupOrder = currentValues.main_group_order || [];
     const isSubgroupIncludedViaSelectedMainGroup = (name: string) =>
@@ -755,6 +820,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
     const filteredSubgroups = parsedSubgroups.filter(sg =>
         matchesReviewSearch(
             sg.name,
+            sg.matchedExistingName,
             sg.category,
             ...sg.catalogs,
         )
@@ -765,11 +831,11 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         [filteredSubgroups]
     );
     const filteredUpdatedSubgroups = useMemo(
-        () => filteredSubgroups.filter((sg) => sg.isDuplicate && (sg.hasNewCatalogs || sg.hasNewImage)),
+        () => filteredSubgroups.filter((sg) => sg.isDuplicate && (sg.hasNewCatalogs || sg.hasNewImage || sg.hasRename)),
         [filteredSubgroups]
     );
     const filteredExistingSubgroups = useMemo(
-        () => filteredSubgroups.filter((sg) => sg.isDuplicate && !sg.hasNewCatalogs && !sg.hasNewImage),
+        () => filteredSubgroups.filter((sg) => sg.isDuplicate && !sg.hasNewCatalogs && !sg.hasNewImage && !sg.hasRename),
         [filteredSubgroups]
     );
 
@@ -791,6 +857,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         ...selectedStandaloneSubgroups,
         ...selectedCatalogUpdateSubgroups,
         ...selectedImageUpdateSubgroups,
+        ...selectedRenameUpdateSubgroups,
     ]).size;
     const totalSelectedToImport = selectedMainGroupUuids.size + totalSelectedSubgroups;
 
@@ -1084,9 +1151,10 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                                     {mg.subgroupNames.map(sg => {
                                                                         const parsedSg = parsedSubgroups.find(p => p.name === sg);
                                                                         const isSgDup = parsedSg?.isDuplicate;
+                                                                        const hasSgRename = !!parsedSg?.hasRename;
                                                                         const hasSgCatalogUpdate = !!parsedSg?.hasNewCatalogs;
                                                                         const hasSgImageUpdate = !!parsedSg?.hasNewImage;
-                                                                        const hasSgUpdate = hasSgCatalogUpdate || hasSgImageUpdate;
+                                                                        const hasSgUpdate = hasSgRename || hasSgCatalogUpdate || hasSgImageUpdate;
                                                                         const isSgSelected = isSelected && selectedSubgroups.includes(sg);
                                                                         return (
                                                                             <div key={sg} className="flex items-start gap-2 text-xs">
@@ -1102,6 +1170,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                                                     </div>
                                                                                     <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-foreground/55">
                                                                                         {isSgDup && !hasSgUpdate && <span>Use existing subgroup</span>}
+                                                                                        {isSgDup && hasSgRename && <span className="text-sky-500/90">Name change</span>}
                                                                                         {isSgDup && hasSgCatalogUpdate && <span className="text-orange-400/90">Catalog changes</span>}
                                                                                         {isSgDup && hasSgImageUpdate && <span className="text-primary/90">Image changes</span>}
                                                                                         {!isSgDup && <span>New subgroup</span>}
@@ -1136,11 +1205,12 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                     const isStandaloneSelected = selectedStandaloneSubgroups.has(sg.name);
                                                     const isCatalogUpdateSelected = selectedCatalogUpdateSubgroups.has(sg.name);
                                                     const isImageUpdateSelected = selectedImageUpdateSubgroups.has(sg.name);
+                                                    const isRenameUpdateSelected = selectedRenameUpdateSubgroups.has(sg.name);
                                                     const includedInMain = isSubgroupIncludedViaSelectedMainGroup(sg.name);
-                                                    const isFullyExisting = sg.isDuplicate && !sg.hasNewCatalogs && !sg.hasNewImage;
-                                                    const isUpdateRow = sg.isDuplicate && (sg.hasNewCatalogs || sg.hasNewImage);
+                                                    const isFullyExisting = sg.isDuplicate && !sg.hasNewCatalogs && !sg.hasNewImage && !sg.hasRename;
+                                                    const isUpdateRow = sg.isDuplicate && (sg.hasNewCatalogs || sg.hasNewImage || sg.hasRename);
                                                     const isIncludedWithMain = includedInMain && !sg.isDuplicate;
-                                                    const hasAnyDuplicateUpdateSelection = isCatalogUpdateSelected || isImageUpdateSelected;
+                                                    const hasAnyDuplicateUpdateSelection = isCatalogUpdateSelected || isImageUpdateSelected || isRenameUpdateSelected;
                                                     const isCheckboxDisabled = isFullyExisting || isIncludedWithMain;
                                                     const isChecked = includedInMain ? true : isStandaloneSelected;
                                                     const isSelected = isUpdateRow ? hasAnyDuplicateUpdateSelection : isChecked;
@@ -1151,12 +1221,12 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                     ].filter(Boolean);
 
                                                     if (isUpdateRow) {
-                                                        const selectedUpdateCount = Number(isCatalogUpdateSelected) + Number(isImageUpdateSelected);
+                                                        const selectedUpdateCount = Number(isCatalogUpdateSelected) + Number(isImageUpdateSelected) + Number(isRenameUpdateSelected);
                                                         const selectionSummary = selectedUpdateCount === 0
                                                             ? "Choose updates"
                                                             : selectedUpdateCount === 1
                                                                 ? "1 update selected"
-                                                                : "2 updates selected";
+                                                                : `${selectedUpdateCount} updates selected`;
 
                                                         return (
                                                             <div
@@ -1173,11 +1243,35 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                                         <div className="truncate text-sm font-semibold text-foreground">
                                                                             {formatDisplayName(sg.name)}
                                                                         </div>
+                                                                        {sg.hasRename && sg.matchedExistingName ? (
+                                                                            <div className="mt-0.5 text-xs text-foreground/55">
+                                                                                Rename from {formatDisplayName(sg.matchedExistingName)}
+                                                                            </div>
+                                                                        ) : null}
                                                                         <div className="mt-0.5 text-xs text-foreground/65">
                                                                             {[...metaBits, selectionSummary].join(" • ")}
                                                                         </div>
                                                                     </div>
                                                                     <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                                                                        {sg.hasRename && (
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="outline"
+                                                                                size="sm"
+                                                                                onClick={() => toggleRenameUpdate(sg.name)}
+                                                                                className={cn(
+                                                                                    importSetupChipBase,
+                                                                                    isRenameUpdateSelected
+                                                                                        ? importSetupTone.infoAction
+                                                                                        : importSetupChipIdle,
+                                                                                    isRenameUpdateSelected && importSetupChipSelected
+                                                                                )}
+                                                                                aria-pressed={isRenameUpdateSelected}
+                                                                            >
+                                                                                <Type className="mr-1.5 h-3 w-3" />
+                                                                                Name
+                                                                            </Button>
+                                                                        )}
                                                                         {sg.hasNewCatalogs && (
                                                                             <Button
                                                                                 type="button"
@@ -1318,6 +1412,10 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                                             <DropdownMenuItem onClick={selectCatalogUpdates} className="text-sm">
                                                                                 <RefreshCw className="mr-2 h-3.5 w-3.5" />
                                                                                 Add catalog updates
+                                                                            </DropdownMenuItem>
+                                                                            <DropdownMenuItem onClick={selectRenameUpdates} className="text-sm">
+                                                                                <Type className="mr-2 h-3.5 w-3.5" />
+                                                                                Add name updates
                                                                             </DropdownMenuItem>
                                                                             <DropdownMenuItem onClick={selectImageUpdates} className="text-sm">
                                                                                 <ImageIcon className="mr-2 h-3.5 w-3.5" />
