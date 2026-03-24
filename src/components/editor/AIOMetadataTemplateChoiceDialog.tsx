@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { downloadTemplateFile } from "@/lib/template-download";
 import { cn } from "@/lib/utils";
-import { editorAction, editorSurface } from "@/components/editor/ui/style-contract";
+import { editorSurface } from "@/components/editor/ui/style-contract";
 
 type DownloadTemplateOption = {
     name: string;
@@ -30,7 +30,7 @@ type AIOMetadataTemplateChoiceDialogProps = {
 };
 
 const optionCardClass =
-    "rounded-[1.35rem] border px-5 py-4 shadow-[0_10px_24px_rgba(15,23,42,0.05)] transition-[border-color,background-color,box-shadow,opacity,transform] duration-200 ease-out";
+    "group w-full rounded-[1.35rem] border px-5 py-4 text-left shadow-[0_10px_24px_rgba(15,23,42,0.05)] outline-none transition-[border-color,background-color,box-shadow,opacity,transform] duration-200 ease-out active:scale-[0.998] focus-visible:ring-[3px] focus-visible:ring-ring/50";
 
 export function AIOMetadataTemplateChoiceDialog({
     open,
@@ -65,6 +65,67 @@ export function AIOMetadataTemplateChoiceDialog({
         }
     };
 
+    const renderOption = ({
+        icon,
+        title,
+        eyebrow,
+        template,
+        downloadLabel,
+        toneClassName,
+        iconClassName,
+        eyebrowClassName,
+        ctaClassName,
+    }: {
+        icon: React.ReactNode;
+        title: string;
+        eyebrow: string;
+        template: DownloadTemplateOption | null;
+        downloadLabel: string;
+        toneClassName: string;
+        iconClassName: string;
+        eyebrowClassName: string;
+        ctaClassName: string;
+    }) => (
+        <button
+            type="button"
+            onClick={() => handleDownload(template)}
+            disabled={!template?.url}
+            aria-label={downloadLabel}
+            className={cn(
+                editorSurface.inset,
+                optionCardClass,
+                toneClassName,
+                "hover:shadow-[0_12px_28px_rgba(15,23,42,0.07)] disabled:cursor-not-allowed disabled:opacity-60 dark:hover:shadow-[0_14px_30px_rgba(2,6,23,0.18)]"
+            )}
+        >
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-5">
+                <div className="min-w-0 space-y-1.5">
+                    <div className="flex items-center gap-2.5">
+                        <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-[1rem] border", iconClassName)}>
+                            {icon}
+                        </span>
+                        <div className="min-w-0">
+                            <p className="text-[0.98rem] font-semibold tracking-[-0.015em] text-foreground">{title}</p>
+                            <p className={cn("text-[0.78rem] font-medium uppercase tracking-[0.16em]", eyebrowClassName)}>{eyebrow}</p>
+                        </div>
+                    </div>
+                    {template?.name ? <p className="pl-[3.2rem] text-[11px] leading-5 text-foreground/46">{template.name}</p> : null}
+                </div>
+
+                <span
+                    className={cn(
+                        "pointer-events-none inline-flex h-10 min-w-[9.75rem] shrink-0 items-center justify-center gap-2 self-start rounded-full border px-4 text-[0.92rem] font-medium tracking-[-0.01em] transition-[background-color,border-color,color] duration-200 ease-out sm:self-center",
+                        ctaClassName
+                    )}
+                    aria-hidden="true"
+                >
+                    Download
+                    <Download className="h-4 w-4" />
+                </span>
+            </div>
+        </button>
+    );
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[42rem]" showCloseButton={false}>
@@ -96,65 +157,35 @@ export function AIOMetadataTemplateChoiceDialog({
                 </DialogHeader>
 
                 <div className="space-y-3">
-                    <div className={cn(editorSurface.inset, optionCardClass, "border-primary/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.68),rgba(239,246,255,0.52))]")}>
-                        <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0 space-y-1.5">
-                                <div className="flex items-center gap-2.5">
-                                    <span className="flex size-9 shrink-0 items-center justify-center rounded-[1rem] border border-sky-300/30 bg-sky-500/[0.06] text-sky-600 dark:border-sky-400/24 dark:bg-sky-400/10 dark:text-sky-300">
-                                        <Sparkles className="size-4" />
-                                    </span>
-                                    <div className="min-w-0">
-                                        <p className="text-[0.98rem] font-semibold tracking-[-0.015em] text-foreground">Full Template</p>
-                                        <p className="text-[0.78rem] font-medium uppercase tracking-[0.16em] text-sky-600/84 dark:text-sky-300/84">
-                                            Initial setup
-                                        </p>
-                                    </div>
-                                </div>
-                                {fullTemplate?.name ? (
-                                    <p className="pl-[3.2rem] text-[11px] leading-5 text-foreground/46">{fullTemplate.name}</p>
-                                ) : null}
-                            </div>
-                            <Button
-                                type="button"
-                                onClick={() => handleDownload(fullTemplate)}
-                                disabled={!fullTemplate?.url}
-                                className={cn(editorAction.primary, "h-10 shrink-0 rounded-[1.05rem] px-4 text-[0.94rem] font-medium")}
-                            >
-                                Download
-                                <Download className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    </div>
+                    {renderOption({
+                        icon: <Sparkles className="size-4" />,
+                        title: "Full Template",
+                        eyebrow: "Initial setup",
+                        template: fullTemplate,
+                        downloadLabel: "Download Full Template",
+                        toneClassName:
+                            "border-primary/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.68),rgba(239,246,255,0.52))] hover:border-primary/20 hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.72),rgba(235,244,255,0.56))] dark:hover:border-primary/24",
+                        iconClassName:
+                            "border-sky-300/30 bg-sky-500/[0.06] text-sky-600 dark:border-sky-400/24 dark:bg-sky-400/10 dark:text-sky-300",
+                        eyebrowClassName: "text-sky-600/84 dark:text-sky-300/84",
+                        ctaClassName:
+                            "border-sky-300/34 bg-white/64 text-sky-700 group-hover:border-sky-400/42 group-hover:bg-white/78 dark:border-sky-400/22 dark:bg-white/[0.04] dark:text-sky-200 dark:group-hover:border-sky-400/30 dark:group-hover:bg-white/[0.06]",
+                    })}
 
-                    <div className={cn(editorSurface.inset, optionCardClass, "border-amber-200/55 bg-[linear-gradient(180deg,rgba(255,255,255,0.72),rgba(255,248,238,0.54))] dark:border-amber-400/18 dark:bg-[linear-gradient(180deg,rgba(31,24,14,0.5),rgba(22,18,11,0.42))]")}>
-                        <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0 space-y-1.5">
-                                <div className="flex items-center gap-2.5">
-                                    <span className="flex size-9 shrink-0 items-center justify-center rounded-[1rem] border border-amber-300/34 bg-amber-500/[0.06] text-amber-600 dark:border-amber-400/24 dark:bg-amber-400/10 dark:text-amber-300">
-                                        <FolderTree className="size-4" />
-                                    </span>
-                                    <div className="min-w-0">
-                                        <p className="text-[0.98rem] font-semibold tracking-[-0.015em] text-foreground">Catalogs Only</p>
-                                        <p className="text-[0.78rem] font-medium uppercase tracking-[0.16em] text-amber-700/84 dark:text-amber-300/84">
-                                            For updates
-                                        </p>
-                                    </div>
-                                </div>
-                                {catalogsTemplate?.name ? (
-                                    <p className="pl-[3.2rem] text-[11px] leading-5 text-foreground/46">{catalogsTemplate.name}</p>
-                                ) : null}
-                            </div>
-                            <Button
-                                type="button"
-                                onClick={() => handleDownload(catalogsTemplate)}
-                                disabled={!catalogsTemplate?.url}
-                                className={cn(editorAction.primary, "h-10 shrink-0 rounded-[1.05rem] px-4 text-[0.94rem] font-medium")}
-                            >
-                                Download
-                                <Download className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    </div>
+                    {renderOption({
+                        icon: <FolderTree className="size-4" />,
+                        title: "Catalogs Only",
+                        eyebrow: "For updates",
+                        template: catalogsTemplate,
+                        downloadLabel: "Download Catalogs Only Template",
+                        toneClassName:
+                            "border-amber-200/55 bg-[linear-gradient(180deg,rgba(255,255,255,0.72),rgba(255,248,238,0.54))] hover:border-amber-300/70 hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.76),rgba(255,245,234,0.58))] dark:border-amber-400/18 dark:bg-[linear-gradient(180deg,rgba(31,24,14,0.5),rgba(22,18,11,0.42))] dark:hover:border-amber-400/26",
+                        iconClassName:
+                            "border-amber-300/34 bg-amber-500/[0.06] text-amber-600 dark:border-amber-400/24 dark:bg-amber-400/10 dark:text-amber-300",
+                        eyebrowClassName: "text-amber-700/84 dark:text-amber-300/84",
+                        ctaClassName:
+                            "border-amber-300/34 bg-white/64 text-amber-800 group-hover:border-amber-400/42 group-hover:bg-white/78 dark:border-amber-400/22 dark:bg-white/[0.04] dark:text-amber-200 dark:group-hover:border-amber-400/30 dark:group-hover:bg-white/[0.06]",
+                    })}
                 </div>
             </DialogContent>
         </Dialog>
