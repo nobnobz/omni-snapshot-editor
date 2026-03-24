@@ -815,14 +815,14 @@ export function MainEditor() {
                 <div className="px-4 py-5">
                     <div className="flex h-[calc(100dvh-2.5rem)] flex-col rounded-[1.75rem] border border-slate-200/72 bg-[linear-gradient(180deg,rgba(255,255,255,0.56),rgba(248,250,252,0.44))] shadow-[0_18px_38px_rgba(15,23,42,0.065)] backdrop-blur-md dark:border-white/8 dark:bg-[linear-gradient(180deg,rgba(21,24,31,0.92),rgba(13,16,22,0.9))] dark:shadow-[0_18px_38px_rgba(2,6,23,0.14)]">
                         <div className="px-5 pt-5 pb-4">
-                            <h1 className="text-base font-black flex items-center gap-3 text-primary-foreground tracking-tight">
-                                <div className="flex items-center justify-center shrink-0 relative group" style={{ width: '64px', height: '52px' }}>
+                            <h1 className="text-base font-black flex items-center gap-2 text-primary-foreground tracking-tight">
+                                <div className="relative flex shrink-0 items-center justify-center group" style={{ width: '56px', height: '46px' }}>
                                     {/* eslint-disable-next-line @next/next/no-img-element -- Static local logo. */}
-                                    <img src="/omni-snapshot-editor/clown.png" alt="Logo" className="w-full h-full object-contain relative z-10 scale-[1.35]" />
+                                    <img src="/omni-snapshot-editor/clown.png" alt="Logo" className="relative z-10 h-full w-full object-contain scale-[1.28]" />
                                 </div>
-                                <div className="flex flex-col">
-                                    <span className="leading-none text-foreground">Omni Snapshot</span>
-                                    <span className="text-xs text-primary dark:text-primary font-bold uppercase tracking-widest mt-0.5">Manager</span>
+                                <div className="flex flex-col justify-center leading-none">
+                                    <span className="text-foreground">Omni Snapshot</span>
+                                    <span className="mt-[0.2rem] text-xs font-bold uppercase tracking-[0.24em] text-primary dark:text-primary">Manager</span>
                                 </div>
                             </h1>
                         </div>
@@ -1041,14 +1041,14 @@ export function MainEditor() {
                     <section className="lg:hidden pt-[calc(0.35rem+env(safe-area-inset-top))]">
                         <div className="rounded-[1.35rem] border border-slate-200/72 bg-[linear-gradient(180deg,rgba(255,255,255,0.56),rgba(248,250,252,0.44))] p-3.5 shadow-[0_18px_38px_rgba(15,23,42,0.065)] backdrop-blur-md dark:border-white/8 dark:bg-[linear-gradient(180deg,rgba(21,24,31,0.92),rgba(13,16,22,0.9))] dark:shadow-[0_18px_38px_rgba(2,6,23,0.14)]">
                             <div className="flex items-start gap-2.5">
-                                <h1 className="min-w-0 flex flex-1 items-center gap-2.5 text-base font-black tracking-tight text-primary-foreground">
-                                    <div className="flex items-center justify-center shrink-0 relative group" style={{ width: '48px', height: '40px' }}>
+                                <h1 className="min-w-0 flex flex-1 items-center gap-2 text-base font-black tracking-tight text-primary-foreground">
+                                    <div className="relative flex shrink-0 items-center justify-center group" style={{ width: '44px', height: '36px' }}>
                                         {/* eslint-disable-next-line @next/next/no-img-element -- Static local logo. */}
-                                        <img src="/omni-snapshot-editor/clown.png" alt="Logo" className="w-full h-full object-contain relative z-10 scale-[1.35]" />
+                                        <img src="/omni-snapshot-editor/clown.png" alt="Logo" className="relative z-10 h-full w-full object-contain scale-[1.24]" />
                                     </div>
-                                    <div className="flex min-w-0 flex-col">
-                                        <span className="leading-none text-foreground truncate">Omni Snapshot</span>
-                                        <span className="mt-0.5 text-xs font-bold uppercase tracking-widest text-primary dark:text-primary">Manager</span>
+                                    <div className="flex min-w-0 flex-col justify-center leading-none">
+                                        <span className="truncate text-foreground">Omni Snapshot</span>
+                                        <span className="mt-[0.18rem] text-xs font-bold uppercase tracking-[0.22em] text-primary dark:text-primary">Manager</span>
                                     </div>
                                 </h1>
 

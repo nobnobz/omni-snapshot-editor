@@ -553,13 +553,13 @@ export function ConfigLoader() {
                     <div className={cn(editorLoader.heroPanel, "relative px-5 py-5 sm:px-8 sm:py-7 lg:px-10 lg:py-8") }>
                         <div className="relative space-y-4 sm:space-y-5 lg:space-y-6">
                             <div className="mx-auto max-w-[46rem] text-center">
-                                <div className="group relative mx-auto flex h-[128px] w-[162px] items-center justify-center overflow-visible sm:h-[136px] sm:w-[172px]">
-                                    <div className="pointer-events-none absolute inset-[-1.5rem] rounded-full bg-[radial-gradient(circle,rgba(96,165,250,0.14)_0%,rgba(59,130,246,0.08)_34%,rgba(59,130,246,0.015)_68%,transparent_100%)] opacity-0 blur-3xl transition-[opacity,transform] duration-700 ease-out group-hover:scale-105 group-hover:opacity-100 dark:inset-[-1.75rem] dark:bg-[radial-gradient(circle,rgba(59,130,246,0.28)_0%,rgba(37,99,235,0.18)_34%,rgba(59,130,246,0.05)_68%,transparent_100%)] dark:group-hover:scale-110" />
+                                <div className="relative mx-auto flex h-[128px] w-[162px] items-center justify-center overflow-visible sm:h-[136px] sm:w-[172px]">
+                                    <div className="pointer-events-none absolute inset-[-1.5rem] rounded-full bg-[radial-gradient(circle,rgba(96,165,250,0.14)_0%,rgba(59,130,246,0.08)_34%,rgba(59,130,246,0.015)_68%,transparent_100%)] opacity-0 blur-3xl dark:inset-[-1.75rem] dark:bg-[radial-gradient(circle,rgba(59,130,246,0.28)_0%,rgba(37,99,235,0.18)_34%,rgba(59,130,246,0.05)_68%,transparent_100%)]" />
                                     {/* eslint-disable-next-line @next/next/no-img-element -- Static local logo. */}
                                     <img 
                                         src="/omni-snapshot-editor/clown.png" 
                                         alt="Logo" 
-                                        className="relative z-10 h-full w-full scale-[1.48] object-contain transition-transform duration-500 ease-out group-hover:scale-[1.52] sm:scale-[1.52] sm:group-hover:scale-[1.56]" 
+                                        className="relative z-10 h-full w-full scale-[1.48] object-contain sm:scale-[1.52]" 
                                         style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                                     />
                                 </div>
@@ -573,7 +573,7 @@ export function ConfigLoader() {
                                     </p>
                                 </div>
 
-                                <div className="mx-auto mt-5 flex w-full max-w-[33.5rem] flex-col gap-3 sm:mt-5.5">
+                                <div className="mx-auto mt-5 flex w-full max-w-[31rem] flex-col gap-3 sm:mt-5.5">
                                     <div className="flex items-stretch gap-2.5 sm:gap-3">
                                         <div className="min-w-0 flex-1">
                                             <DropdownMenu>
