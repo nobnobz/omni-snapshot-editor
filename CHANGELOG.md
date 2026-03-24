@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.5.2] - 2026-03-24
+### Improved
+- **UI/UX Polish**: Refined Welcome Screen CTA area, improved mobile spacing, and tuned button visual balance.
+- **Subtle Styling**: Reworked light-mode `Docs` button with a subtler warm accent and softer glow for better harmony.
+- **Streamlined Metadata Flow**: Combined AIOMetadata entries into a single entry with a new selection dialog for better clarity.
+- **Metadata Dialog Cleanup**: Simplified selection modal, removed redundant text, and added concise update instructions.
+- **Template Fetch Resilience**: Implemented `template-manifest.json` as primary discovery source with multi-level fallback (GitHub API → Baked-in URLs).
+- **Fallback Coverage**: Added built-in backup URLs for all major UME templates to ensure availability during API downtime.
+
+### Changed
+- **Header Layout**: Reverted to original Omni header layout while retaining mobile spacing fixes for top controls.
+
+### Fixed
+- **Testing**: Added test coverage for manifest-first loading and API fallback scenarios.
+
+
 ## [0.5.1] - 2026-03-24
 ### Improved
 - **Template Updates**: Enhanced subgroup matching during "Update from Template". Subgroups are now correctly identified as updates even if renamed, provided their contained catalogs match exactly.

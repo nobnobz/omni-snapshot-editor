@@ -1,9 +1,10 @@
 import { TemplateManifest } from "../context/ConfigContext";
 import { getTemplateDisplay } from "./template-display";
-import { matchesTemplateKind } from "./template-manifest";
+import { FALLBACK_TEMPLATE_URLS, matchesTemplateKind, type TemplateKind } from "./template-manifest";
 
 const OWNER = "nobnobz";
 const REPO = "Omni-Template-Bot-Bid-Raiser";
+const MANIFEST_URL = `https://raw.githubusercontent.com/${OWNER}/${REPO}/main/template-manifest.json`;
 // Use the recursive tree API to find all files in one go
 const TREE_URL = `https://api.github.com/repos/${OWNER}/${REPO}/git/trees/main?recursive=1`;
 const RAW_BASE_URL = `https://raw.githubusercontent.com/${OWNER}/${REPO}/main`;
@@ -29,6 +30,28 @@ const normalizeTemplateVersion = (value: unknown): string | undefined => {
     return String(value);
   }
   return undefined;
+};
+
+const normalizeTemplateBoolean = (value: unknown): boolean | undefined => {
+  if (typeof value === "boolean") return value;
+  return undefined;
+};
+
+const normalizeManifestTemplate = (value: unknown): TemplateManifest["templates"][number] | null => {
+  if (!isRecord(value)) return null;
+
+  const id = typeof value.id === "string" ? value.id.trim() : "";
+  const name = typeof value.name === "string" ? value.name.trim() : "";
+  const url = typeof value.url === "string" ? value.url.trim() : "";
+  if (!id || !name || !url) return null;
+
+  return {
+    id,
+    name,
+    url,
+    version: normalizeTemplateVersion(value.version),
+    isDefault: normalizeTemplateBoolean(value.isDefault),
+  };
 };
 
 const shouldReadVersionFromContent = (itemPath: string) =>
@@ -82,7 +105,71 @@ const compareTemplateVersions = (a?: string, b?: string) => {
   return normalizedB.localeCompare(normalizedA, undefined, { numeric: true, sensitivity: "base" });
 };
 
+const buildFallbackTemplate = (
+  kind: TemplateKind,
+  url: string,
+  templateId: string,
+): TemplateManifest["templates"][0] | null => {
+  if (!url) return null;
+
+  const fileName = url.split("/").pop()?.replace(".json", "") || templateId;
+  const display = getTemplateDisplay(fileName, templateId);
+  return {
+    id: templateId,
+    name: display.version ? `${display.label} ${display.version}` : display.label,
+    url,
+    version: display.version || undefined,
+    isDefault: kind === "omni",
+  };
+};
+
+const buildFallbackTemplates = (): TemplateManifest["templates"] =>
+  [
+    buildFallbackTemplate("omni", FALLBACK_TEMPLATE_URLS.omni, "fallback/ume-omni-template-v2.1.json"),
+    buildFallbackTemplate("aiometadata", FALLBACK_TEMPLATE_URLS.aiometadata, "fallback/ume-aiometadata-config-v2.1.json"),
+    buildFallbackTemplate("catalogs", FALLBACK_TEMPLATE_URLS.catalogs, "fallback/ume-aiometadata-catalogs-only-v2.1..json"),
+    buildFallbackTemplate("aiostreams", FALLBACK_TEMPLATE_URLS.aiostreams, "fallback/ume-aiostreams-template-v1.7.json"),
+  ].filter(Boolean) as TemplateManifest["templates"];
+
+async function fetchTemplatesFromManifest(): Promise<TemplateManifest["templates"] | null> {
+  try {
+    const response = await fetch(MANIFEST_URL);
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload: unknown = await response.json();
+    if (!isRecord(payload) || !Array.isArray(payload.templates)) {
+      return null;
+    }
+
+    const templates = payload.templates
+      .map((entry) => normalizeManifestTemplate(entry))
+      .filter(Boolean) as TemplateManifest["templates"];
+
+    if (templates.length === 0) {
+      return null;
+    }
+
+    templates.sort((a, b) => compareTemplateVersions(a.version, b.version));
+
+    if (!templates.some((template) => template.isDefault)) {
+      const defaultTemplate = templates.find((template) => matchesTemplateKind(template.id, "omni")) || templates[0];
+      defaultTemplate.isDefault = true;
+    }
+
+    return templates;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchGithubTemplates(): Promise<TemplateManifest["templates"]> {
+  const manifestTemplates = await fetchTemplatesFromManifest();
+  if (manifestTemplates) {
+    return manifestTemplates;
+  }
+
   try {
     const response = await fetch(TREE_URL);
     if (!response.ok) throw new Error(`GitHub API error: ${response.status}`);
@@ -115,7 +202,7 @@ export async function fetchGithubTemplates(): Promise<TemplateManifest["template
     return templates;
   } catch (error) {
     console.error("Failed to fetch templates from GitHub:", error);
-    return [];
+    return buildFallbackTemplates();
   }
 }
 

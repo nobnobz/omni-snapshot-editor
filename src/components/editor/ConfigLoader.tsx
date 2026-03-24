@@ -46,6 +46,33 @@ import { getTemplateDisplay } from "@/lib/template-display";
 import { editorHover, editorLoader, editorNoticeTone, editorSurface } from "@/components/editor/ui/style-contract";
 import { AppMeta } from "@/components/editor/AppMeta";
 import { TemplateDownloadChoiceDialog } from "@/components/editor/TemplateDownloadChoiceDialog";
+import { AIOMetadataTemplateChoiceDialog } from "@/components/editor/AIOMetadataTemplateChoiceDialog";
+
+type DownloadableTemplate = {
+    id: string;
+    name: string;
+    url: string;
+    version?: string;
+};
+
+type LoaderTemplateMenuEntry =
+    | {
+          type: "single";
+          id: string;
+          name: string;
+          url: string;
+          version: string | null;
+          isAvailable: boolean;
+      }
+    | {
+          type: "aiometadata-choice";
+          id: string;
+          name: string;
+          version: string | null;
+          isAvailable: boolean;
+          fullTemplate: DownloadableTemplate | null;
+          catalogsTemplate: DownloadableTemplate | null;
+      };
 
 type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 type JsonObject = { [key: string]: JsonValue };
@@ -260,6 +287,10 @@ export function ConfigLoader() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [downloadChoiceTemplate, setDownloadChoiceTemplate] = useState<{ name: string; url: string } | null>(null);
+    const [aiometadataChoiceTemplates, setAiometadataChoiceTemplates] = useState<{
+        fullTemplate: DownloadableTemplate | null;
+        catalogsTemplate: DownloadableTemplate | null;
+    } | null>(null);
 
     const handleVersionChange = (selectedUrl: string) => {
         setUrl(selectedUrl);
@@ -454,26 +485,57 @@ export function ConfigLoader() {
     const latestAIOM = findTemplateByKind(manifestTemplates, "aiometadata");
     const latestAIOS = findTemplateByKind(manifestTemplates, "aiostreams");
     const latestCatalogs = findTemplateByKind(manifestTemplates, "catalogs");
+    const latestOmniDisplay = getTemplateDisplay(latestOmni?.name || "UME Omni Template", latestOmni?.id);
+    const latestAIOMDisplay = latestAIOM ? getTemplateDisplay(latestAIOM.name, latestAIOM.id) : null;
+    const latestAIOSDisplay = latestAIOS ? getTemplateDisplay(latestAIOS.name, latestAIOS.id) : null;
+    const latestCatalogsDisplay = latestCatalogs ? getTemplateDisplay(latestCatalogs.name, latestCatalogs.id) : null;
+    const aiometadataVersion = latestAIOMDisplay?.version || latestCatalogsDisplay?.version || null;
 
     // Ensure we always have these categories, even if missing from GitHub
-    const templateDownloads = [
-        latestOmni || { id: "ume-omni-placeholder", name: "UME Omni Template", url: FALLBACK_TEMPLATE_URLS.omni },
-        latestAIOM || { id: "ume-aiom-placeholder", name: "UME AIOMetadata Template", url: "" },
-        latestCatalogs || { id: "ume-catalogs-placeholder", name: "UME AIOMetadata (Catalogs Only)", url: "" },
-        latestAIOS || { id: "ume-aios-placeholder", name: "UME AIOStreams Template", url: "" },
-    ].filter(Boolean) as typeof manifestTemplates;
+    const templateDownloads: LoaderTemplateMenuEntry[] = [
+        {
+            type: "single",
+            id: latestOmni?.id || "ume-omni-placeholder",
+            name: latestOmniDisplay.label,
+            url: latestOmni?.url || FALLBACK_TEMPLATE_URLS.omni,
+            version: latestOmni?.version || latestOmniDisplay.version,
+            isAvailable: true,
+        },
+        {
+            type: "aiometadata-choice",
+            id: "ume-aiometadata-choice",
+            name: "UME AIOMetadata Template",
+            version: aiometadataVersion,
+            isAvailable: !!latestAIOM?.url || !!latestCatalogs?.url,
+            fullTemplate: latestAIOM?.url
+                ? { id: latestAIOM.id, name: latestAIOM.name, url: latestAIOM.url, version: latestAIOM.version }
+                : null,
+            catalogsTemplate: latestCatalogs?.url
+                ? { id: latestCatalogs.id, name: latestCatalogs.name, url: latestCatalogs.url, version: latestCatalogs.version }
+                : null,
+        },
+        {
+            type: "single",
+            id: latestAIOS?.id || "ume-aios-placeholder",
+            name: latestAIOSDisplay?.label || "UME AIOStreams Template",
+            url: latestAIOS?.url || "",
+            version: latestAIOS?.version || latestAIOSDisplay?.version || null,
+            isAvailable: !!latestAIOS?.url,
+        },
+    ];
 
     const loaderUtilityButtonClass =
         "size-10 rounded-[1.2rem] border border-slate-200/82 bg-white/78 p-0 text-foreground/62 shadow-[0_8px_18px_rgba(15,23,42,0.055)] backdrop-blur-xl transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 ease-out hover:-translate-y-px hover:border-slate-300/88 hover:bg-white/88 hover:text-foreground hover:shadow-[0_10px_22px_rgba(15,23,42,0.075)] dark:border-white/10 dark:bg-white/[0.04] dark:text-foreground/72 dark:shadow-[0_10px_24px_rgba(2,6,23,0.22)] dark:hover:border-white/14 dark:hover:bg-white/[0.08] dark:hover:text-foreground dark:hover:shadow-[0_12px_26px_rgba(2,6,23,0.28)] sm:size-11";
     const loaderThemeToggleClass = cn(loaderUtilityButtonClass, "[&_svg]:size-[1.05rem] sm:[&_svg]:size-[1.1rem]");
     const loaderUtilityIconButtonClass = loaderUtilityButtonClass;
     const loaderUtilityDividerClass = "h-4 w-px bg-slate-300/80 dark:bg-white/10";
+    const loaderUtilityRowClass = "pointer-events-auto flex items-center gap-1.5 pr-1.5 sm:gap-2 sm:pr-0";
     const loaderTemplateShortcutClass = cn(
         editorLoader.resourceButtonPrimary,
         "shadow-[0_8px_16px_rgba(37,99,235,0.05)] hover:shadow-[0_10px_20px_rgba(37,99,235,0.07)] dark:shadow-[0_18px_38px_rgba(37,99,235,0.26)]"
     );
     const loaderGuideShortcutClass = cn(
-        "h-[3.35rem] w-[3.35rem] shrink-0 rounded-[1.6rem] border border-slate-300/74 bg-[linear-gradient(180deg,rgba(255,255,255,0.985),rgba(249,250,251,0.96))] px-0 text-foreground shadow-[0_10px_20px_rgba(15,23,42,0.045)] backdrop-blur-xl transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 ease-out hover:-translate-y-px hover:border-amber-300/84 hover:bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(255,248,237,0.97))] hover:text-amber-700 hover:shadow-[0_12px_24px_rgba(217,119,6,0.08)] dark:border-amber-400/44 dark:bg-[linear-gradient(180deg,rgba(57,41,16,0.88),rgba(43,31,12,0.94))] dark:text-amber-50 dark:shadow-[0_16px_34px_rgba(217,119,6,0.22)] dark:hover:border-amber-400/58 dark:hover:bg-[linear-gradient(180deg,rgba(64,46,19,0.92),rgba(49,35,14,0.98))] dark:hover:text-amber-50 dark:hover:shadow-[0_18px_36px_rgba(217,119,6,0.24)] sm:h-[3.55rem] sm:w-[3.55rem] [&_svg]:size-[1.08rem] sm:[&_svg]:size-[1.14rem]"
+        "relative isolate h-[3.35rem] w-[3.35rem] shrink-0 overflow-hidden rounded-[1.6rem] border border-slate-300/74 bg-[linear-gradient(180deg,rgba(255,255,255,0.99),rgba(255,252,248,0.965))] px-0 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.92),0_8px_18px_rgba(217,119,6,0.024)] backdrop-blur-xl transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 ease-out after:pointer-events-none after:absolute after:inset-x-[18%] after:top-0 after:h-[56%] after:bg-[radial-gradient(circle_at_top,rgba(251,191,36,0.075),transparent_72%)] after:opacity-45 hover:-translate-y-px hover:border-amber-100/72 hover:bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(255,248,242,0.98))] hover:text-amber-700 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_10px_20px_rgba(217,119,6,0.045)] dark:border-amber-400/44 dark:bg-[linear-gradient(180deg,rgba(57,41,16,0.88),rgba(43,31,12,0.94))] dark:text-amber-50 dark:shadow-[0_16px_34px_rgba(217,119,6,0.22)] dark:after:opacity-0 dark:hover:border-amber-400/58 dark:hover:bg-[linear-gradient(180deg,rgba(64,46,19,0.92),rgba(49,35,14,0.98))] dark:hover:text-amber-50 dark:hover:shadow-[0_18px_36px_rgba(217,119,6,0.24)] sm:h-[3.55rem] sm:w-[3.55rem] [&_svg]:relative [&_svg]:z-[1] [&_svg]:size-[1.08rem] sm:[&_svg]:size-[1.14rem]"
     );
 
     const loaderDropdownItemClass = cn(
@@ -535,7 +597,7 @@ export function ConfigLoader() {
                 <div className="relative z-10 mx-auto w-full max-w-[88rem] py-3 sm:py-4 lg:py-5 xl:max-w-[92rem]">
                     <div className="pointer-events-none absolute inset-x-0 top-2 z-50 sm:top-3">
                         <div className="mx-auto flex w-full max-w-[72rem] justify-end">
-                            <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2">
+                            <div className={loaderUtilityRowClass}>
                                 <ManagerSwitcher currentManager="omni" align="end" />
                                 <div className={loaderUtilityDividerClass} />
                                 <Button asChild type="button" variant="ghost" size="icon" className={loaderUtilityIconButtonClass}>
@@ -550,7 +612,7 @@ export function ConfigLoader() {
                         </div>
                     </div>
 
-                    <div className={cn(editorLoader.heroPanel, "relative px-5 py-5 sm:px-8 sm:py-7 lg:px-10 lg:py-8") }>
+                    <div className={cn(editorLoader.heroPanel, "relative px-5 pb-5 pt-[4.5rem] sm:px-8 sm:py-7 lg:px-10 lg:py-8") }>
                         <div className="relative space-y-4 sm:space-y-5 lg:space-y-6">
                             <div className="mx-auto max-w-[46rem] text-center">
                                 <div className="relative mx-auto flex h-[128px] w-[162px] items-center justify-center overflow-visible sm:h-[136px] sm:w-[172px]">
@@ -599,9 +661,8 @@ export function ConfigLoader() {
                                                         </div>
                                                     ) : (
                                                         templateDownloads.map((template) => {
-                                                            const display = getTemplateDisplay(template.name, template.id);
-                                                            const isAvailable = !!template.url;
-                                                            const version = template.version || display.version;
+                                                            const isAvailable = template.isAvailable;
+                                                            const version = template.version;
 
                                                             return (
                                                                 <DropdownMenuItem
@@ -611,13 +672,21 @@ export function ConfigLoader() {
                                                                             e.preventDefault();
                                                                             return;
                                                                         }
+                                                                        if (template.type === "aiometadata-choice") {
+                                                                            setError(null);
+                                                                            setAiometadataChoiceTemplates({
+                                                                                fullTemplate: template.fullTemplate,
+                                                                                catalogsTemplate: template.catalogsTemplate,
+                                                                            });
+                                                                            return;
+                                                                        }
                                                                         handleDownloadTemplate(template.id, template.url, template.name);
                                                                     }}
                                                                     className={cn(loaderDropdownItemClass, !isAvailable && "opacity-60 cursor-default")}
                                                                 >
                                                                     <LoaderIconBadge icon={FileJson} className={loaderDropdownIconClass} />
                                                                     <div className="min-w-0 flex-1">
-                                                                        <span className="block truncate text-sm font-semibold text-foreground">{display.label}</span>
+                                                                        <span className="block truncate text-sm font-semibold text-foreground">{template.name}</span>
                                                                         {version ? (
                                                                             <span className="mt-0.5 block text-[10px] font-medium tracking-[0.04em] text-foreground/42">{version}</span>
                                                                         ) : !isAvailable ? (
@@ -868,6 +937,23 @@ export function ConfigLoader() {
                 }}
                 templateName={downloadChoiceTemplate?.name || ""}
                 templateUrl={downloadChoiceTemplate?.url || ""}
+                onBusyChange={setLoading}
+                onError={(message, error) => {
+                    setError(message);
+                    if (error) {
+                        console.error(error);
+                    }
+                }}
+            />
+            <AIOMetadataTemplateChoiceDialog
+                open={!!aiometadataChoiceTemplates}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setAiometadataChoiceTemplates(null);
+                    }
+                }}
+                fullTemplate={aiometadataChoiceTemplates?.fullTemplate || null}
+                catalogsTemplate={aiometadataChoiceTemplates?.catalogsTemplate || null}
                 onBusyChange={setLoading}
                 onError={(message, error) => {
                     setError(message);

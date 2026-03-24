@@ -20,10 +20,10 @@ const TEMPLATE_KIND_MATCHERS: Record<TemplateKind, { include: string[]; exclude?
 };
 
 export const FALLBACK_TEMPLATE_URLS: Record<TemplateKind, string> = {
-    omni: "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/ume-omni-template-v2.0.3.json",
-    aiometadata: "",
-    catalogs: "",
-    aiostreams: "",
+    omni: "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/ume-omni-template-v2.1.json",
+    aiometadata: "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/ume-aiometadata-config-v2.1.json",
+    catalogs: "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/ume-aiometadata-catalogs-only-v2.1..json",
+    aiostreams: "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/refs/heads/main/ume-aiostreams-template-v1.7.json",
 };
 
 const buildTemplateHaystack = (value: string) => value.toLowerCase();
