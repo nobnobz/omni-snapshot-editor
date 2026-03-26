@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, useEffect, useRef, Fragment, useMemo } from "react";
+import { useId, useState, useEffect, useRef, Fragment, useMemo, useCallback } from "react";
 import { useConfigActions, useConfigSelector } from "@/context/ConfigContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -94,6 +94,17 @@ type ScrollSnapshot = {
     scrollPercent: number;
 };
 
+type ProcessAIOMetadataOptions = {
+    showSuccessNotice?: boolean;
+};
+
+type SyncAIOMetadataFromUrlOptions = {
+    showSuccessNotice?: boolean;
+    preserveScroll?: boolean;
+    errorPlacement?: UiNotice["placement"];
+    errorMessage?: string;
+};
+
 const EDITOR_SECTIONS = [
     { id: "aiometadata", title: "AIOMetadata Integration", keys: [] },
     { id: "groups", title: "Group Manager", keys: ["subgroup_order", "main_catalog_groups", "catalog_group_image_urls", "catalog_groups"] },
@@ -152,6 +163,7 @@ export function MainEditor() {
     const [isFallbackDropActive, setIsFallbackDropActive] = useState(false);
     const [isIosDevice, setIsIosDevice] = useState(false);
     const activeAioImportRequestRef = useRef<Promise<void> | null>(null);
+    const hasAutoResyncedAioRef = useRef(false);
     const { theme, setTheme } = useTheme();
 
     useEffect(() => {
@@ -463,13 +475,13 @@ export function MainEditor() {
 
     const sections = EDITOR_SECTIONS;
 
-    const showNotice = (
+    const showNotice = useCallback((
         tone: UiNotice["tone"],
         message: string,
         placement: UiNotice["placement"] = "global"
     ) => {
         setUiNotice({ tone, message, placement });
-    };
+    }, []);
 
     const renderNotice = (notice: UiNotice) => (
         <div
@@ -499,12 +511,12 @@ export function MainEditor() {
         </div>
     );
 
-    const persistAIOMetadataSyncState = (nextState: AIOMetadataSyncState) => {
+    const persistAIOMetadataSyncState = useCallback((nextState: AIOMetadataSyncState) => {
         setAioSyncState(nextState);
         if (typeof window !== "undefined") {
             localStorage.setItem(AIOMETADATA_SYNC_STORAGE_KEY, JSON.stringify(nextState));
         }
-    };
+    }, []);
 
     const clearAIOMetadataSyncState = () => {
         setAioSyncState(null);
@@ -526,7 +538,7 @@ export function MainEditor() {
         }
     };
 
-    const preserveScrollPosition = (work: () => void) => {
+    const preserveScrollPosition = useCallback((work: () => void) => {
         const isMobileViewport = window.innerWidth < 1024;
         const desktopContainer = scrollContainerRef.current;
         const previousY = isMobileViewport ? window.scrollY : desktopContainer?.scrollTop ?? 0;
@@ -548,7 +560,7 @@ export function MainEditor() {
             requestAnimationFrame(restore);
             setTimeout(restore, 120);
         });
-    };
+    }, []);
 
     const handleDownloadClick = () => {
         setSetupName(originalConfig?.name || "");
@@ -639,15 +651,17 @@ export function MainEditor() {
     };
 
 
-    const processAIOMetadata = (
+    const processAIOMetadata = useCallback((
         jsonText: string,
         syncSource: Omit<AIOMetadataSyncState, "syncedAt"> = {
             sourceType: "json",
             sourceLabel: "Pasted JSON",
-        }
+        },
+        options: ProcessAIOMetadataOptions = {}
     ) => {
         try {
             const { fallbacks, addedCount } = parseAIOMetadataFallbacks(jsonText);
+            const shouldShowSuccessNotice = options.showSuccessNotice ?? true;
 
             setCustomFallbacks(fallbacks);
             localStorage.setItem("omni_custom_fallbacks", JSON.stringify(fallbacks));
@@ -656,7 +670,9 @@ export function MainEditor() {
                 syncedAt: new Date().toISOString(),
             });
             setIsAioImportEditorOpen(false);
-            showNotice("success", `Imported ${addedCount} catalogs from AIOMetadata.`, "aiometadata");
+            if (shouldShowSuccessNotice) {
+                showNotice("success", `Imported ${addedCount} catalogs from AIOMetadata.`, "aiometadata");
+            }
             if (syncSource.sourceType === "url" && syncSource.sourceValue) {
                 setPastedJson(syncSource.sourceValue);
             } else {
@@ -669,7 +685,59 @@ export function MainEditor() {
                 : "Failed to parse JSON. Please ensure it is valid JSON.";
             showNotice("error", message, "aiometadata");
         }
-    };
+    }, [persistAIOMetadataSyncState, setCustomFallbacks, showNotice]);
+
+    const syncAIOMetadataFromUrl = useCallback(async (
+        sourceValue: string,
+        options: SyncAIOMetadataFromUrlOptions = {}
+    ) => {
+        if (activeAioImportRequestRef.current) {
+            await activeAioImportRequestRef.current;
+            return;
+        }
+
+        const shouldPreserveScroll = options.preserveScroll ?? true;
+        const shouldShowSuccessNotice = options.showSuccessNotice ?? true;
+
+        setIsImportingUrl(true);
+        const request = measureAsync("aiometadataImportUrl", async () => {
+            try {
+                const text = await fetchTextWithLimits(sourceValue, {
+                    timeoutMs: 12000,
+                    maxBytes: 5_000_000,
+                });
+
+                const importWork = () => {
+                    processAIOMetadata(text, {
+                        sourceType: "url",
+                        sourceLabel: "Manifest URL",
+                        sourceValue,
+                    }, {
+                        showSuccessNotice: shouldShowSuccessNotice,
+                    });
+                };
+
+                if (shouldPreserveScroll) {
+                    preserveScrollPosition(importWork);
+                } else {
+                    importWork();
+                }
+            } catch (err: unknown) {
+                console.error(err);
+                showNotice(
+                    "error",
+                    options.errorMessage ?? (err instanceof Error ? err.message : "Failed to fetch AIOMetadata manifest."),
+                    options.errorPlacement ?? "aiometadata"
+                );
+            } finally {
+                setIsImportingUrl(false);
+                activeAioImportRequestRef.current = null;
+            }
+        }, { sourceType: "url" });
+
+        activeAioImportRequestRef.current = request;
+        await request;
+    }, [preserveScrollPosition, processAIOMetadata, showNotice]);
 
     const isJsonFile = (file: File) => file.name.toLowerCase().endsWith(".json") || file.type === "application/json";
 
@@ -719,35 +787,11 @@ export function MainEditor() {
 
         // Check if input is a URL
         if (input.startsWith("http://") || input.startsWith("https://")) {
-            if (activeAioImportRequestRef.current) {
-                await activeAioImportRequestRef.current;
-                return;
-            }
-
-            setIsImportingUrl(true);
-            const request = measureAsync("aiometadataImportUrl", async () => {
-                try {
-                    const text = await fetchTextWithLimits(input, {
-                        timeoutMs: 12000,
-                        maxBytes: 5_000_000,
-                    });
-                    preserveScrollPosition(() => {
-                        processAIOMetadata(text, {
-                            sourceType: "url",
-                            sourceLabel: "Manifest URL",
-                            sourceValue: input,
-                        });
-                    });
-                } catch (err: unknown) {
-                    console.error(err);
-                    showNotice("error", err instanceof Error ? err.message : "Failed to fetch AIOMetadata manifest.", "aiometadata");
-                } finally {
-                    setIsImportingUrl(false);
-                    activeAioImportRequestRef.current = null;
-                }
-            }, { sourceType: "url" });
-            activeAioImportRequestRef.current = request;
-            await request;
+            await syncAIOMetadataFromUrl(input, {
+                showSuccessNotice: true,
+                preserveScroll: true,
+                errorPlacement: "aiometadata",
+            });
             return;
         }
 
@@ -764,7 +808,11 @@ export function MainEditor() {
     const handleResyncAIOMetadata = async () => {
         if (aioSyncState?.sourceType === "url" && aioSyncState.sourceValue) {
             setPastedJson(aioSyncState.sourceValue);
-            await handlePasteImport();
+            await syncAIOMetadataFromUrl(aioSyncState.sourceValue, {
+                showSuccessNotice: true,
+                preserveScroll: true,
+                errorPlacement: "aiometadata",
+            });
             return;
         }
 
@@ -833,6 +881,19 @@ export function MainEditor() {
 
         return "At least one subgroup has linked catalogs missing from the synced AIOMetadata catalogs or has no linked catalogs.";
     }, [aiomMismatchSummary.hasIssues]);
+
+    useEffect(() => {
+        if (hasAutoResyncedAioRef.current) return;
+        if (aioSyncState?.sourceType !== "url" || !aioSyncState.sourceValue) return;
+
+        hasAutoResyncedAioRef.current = true;
+        void syncAIOMetadataFromUrl(aioSyncState.sourceValue, {
+            showSuccessNotice: false,
+            preserveScroll: false,
+            errorPlacement: "aiometadata",
+            errorMessage: "Failed to refresh synced AIOMetadata from the saved manifest URL.",
+        });
+    }, [aioSyncState, syncAIOMetadataFromUrl]);
 
     return (
         <div className="relative flex min-h-screen lg:h-[100dvh] w-full max-w-[100vw] overflow-x-hidden lg:overflow-y-hidden bg-transparent text-foreground font-sans">
