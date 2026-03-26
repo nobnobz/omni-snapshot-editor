@@ -1,4 +1,6 @@
+import { produce } from "immer";
 import { encodeConfig, pruneDisabledCatalogs, pruneDisabledKeys } from "./config-utils";
+import { MDBLIST_SETTINGS_KEYS, normalizeMdblistSettings } from "./mdblist-ratings";
 import { reorderCatalogGroupOrder, validateAndFix } from "./mutations";
 import { OmniConfig } from "./types";
 
@@ -53,6 +55,16 @@ export const CATALOG_RELATED_EXPORT_KEYS = [
     "top_row_item_limits",
 ] as const;
 
+const hasMdblistSectionKeys = (sectionKeys: readonly string[]) =>
+    sectionKeys.some((key) => MDBLIST_SETTINGS_KEYS.includes(key as typeof MDBLIST_SETTINGS_KEYS[number]));
+
+const sanitizeDisabledKeys = (disabledKeys: Set<string>) =>
+    new Set(
+        Array.from(disabledKeys).filter(
+            (key) => !MDBLIST_SETTINGS_KEYS.includes(key as typeof MDBLIST_SETTINGS_KEYS[number])
+        )
+    );
+
 const getExplicitSelectedCatalogs = (catalogs: ManifestCatalog[]): string[] => {
     let enabledIds = catalogs.filter(c => c.enabled !== false).map(c => c.id);
 
@@ -82,11 +94,13 @@ export function buildExportConfig({
     catalogs,
     isSyntheticSession,
 }: BuildExportConfigArgs): OmniConfig {
+    const safeDisabledKeys = sanitizeDisabledKeys(disabledKeys);
+
     // 1. Start with deep clone of current decoded values
-    let clonedValues = JSON.parse(JSON.stringify(currentValues));
+    let clonedValues = produce(currentValues, () => {});
 
     // 2. Prune explicitly disabled keys (from GenericRenderer toggles)
-    clonedValues = pruneDisabledKeys(clonedValues, disabledKeys);
+    clonedValues = pruneDisabledKeys(clonedValues, safeDisabledKeys);
 
     // 3. Prune disabled and deleted catalogs
     const currentIdSet = new Set(catalogs.map(c => c.id));
@@ -116,29 +130,32 @@ export function buildExportConfig({
 
     clonedValues = pruneDisabledCatalogs(clonedValues, deadCatalogs);
 
+    clonedValues = normalizeMdblistSettings(clonedValues);
+
     // 4. Validate, Fix and Reorder keys
-    const validatedValues = validateAndFix(clonedValues);
-    validatedValues.catalog_group_order = reorderCatalogGroupOrder(validatedValues);
+    const validatedValues = produce(validateAndFix(clonedValues), (draft) => {
+        draft.catalog_group_order = reorderCatalogGroupOrder(draft);
 
-    if (validatedValues.catalog_groups) {
-        const orderedGroups: Record<string, LooseAny> = {};
-        validatedValues.catalog_group_order.forEach((name: string) => {
-            if (validatedValues.catalog_groups[name]) {
-                orderedGroups[name] = validatedValues.catalog_groups[name];
-            }
-        });
-        validatedValues.catalog_groups = orderedGroups;
-    }
+        if (draft.catalog_groups) {
+            const orderedGroups: Record<string, LooseAny> = {};
+            draft.catalog_group_order.forEach((name: string) => {
+                if (draft.catalog_groups[name]) {
+                    orderedGroups[name] = draft.catalog_groups[name];
+                }
+            });
+            draft.catalog_groups = orderedGroups;
+        }
 
-    if (validatedValues.catalog_group_image_urls) {
-        const orderedUrls: Record<string, LooseAny> = {};
-        validatedValues.catalog_group_order.forEach((name: string) => {
-            if (validatedValues.catalog_group_image_urls[name] !== undefined) {
-                orderedUrls[name] = validatedValues.catalog_group_image_urls[name];
-            }
-        });
-        validatedValues.catalog_group_image_urls = orderedUrls;
-    }
+        if (draft.catalog_group_image_urls) {
+            const orderedUrls: Record<string, LooseAny> = {};
+            draft.catalog_group_order.forEach((name: string) => {
+                if (draft.catalog_group_image_urls[name] !== undefined) {
+                    orderedUrls[name] = draft.catalog_group_image_urls[name];
+                }
+            });
+            draft.catalog_group_image_urls = orderedUrls;
+        }
+    });
 
     // 5. Sync catalog state back to decoded values before encoding
     const valuesToExport = { ...validatedValues };
@@ -169,7 +186,7 @@ export function buildExportConfig({
     }
 
     const originalValues = originalConfig.values || originalConfig.config || {};
-    const encodedValues = encodeConfig(valuesWithSelectedCatalogs, originalValues, disabledKeys);
+    const encodedValues = encodeConfig(valuesWithSelectedCatalogs, originalValues, safeDisabledKeys);
     const finalResult: ExportableConfig = { ...originalConfig };
 
     if (originalConfig.config && !isSyntheticSession && catalogs.length > 0) {
@@ -206,46 +223,52 @@ export function buildPartialExportConfig({
     sectionKeys,
     catalogs,
 }: BuildPartialExportConfigArgs): OmniConfig {
+    const safeDisabledKeys = sanitizeDisabledKeys(disabledKeys);
+
     // Build a filtered values map containing only the specified section keys
     const filteredValues: Record<string, unknown> = {};
     for (const key of sectionKeys) {
         if (currentValues[key] !== undefined) {
-            filteredValues[key] = JSON.parse(JSON.stringify(currentValues[key]));
+            filteredValues[key] = produce(currentValues[key], () => {});
         }
     }
 
     // Also include main_group_order if exporting group keys
     if (sectionKeys.includes("main_catalog_groups") && currentValues.main_group_order) {
-        filteredValues.main_group_order = JSON.parse(JSON.stringify(currentValues.main_group_order));
+        filteredValues.main_group_order = produce(currentValues.main_group_order, () => {});
+    }
+
+    if (hasMdblistSectionKeys(sectionKeys)) {
+        Object.assign(filteredValues, normalizeMdblistSettings(filteredValues));
     }
 
     // Validate & fix the filtered subset
-    const validatedValues = validateAndFix(filteredValues);
+    const validatedValues = produce(validateAndFix(filteredValues), (draft) => {
+        if (!(sectionKeys.includes("catalog_groups") || sectionKeys.includes("catalog_group_order"))) {
+            return;
+        }
 
-    // EXTRA: Set specifically ordered catalog_group_order if present
-    if (sectionKeys.includes("catalog_groups") || sectionKeys.includes("catalog_group_order")) {
-        validatedValues.catalog_group_order = reorderCatalogGroupOrder(validatedValues);
+        draft.catalog_group_order = reorderCatalogGroupOrder(draft);
 
-        // Reorder keys
-        if (validatedValues.catalog_groups) {
+        if (draft.catalog_groups) {
             const orderedGroups: Record<string, LooseAny> = {};
-            validatedValues.catalog_group_order.forEach((name: string) => {
-                if (validatedValues.catalog_groups[name]) {
-                    orderedGroups[name] = validatedValues.catalog_groups[name];
+            draft.catalog_group_order.forEach((name: string) => {
+                if (draft.catalog_groups[name]) {
+                    orderedGroups[name] = draft.catalog_groups[name];
                 }
             });
-            validatedValues.catalog_groups = orderedGroups;
+            draft.catalog_groups = orderedGroups;
         }
-        if (validatedValues.catalog_group_image_urls) {
+        if (draft.catalog_group_image_urls) {
             const orderedUrls: Record<string, LooseAny> = {};
-            validatedValues.catalog_group_order.forEach((name: string) => {
-                if (validatedValues.catalog_group_image_urls[name] !== undefined) {
-                    orderedUrls[name] = validatedValues.catalog_group_image_urls[name];
+            draft.catalog_group_order.forEach((name: string) => {
+                if (draft.catalog_group_image_urls[name] !== undefined) {
+                    orderedUrls[name] = draft.catalog_group_image_urls[name];
                 }
             });
-            validatedValues.catalog_group_image_urls = orderedUrls;
+            draft.catalog_group_image_urls = orderedUrls;
         }
-    }
+    });
 
     const valuesToExport = isCatalogRelatedExport(sectionKeys)
         ? materializeSelectedCatalogsForExport(validatedValues, catalogs)
@@ -253,7 +276,7 @@ export function buildPartialExportConfig({
 
     // Encode using the original values for format detection
     const originalValues = originalConfig.values || originalConfig.config || {};
-    const encodedValues = encodeConfig(valuesToExport, originalValues, disabledKeys);
+    const encodedValues = encodeConfig(valuesToExport, originalValues, safeDisabledKeys);
 
     // Build the full config shell
     const finalResult: ExportableConfig = {

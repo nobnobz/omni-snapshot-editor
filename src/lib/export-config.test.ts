@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { decodeConfig } from "./config-utils";
 import { buildExportConfig, buildPartialExportConfig } from "./export-config";
+import {
+    MDBLIST_DEFAULT_BADGE_COLOR_VALUES,
+    MDBLIST_DEFAULT_BADGE_TEXT_OVERRIDES,
+    MDBLIST_RATING_KEYS,
+} from "./mdblist-ratings";
 
 const wrap = (value: unknown) => ({
     _data: Buffer.from(JSON.stringify(value), "utf8").toString("base64")
@@ -353,6 +358,89 @@ describe("buildExportConfig", () => {
             isSyntheticSession: false,
         });
 
-        expect(decodeConfig(result.config?.mdblist_enabled_ratings)).toEqual(["tomatoes", "imdb"]);
+        expect(decodeConfig(result.config?.mdblist_enabled_ratings)).toEqual(["imdb", "tomatoes"]);
+    });
+
+    it("normalizes and wraps all MDBList rating settings in full exports", () => {
+        const result = buildExportConfig({
+            originalConfig: {
+                values: {
+                    selected_catalogs: wrap(["movie:one"]),
+                    catalog_ordering: wrap(["movie:one"]),
+                    top_row_catalogs: wrap([]),
+                }
+            },
+            currentValues: {
+                selected_catalogs: ["movie:one"],
+                catalog_ordering: ["movie:one"],
+                top_row_catalogs: [],
+                mdblist_enabled_ratings: ["score", "imdb", "future_rating"],
+                mdblist_rating_order: ["tmdb", "future_rating"],
+                mdblist_badge_text_overrides: { imdb: "Custom IMDb", future_rating: "??" },
+                mdblist_badge_color_hex_values: { trakt: "#123456", future_rating: "#654321" },
+            },
+            initialValues: {
+                selected_catalogs: ["movie:one"],
+                catalog_ordering: ["movie:one"],
+                top_row_catalogs: [],
+            },
+            disabledKeys: new Set<string>(),
+            catalogs: baseCatalogs,
+            isSyntheticSession: false,
+        });
+
+        expect(decodeConfig(result.values?.mdblist_enabled_ratings)).toEqual(["imdb", "score", "future_rating"]);
+        expect(decodeConfig(result.values?.mdblist_rating_order)).toEqual([
+            "tmdb",
+            "trakt",
+            "imdb",
+            "letterboxd",
+            "tomatoes",
+            "audience",
+            "metacritic",
+            "score",
+            "score_average",
+            "future_rating",
+        ]);
+        expect(decodeConfig(result.values?.mdblist_badge_text_overrides)).toEqual({
+            ...MDBLIST_DEFAULT_BADGE_TEXT_OVERRIDES,
+            imdb: "Custom IMDb",
+            future_rating: "??",
+        });
+        expect(decodeConfig(result.values?.mdblist_badge_color_hex_values)).toEqual({
+            ...MDBLIST_DEFAULT_BADGE_COLOR_VALUES,
+            trakt: "#123456",
+            future_rating: "#654321",
+        });
+    });
+
+    it("includes normalized MDBList keys in partial MDBList exports", () => {
+        const result = buildPartialExportConfig({
+            originalConfig: { values: {} },
+            currentValues: {
+                mdblist_enabled_ratings: [],
+                mdblist_rating_order: ["score"],
+                mdblist_badge_text_overrides: {},
+                mdblist_badge_color_hex_values: {},
+            },
+            disabledKeys: new Set<string>(),
+            sectionKeys: [
+                "mdblist_enabled_ratings",
+                "mdblist_rating_order",
+                "mdblist_badge_text_overrides",
+                "mdblist_badge_color_hex_values",
+            ],
+            catalogs: baseCatalogs,
+        });
+
+        const decoded = decodeConfig(result.values) as Record<string, unknown>;
+
+        expect(decoded.mdblist_enabled_ratings).toEqual([]);
+        expect(decoded.mdblist_rating_order).toEqual([
+            "score",
+            ...MDBLIST_RATING_KEYS.filter((key) => key !== "score"),
+        ]);
+        expect(decoded.mdblist_badge_text_overrides).toEqual(MDBLIST_DEFAULT_BADGE_TEXT_OVERRIDES);
+        expect(decoded.mdblist_badge_color_hex_values).toEqual(MDBLIST_DEFAULT_BADGE_COLOR_VALUES);
     });
 });

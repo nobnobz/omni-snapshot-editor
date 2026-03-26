@@ -1,9 +1,153 @@
+import { produce } from "immer";
 import { ensureCatalogPrefix, resolveCatalogName } from "./utils";
 import { normalizeMainGroupOrder, normalizeSubgroupNames } from "./main-group-utils";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mutation layer edits arbitrary user-defined config trees.
 type LooseAny = any;
 type MutableState = Record<string, LooseAny>;
+
+const COMMON_CATALOG_LISTS = [
+    "selected_catalogs",
+    "pinned_catalogs",
+    "small_catalogs",
+    "top_row_catalogs",
+    "starred_catalogs",
+    "randomized_catalogs",
+    "small_toprow_catalogs",
+    "catalog_ordering",
+] as const;
+
+const ensureObject = (value: unknown): MutableState =>
+    value && typeof value === "object" && !Array.isArray(value) ? (value as MutableState) : {};
+
+const uniqueMerge = (left: string[] = [], right: string[] = []) => Array.from(new Set([...left, ...right]));
+
+const mutateUnassignSubgroup = (draft: MutableState, name: string) => {
+    if (draft.subgroup_order) {
+        Object.keys(draft.subgroup_order).forEach((mainGroupUUID) => {
+            const arr = draft.subgroup_order[mainGroupUUID];
+            if (Array.isArray(arr)) {
+                draft.subgroup_order[mainGroupUUID] = arr.filter((subgroupName: string) => subgroupName !== name);
+            }
+        });
+    }
+
+    if (draft.main_catalog_groups) {
+        Object.keys(draft.main_catalog_groups).forEach((uuid) => {
+            const group = draft.main_catalog_groups[uuid];
+            if (group && Array.isArray(group.subgroupNames)) {
+                group.subgroupNames = group.subgroupNames.filter((subgroupName: string) => subgroupName !== name);
+            }
+        });
+    }
+};
+
+const mutateAssignSubgroup = (draft: MutableState, name: string, targetMainGroupUuid: string) => {
+    mutateUnassignSubgroup(draft, name);
+
+    if (!draft.main_catalog_groups) draft.main_catalog_groups = {};
+    if (!draft.subgroup_order || Array.isArray(draft.subgroup_order)) {
+        draft.subgroup_order = {};
+    }
+
+    if (!draft.main_catalog_groups[targetMainGroupUuid]) {
+        draft.main_catalog_groups[targetMainGroupUuid] = { name: "Unknown Group", subgroupNames: [] };
+    }
+
+    const targetGroup = draft.main_catalog_groups[targetMainGroupUuid];
+    if (!Array.isArray(targetGroup.subgroupNames)) {
+        targetGroup.subgroupNames = [];
+    }
+    if (!targetGroup.subgroupNames.includes(name)) {
+        targetGroup.subgroupNames.push(name);
+    }
+
+    if (!Array.isArray(draft.subgroup_order[targetMainGroupUuid])) {
+        draft.subgroup_order[targetMainGroupUuid] = [];
+    }
+    if (!draft.subgroup_order[targetMainGroupUuid].includes(name)) {
+        draft.subgroup_order[targetMainGroupUuid].push(name);
+    }
+};
+
+const mutateRenameGroup = (draft: MutableState, oldName: string, newName: string) => {
+    if (oldName === newName) return;
+
+    if (draft.catalog_groups?.[oldName]) {
+        const oldItems = draft.catalog_groups[oldName] || [];
+        if (draft.catalog_groups[newName]) {
+            draft.catalog_groups[newName] = uniqueMerge(draft.catalog_groups[newName], oldItems);
+        } else {
+            draft.catalog_groups[newName] = oldItems;
+        }
+        delete draft.catalog_groups[oldName];
+    }
+
+    if (Array.isArray(draft.catalog_group_order)) {
+        const index = draft.catalog_group_order.indexOf(oldName);
+        if (index !== -1) {
+            if (draft.catalog_group_order.includes(newName)) {
+                draft.catalog_group_order = draft.catalog_group_order.filter((groupName: string) => groupName !== oldName);
+            } else {
+                draft.catalog_group_order[index] = newName;
+            }
+        }
+    }
+
+    if (draft.subgroup_order) {
+        Object.keys(draft.subgroup_order).forEach((mainGroupUUID) => {
+            const subgroupNames = draft.subgroup_order[mainGroupUUID];
+            if (!Array.isArray(subgroupNames)) return;
+            const index = subgroupNames.indexOf(oldName);
+            if (index === -1) return;
+
+            if (subgroupNames.includes(newName)) {
+                draft.subgroup_order[mainGroupUUID] = subgroupNames.filter((subgroupName: string) => subgroupName !== oldName);
+            } else {
+                subgroupNames[index] = newName;
+            }
+        });
+    }
+
+    if (draft.main_catalog_groups) {
+        Object.keys(draft.main_catalog_groups).forEach((uuid) => {
+            const group = draft.main_catalog_groups[uuid];
+            if (!group || !Array.isArray(group.subgroupNames)) return;
+            const index = group.subgroupNames.indexOf(oldName);
+            if (index === -1) return;
+
+            if (group.subgroupNames.includes(newName)) {
+                group.subgroupNames = group.subgroupNames.filter((subgroupName: string) => subgroupName !== oldName);
+            } else {
+                group.subgroupNames[index] = newName;
+            }
+        });
+    }
+
+    if (draft.catalog_group_image_urls?.[oldName] !== undefined) {
+        if (draft.catalog_group_image_urls[newName] === undefined) {
+            draft.catalog_group_image_urls[newName] = draft.catalog_group_image_urls[oldName];
+        }
+        delete draft.catalog_group_image_urls[oldName];
+    }
+};
+
+const mutateRemoveCatalogIdFromLists = (draft: MutableState, matcher: (catalogId: string) => boolean) => {
+    if (draft.catalog_groups) {
+        Object.keys(draft.catalog_groups).forEach((groupName) => {
+            const catalogIds = draft.catalog_groups[groupName];
+            if (Array.isArray(catalogIds)) {
+                draft.catalog_groups[groupName] = catalogIds.filter((catalogId: string) => !matcher(catalogId));
+            }
+        });
+    }
+
+    COMMON_CATALOG_LISTS.forEach((listName) => {
+        if (Array.isArray(draft[listName])) {
+            draft[listName] = draft[listName].filter((catalogId: string) => !matcher(catalogId));
+        }
+    });
+};
 
 /**
  * Helper: counts how many places a string-keyed group name is referenced.
@@ -45,367 +189,172 @@ export function countMainGroupReferences(uuid: string, state: MutableState): num
 export function renameGroup(oldName: string, newName: string, state: MutableState): MutableState {
     if (oldName === newName) return state;
 
-    // We do NOT mutate the original state, make a deep copy or do immutable updates
-    const draft = JSON.parse(JSON.stringify(state));
-
-    const mergeArrays = (arr1: string[] = [], arr2: string[] = []) => {
-        return Array.from(new Set([...arr1, ...arr2])); // Quick unique merge
-    };
-
-    // 1. Rename the key in catalog_groups
-    if (draft.catalog_groups) {
-        if (draft.catalog_groups[oldName]) {
-            const oldItems = draft.catalog_groups[oldName] || [];
-
-            if (draft.catalog_groups[newName]) {
-                // Merge logic if newName exists
-                draft.catalog_groups[newName] = mergeArrays(draft.catalog_groups[newName], oldItems);
-            } else {
-                draft.catalog_groups[newName] = oldItems;
-            }
-            delete draft.catalog_groups[oldName];
-        }
-    }
-
-    // 2. Replace the old name in catalog_group_order
-    if (Array.isArray(draft.catalog_group_order)) {
-        const index = draft.catalog_group_order.indexOf(oldName);
-        if (index !== -1) {
-            // If the target name already exists, we just filter out the oldName to prevent dupes
-            if (draft.catalog_group_order.includes(newName)) {
-                draft.catalog_group_order = draft.catalog_group_order.filter((g: string) => g !== oldName);
-            } else {
-                draft.catalog_group_order[index] = newName;
-            }
-        }
-    }
-
-    // 3. Replace the old name in subgroup_order arrays
-    if (draft.subgroup_order) {
-        Object.keys(draft.subgroup_order).forEach(mainGroupUUID => {
-            const arr = draft.subgroup_order[mainGroupUUID];
-            if (Array.isArray(arr)) {
-                const index = arr.indexOf(oldName);
-                if (index !== -1) {
-                    if (arr.includes(newName)) {
-                        draft.subgroup_order[mainGroupUUID] = arr.filter((s: string) => s !== oldName);
-                    } else {
-                        arr[index] = newName;
-                    }
-                }
-            }
-        });
-    }
-
-    // 4. Replace within main_catalog_groups[*].subgroupNames
-    if (draft.main_catalog_groups) {
-        Object.keys(draft.main_catalog_groups).forEach(uuid => {
-            const group = draft.main_catalog_groups[uuid];
-            if (group && Array.isArray(group.subgroupNames)) {
-                const index = group.subgroupNames.indexOf(oldName);
-                if (index !== -1) {
-                    if (group.subgroupNames.includes(newName)) {
-                        group.subgroupNames = group.subgroupNames.filter((s: string) => s !== oldName);
-                    } else {
-                        group.subgroupNames[index] = newName;
-                    }
-                }
-            }
-        });
-    }
-
-    // 5. Rename the key in catalog_group_image_urls
-    if (draft.catalog_group_image_urls) {
-        if (draft.catalog_group_image_urls[oldName] !== undefined) {
-            // Always overwrite target image url, or keep existing target if preferable.
-            // Let's keep existing target if it exists, otherwise move old
-            if (draft.catalog_group_image_urls[newName] === undefined) {
-                draft.catalog_group_image_urls[newName] = draft.catalog_group_image_urls[oldName];
-            }
-            delete draft.catalog_group_image_urls[oldName];
-        }
-    }
-
-    return draft;
+    return produce(state, (draft) => {
+        mutateRenameGroup(draft, oldName, newName);
+    });
 }
 
 export function renameMainGroup(uuid: string, newName: string, state: MutableState): MutableState {
-    const draft = JSON.parse(JSON.stringify(state));
-
-    if (draft.main_catalog_groups && draft.main_catalog_groups[uuid]) {
-        draft.main_catalog_groups[uuid].name = newName;
-    }
-
-    return draft;
+    return produce(state, (draft) => {
+        if (draft.main_catalog_groups?.[uuid]) {
+            draft.main_catalog_groups[uuid].name = newName;
+        }
+    });
 }
 
-/**
- * Removes a group entirely from all relational arrays and objects.
- */
 /**
  * Unassigns a subgroup from all main groups without deleting its data from catalog_groups.
  */
 export function unassignSubgroup(name: string, state: MutableState): MutableState {
-    const draft = JSON.parse(JSON.stringify(state));
-
-    if (draft.subgroup_order) {
-        Object.keys(draft.subgroup_order).forEach(mainGroupUUID => {
-            const arr = draft.subgroup_order[mainGroupUUID];
-            if (Array.isArray(arr)) {
-                draft.subgroup_order[mainGroupUUID] = arr.filter((s: string) => s !== name);
-            }
-        });
-    }
-
-    if (draft.main_catalog_groups) {
-        Object.keys(draft.main_catalog_groups).forEach(uuid => {
-            const group = draft.main_catalog_groups[uuid];
-            if (group && Array.isArray(group.subgroupNames)) {
-                group.subgroupNames = group.subgroupNames.filter((s: string) => s !== name);
-            }
-        });
-    }
-
-    return draft;
+    return produce(state, (draft) => {
+        mutateUnassignSubgroup(draft, name);
+    });
 }
 
 /**
  * Assigns a subgroup to a specific main group.
  */
 export function assignSubgroup(name: string, targetMainGroupUuid: string, state: MutableState): MutableState {
-    const draft = JSON.parse(JSON.stringify(state));
-
-    // First unassign it from any existing main groups to ensure it only lives in one place
-    if (draft.subgroup_order) {
-        Object.keys(draft.subgroup_order).forEach(mainGroupUUID => {
-            const arr = draft.subgroup_order[mainGroupUUID];
-            if (Array.isArray(arr)) {
-                draft.subgroup_order[mainGroupUUID] = arr.filter((s: string) => s !== name);
-            }
-        });
-    }
-
-    if (draft.main_catalog_groups) {
-        Object.keys(draft.main_catalog_groups).forEach(uuid => {
-            const group = draft.main_catalog_groups[uuid];
-            if (group && Array.isArray(group.subgroupNames)) {
-                group.subgroupNames = group.subgroupNames.filter((s: string) => s !== name);
-            }
-        });
-    }
-
-    // Now assign to the new parent
-    if (!draft.main_catalog_groups[targetMainGroupUuid]) {
-        draft.main_catalog_groups[targetMainGroupUuid] = { name: "Unknown Group", subgroupNames: [] };
-    }
-
-    if (!Array.isArray(draft.main_catalog_groups[targetMainGroupUuid].subgroupNames)) {
-        draft.main_catalog_groups[targetMainGroupUuid].subgroupNames = [];
-    }
-
-    // Add to the end of the new parent's list
-    draft.main_catalog_groups[targetMainGroupUuid].subgroupNames.push(name);
-
-    // ALSO keep subgroup_order in sync (this is what the editor reads from to render subgroups)
-    if (!draft.subgroup_order) draft.subgroup_order = {};
-    if (!Array.isArray(draft.subgroup_order[targetMainGroupUuid])) {
-        draft.subgroup_order[targetMainGroupUuid] = [];
-    }
-    if (!draft.subgroup_order[targetMainGroupUuid].includes(name)) {
-        draft.subgroup_order[targetMainGroupUuid].push(name);
-    }
-
-    return draft;
+    return produce(state, (draft) => {
+        mutateAssignSubgroup(draft, name, targetMainGroupUuid);
+    });
 }
 
 /**
  * Creates a new Main Group.
  */
 export function createMainGroup(name: string, assignedSubgroups: string[], state: MutableState): MutableState {
-    const draft = JSON.parse(JSON.stringify(state));
-    const newUuid = crypto.randomUUID();
+    return produce(state, (draft) => {
+        const newUuid = crypto.randomUUID();
 
-    if (!draft.main_catalog_groups) draft.main_catalog_groups = {};
-    if (!draft.main_group_order) draft.main_group_order = [];
-    if (!draft.subgroup_order) draft.subgroup_order = {};
+        if (!draft.main_catalog_groups) draft.main_catalog_groups = {};
+        if (!Array.isArray(draft.main_group_order)) draft.main_group_order = [];
+        if (!draft.subgroup_order || Array.isArray(draft.subgroup_order)) {
+            draft.subgroup_order = {};
+        }
 
-    draft.main_catalog_groups[newUuid] = {
-        name,
-        subgroupNames: [],
-        posterSize: "Default",
-        posterType: "Square"
-    };
-    draft.main_group_order.push(newUuid);
+        draft.main_catalog_groups[newUuid] = {
+            name,
+            subgroupNames: [],
+            posterSize: "Default",
+            posterType: "Square",
+        };
+        draft.main_group_order.push(newUuid);
 
-    // Now securely assign the selected subgroups
-    let tempDraft = draft;
-    for (const sg of assignedSubgroups) {
-        tempDraft = assignSubgroup(sg, newUuid, tempDraft);
-    }
-
-    return tempDraft;
+        assignedSubgroups.forEach((subgroupName) => {
+            mutateAssignSubgroup(draft, subgroupName, newUuid);
+        });
+    });
 }
 
 /**
  * Creates a new Subgroup.
  */
 export function createSubgroup(name: string, targetMainGroupUuid: string, imageUrl: string, initialCatalogs: string[] = [], state: MutableState): MutableState {
-    const draft = JSON.parse(JSON.stringify(state));
+    return produce(state, (draft) => {
+        if (!draft.catalog_groups) draft.catalog_groups = {};
+        if (!Array.isArray(draft.catalog_group_order)) draft.catalog_group_order = [];
+        if (!draft.catalog_group_image_urls) draft.catalog_group_image_urls = {};
 
-    if (!draft.catalog_groups) draft.catalog_groups = {};
-    if (!draft.catalog_group_order) draft.catalog_group_order = [];
-    if (!draft.catalog_group_image_urls) draft.catalog_group_image_urls = {};
+        const customNames = ensureObject(draft.custom_catalog_names);
+        draft.catalog_groups[name] = initialCatalogs.map((id) => ensureCatalogPrefix(id, resolveCatalogName(id, customNames as Record<string, string>)));
+        if (!draft.catalog_group_order.includes(name)) {
+            draft.catalog_group_order.push(name);
+        }
 
-    // Create the subgroup with the provided catalog list
-    const normalizedCatalogs = initialCatalogs.map(id => ensureCatalogPrefix(id, resolveCatalogName(id, draft.custom_catalog_names || {})));
-    draft.catalog_groups[name] = normalizedCatalogs;
-    draft.catalog_group_order.push(name);
+        if (imageUrl) {
+            draft.catalog_group_image_urls[name] = imageUrl;
+        }
 
-    if (imageUrl) {
-        draft.catalog_group_image_urls[name] = imageUrl;
-    }
-
-    // Now assign it to the selected main group
-    if (targetMainGroupUuid) {
-        return assignSubgroup(name, targetMainGroupUuid, draft);
-    }
-
-    return draft;
+        if (targetMainGroupUuid) {
+            mutateAssignSubgroup(draft, name, targetMainGroupUuid);
+        }
+    });
 }
 
 export function disableGroup(name: string, state: MutableState): MutableState {
-    const draft = JSON.parse(JSON.stringify(state));
+    return produce(state, (draft) => {
+        if (draft.catalog_groups) {
+            delete draft.catalog_groups[name];
+        }
 
-    if (draft.catalog_groups) {
-        delete draft.catalog_groups[name];
-    }
+        if (Array.isArray(draft.catalog_group_order)) {
+            draft.catalog_group_order = draft.catalog_group_order.filter((groupName: string) => groupName !== name);
+        }
 
-    if (Array.isArray(draft.catalog_group_order)) {
-        draft.catalog_group_order = draft.catalog_group_order.filter((g: string) => g !== name);
-    }
+        if (draft.subgroup_order) {
+            Object.keys(draft.subgroup_order).forEach((mainGroupUUID) => {
+                const subgroupNames = draft.subgroup_order[mainGroupUUID];
+                if (Array.isArray(subgroupNames)) {
+                    draft.subgroup_order[mainGroupUUID] = subgroupNames.filter((subgroupName: string) => subgroupName !== name);
+                }
+                if (Array.isArray(draft.subgroup_order[mainGroupUUID]) && draft.subgroup_order[mainGroupUUID].length === 0) {
+                    delete draft.subgroup_order[mainGroupUUID];
+                }
+            });
+        }
 
-    if (draft.subgroup_order) {
-        Object.keys(draft.subgroup_order).forEach(mainGroupUUID => {
-            const arr = draft.subgroup_order[mainGroupUUID];
-            if (Array.isArray(arr)) {
-                draft.subgroup_order[mainGroupUUID] = arr.filter((s: string) => s !== name);
-            }
-            // If empty, we can optionally delete the uuid key from subgroup_order
-            if (draft.subgroup_order[mainGroupUUID].length === 0) {
-                delete draft.subgroup_order[mainGroupUUID];
-            }
-        });
-    }
+        if (draft.main_catalog_groups) {
+            Object.keys(draft.main_catalog_groups).forEach((uuid) => {
+                const group = draft.main_catalog_groups[uuid];
+                if (group && Array.isArray(group.subgroupNames)) {
+                    group.subgroupNames = group.subgroupNames.filter((subgroupName: string) => subgroupName !== name);
+                }
+            });
+        }
 
-    if (draft.main_catalog_groups) {
-        Object.keys(draft.main_catalog_groups).forEach(uuid => {
-            const group = draft.main_catalog_groups[uuid];
-            if (group && Array.isArray(group.subgroupNames)) {
-                group.subgroupNames = group.subgroupNames.filter((s: string) => s !== name);
-            }
-        });
-    }
-
-    if (draft.catalog_group_image_urls) {
-        delete draft.catalog_group_image_urls[name];
-    }
-
-    return draft;
+        if (draft.catalog_group_image_urls) {
+            delete draft.catalog_group_image_urls[name];
+        }
+    });
 }
 
 export function disableMainGroup(uuid: string, state: MutableState): MutableState {
-    const draft = JSON.parse(JSON.stringify(state));
+    return produce(state, (draft) => {
+        if (Array.isArray(draft.main_group_order)) {
+            draft.main_group_order = draft.main_group_order.filter((groupId: unknown) => groupId !== uuid);
+        }
 
-    // 1. Remove from main_group_order
-    if (Array.isArray(draft.main_group_order)) {
-        draft.main_group_order = draft.main_group_order.filter((id: unknown) => id !== uuid);
-    }
+        const subgroupNames = (draft.main_catalog_groups?.[uuid]?.subgroupNames) || (draft.subgroup_order?.[uuid]) || [];
+        if (Array.isArray(subgroupNames)) {
+            subgroupNames.forEach((name: string) => {
+                if (draft.catalog_groups) delete draft.catalog_groups[name];
+                if (Array.isArray(draft.catalog_group_order)) {
+                    draft.catalog_group_order = draft.catalog_group_order.filter((groupName: unknown) => groupName !== name);
+                }
+                if (draft.catalog_group_image_urls) delete draft.catalog_group_image_urls[name];
+            });
+        }
 
-    // 2. Cascade delete subgroups
-    const subgroupNames = (draft.main_catalog_groups?.[uuid]?.subgroupNames) || (draft.subgroup_order?.[uuid]) || [];
-    if (Array.isArray(subgroupNames)) {
-        subgroupNames.forEach((name: string) => {
-            if (draft.catalog_groups) delete draft.catalog_groups[name];
-            if (Array.isArray(draft.catalog_group_order)) {
-                draft.catalog_group_order = draft.catalog_group_order.filter((g: unknown) => g !== name);
-            }
-            if (draft.catalog_group_image_urls) delete draft.catalog_group_image_urls[name];
-        });
-    }
-
-    // 3. Remove main group entries
-    if (draft.main_catalog_groups) {
-        delete draft.main_catalog_groups[uuid];
-    }
-    if (draft.subgroup_order) {
-        delete draft.subgroup_order[uuid];
-    }
-
-    return draft;
+        if (draft.main_catalog_groups) {
+            delete draft.main_catalog_groups[uuid];
+        }
+        if (draft.subgroup_order) {
+            delete draft.subgroup_order[uuid];
+        }
+    });
 }
-
 
 /**
  * Sweeps a catalog from every list in the config when disabled.
  */
 export function disableCatalog(catalogId: string, state: MutableState): MutableState {
-    const draft = JSON.parse(JSON.stringify(state));
-
-    // Remove from catalog_groups lists
-    if (draft.catalog_groups) {
-        Object.keys(draft.catalog_groups).forEach(groupName => {
-            const arr = draft.catalog_groups[groupName];
-            if (Array.isArray(arr)) {
-                draft.catalog_groups[groupName] = arr.filter((c: string) => c !== catalogId);
-            }
-        });
-    }
-
-    // Remove from common flat catalog arrays
-    const commonLists = [
-        "selected_catalogs",
-        "pinned_catalogs",
-        "small_catalogs",
-        "top_row_catalogs",
-        "starred_catalogs",
-        "randomized_catalogs",
-        "small_toprow_catalogs",
-        "catalog_ordering"
-    ];
-
-    commonLists.forEach(listName => {
-        if (Array.isArray(draft[listName])) {
-            draft[listName] = draft[listName].filter((c: string) => c !== catalogId);
-        }
+    return produce(state, (draft) => {
+        mutateRemoveCatalogIdFromLists(draft, (candidateId) => candidateId === catalogId);
     });
-
-    return draft;
 }
 
 /**
  * Removes a catalog from catalog-manager-owned arrays while preserving subgroup links.
  */
 export function pruneCatalogFromManager(catalogId: string, state: MutableState): MutableState {
-    const draft = JSON.parse(JSON.stringify(state));
-
-    const managerLists = [
-        "selected_catalogs",
-        "pinned_catalogs",
-        "small_catalogs",
-        "top_row_catalogs",
-        "starred_catalogs",
-        "randomized_catalogs",
-        "small_toprow_catalogs",
-        "catalog_ordering"
-    ];
-
-    managerLists.forEach(listName => {
-        if (Array.isArray(draft[listName])) {
-            draft[listName] = draft[listName].filter((c: string) => c !== catalogId);
-        }
+    return produce(state, (draft) => {
+        COMMON_CATALOG_LISTS.forEach((listName) => {
+            if (Array.isArray(draft[listName])) {
+                draft[listName] = draft[listName].filter((candidateId: string) => candidateId !== catalogId);
+            }
+        });
     });
-
-    return draft;
 }
 
 /**
@@ -413,78 +362,71 @@ export function pruneCatalogFromManager(catalogId: string, state: MutableState):
  * Ensures arrays don't have dupes, and ordering arrays don't hold references to non-existent groups.
  */
 export function validateAndFix(state: MutableState): MutableState {
-    const draft = JSON.parse(JSON.stringify(state));
+    return produce(state, (draft) => {
+        const validGroupNames = new Set(Object.keys(ensureObject(draft.catalog_groups)));
+        const validMainGroupIds = new Set(Object.keys(ensureObject(draft.main_catalog_groups)));
 
-    const validGroupNames = new Set(Object.keys(draft.catalog_groups || {}));
-    const validMainGroupIds = new Set(Object.keys(draft.main_catalog_groups || {}));
-
-    if (draft.main_catalog_groups || draft.main_group_order !== undefined) {
-        draft.main_group_order = normalizeMainGroupOrder(
-            (draft.main_catalog_groups || {}) as Record<string, unknown>,
-            draft.main_group_order
-        ).filter((uuid: string) => validMainGroupIds.has(uuid));
-    }
-
-    // Ensure catalog_group_order exists and is cleaned
-    if (draft.catalog_group_order !== undefined) {
-        if (!Array.isArray(draft.catalog_group_order)) {
-            draft.catalog_group_order = [];
+        if (draft.main_catalog_groups || draft.main_group_order !== undefined) {
+            draft.main_group_order = normalizeMainGroupOrder(
+                ensureObject(draft.main_catalog_groups) as Record<string, unknown>,
+                draft.main_group_order
+            ).filter((uuid: string) => validMainGroupIds.has(uuid));
         }
 
-        // Fix corruption where order might be ["_data"]
-        if (draft.catalog_group_order.length === 1 && draft.catalog_group_order[0] === "_data") {
-            draft.catalog_group_order = [];
+        if (draft.catalog_group_order !== undefined) {
+            if (!Array.isArray(draft.catalog_group_order)) {
+                draft.catalog_group_order = [];
+            }
+
+            if (draft.catalog_group_order.length === 1 && draft.catalog_group_order[0] === "_data") {
+                draft.catalog_group_order = [];
+            }
+
+            draft.catalog_group_order = Array.from(new Set(draft.catalog_group_order))
+                .filter((groupName: unknown): groupName is string => typeof groupName === "string" && validGroupNames.has(groupName));
+
+            validGroupNames.forEach((name) => {
+                if (!draft.catalog_group_order.includes(name)) {
+                    draft.catalog_group_order.push(name);
+                }
+            });
         }
 
-        // Dedupe & Clean
-        draft.catalog_group_order = Array.from(new Set(draft.catalog_group_order))
-            .filter((g: unknown): g is string => typeof g === 'string' && validGroupNames.has(g));
-
-        // Ensure every existing group appears
-        validGroupNames.forEach(name => {
-            if (!draft.catalog_group_order.includes(name)) {
-                draft.catalog_group_order.push(name);
-            }
-        });
-    }
-
-    // CRITICAL: Reorder the keys in catalog_groups and related objects to match catalog_group_order
-    // This ensures that modern JSON stringifiers preserve the order requested by the user.
-    if (draft.catalog_groups && Array.isArray(draft.catalog_group_order)) {
-        const orderedGroups: MutableState = {};
-        draft.catalog_group_order.forEach((name: string) => {
-            if (draft.catalog_groups[name]) {
-                orderedGroups[name] = draft.catalog_groups[name];
-            }
-        });
-        draft.catalog_groups = orderedGroups;
-    }
-
-    if (draft.catalog_group_image_urls && Array.isArray(draft.catalog_group_order)) {
-        const orderedUrls: MutableState = {};
-        draft.catalog_group_order.forEach((name: string) => {
-            if (draft.catalog_group_image_urls[name] !== undefined) {
-                orderedUrls[name] = draft.catalog_group_image_urls[name];
-            }
-        });
-        draft.catalog_group_image_urls = orderedUrls;
-    }
-
-    if (!draft.subgroup_order || Array.isArray(draft.subgroup_order)) {
-        draft.subgroup_order = {};
-    }
-
-    // Remove orphan subgroup_order entries and synchronize both subgroup sources.
-    Object.keys(draft.subgroup_order).forEach((uuid) => {
-        if (!validMainGroupIds.has(uuid)) {
-            delete draft.subgroup_order[uuid];
+        if (draft.catalog_groups && Array.isArray(draft.catalog_group_order)) {
+            const orderedGroups: MutableState = {};
+            draft.catalog_group_order.forEach((name: string) => {
+                if (draft.catalog_groups[name]) {
+                    orderedGroups[name] = draft.catalog_groups[name];
+                }
+            });
+            draft.catalog_groups = orderedGroups;
         }
-    });
 
-    if (draft.main_catalog_groups) {
-        Object.keys(draft.main_catalog_groups).forEach(uuid => {
-            const group = draft.main_catalog_groups[uuid];
-            if (group && typeof group === "object") {
+        if (draft.catalog_group_image_urls && Array.isArray(draft.catalog_group_order)) {
+            const orderedUrls: MutableState = {};
+            draft.catalog_group_order.forEach((name: string) => {
+                if (draft.catalog_group_image_urls[name] !== undefined) {
+                    orderedUrls[name] = draft.catalog_group_image_urls[name];
+                }
+            });
+            draft.catalog_group_image_urls = orderedUrls;
+        }
+
+        if (!draft.subgroup_order || Array.isArray(draft.subgroup_order)) {
+            draft.subgroup_order = {};
+        }
+
+        Object.keys(draft.subgroup_order).forEach((uuid) => {
+            if (!validMainGroupIds.has(uuid)) {
+                delete draft.subgroup_order[uuid];
+            }
+        });
+
+        if (draft.main_catalog_groups) {
+            Object.keys(draft.main_catalog_groups).forEach((uuid) => {
+                const group = draft.main_catalog_groups[uuid];
+                if (!group || typeof group !== "object") return;
+
                 const canonicalSubgroups = normalizeSubgroupNames(
                     group.subgroupNames,
                     draft.subgroup_order[uuid],
@@ -498,92 +440,72 @@ export function validateAndFix(state: MutableState): MutableState {
                 } else {
                     delete draft.subgroup_order[uuid];
                 }
+            });
+        }
+
+        COMMON_CATALOG_LISTS.forEach((listName) => {
+            if (Array.isArray(draft[listName])) {
+                draft[listName] = Array.from(new Set(draft[listName]));
             }
         });
-    }
 
-    // Dedupe catalog lists
-    const commonLists = [
-        "selected_catalogs",
-        "pinned_catalogs",
-        "small_catalogs",
-        "top_row_catalogs",
-        "starred_catalogs",
-        "randomized_catalogs",
-        "small_toprow_catalogs",
-        "catalog_ordering"
-    ];
-
-    commonLists.forEach(listName => {
-        if (Array.isArray(draft[listName])) {
-            draft[listName] = Array.from(new Set(draft[listName]));
-        }
-    });
-
-    // Handle shelf_order and disabled_shelves
-    const shelfKeys = ["shelf_order", "disabled_shelves", "stream_button_elements_order", "hidden_stream_button_elements"];
-    shelfKeys.forEach(key => {
-        if (draft[key] !== undefined) {
+        const shelfKeys = ["shelf_order", "disabled_shelves", "stream_button_elements_order", "hidden_stream_button_elements"];
+        shelfKeys.forEach((key) => {
+            if (draft[key] === undefined) return;
             if (!Array.isArray(draft[key])) {
                 draft[key] = [];
             }
-            draft[key] = Array.from(new Set(draft[key].filter((s: unknown) => typeof s === 'string')));
-        }
+            draft[key] = Array.from(new Set(draft[key].filter((entry: unknown) => typeof entry === "string")));
+        });
     });
-
-    return draft;
 }
 
 /**
  * Reorders shelves based on a new order array.
  */
 export function reorderShelves(newOrder: string[], state: MutableState): MutableState {
-    const draft = JSON.parse(JSON.stringify(state));
-    draft.shelf_order = newOrder;
-    return draft;
+    return produce(state, (draft) => {
+        draft.shelf_order = newOrder;
+    });
 }
 
 export function reorderStreamElements(newOrder: string[], state: MutableState): MutableState {
-    const draft = JSON.parse(JSON.stringify(state));
-    draft.stream_button_elements_order = newOrder;
-    return draft;
+    return produce(state, (draft) => {
+        draft.stream_button_elements_order = newOrder;
+    });
 }
 
 /**
  * Toggles a shelf's enabled/disabled status.
  */
 export function toggleShelf(shelfName: string, isEnabled: boolean, state: MutableState): MutableState {
-    const draft = JSON.parse(JSON.stringify(state));
-    const disabled = new Set(draft.disabled_shelves || []);
-
-    if (isEnabled) {
-        disabled.delete(shelfName);
-    } else {
-        disabled.add(shelfName);
-    }
-
-    draft.disabled_shelves = Array.from(disabled);
-    return draft;
+    return produce(state, (draft) => {
+        const disabled = new Set(draft.disabled_shelves || []);
+        if (isEnabled) {
+            disabled.delete(shelfName);
+        } else {
+            disabled.add(shelfName);
+        }
+        draft.disabled_shelves = Array.from(disabled);
+    });
 }
 
 export function toggleStreamElement(elementName: string, isVisible: boolean, state: MutableState): MutableState {
-    const draft = JSON.parse(JSON.stringify(state));
-    const hidden = new Set(draft.hidden_stream_button_elements || []);
-
-    if (isVisible) {
-        hidden.delete(elementName);
-    } else {
-        hidden.add(elementName);
-    }
-
-    draft.hidden_stream_button_elements = Array.from(hidden);
-    return draft;
+    return produce(state, (draft) => {
+        const hidden = new Set(draft.hidden_stream_button_elements || []);
+        if (isVisible) {
+            hidden.delete(elementName);
+        } else {
+            hidden.add(elementName);
+        }
+        draft.hidden_stream_button_elements = Array.from(hidden);
+    });
 }
 
 export function importGroups(
     payload: {
         mainGroups: Record<string, LooseAny>;
-        subgroups: Record<string, { catalogs?: string[], imageUrl?: string; renameFrom?: string; overwriteCatalogs?: boolean; overwriteImage?: boolean }>;
+        subgroups: Record<string, { catalogs?: string[]; imageUrl?: string; renameFrom?: string; overwriteCatalogs?: boolean; overwriteImage?: boolean }>;
         standaloneAssignments: Record<string, string>;
         metadata?: {
             custom_catalog_names?: Record<string, string>;
@@ -594,149 +516,145 @@ export function importGroups(
     },
     state: MutableState
 ): MutableState {
-    let draft = JSON.parse(JSON.stringify(state));
-
-    if (!draft.main_catalog_groups) draft.main_catalog_groups = {};
-    if (!draft.main_group_order) draft.main_group_order = [];
-    if (!draft.catalog_groups) draft.catalog_groups = {};
-    if (!draft.catalog_group_order) draft.catalog_group_order = [];
-    if (!draft.catalog_group_image_urls) draft.catalog_group_image_urls = {};
-    if (!draft.subgroup_order || Array.isArray(draft.subgroup_order)) {
-        draft.subgroup_order = {};
-    }
-
-    Object.entries(payload.subgroups).forEach(([incomingName, subgroup]) => {
-        const previousName = subgroup.renameFrom;
-        if (!previousName || previousName === incomingName) return;
-        if (!Object.prototype.hasOwnProperty.call(draft.catalog_groups, previousName)) return;
-        draft = renameGroup(previousName, incomingName, draft);
-    });
-
-    // Build a reverse lookup: main group name -> existing UUID in current config
-    const existingMgByName: Record<string, string> = {};
-    Object.entries(draft.main_catalog_groups as Record<string, unknown>).forEach(([uid, mg]) => {
-        if (!mg || typeof mg !== "object") return;
-        const maybeName = (mg as { name?: unknown }).name;
-        if (typeof maybeName === "string" && maybeName) {
-            existingMgByName[maybeName] = uid;
+    const imported = produce(state, (draft) => {
+        if (!draft.main_catalog_groups) draft.main_catalog_groups = {};
+        if (!Array.isArray(draft.main_group_order)) draft.main_group_order = [];
+        if (!draft.catalog_groups) draft.catalog_groups = {};
+        if (!Array.isArray(draft.catalog_group_order)) draft.catalog_group_order = [];
+        if (!draft.catalog_group_image_urls) draft.catalog_group_image_urls = {};
+        if (!draft.subgroup_order || Array.isArray(draft.subgroup_order)) {
+            draft.subgroup_order = {};
         }
-    });
 
-    // 1. Import Main Groups
-    Object.keys(payload.mainGroups).forEach(uuid => {
-        const mg = payload.mainGroups[uuid];
-        const incomingSubgroups = [...(mg.subgroupNames || [])];
+        Object.entries(payload.subgroups).forEach(([incomingName, subgroup]) => {
+            const previousName = subgroup.renameFrom;
+            if (!previousName || previousName === incomingName) return;
+            if (!Object.prototype.hasOwnProperty.call(draft.catalog_groups, previousName)) return;
+            mutateRenameGroup(draft, previousName, incomingName);
+        });
 
-        // If a group with the same NAME already exists, update its subgroup links
-        // instead of creating a brand-new duplicate entry
-        const existingUuid = existingMgByName[mg.name];
-        if (existingUuid) {
-            // Merge subgroup names into the existing group
-            if (!draft.main_catalog_groups[existingUuid].subgroupNames) {
-                draft.main_catalog_groups[existingUuid].subgroupNames = [];
+        const existingMgByName: Record<string, string> = {};
+        Object.entries(draft.main_catalog_groups as Record<string, unknown>).forEach(([uid, mainGroup]) => {
+            if (!mainGroup || typeof mainGroup !== "object") return;
+            const maybeName = (mainGroup as { name?: unknown }).name;
+            if (typeof maybeName === "string" && maybeName) {
+                existingMgByName[maybeName] = uid;
             }
-            incomingSubgroups.forEach(sgName => {
-                if (!draft.main_catalog_groups[existingUuid].subgroupNames.includes(sgName)) {
-                    draft.main_catalog_groups[existingUuid].subgroupNames.push(sgName);
-                }
-            });
+        });
 
-            // Rebuild subgroup_order for the existing group (replace + merge)
-            if (!draft.subgroup_order[existingUuid]) draft.subgroup_order[existingUuid] = [];
-            incomingSubgroups.forEach(sgName => {
-                if (!draft.subgroup_order[existingUuid].includes(sgName)) {
-                    draft.subgroup_order[existingUuid].push(sgName);
+        Object.keys(payload.mainGroups).forEach((uuid) => {
+            const incomingMainGroup = payload.mainGroups[uuid];
+            const incomingSubgroups = [...(incomingMainGroup.subgroupNames || [])];
+            const existingUuid = existingMgByName[incomingMainGroup.name];
+
+            if (existingUuid) {
+                if (!draft.main_catalog_groups[existingUuid].subgroupNames) {
+                    draft.main_catalog_groups[existingUuid].subgroupNames = [];
                 }
-            });
-        } else {
-            // Brand new main group
+                incomingSubgroups.forEach((subgroupName) => {
+                    if (!draft.main_catalog_groups[existingUuid].subgroupNames.includes(subgroupName)) {
+                        draft.main_catalog_groups[existingUuid].subgroupNames.push(subgroupName);
+                    }
+                });
+
+                if (!draft.subgroup_order[existingUuid]) {
+                    draft.subgroup_order[existingUuid] = [];
+                }
+                incomingSubgroups.forEach((subgroupName) => {
+                    if (!draft.subgroup_order[existingUuid].includes(subgroupName)) {
+                        draft.subgroup_order[existingUuid].push(subgroupName);
+                    }
+                });
+                return;
+            }
+
             let targetUuid = uuid;
             if (draft.main_catalog_groups[targetUuid]) {
                 targetUuid = crypto.randomUUID();
             }
+
             draft.main_catalog_groups[targetUuid] = {
-                name: mg.name,
+                name: incomingMainGroup.name,
                 subgroupNames: incomingSubgroups,
-                posterType: mg.posterType,
-                posterSize: mg.posterSize
+                posterType: incomingMainGroup.posterType,
+                posterSize: incomingMainGroup.posterSize,
             };
             draft.main_group_order.push(targetUuid);
             draft.subgroup_order[targetUuid] = incomingSubgroups;
-        }
-    });
+        });
 
-    // 2. Import / Ensure Subgroups exist in catalog_groups
-    Object.keys(payload.subgroups).forEach(name => {
-        const sg = payload.subgroups[name];
-        const subgroupAlreadyExists = Object.prototype.hasOwnProperty.call(draft.catalog_groups, name);
-        const shouldWriteCatalogs = sg.overwriteCatalogs === true || !subgroupAlreadyExists;
-        const shouldWriteImage = (sg.overwriteImage === true || !subgroupAlreadyExists) && !!sg.imageUrl;
+        Object.keys(payload.subgroups).forEach((name) => {
+            const subgroup = payload.subgroups[name];
+            const subgroupAlreadyExists = Object.prototype.hasOwnProperty.call(draft.catalog_groups, name);
+            const shouldWriteCatalogs = subgroup.overwriteCatalogs === true || !subgroupAlreadyExists;
+            const shouldWriteImage = (subgroup.overwriteImage === true || !subgroupAlreadyExists) && !!subgroup.imageUrl;
 
-        if (shouldWriteCatalogs) {
-            const normalized = (sg.catalogs || []).map((id: string) => ensureCatalogPrefix(id, resolveCatalogName(id, draft.custom_catalog_names || {})));
-            draft.catalog_groups[name] = normalized;
-        }
-
-        if (!draft.catalog_group_order.includes(name)) {
-            draft.catalog_group_order.push(name);
-        }
-
-        if (shouldWriteImage) {
-            draft.catalog_group_image_urls[name] = sg.imageUrl;
-        }
-
-        // Handle standalone assignment (subgroups not coming from a main group)
-        const targetMainUuid = payload.standaloneAssignments[name];
-        if (targetMainUuid && draft.main_catalog_groups[targetMainUuid]) {
-            if (!draft.main_catalog_groups[targetMainUuid].subgroupNames) {
-                draft.main_catalog_groups[targetMainUuid].subgroupNames = [];
-            }
-            if (!draft.main_catalog_groups[targetMainUuid].subgroupNames.includes(name)) {
-                draft.main_catalog_groups[targetMainUuid].subgroupNames.push(name);
+            if (shouldWriteCatalogs) {
+                const customNames = ensureObject(draft.custom_catalog_names) as Record<string, string>;
+                draft.catalog_groups[name] = (subgroup.catalogs || []).map((id: string) =>
+                    ensureCatalogPrefix(id, resolveCatalogName(id, customNames))
+                );
             }
 
-            if (!draft.subgroup_order[targetMainUuid]) {
-                draft.subgroup_order[targetMainUuid] = [];
+            if (!draft.catalog_group_order.includes(name)) {
+                draft.catalog_group_order.push(name);
             }
-            if (!draft.subgroup_order[targetMainUuid].includes(name)) {
-                draft.subgroup_order[targetMainUuid].push(name);
+
+            if (shouldWriteImage) {
+                draft.catalog_group_image_urls[name] = subgroup.imageUrl;
             }
-        }
-    });
 
-    // 3. Import Metadata (Names, Images, Patterns)
-    if (payload.metadata) {
-        const meta = payload.metadata;
+            const targetMainUuid = payload.standaloneAssignments[name];
+            if (targetMainUuid && draft.main_catalog_groups[targetMainUuid]) {
+                if (!draft.main_catalog_groups[targetMainUuid].subgroupNames) {
+                    draft.main_catalog_groups[targetMainUuid].subgroupNames = [];
+                }
+                if (!draft.main_catalog_groups[targetMainUuid].subgroupNames.includes(name)) {
+                    draft.main_catalog_groups[targetMainUuid].subgroupNames.push(name);
+                }
 
-        if (meta.custom_catalog_names) {
-            if (!draft.custom_catalog_names) draft.custom_catalog_names = {};
-            Object.assign(draft.custom_catalog_names, meta.custom_catalog_names);
-        }
+                if (!draft.subgroup_order[targetMainUuid]) {
+                    draft.subgroup_order[targetMainUuid] = [];
+                }
+                if (!draft.subgroup_order[targetMainUuid].includes(name)) {
+                    draft.subgroup_order[targetMainUuid].push(name);
+                }
+            }
+        });
 
-        if (meta.regex_pattern_image_urls) {
-            if (!draft.regex_pattern_image_urls) draft.regex_pattern_image_urls = {};
-            Object.assign(draft.regex_pattern_image_urls, meta.regex_pattern_image_urls);
-        }
+        if (payload.metadata) {
+            const metadata = payload.metadata;
 
-        if (Array.isArray(meta.enabled_patterns)) {
-            // Merge into both potential enable lists for coverage
-            const lists = ["auto_play_enabled_patterns", "pattern_tag_enabled_patterns"];
-            lists.forEach(list => {
-                if (!Array.isArray(draft[list])) draft[list] = [];
-                meta.enabled_patterns!.forEach(p => {
-                    if (!draft[list].includes(p)) draft[list].push(p);
+            if (metadata.custom_catalog_names) {
+                if (!draft.custom_catalog_names) draft.custom_catalog_names = {};
+                Object.assign(draft.custom_catalog_names, metadata.custom_catalog_names);
+            }
+
+            if (metadata.regex_pattern_image_urls) {
+                if (!draft.regex_pattern_image_urls) draft.regex_pattern_image_urls = {};
+                Object.assign(draft.regex_pattern_image_urls, metadata.regex_pattern_image_urls);
+            }
+
+            if (Array.isArray(metadata.enabled_patterns)) {
+                ["auto_play_enabled_patterns", "pattern_tag_enabled_patterns"].forEach((listName) => {
+                    if (!Array.isArray(draft[listName])) draft[listName] = [];
+                    metadata.enabled_patterns?.forEach((pattern) => {
+                        if (!draft[listName].includes(pattern)) {
+                            draft[listName].push(pattern);
+                        }
+                    });
                 });
-            });
+            }
         }
-    }
 
-    // 4. Import Global Settings
-    if (payload.globalSettings) {
-        Object.assign(draft, payload.globalSettings);
-    }
+        if (payload.globalSettings) {
+            Object.assign(draft, payload.globalSettings);
+        }
+    });
 
-    return validateAndFix(draft);
+    return validateAndFix(imported);
 }
+
 /**
  * Finds all unique catalog IDs in the config from all known sources.
  */
@@ -746,42 +664,39 @@ export function getAllCatalogIds(state: MutableState): Set<string> {
     const addIds = (source: unknown) => {
         if (!source) return;
         if (Array.isArray(source)) {
-            source.forEach(id => { if (typeof id === 'string') ids.add(id); });
-        } else if (typeof source === 'object') {
-            Object.values(source).forEach(val => {
-                if (typeof val === 'string') ids.add(val);
-                else if (Array.isArray(val)) val.forEach(id => { if (typeof id === 'string') ids.add(id); });
+            source.forEach((id) => { if (typeof id === "string") ids.add(id); });
+        } else if (typeof source === "object") {
+            Object.values(source).forEach((value) => {
+                if (typeof value === "string") ids.add(value);
+                else if (Array.isArray(value)) value.forEach((id) => { if (typeof id === "string") ids.add(id); });
             });
         }
     };
 
-    // 1. Standard flat arrays
-    const commonLists = [
+    [
         "selected_catalogs",
         "pinned_catalogs",
         "small_catalogs",
         "top_row_catalogs",
         "starred_catalogs",
         "randomized_catalogs",
-        "small_toprow_catalogs"
-    ];
-    commonLists.forEach(list => addIds(state[list]));
+        "small_toprow_catalogs",
+    ].forEach((listName) => addIds(state[listName]));
 
-    // 2. Complex structures
     addIds(state.catalog_ordering);
     if (state.catalog_groups) {
-        Object.values(state.catalog_groups).forEach(arr => addIds(arr));
+        Object.values(state.catalog_groups).forEach((catalogIds) => addIds(catalogIds));
     }
 
-    // 3. Known names (even if not in any list)
     if (state.custom_catalog_names) {
-        Object.keys(state.custom_catalog_names).forEach(id => {
+        Object.keys(state.custom_catalog_names).forEach((id) => {
             if (!id.startsWith("_")) ids.add(id);
         });
     }
 
     return ids;
 }
+
 /**
  * Generates the final catalog_group_order based on main group configuration.
  */
@@ -794,43 +709,38 @@ export function reorderCatalogGroupOrder(state: MutableState): string[] {
     const seen = new Set<string>();
 
     mainGroupOrder.forEach((uuid: string) => {
-        const mg = mainGroups[uuid];
-        if (!mg) return;
+        const mainGroup = mainGroups[uuid];
+        if (!mainGroup) return;
 
-        const mainGroupName = (mg.name || "").trim();
+        const mainGroupName = (mainGroup.name || "").trim();
         if (!mainGroupName) return;
 
-        // Try both variations of the emoji: ❗️ (U+2757 FE0F) and ❗ (U+2757)
         const placeholders = [
             `❗️[${mainGroupName}]`,
-            `❗[${mainGroupName}]`
+            `❗[${mainGroupName}]`,
         ];
 
-        // 1. Add the first placeholder variant that exists in catalogGroups
-        for (const pName of placeholders) {
-            if (catalogGroups[pName] && !seen.has(pName)) {
-                finalOrder.push(pName);
-                seen.add(pName);
+        for (const placeholderName of placeholders) {
+            if (catalogGroups[placeholderName] && !seen.has(placeholderName)) {
+                finalOrder.push(placeholderName);
+                seen.add(placeholderName);
                 break;
             }
         }
 
-        // 2. Real subgroups (sorted A-Z)
-        const subgroups = Array.isArray(mg.subgroupNames) ? [...mg.subgroupNames] : [];
-        subgroups.sort((a, b) => a.localeCompare(b));
+        const subgroupNames = Array.isArray(mainGroup.subgroupNames) ? [...mainGroup.subgroupNames] : [];
+        subgroupNames.sort((left, right) => left.localeCompare(right));
 
-        subgroups.forEach(sgName => {
-            const trimmedSgName = sgName.trim();
-            // Don't add if it's any of our possible placeholders
-            if (!placeholders.includes(trimmedSgName) && catalogGroups[trimmedSgName] && !seen.has(trimmedSgName)) {
-                finalOrder.push(trimmedSgName);
-                seen.add(trimmedSgName);
+        subgroupNames.forEach((subgroupName) => {
+            const trimmedSubgroupName = subgroupName.trim();
+            if (!placeholders.includes(trimmedSubgroupName) && catalogGroups[trimmedSubgroupName] && !seen.has(trimmedSubgroupName)) {
+                finalOrder.push(trimmedSubgroupName);
+                seen.add(trimmedSubgroupName);
             }
         });
     });
 
-    // 3. Catch-all for any orphaned subgroups that aren't in any main group but exist in data
-    Object.keys(catalogGroups).forEach(name => {
+    Object.keys(catalogGroups).forEach((name) => {
         if (!seen.has(name)) {
             finalOrder.push(name);
             seen.add(name);
@@ -844,36 +754,8 @@ export function reorderCatalogGroupOrder(state: MutableState): string[] {
  * Bulk version of disableCatalog for efficiency.
  */
 export function bulkDisableCatalogs(catalogIds: string[], state: MutableState): MutableState {
-    const draft = JSON.parse(JSON.stringify(state));
     const idsToPrune = new Set(catalogIds);
-
-    // Remove from catalog_groups lists
-    if (draft.catalog_groups) {
-        Object.keys(draft.catalog_groups).forEach(groupName => {
-            const arr = draft.catalog_groups[groupName];
-            if (Array.isArray(arr)) {
-                draft.catalog_groups[groupName] = arr.filter((c: string) => !idsToPrune.has(c));
-            }
-        });
-    }
-
-    // Remove from common flat catalog arrays
-    const commonLists = [
-        "selected_catalogs",
-        "pinned_catalogs",
-        "small_catalogs",
-        "top_row_catalogs",
-        "starred_catalogs",
-        "randomized_catalogs",
-        "small_toprow_catalogs",
-        "catalog_ordering"
-    ];
-
-    commonLists.forEach(listName => {
-        if (Array.isArray(draft[listName])) {
-            draft[listName] = draft[listName].filter((c: string) => !idsToPrune.has(c));
-        }
+    return produce(state, (draft) => {
+        mutateRemoveCatalogIdFromLists(draft, (candidateId) => idsToPrune.has(candidateId));
     });
-
-    return draft;
 }

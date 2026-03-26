@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { useConfig } from "@/context/ConfigContext";
+import { useConfigActions, useConfigSelector } from "@/context/ConfigContext";
 import {
     DndContext,
     closestCenter,
@@ -28,6 +28,7 @@ import { RenameGroupModal } from "./RenameGroupModal";
 import { normalizeMainGroupOrder } from "@/lib/main-group-utils";
 import { resolveCatalogName } from "@/lib/utils";
 import { editorHover, editorSurface } from "@/components/editor/ui/style-contract";
+import { shallowEqualObject } from "@/lib/equality";
 
 const EMPTY_STRING_ARRAY: string[] = [];
 const stringArraysEqual = (a: string[], b: string[]) => (
@@ -48,6 +49,17 @@ function SortableSubgroupItem({
     onToggle: (isEnabled: boolean) => void,
     onRename: (id: string, newName: string) => void
 }) {
+    const {
+        smallCatalogList,
+        landscapeList,
+        smallTopRowList,
+        catalogDataMap,
+    } = useConfigSelector((state) => ({
+        smallCatalogList: state.currentValues.small_catalog_list,
+        landscapeList: state.currentValues.landscape_list,
+        smallTopRowList: state.currentValues.small_top_row_list,
+        catalogDataMap: state.currentValues.catalogs,
+    }), shallowEqualObject);
     const {
         attributes,
         listeners,
@@ -70,11 +82,10 @@ function SortableSubgroupItem({
         onRename(id, newName);
     };
 
-    const { currentValues } = useConfig();
-    const isSmall = currentValues.small_catalog_list?.includes(id);
-    const isLandscape = currentValues.landscape_list?.includes(id);
-    const isSmallTopRow = currentValues.small_top_row_list?.includes(id);
-    const catalogData = currentValues.catalogs?.[id];
+    const isSmall = Array.isArray(smallCatalogList) && smallCatalogList.includes(id);
+    const isLandscape = Array.isArray(landscapeList) && landscapeList.includes(id);
+    const isSmallTopRow = Array.isArray(smallTopRowList) && smallTopRowList.includes(id);
+    const catalogData = (catalogDataMap as Record<string, { showInHome?: boolean; metadata?: { itemCount?: number } }> | undefined)?.[id];
     const showInHome = catalogData?.showInHome;
     const itemCount = catalogData?.metadata?.itemCount;
 
@@ -354,7 +365,11 @@ function SortableMainGroupItem({
 }
 
 export function MainGroupEditor() {
-    const { currentValues, updateValue, disabledCatalogs, toggleCatalog, renameCatalogGroup } = useConfig();
+    const { currentValues, disabledCatalogs } = useConfigSelector((state) => ({
+        currentValues: state.currentValues,
+        disabledCatalogs: state.disabledCatalogs,
+    }), shallowEqualObject);
+    const { updateValue, toggleCatalog, renameCatalogGroup } = useConfigActions();
 
     const mainGroupsKey = "main_catalog_groups";
     const mainGroupsValue = currentValues[mainGroupsKey];

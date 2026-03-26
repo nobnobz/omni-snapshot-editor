@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchGithubTemplates } from "./github-fetch";
+import { __resetGithubTemplateCacheForTests, fetchGithubTemplates } from "./github-fetch";
 
 const mockFetch = vi.fn<typeof fetch>();
 
@@ -16,6 +16,7 @@ const buildTreeItem = (path: string) => ({
 
 afterEach(() => {
     mockFetch.mockReset();
+    __resetGithubTemplateCacheForTests();
 });
 
 describe("fetchGithubTemplates", () => {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useConfig } from '../../context/ConfigContext';
+import { useConfigActions, useConfigSelector } from '../../context/ConfigContext';
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -12,11 +12,17 @@ import { ImageIcon, Search } from 'lucide-react';
 import { CATALOG_FALLBACKS, CatalogFallback } from '@/lib/catalog-fallbacks';
 import { cn, formatDisplayName, resolveCatalogName, ensureCatalogPrefix } from '@/lib/utils';
 import { editorAction, editorLayout, editorSurface } from "./ui/style-contract";
+import { shallowEqualObject } from '@/lib/equality';
 
 type ThumbnailAspect = "portrait" | "landscape" | "square";
 
 export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpen: boolean, onClose: () => void, initialParentUUID?: string }) {
-    const { currentValues, addMainCatalogGroup, addCatalogGroup, catalogs, customFallbacks } = useConfig();
+    const { currentValues, catalogs, customFallbacks } = useConfigSelector((state) => ({
+        currentValues: state.currentValues,
+        catalogs: state.catalogs,
+        customFallbacks: state.customFallbacks,
+    }), shallowEqualObject);
+    const { addMainCatalogGroup, addCatalogGroup } = useConfigActions();
     const [activeTab, setActiveTab] = useState("sub");
 
     // Main Group State

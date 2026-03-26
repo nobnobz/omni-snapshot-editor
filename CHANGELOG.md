@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.5.4] - 2026-03-26
+### Improved
+- **Performance Optimizations**: Internal refactoring and logic decoupling for a smoother editor experience and more responsive UI during active configuration updates.
+
+
 ## [0.5.3] - 2026-03-26
 ### Added
 - **AIOMetadata Mismatch Detection**: Enhanced detection for linked catalogs in subgroups that are missing from synchronized AIOMetadata.

@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useConfig } from "@/context/ConfigContext";
+import { useConfigActions, useConfigSelector } from "@/context/ConfigContext";
 import { AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { editorAction, editorLayout, editorNoticeTone } from "@/components/editor/ui/style-contract";
@@ -24,14 +24,15 @@ interface RenameGroupModalProps {
 }
 
 export function RenameGroupModal({ isOpen, onClose, oldName, isMainGroup = false, onRename }: RenameGroupModalProps) {
-    const { countReferences, currentValues } = useConfig();
+    const countReferences = useConfigActions().countReferences;
+    const catalogGroups = useConfigSelector((state) => state.currentValues.catalog_groups);
     const [newName, setNewName] = useState(oldName);
     const nameInputId = useId();
 
     const refCount = countReferences(oldName, isMainGroup);
 
     // Check if new name exists
-    const newNameExists = !isMainGroup && currentValues.catalog_groups && !!currentValues.catalog_groups[newName.trim()] && newName.trim() !== oldName;
+    const newNameExists = !isMainGroup && !!catalogGroups?.[newName.trim()] && newName.trim() !== oldName;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();

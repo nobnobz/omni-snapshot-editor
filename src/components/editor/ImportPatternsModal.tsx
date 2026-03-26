@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { startTransition, useDeferredValue, useState, useRef, useEffect, useMemo } from "react";
 import {
     Dialog,
     DialogContent,
@@ -20,6 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import { editorAction, editorLayout, editorNoticeTone, editorSurface, editorToneBadge } from "@/components/editor/ui/style-contract";
 import { FALLBACK_TEMPLATE_URLS, findTemplateByKind, isTemplateOfKind } from "@/lib/template-manifest";
+import { fetchTextWithLimits } from "@/lib/remote-fetch";
 
 interface ImportPatternsModalProps {
     isOpen: boolean;
@@ -150,6 +151,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
     const [fileName, setFileName] = useState("");
     const [error, setError] = useState("");
     const [searchFilter, setSearchFilter] = useState("");
+    const deferredSearchFilter = useDeferredValue(searchFilter);
     const [isFileDropActive, setIsFileDropActive] = useState(false);
 
     const [importedValues, setImportedValues] = useState<Record<string, unknown>>({});
@@ -321,8 +323,8 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
     };
 
     const filteredPatterns = parsedPatterns.filter(p =>
-        p.regex.toLowerCase().includes(searchFilter.toLowerCase()) ||
-        p.customName.toLowerCase().includes(searchFilter.toLowerCase())
+        p.regex.toLowerCase().includes(deferredSearchFilter.toLowerCase()) ||
+        p.customName.toLowerCase().includes(deferredSearchFilter.toLowerCase())
     );
 
     const newPatterns = filteredPatterns.filter(p => !p.existsInCurrent);
@@ -430,10 +432,10 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                                             setTemplateLoading(true);
                                             setError("");
                                             try {
-                                                const res = await fetch(t.url);
-                                                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-                                                const buffer = await res.arrayBuffer();
-                                                const text = new TextDecoder("utf-8").decode(buffer);
+                                                const text = await fetchTextWithLimits(t.url, {
+                                                    timeoutMs: 12000,
+                                                    maxBytes: 5_000_000,
+                                                });
                                                 setFileName(`Template ${t.label}`);
                                                 processUploadedJson(text);
                                             } catch (err: unknown) {
@@ -505,7 +507,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/50" />
                                 <Input
                                     value={searchFilter}
-                                    onChange={(e) => setSearchFilter(e.target.value)}
+                                    onChange={(e) => startTransition(() => setSearchFilter(e.target.value))}
                                     placeholder="Search patterns..."
                                     className={cn(editorSurface.field, "h-10 pl-9 text-sm")}
                                 />

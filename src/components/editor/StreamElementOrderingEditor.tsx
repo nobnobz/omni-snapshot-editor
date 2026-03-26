@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
-import { useConfig } from "@/context/ConfigContext";
+import { useConfigActions, useConfigSelector } from "@/context/ConfigContext";
 import {
     DndContext,
     closestCenter,
@@ -97,12 +97,14 @@ function SortableElementItem({
 }
 
 export function StreamElementOrderingEditor() {
-    const { currentValues, toggleStreamElement, reorderStreamElements } = useConfig();
-    
+    const streamButtonElementsOrder = useConfigSelector((state) => state.currentValues.stream_button_elements_order);
+    const hiddenStreamButtonElements = useConfigSelector((state) => state.currentValues.hidden_stream_button_elements);
+    const { toggleStreamElement, reorderStreamElements } = useConfigActions();
+
     // Explicit list to ensure we don't end up with an empty list if config is missing
     const defaultOrder = ["Title", "Metadata Tags", "Pattern Tags", "Addon Name"];
-    const elementOrder = (currentValues.stream_button_elements_order as string[]) || defaultOrder;
-    const hiddenElements = new Set((currentValues.hidden_stream_button_elements as string[]) || []);
+    const elementOrder = (streamButtonElementsOrder as string[]) || defaultOrder;
+    const hiddenElements = new Set((hiddenStreamButtonElements as string[]) || []);
 
     const [items, setItems] = useState(elementOrder);
     const [activeId, setActiveId] = useState<string | null>(null);

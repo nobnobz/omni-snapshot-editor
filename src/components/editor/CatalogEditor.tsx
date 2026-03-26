@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useRef } from "react";
-import { useConfig } from "@/context/ConfigContext";
+import { useConfigActions, useConfigSelector } from "@/context/ConfigContext";
 import {
     DndContext,
     closestCenter,
@@ -52,6 +52,7 @@ import { CATALOG_FALLBACKS, CatalogFallback } from "@/lib/catalog-fallbacks";
 import { resolveCatalogName, cn, ensureCatalogPrefix } from "@/lib/utils";
 import { GripVertical, Eye, EyeOff, Trash2, ArrowDownAZ, ArrowUpZA, Search, Settings2, Shuffle, LayoutGrid, Star, ChevronDown, ChevronUp, Plus, Maximize, Pencil, ListX, Pin } from "lucide-react";
 import { editorAction, editorHover, editorLayout, editorSurface, editorToneBadge } from "@/components/editor/ui/style-contract";
+import { shallowEqualObject } from "@/lib/equality";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 interface ManifestCatalog {
@@ -470,14 +471,20 @@ export function CatalogEditor() {
     const {
         catalogs,
         currentValues,
+        customFallbacks,
+    } = useConfigSelector((state) => ({
+        catalogs: state.catalogs,
+        currentValues: state.currentValues,
+        customFallbacks: state.customFallbacks,
+    }), shallowEqualObject);
+    const {
         updateValue,
         updateCatalogField,
         removeManifestCatalog,
         reorderManifestCatalogs,
         bulkRemoveManifestCatalogs,
         addManifestCatalog,
-        customFallbacks,
-    } = useConfig();
+    } = useConfigActions();
 
     // Local state for UI
     const [showDisabled, setShowDisabled] = useState(false);

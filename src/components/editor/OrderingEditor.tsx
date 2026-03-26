@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useConfig } from "@/context/ConfigContext";
+import { useConfigActions, useConfigSelector } from "@/context/ConfigContext";
 import {
     DndContext,
     closestCenter,
@@ -31,6 +31,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { RenameGroupModal } from "./RenameGroupModal";
 import { cn, resolveCatalogName } from "@/lib/utils";
 import { editorHover, editorSurface } from "@/components/editor/ui/style-contract";
+import { shallowEqualObject } from "@/lib/equality";
 
 const stringArraysEqual = (a: string[], b: string[]) => (
     a.length === b.length && a.every((item, idx) => item === b[idx])
@@ -292,7 +293,11 @@ function SortableList({
 }
 
 export function OrderingEditor({ configKey }: { configKey: string }) {
-    const { currentValues, updateValue, disabledCatalogs, toggleCatalog, renameCatalogGroup, renameMainCatalogGroup } = useConfig();
+    const { currentValues, disabledCatalogs } = useConfigSelector((state) => ({
+        currentValues: state.currentValues,
+        disabledCatalogs: state.disabledCatalogs,
+    }), shallowEqualObject);
+    const { updateValue, toggleCatalog, renameCatalogGroup, renameMainCatalogGroup } = useConfigActions();
 
     const data = currentValues[configKey];
     if (!data) return null;

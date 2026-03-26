@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { startTransition, useDeferredValue, useState, useRef, useEffect, useMemo } from "react";
 import {
     Dialog,
     DialogContent,
@@ -29,6 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { editorAction, editorLayout, editorSurface, editorToneBadge, editorNoticeTone } from "@/components/editor/ui/style-contract";
 import { FALLBACK_TEMPLATE_URLS, findTemplateByKind, isTemplateOfKind } from "@/lib/template-manifest";
 import { normalizeMainGroupOrder } from "@/lib/main-group-utils";
+import { fetchTextWithLimits } from "@/lib/remote-fetch";
 
 interface ImportSetupModalProps {
     isOpen: boolean;
@@ -199,6 +200,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
     const [selectedRenameUpdateSubgroups, setSelectedRenameUpdateSubgroups] = useState<Set<string>>(new Set());
     const [activeReviewTab, setActiveReviewTab] = useState<"subgroups" | "main">("subgroups");
     const [reviewSearch, setReviewSearch] = useState("");
+    const deferredReviewSearch = useDeferredValue(reviewSearch);
 
     // assignments: subgroupName -> targetMainGroupUuid (from the CURRENT setup, not the parsed one)
     const [standaloneAssignments, setStandaloneAssignments] = useState<Record<string, string>>({});
@@ -804,7 +806,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
             return selectedSubgroups.includes(name);
         });
 
-    const normalizedReviewSearch = reviewSearch.trim().toLowerCase();
+    const normalizedReviewSearch = deferredReviewSearch.trim().toLowerCase();
     const matchesReviewSearch = (...values: Array<string | undefined>) => {
         if (!normalizedReviewSearch) return true;
         return values.some(value => value?.toLowerCase().includes(normalizedReviewSearch));
@@ -926,10 +928,10 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                         setTemplateLoading(true);
                                         setError("");
                                         try {
-                                            const res = await fetch(t.url);
-                                            if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
-                                            const buffer = await res.arrayBuffer();
-                                            const text = new TextDecoder("utf-8").decode(buffer);
+                                            const text = await fetchTextWithLimits(t.url, {
+                                                timeoutMs: 12000,
+                                                maxBytes: 5_000_000,
+                                            });
                                             setFileName(`Template ${t.label}`);
                                             processUploadedJson(text);
                                         } catch (err: unknown) {
@@ -1032,7 +1034,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/45" />
                             <Input
                                 value={reviewSearch}
-                                onChange={(e) => setReviewSearch(e.target.value)}
+                                onChange={(e) => startTransition(() => setReviewSearch(e.target.value))}
                                 placeholder={activeReviewTab === "subgroups" ? "Search subgroups, categories or catalog IDs..." : "Search main groups or linked subgroups..."}
                                 className={cn(editorSurface.field, "h-10 pl-9")}
                             />

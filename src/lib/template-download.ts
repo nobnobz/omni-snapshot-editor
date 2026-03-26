@@ -1,4 +1,5 @@
 import { matchesTemplateKind } from "./template-manifest";
+import { fetchTextWithLimits } from "./remote-fetch";
 
 export const buildTemplateDownloadFilename = (templateName: string) => {
   let safeName = templateName
@@ -29,12 +30,10 @@ export const copyTemplateUrl = async (templateUrl: string) => {
 };
 
 export const downloadTemplateFile = async (templateUrl: string, templateName: string) => {
-  const response = await fetch(templateUrl);
-  if (!response.ok) {
-    throw new Error("Download failed");
-  }
-
-  const text = await response.text();
+  const text = await fetchTextWithLimits(templateUrl, {
+    timeoutMs: 12000,
+    maxBytes: 5_000_000,
+  });
   // Use octet-stream to force download on iOS Safari.
   const blob = new Blob([text], { type: "application/octet-stream" });
   const downloadUrl = URL.createObjectURL(blob);

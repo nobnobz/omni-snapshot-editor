@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useConfig } from "@/context/ConfigContext";
+import { useConfigActions, useConfigSelector } from "@/context/ConfigContext";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { ISO_639_2_LANGUAGES } from "@/lib/languages";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn, resolveCatalogName } from "@/lib/utils";
 import { editorHover, editorSurface } from "@/components/editor/ui/style-contract";
+import { shallowEqualObject } from "@/lib/equality";
 
 // Helper to format snake_case keys to Title Case
 const formatKeyToTitle = (key: string): string => {
@@ -62,7 +63,11 @@ interface GenericRendererProps {
 }
 
 export function GenericRenderer({ data, path, searchQuery = "" }: GenericRendererProps) {
-    const { updateValue, toggleKey, disabledKeys, currentValues } = useConfig();
+    const { disabledKeys, currentValues } = useConfigSelector((state) => ({
+        disabledKeys: state.disabledKeys,
+        currentValues: state.currentValues,
+    }), shallowEqualObject);
+    const { updateValue, toggleKey } = useConfigActions();
 
     const currentKey = path[path.length - 1];
     const pathString = path.join(".");

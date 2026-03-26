@@ -7,6 +7,7 @@ export type OmniConfig = {
   values?: Record<string, unknown>;
   config?: Record<string, unknown>;
   metadata?: Record<string, unknown>;
+  catalogs?: Array<{ id: string; [key: string]: unknown }>;
 };
 
 export type ConfigState = {

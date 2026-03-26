@@ -1,14 +1,19 @@
 "use client";
 
-import React, { createContext, useCallback, useContext, useRef, useState, ReactNode } from "react";
+import React, { createContext, useCallback, useContext, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, ReactNode } from "react";
+import { produce } from "immer";
 import { OmniConfig } from "../lib/types";
 import { resolveCatalogName, ensureCatalogPrefix } from '@/lib/utils';
 import { CatalogFallback } from "@/lib/catalog-fallbacks";
 import { decodeConfig } from "../lib/config-utils";
 import { renameGroup, renameMainGroup, disableGroup, disableMainGroup, disableCatalog, pruneCatalogFromManager, validateAndFix, countGroupReferences, countMainGroupReferences, unassignSubgroup, assignSubgroup, createMainGroup, createSubgroup, importGroups } from "../lib/mutations";
+import { MDBLIST_SETTINGS_KEYS, normalizeMdblistSettings } from "../lib/mdblist-ratings";
 import { buildExportConfig, buildPartialExportConfig } from "../lib/export-config";
 import { fetchGithubTemplates } from "../lib/github-fetch";
 import { APP_VERSION } from "@/lib/constants";
+import { referenceOrShallowEqual } from "@/lib/equality";
+import { measureSync } from "@/lib/perf";
+import { updateValueAtPath } from "@/lib/state-update";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Omni configs are user-defined dynamic JSON blobs.
 type LooseAny = any;
@@ -59,8 +64,57 @@ type ExportableConfig = OmniConfig & {
     catalogs?: ManifestCatalog[];
 };
 
+type StaticSessionData = {
+    originalConfig: OmniConfig;
+    initialValues: ConfigValues;
+    fileName: string;
+    savedAt: string;
+};
+
+type DraftSessionData = {
+    currentValues: ConfigValues;
+    disabledKeys: string[];
+    disabledCatalogs: string[];
+    deletedSubgroups: DeletedSubgroup[];
+    deletedMainGroups: DeletedMainGroup[];
+    catalogs: ManifestCatalog[];
+    savedAt: string;
+};
+
+export type SessionSaveResult = {
+    status: "saved" | "skipped_unchanged" | "skipped_too_large" | "failed";
+    scope: "static" | "draft";
+    bytes: number;
+    savedAt: string;
+    reason?: string;
+};
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === "object" && value !== null && !Array.isArray(value);
+
+type IdleWindow = Window & typeof globalThis & {
+    requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+    cancelIdleCallback?: (handle: number) => void;
+};
+
+const runWhenBrowserIsIdle = (callback: () => void) => {
+    if (typeof window === "undefined") {
+        return () => undefined;
+    }
+
+    const idleWindow = window as IdleWindow;
+    if (typeof idleWindow.requestIdleCallback === "function") {
+        const idleId = idleWindow.requestIdleCallback(callback, { timeout: 1200 });
+        return () => {
+            if (typeof idleWindow.cancelIdleCallback === "function") {
+                idleWindow.cancelIdleCallback(idleId);
+            }
+        };
+    }
+
+    const timeoutId = window.setTimeout(callback, 0);
+    return () => window.clearTimeout(timeoutId);
+};
 
 const CATALOG_ID_LIST_KEYS = [
     "catalog_ordering",
@@ -102,6 +156,12 @@ const normalizeCatalogRecordKeys = <T,>(value: unknown, customNames: Record<stri
     return normalized;
 };
 
+const getSerializedByteSize = (value: string) =>
+    typeof TextEncoder !== "undefined" ? new TextEncoder().encode(value).length : value.length;
+
+const STATIC_SESSION_MAX_BYTES = 2_000_000;
+const DRAFT_SESSION_MAX_BYTES = 2_500_000;
+
 export interface TemplateManifest {
     version: string;
     lastUpdated: string;
@@ -115,7 +175,7 @@ export interface TemplateManifest {
     }>;
 }
 
-interface ConfigContextType {
+export interface ConfigStoreState {
     originalConfig: OmniConfig | null;
     initialValues: ConfigValues;
     currentValues: ConfigValues;
@@ -126,6 +186,13 @@ interface ConfigContextType {
     catalogs: ManifestCatalog[];
     fileName: string;
     isLoaded: boolean;
+    customFallbacks: Record<string, string | CatalogFallback>;
+    manifest: TemplateManifest | null;
+    manifestStatus: 'idle' | 'loading' | 'success' | 'error';
+    sessionSaveStatus: SessionSaveResult | null;
+}
+
+export interface ConfigActions {
     loadConfig: (config: OmniConfig, fileName?: string) => void;
     updateValue: (keyPath: string[], value: LooseAny) => void;
     toggleKey: (keyPath: string[], isEnabled: boolean) => void;
@@ -160,19 +227,22 @@ interface ConfigContextType {
     unloadConfig: () => void;
     exportConfig: () => OmniConfig | null;
     exportPartialConfig: (sectionKeys: string[]) => OmniConfig | null;
-
-    customFallbacks: Record<string, string | CatalogFallback>;
     setCustomFallbacks: React.Dispatch<React.SetStateAction<Record<string, string | CatalogFallback>>>;
     clearPatterns: () => void;
 
-    // GitHub Manifest
-    manifest: TemplateManifest | null;
-    manifestStatus: 'idle' | 'loading' | 'success' | 'error';
     fetchManifest: () => Promise<void>;
     discardSession: () => void;
 }
 
-const ConfigContext = createContext<ConfigContextType | undefined>(undefined);
+type ConfigStoreApi = {
+    getSnapshot: () => ConfigStoreState;
+    subscribe: (listener: () => void) => () => void;
+};
+
+type ConfigContextType = ConfigStoreState & ConfigActions;
+
+const ConfigStoreContext = createContext<ConfigStoreApi | undefined>(undefined);
+const ConfigActionsContext = createContext<ConfigActions | undefined>(undefined);
 
 export const ConfigProvider = ({ children }: { children: ReactNode }) => {
     const [originalConfig, setOriginalConfig] = useState<OmniConfig | null>(null);
@@ -185,12 +255,150 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
     const [catalogs, setCatalogs] = useState<ManifestCatalog[]>([]);
     const [fileName, setFileName] = useState<string>("omni-config.json");
     const [isSyntheticSession, setIsSyntheticSession] = useState(false);
+    const [sessionSaveStatus, setSessionSaveStatus] = useState<SessionSaveResult | null>(null);
+    const lastStaticSessionSignatureRef = useRef<string>("");
+    const lastDraftSessionSignatureRef = useRef<string>("");
+    const storeListenersRef = useRef(new Set<() => void>());
 
     // Custom fallbacks from localStorage
     const [customFallbacks, setCustomFallbacks] = useState<Record<string, string | CatalogFallback>>({});
 
     // Session Persistence Key
     const SESSION_KEY = "omni_editor_session_v1";
+    const SESSION_STATIC_KEY = "omni_editor_session_static_v2";
+    const SESSION_DRAFT_KEY = "omni_editor_session_draft_v2";
+
+    const restoreSessionState = (session: {
+        originalConfig?: OmniConfig | null;
+        currentValues?: ConfigValues;
+        initialValues?: ConfigValues;
+        disabledKeys?: string[];
+        disabledCatalogs?: string[];
+        deletedSubgroups?: DeletedSubgroup[];
+        deletedMainGroups?: DeletedMainGroup[];
+        catalogs?: ManifestCatalog[];
+        fileName?: string;
+    }) => {
+        if (!session.originalConfig) return;
+
+        setOriginalConfig(session.originalConfig);
+        setCurrentValues(session.currentValues || {});
+        setInitialValues(session.initialValues || {});
+        setDisabledKeys(new Set(
+            (session.disabledKeys || []).filter(
+                (key: string) => !MDBLIST_SETTINGS_KEYS.includes(key as typeof MDBLIST_SETTINGS_KEYS[number])
+            )
+        ));
+        setDisabledCatalogs(new Set(session.disabledCatalogs || []));
+        setDeletedSubgroups(session.deletedSubgroups || []);
+        setDeletedMainGroups(session.deletedMainGroups || []);
+        setCatalogs(session.catalogs || []);
+        setFileName(session.fileName || "omni-config.json");
+    };
+
+    const persistStaticSessionData = (sessionData: StaticSessionData): SessionSaveResult => {
+        const serialized = JSON.stringify(sessionData);
+        const bytes = getSerializedByteSize(serialized);
+
+        if (serialized === lastStaticSessionSignatureRef.current) {
+            const result: SessionSaveResult = {
+                status: "skipped_unchanged",
+                scope: "static",
+                bytes,
+                savedAt: new Date().toISOString(),
+            };
+            setSessionSaveStatus(result);
+            return result;
+        }
+
+        if (bytes > STATIC_SESSION_MAX_BYTES) {
+            const result: SessionSaveResult = {
+                status: "skipped_too_large",
+                scope: "static",
+                bytes,
+                savedAt: new Date().toISOString(),
+                reason: "Static session payload exceeded the configured limit.",
+            };
+            setSessionSaveStatus(result);
+            return result;
+        }
+
+        try {
+            localStorage.setItem(SESSION_STATIC_KEY, serialized);
+            lastStaticSessionSignatureRef.current = serialized;
+            const result: SessionSaveResult = {
+                status: "saved",
+                scope: "static",
+                bytes,
+                savedAt: sessionData.savedAt,
+            };
+            setSessionSaveStatus(result);
+            return result;
+        } catch (e) {
+            console.error("Failed to save static session data", e);
+            const result: SessionSaveResult = {
+                status: "failed",
+                scope: "static",
+                bytes,
+                savedAt: new Date().toISOString(),
+                reason: e instanceof Error ? e.message : "Unknown localStorage write failure.",
+            };
+            setSessionSaveStatus(result);
+            return result;
+        }
+    };
+
+    const persistDraftSessionData = (sessionData: DraftSessionData): SessionSaveResult => {
+        const serialized = JSON.stringify(sessionData);
+        const bytes = getSerializedByteSize(serialized);
+
+        if (serialized === lastDraftSessionSignatureRef.current) {
+            const result: SessionSaveResult = {
+                status: "skipped_unchanged",
+                scope: "draft",
+                bytes,
+                savedAt: new Date().toISOString(),
+            };
+            setSessionSaveStatus(result);
+            return result;
+        }
+
+        if (bytes > DRAFT_SESSION_MAX_BYTES) {
+            const result: SessionSaveResult = {
+                status: "skipped_too_large",
+                scope: "draft",
+                bytes,
+                savedAt: new Date().toISOString(),
+                reason: "Draft session payload exceeded the configured limit.",
+            };
+            setSessionSaveStatus(result);
+            return result;
+        }
+
+        try {
+            localStorage.setItem(SESSION_DRAFT_KEY, serialized);
+            lastDraftSessionSignatureRef.current = serialized;
+            const result: SessionSaveResult = {
+                status: "saved",
+                scope: "draft",
+                bytes,
+                savedAt: sessionData.savedAt,
+            };
+            setSessionSaveStatus(result);
+            return result;
+        } catch (e) {
+            console.error("Failed to save draft session data", e);
+            const result: SessionSaveResult = {
+                status: "failed",
+                scope: "draft",
+                bytes,
+                savedAt: new Date().toISOString(),
+                reason: e instanceof Error ? e.message : "Unknown localStorage write failure.",
+            };
+            setSessionSaveStatus(result);
+            return result;
+        }
+    };
 
     // Auto-Recovery on Mount
     React.useEffect(() => {
@@ -206,57 +414,85 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
 
         // 2. Load Session Draft
         try {
+            const storedStaticSession = localStorage.getItem(SESSION_STATIC_KEY);
+            const storedDraftSession = localStorage.getItem(SESSION_DRAFT_KEY);
+
+            if (storedStaticSession && storedDraftSession) {
+                const staticSession = JSON.parse(storedStaticSession);
+                const draftSession = JSON.parse(storedDraftSession);
+                lastStaticSessionSignatureRef.current = storedStaticSession;
+                lastDraftSessionSignatureRef.current = storedDraftSession;
+                restoreSessionState({ ...staticSession, ...draftSession });
+                return;
+            }
+
             const storedSession = localStorage.getItem(SESSION_KEY);
             if (storedSession) {
-                const session = JSON.parse(storedSession);
-                if (session.originalConfig) {
-                    setOriginalConfig(session.originalConfig);
-                    setCurrentValues(session.currentValues || {});
-                    setInitialValues(session.initialValues || {});
-                    setDisabledKeys(new Set(session.disabledKeys || []));
-                    setDisabledCatalogs(new Set(session.disabledCatalogs || []));
-                    setDeletedSubgroups(session.deletedSubgroups || []);
-                    setDeletedMainGroups(session.deletedMainGroups || []);
-                    setCatalogs(session.catalogs || []);
-                    setFileName(session.fileName || "omni-config.json");
-                }
+                restoreSessionState(JSON.parse(storedSession));
             }
         } catch (e) {
             console.error("Failed to restore session", e);
+            localStorage.removeItem(SESSION_KEY);
+            localStorage.removeItem(SESSION_STATIC_KEY);
+            localStorage.removeItem(SESSION_DRAFT_KEY);
         }
     }, []);
 
-    // Auto-Save Effect
+    // Persist static session metadata separately so frequent draft saves stay small.
     React.useEffect(() => {
         if (!originalConfig || typeof window === "undefined") return;
 
+        let cancelIdle: () => void = () => {};
         const timer = setTimeout(() => {
-            try {
-                const sessionData = {
+            cancelIdle = runWhenBrowserIsIdle(() => {
+                persistStaticSessionData({
                     originalConfig,
-                    currentValues,
                     initialValues,
+                    fileName,
+                    savedAt: new Date().toISOString(),
+                });
+            });
+        }, 800);
+
+        return () => {
+            clearTimeout(timer);
+            cancelIdle();
+        };
+    }, [originalConfig, initialValues, fileName]);
+
+    React.useEffect(() => {
+        if (!originalConfig || typeof window === "undefined") return;
+
+        let cancelIdle: () => void = () => {};
+        const timer = setTimeout(() => {
+            cancelIdle = runWhenBrowserIsIdle(() => {
+                persistDraftSessionData({
+                    currentValues,
                     disabledKeys: Array.from(disabledKeys),
                     disabledCatalogs: Array.from(disabledCatalogs),
                     deletedSubgroups,
                     deletedMainGroups,
                     catalogs,
-                    fileName,
-                    savedAt: new Date().toISOString()
-                };
-                localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
-            } catch (e) {
-                console.error("Failed to save session", e);
-            }
-        }, 1000); // 1s debounce
+                    savedAt: new Date().toISOString(),
+                });
+            });
+        }, 1200);
 
-        return () => clearTimeout(timer);
-    }, [originalConfig, currentValues, initialValues, disabledKeys, disabledCatalogs, deletedSubgroups, deletedMainGroups, catalogs, fileName]);
+        return () => {
+            clearTimeout(timer);
+            cancelIdle();
+        };
+    }, [originalConfig, currentValues, disabledKeys, disabledCatalogs, deletedSubgroups, deletedMainGroups, catalogs]);
 
     const discardSession = () => {
         if (typeof window !== "undefined") {
             localStorage.removeItem(SESSION_KEY);
+            localStorage.removeItem(SESSION_STATIC_KEY);
+            localStorage.removeItem(SESSION_DRAFT_KEY);
         }
+        lastStaticSessionSignatureRef.current = "";
+        lastDraftSessionSignatureRef.current = "";
+        setSessionSaveStatus(null);
         unloadConfig();
     };
 
@@ -264,6 +500,8 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
     const [manifest, setManifest] = useState<TemplateManifest | null>(null);
     const [manifestStatus, setManifestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const manifestStatusRef = useRef<'idle' | 'loading' | 'success' | 'error'>('idle');
+    const latestStateRef = useRef<ConfigStoreState | null>(null);
+    const getLatestState = () => latestStateRef.current;
 
     const fetchManifest = useCallback(async () => {
         if (manifestStatusRef.current === 'loading' || manifestStatusRef.current === 'success') return;
@@ -292,17 +530,18 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
     }, []);
 
     const loadConfig = (config: OmniConfig, fn = "omni-config.json") => {
-        setOriginalConfig(config);
-        setFileName(fn);
+        measureSync("loadConfig", () => {
+            setOriginalConfig(config);
+            setFileName(fn);
 
-        // Map config.values OR config.config to internal values state
-        const rawValues = (config.values || config.config || {}) as ConfigValues;
-        const decodedValues: ConfigValues = {};
+            // Map config.values OR config.config to internal values state
+            const rawValues = (config.values || config.config || {}) as ConfigValues;
+            const decodedValues: ConfigValues = {};
 
-        // Decode fields if they use the base64 wrapper format (_data)
-        for (const [key, val] of Object.entries(rawValues)) {
-            decodedValues[key] = decodeConfig(val);
-        }
+            // Decode fields if they use the base64 wrapper format (_data)
+            for (const [key, val] of Object.entries(rawValues)) {
+                decodedValues[key] = decodeConfig(val);
+            }
 
         // Force-inject new settings that might be missing from older configs
         if (decodedValues.hide_addon_info_in_catalog_names === undefined) {
@@ -434,11 +673,13 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
             decodedValues.hidden_stream_button_elements = [];
         }
 
+        Object.assign(decodedValues, normalizeMdblistSettings(decodedValues));
+
         setCatalogs(extractedCatalogs);
 
-        const finalizedValues = validateAndFix(JSON.parse(JSON.stringify(decodedValues)) as ConfigValues);
+        const finalizedValues = validateAndFix(decodedValues as ConfigValues);
         setCurrentValues(finalizedValues);
-        setInitialValues(JSON.parse(JSON.stringify(finalizedValues)));
+        setInitialValues(produce(finalizedValues, () => {}));
 
         // Populate disabledKeys from includedKeys if present
         const newDisabledKeys = new Set<string>();
@@ -447,7 +688,11 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
             // Check top-level keys in values
             Object.keys(rawValues).forEach(k => {
                 // Never disable certain new keys if they are just missing from an old config's includedKeys
-                if (!includedKeys.includes(k) && k !== "hide_addon_info_in_catalog_names") {
+                if (
+                    !includedKeys.includes(k)
+                    && k !== "hide_addon_info_in_catalog_names"
+                    && !MDBLIST_SETTINGS_KEYS.includes(k as typeof MDBLIST_SETTINGS_KEYS[number])
+                ) {
                     newDisabledKeys.add(k);
                 }
             });
@@ -456,24 +701,11 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
 
         setDisabledCatalogs(new Set());
         setDeletedSubgroups([]);
-        setDeletedMainGroups([]);
-    };
-
-    const updateValuePath = (obj: LooseAny, path: string[], value: LooseAny): LooseAny => {
-        if (path.length === 0) return value;
-        if (path.length === 1) {
-            const base = isRecord(obj) ? obj : {};
-            if (value === undefined) {
-                const newObj = { ...base };
-                delete newObj[path[0]];
-                return newObj;
-            }
-            return { ...base, [path[0]]: value };
-        }
-        const [head, ...rest] = path;
-        const base = isRecord(obj) ? obj : {};
-        const innerObj = base[head];
-        return { ...base, [head]: updateValuePath(innerObj, rest, value) };
+            setDeletedMainGroups([]);
+        }, {
+            fileName: fn,
+            rawKeyCount: Object.keys((config.values || config.config || {}) as ConfigValues).length,
+        });
     };
 
     const getValuePath = (obj: LooseAny, path: string[]): LooseAny => {
@@ -486,7 +718,9 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const updateValue = (keyPath: string[], value: LooseAny) => {
-        setCurrentValues(prev => updateValuePath(prev, keyPath, value));
+        measureSync("updateValue", () => {
+            setCurrentValues(prev => updateValueAtPath(prev, keyPath, value));
+        }, { keyPath: keyPath.join(".") });
     };
 
     const toggleKey = (keyPath: string[], isEnabled: boolean) => {
@@ -567,7 +801,9 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const renameCatalogGroup = (oldName: string, newName: string) => {
-        setCurrentValues(prev => renameGroup(oldName, newName, prev));
+        measureSync("renameGroup", () => {
+            setCurrentValues(prev => renameGroup(oldName, newName, prev));
+        }, { oldName, newName });
     };
 
     const renameMainCatalogGroup = (uuid: string, newName: string) => {
@@ -588,28 +824,27 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const restoreMainGroup = (item: DeletedMainGroup) => {
-        setCurrentValues(prev => {
-            const draft = JSON.parse(JSON.stringify(prev));
+        measureSync("restoreMainGroup", () => {
+            setCurrentValues(prev => produce(prev, (draft) => {
+                if (!draft.main_catalog_groups) draft.main_catalog_groups = {};
+                draft.main_catalog_groups[item.uuid] = {
+                    name: item.name,
+                    subgroupNames: item.subgroupNames,
+                };
 
-            // 1. Restore the main group entry
-            if (!draft.main_catalog_groups) draft.main_catalog_groups = {};
-            draft.main_catalog_groups[item.uuid] = {
-                name: item.name,
-                subgroupNames: item.subgroupNames
-            };
+                if (!draft.subgroup_order || Array.isArray(draft.subgroup_order)) {
+                    draft.subgroup_order = {};
+                }
+                draft.subgroup_order[item.uuid] = item.subgroupNames;
 
-            // 2. Restore the subgroup order array
-            if (!draft.subgroup_order) draft.subgroup_order = {};
-            draft.subgroup_order[item.uuid] = item.subgroupNames;
-
-            // 3. Add back to main_group_order if missing
-            if (!draft.main_group_order) draft.main_group_order = [];
-            if (!draft.main_group_order.includes(item.uuid)) {
-                draft.main_group_order.push(item.uuid);
-            }
-
-            return draft;
-        });
+                if (!Array.isArray(draft.main_group_order)) {
+                    draft.main_group_order = [];
+                }
+                if (!draft.main_group_order.includes(item.uuid)) {
+                    draft.main_group_order.push(item.uuid);
+                }
+            }));
+        }, { uuid: item.uuid });
 
         setDeletedMainGroups(prev => prev.filter(i => i.uuid !== item.uuid || i.deletedAt !== item.deletedAt));
     };
@@ -643,7 +878,9 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const assignCatalogGroup = (name: string, targetMainGroupUuid: string) => {
-        setCurrentValues(prev => assignSubgroup(name, targetMainGroupUuid, prev));
+        measureSync("assignSubgroup", () => {
+            setCurrentValues(prev => assignSubgroup(name, targetMainGroupUuid, prev));
+        }, { name, targetMainGroupUuid });
     };
 
     const addMainCatalogGroup = (name: string, assignedSubgroups: string[]) => {
@@ -658,26 +895,31 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const importGroupsToState = (payload: ImportGroupsPayload) => {
-        setCurrentValues(prev => importGroups(payload, prev));
+        measureSync("importGroups", () => {
+            setCurrentValues(prev => importGroups(payload, prev));
+        }, {
+            mainGroupCount: Object.keys(payload.mainGroups).length,
+            subgroupCount: Object.keys(payload.subgroups).length,
+        });
     };
 
     const restoreSubgroup = (item: DeletedSubgroup) => {
-        setCurrentValues(prev => {
-            const draft = JSON.parse(JSON.stringify(prev));
+        measureSync("restoreSubgroup", () => {
+            setCurrentValues(prev => produce(prev, (draft) => {
+                if (!draft.catalog_groups) draft.catalog_groups = {};
+                draft.catalog_groups[item.name] = item.catalogs;
 
-            // 1. Restore core data
-            if (!draft.catalog_groups) draft.catalog_groups = {};
-            draft.catalog_groups[item.name] = item.catalogs;
+                if (item.imageUrl) {
+                    if (!draft.catalog_group_image_urls) draft.catalog_group_image_urls = {};
+                    draft.catalog_group_image_urls[item.name] = item.imageUrl;
+                }
 
-            if (item.imageUrl) {
-                if (!draft.catalog_group_image_urls) draft.catalog_group_image_urls = {};
-                draft.catalog_group_image_urls[item.name] = item.imageUrl;
-            }
+                const targetUUID = item.parentUUID || Object.keys(draft.main_catalog_groups || {})[0];
+                if (!targetUUID) return;
 
-            // 2. Restore ordering references
-            const targetUUID = item.parentUUID || Object.keys(draft.main_catalog_groups || {})[0];
-            if (targetUUID) {
-                if (!draft.subgroup_order) draft.subgroup_order = {};
+                if (!draft.subgroup_order || Array.isArray(draft.subgroup_order)) {
+                    draft.subgroup_order = {};
+                }
                 if (!Array.isArray(draft.subgroup_order[targetUUID])) draft.subgroup_order[targetUUID] = [];
                 if (!draft.subgroup_order[targetUUID].includes(item.name)) {
                     draft.subgroup_order[targetUUID].push(item.name);
@@ -691,10 +933,8 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
                         draft.main_catalog_groups[targetUUID].subgroupNames.push(item.name);
                     }
                 }
-            }
-
-            return draft;
-        });
+            }));
+        }, { name: item.name });
 
         setDeletedSubgroups(prev => prev.filter(i => i.name !== item.name || i.deletedAt !== item.deletedAt));
     };
@@ -725,37 +965,35 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
 
         // Sync side-arrays in currentValues for legacy bot compatibility
         setCurrentValues(prev => {
-            const draft = { ...prev };
-            
-            if (patch.enabled !== undefined) {
-                const list = Array.isArray(draft.selected_catalogs) ? [...draft.selected_catalogs] : [];
-                if (patch.enabled) {
-                    if (!list.includes(id)) list.push(id);
-                } else {
-                    const idx = list.indexOf(id);
-                    if (idx !== -1) list.splice(idx, 1);
+            return produce(prev, (draft) => {
+                if (patch.enabled !== undefined) {
+                    const list = Array.isArray(draft.selected_catalogs) ? [...draft.selected_catalogs] : [];
+                    if (patch.enabled) {
+                        if (!list.includes(id)) list.push(id);
+                    } else {
+                        const idx = list.indexOf(id);
+                        if (idx !== -1) list.splice(idx, 1);
+                    }
+                    draft.selected_catalogs = list;
                 }
-                draft.selected_catalogs = list;
-            }
 
-            if (patch.showInHome !== undefined) {
-                const list = Array.isArray(draft.top_row_catalogs) ? [...draft.top_row_catalogs] : [];
-                if (patch.showInHome) {
-                    if (!list.includes(id)) list.push(id);
-                } else {
-                    const idx = list.indexOf(id);
-                    if (idx !== -1) list.splice(idx, 1);
+                if (patch.showInHome !== undefined) {
+                    const list = Array.isArray(draft.top_row_catalogs) ? [...draft.top_row_catalogs] : [];
+                    if (patch.showInHome) {
+                        if (!list.includes(id)) list.push(id);
+                    } else {
+                        const idx = list.indexOf(id);
+                        if (idx !== -1) list.splice(idx, 1);
+                    }
+                    draft.top_row_catalogs = list;
                 }
-                draft.top_row_catalogs = list;
-            }
 
-            if (patch.metadata?.itemCount !== undefined) {
-                const limits = { ...(draft.top_row_item_limits || {}) };
-                limits[id] = patch.metadata.itemCount;
-                draft.top_row_item_limits = limits;
-            }
-
-            return draft;
+                if (patch.metadata?.itemCount !== undefined) {
+                    const limits = { ...(draft.top_row_item_limits || {}) };
+                    limits[id] = patch.metadata.itemCount;
+                    draft.top_row_item_limits = limits;
+                }
+            });
         });
     };
 
@@ -822,24 +1060,29 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
 
     const exportConfig = (): OmniConfig | null => {
         if (!originalConfig) return null;
-        return buildExportConfig({
+        return measureSync("buildExportConfig", () => buildExportConfig({
             originalConfig,
             currentValues,
             initialValues,
             disabledKeys,
             catalogs,
             isSyntheticSession,
+        }), {
+            manifestCatalogCount: catalogs.length,
         });
     };
 
     const exportPartialConfig = (sectionKeys: string[]): OmniConfig | null => {
         if (!originalConfig) return null;
-        return buildPartialExportConfig({
+        return measureSync("buildPartialExportConfig", () => buildPartialExportConfig({
             originalConfig,
             currentValues,
             disabledKeys,
             sectionKeys,
             catalogs,
+        }), {
+            sectionCount: sectionKeys.length,
+            manifestCatalogCount: catalogs.length,
         });
     };
 
@@ -860,80 +1103,224 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         ];
 
         setCurrentValues(prev => {
-            const draft = { ...prev };
-            patternKeys.forEach(key => {
-                if (Array.isArray(prev[key])) {
-                    draft[key] = [];
-                } else if (typeof prev[key] === "object" && prev[key] !== null) {
-                    draft[key] = {};
-                } else {
-                    delete draft[key];
-                }
+            return produce(prev, (draft) => {
+                patternKeys.forEach(key => {
+                    if (Array.isArray(prev[key])) {
+                        draft[key] = [];
+                    } else if (typeof prev[key] === "object" && prev[key] !== null) {
+                        draft[key] = {};
+                    } else {
+                        delete draft[key];
+                    }
+                });
             });
-            return draft;
         });
     };
 
+    const storeState = useMemo<ConfigStoreState>(() => ({
+        originalConfig,
+        initialValues,
+        currentValues,
+        disabledKeys,
+        disabledCatalogs,
+        deletedSubgroups,
+        deletedMainGroups,
+        catalogs,
+        fileName,
+        isLoaded: !!originalConfig,
+        customFallbacks,
+        manifest,
+        manifestStatus,
+        sessionSaveStatus,
+    }), [
+        originalConfig,
+        initialValues,
+        currentValues,
+        disabledKeys,
+        disabledCatalogs,
+        deletedSubgroups,
+        deletedMainGroups,
+        catalogs,
+        fileName,
+        customFallbacks,
+        manifest,
+        manifestStatus,
+        sessionSaveStatus,
+    ]);
+
+    latestStateRef.current = storeState;
+
+    const actionImplRef = useRef<ConfigActions | null>(null);
+    actionImplRef.current = {
+        loadConfig,
+        updateValue,
+        toggleKey,
+        toggleCatalog,
+        toggleShelf,
+        reorderShelves,
+        toggleStreamElement,
+        reorderStreamElements,
+        updateCatalogsOrder,
+        updateCatalogField,
+        addManifestCatalog,
+        removeManifestCatalog,
+        reorderManifestCatalogs,
+        bulkRemoveManifestCatalogs,
+        renameCatalogGroup,
+        renameMainCatalogGroup,
+        removeMainCatalogGroup,
+        removeCatalogGroup,
+        unassignCatalogGroup,
+        assignCatalogGroup,
+        addMainCatalogGroup,
+        addCatalogGroup,
+        importGroups: importGroupsToState,
+        removeCatalog,
+        countReferences,
+        restoreSubgroup,
+        restoreMainGroup,
+        clearDeletedSubgroups,
+        cleanupOrphans,
+        resetAll,
+        unloadConfig,
+        exportConfig,
+        exportPartialConfig,
+        setCustomFallbacks,
+        clearPatterns,
+        fetchManifest,
+        discardSession,
+    };
+
+    const actions = useMemo<ConfigActions>(() => ({
+        loadConfig: (...args) => actionImplRef.current!.loadConfig(...args),
+        updateValue: (...args) => actionImplRef.current!.updateValue(...args),
+        toggleKey: (...args) => actionImplRef.current!.toggleKey(...args),
+        toggleCatalog: (...args) => actionImplRef.current!.toggleCatalog(...args),
+        toggleShelf: (...args) => actionImplRef.current!.toggleShelf(...args),
+        reorderShelves: (...args) => actionImplRef.current!.reorderShelves(...args),
+        toggleStreamElement: (...args) => actionImplRef.current!.toggleStreamElement(...args),
+        reorderStreamElements: (...args) => actionImplRef.current!.reorderStreamElements(...args),
+        updateCatalogsOrder: (...args) => actionImplRef.current!.updateCatalogsOrder(...args),
+        updateCatalogField: (...args) => actionImplRef.current!.updateCatalogField(...args),
+        addManifestCatalog: (...args) => actionImplRef.current!.addManifestCatalog(...args),
+        removeManifestCatalog: (...args) => actionImplRef.current!.removeManifestCatalog(...args),
+        reorderManifestCatalogs: (...args) => actionImplRef.current!.reorderManifestCatalogs(...args),
+        bulkRemoveManifestCatalogs: (...args) => actionImplRef.current!.bulkRemoveManifestCatalogs(...args),
+        renameCatalogGroup: (...args) => actionImplRef.current!.renameCatalogGroup(...args),
+        renameMainCatalogGroup: (...args) => actionImplRef.current!.renameMainCatalogGroup(...args),
+        removeMainCatalogGroup: (...args) => actionImplRef.current!.removeMainCatalogGroup(...args),
+        removeCatalogGroup: (...args) => actionImplRef.current!.removeCatalogGroup(...args),
+        unassignCatalogGroup: (...args) => actionImplRef.current!.unassignCatalogGroup(...args),
+        assignCatalogGroup: (...args) => actionImplRef.current!.assignCatalogGroup(...args),
+        addMainCatalogGroup: (...args) => actionImplRef.current!.addMainCatalogGroup(...args),
+        addCatalogGroup: (...args) => actionImplRef.current!.addCatalogGroup(...args),
+        importGroups: (...args) => actionImplRef.current!.importGroups(...args),
+        removeCatalog: (...args) => actionImplRef.current!.removeCatalog(...args),
+        countReferences: (...args) => actionImplRef.current!.countReferences(...args),
+        restoreSubgroup: (...args) => actionImplRef.current!.restoreSubgroup(...args),
+        restoreMainGroup: (...args) => actionImplRef.current!.restoreMainGroup(...args),
+        clearDeletedSubgroups: (...args) => actionImplRef.current!.clearDeletedSubgroups(...args),
+        cleanupOrphans: (...args) => actionImplRef.current!.cleanupOrphans(...args),
+        resetAll: (...args) => actionImplRef.current!.resetAll(...args),
+        unloadConfig: (...args) => actionImplRef.current!.unloadConfig(...args),
+        exportConfig: (...args) => actionImplRef.current!.exportConfig(...args),
+        exportPartialConfig: (...args) => actionImplRef.current!.exportPartialConfig(...args),
+        setCustomFallbacks: (...args) => actionImplRef.current!.setCustomFallbacks(...args),
+        clearPatterns: (...args) => actionImplRef.current!.clearPatterns(...args),
+        fetchManifest: (...args) => actionImplRef.current!.fetchManifest(...args),
+        discardSession: (...args) => actionImplRef.current!.discardSession(...args),
+    }), []);
+
+    const storeApi = useMemo<ConfigStoreApi>(() => ({
+        getSnapshot: () => {
+            const state = getLatestState();
+            if (!state) {
+                throw new Error("Config store snapshot is not initialized.");
+            }
+            return state;
+        },
+        subscribe: (listener) => {
+            storeListenersRef.current.add(listener);
+            return () => {
+                storeListenersRef.current.delete(listener);
+            };
+        },
+    }), []);
+
+    useLayoutEffect(() => {
+        storeListenersRef.current.forEach((listener) => listener());
+    }, [storeState]);
+
     return (
-        <ConfigContext.Provider value={{
-            originalConfig,
-            initialValues,
-            currentValues,
-            disabledKeys,
-            disabledCatalogs,
-            deletedSubgroups,
-            deletedMainGroups,
-            catalogs,
-            fileName,
-            isLoaded: !!originalConfig,
-            loadConfig,
-            updateValue,
-            toggleKey,
-            toggleCatalog,
-            updateCatalogsOrder,
-            updateCatalogField,
-            addManifestCatalog,
-            removeManifestCatalog,
-            reorderManifestCatalogs,
-            bulkRemoveManifestCatalogs,
-            renameCatalogGroup,
-            renameMainCatalogGroup,
-            removeMainCatalogGroup,
-            removeCatalogGroup,
-            unassignCatalogGroup,
-            assignCatalogGroup,
-            addMainCatalogGroup,
-            addCatalogGroup,
-            importGroups: importGroupsToState,
-            removeCatalog,
-            countReferences,
-            restoreSubgroup,
-            restoreMainGroup,
-            clearDeletedSubgroups,
-            cleanupOrphans,
-            resetAll,
-            unloadConfig,
-            exportConfig,
-            exportPartialConfig,
-            customFallbacks,
-            setCustomFallbacks,
-            clearPatterns,
-            manifest,
-            manifestStatus,
-            fetchManifest,
-            discardSession,
-            toggleShelf,
-            reorderShelves,
-            toggleStreamElement,
-            reorderStreamElements
-        }}>
-            {children}
-        </ConfigContext.Provider>
+        <ConfigStoreContext.Provider value={storeApi}>
+            <ConfigActionsContext.Provider value={actions}>
+                {children}
+            </ConfigActionsContext.Provider>
+        </ConfigStoreContext.Provider>
     );
 };
 
-export const useConfig = () => {
-    const context = useContext(ConfigContext);
-    if (!context) throw new Error("useConfig must be used within ConfigProvider");
+const useConfigStore = () => {
+    const context = useContext(ConfigStoreContext);
+    if (!context) throw new Error("Config store is not available outside ConfigProvider.");
     return context;
 };
+
+export const useConfigActions = () => {
+    const context = useContext(ConfigActionsContext);
+    if (!context) throw new Error("Config actions are not available outside ConfigProvider.");
+    return context;
+};
+
+export const useConfigSelector = <T,>(
+    selector: (state: ConfigStoreState) => T,
+    equalityFn: (left: T, right: T) => boolean = Object.is,
+) => {
+    const store = useConfigStore();
+    const selectorRef = useRef(selector);
+    const equalityRef = useRef(equalityFn);
+    const hasSelectionRef = useRef(false);
+    const selectionRef = useRef<T | undefined>(undefined);
+    const snapshotRef = useRef<ConfigStoreState | undefined>(undefined);
+
+    useLayoutEffect(() => {
+        selectorRef.current = selector;
+        equalityRef.current = equalityFn;
+    }, [selector, equalityFn]);
+
+    return useSyncExternalStore(
+        store.subscribe,
+        () => {
+            const snapshot = store.getSnapshot();
+
+            if (hasSelectionRef.current && snapshotRef.current === snapshot) {
+                return selectionRef.current as T;
+            }
+
+            const nextSelection = selectorRef.current(snapshot);
+
+            if (
+                hasSelectionRef.current &&
+                snapshotRef.current !== undefined &&
+                equalityRef.current(selectionRef.current as T, nextSelection)
+            ) {
+                snapshotRef.current = snapshot;
+                return selectionRef.current as T;
+            }
+
+            hasSelectionRef.current = true;
+            snapshotRef.current = snapshot;
+            selectionRef.current = nextSelection;
+            return nextSelection;
+        },
+        () => selector(store.getSnapshot()),
+    );
+};
+
+export const useConfig = (): ConfigContextType => {
+    const state = useConfigSelector((snapshot) => snapshot);
+    const actions = useConfigActions();
+    return useMemo(() => ({ ...state, ...actions }), [state, actions]);
+};
+
+export const useConfigStoreState = () => useConfigSelector((state) => state, referenceOrShallowEqual);

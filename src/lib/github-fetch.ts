@@ -1,6 +1,7 @@
 import { TemplateManifest } from "../context/ConfigContext";
 import { getTemplateDisplay } from "./template-display";
 import { FALLBACK_TEMPLATE_URLS, matchesTemplateKind, type TemplateKind } from "./template-manifest";
+import { fetchJsonWithLimits, fetchTextWithLimits, RemoteFetchError } from "./remote-fetch";
 
 const OWNER = "nobnobz";
 const REPO = "Omni-Template-Bot-Bid-Raiser";
@@ -8,6 +9,14 @@ const MANIFEST_URL = `https://raw.githubusercontent.com/${OWNER}/${REPO}/main/te
 // Use the recursive tree API to find all files in one go
 const TREE_URL = `https://api.github.com/repos/${OWNER}/${REPO}/git/trees/main?recursive=1`;
 const RAW_BASE_URL = `https://raw.githubusercontent.com/${OWNER}/${REPO}/main`;
+const MANIFEST_TIMEOUT_MS = 8000;
+const TEMPLATE_TIMEOUT_MS = 12000;
+const MANIFEST_MAX_BYTES = 512_000;
+const TREE_MAX_BYTES = 3_000_000;
+const TEMPLATE_MAX_BYTES = 1_000_000;
+
+let templateFetchPromise: Promise<TemplateManifest["templates"]> | null = null;
+let cachedTemplates: TemplateManifest["templates"] | null = null;
 
 interface GithubTreeItem {
   path: string;
@@ -82,12 +91,10 @@ const extractVersionFromTemplateText = (text: string): string | undefined => {
 
 async function fetchVersionFromTemplateContent(templateUrl: string): Promise<string | undefined> {
   try {
-    const response = await fetch(templateUrl);
-    if (!response.ok) {
-      throw new Error(`Template fetch error: ${response.status}`);
-    }
-
-    const text = await response.text();
+    const text = await fetchTextWithLimits(templateUrl, {
+      timeoutMs: TEMPLATE_TIMEOUT_MS,
+      maxBytes: TEMPLATE_MAX_BYTES,
+    });
     return extractVersionFromTemplateText(text);
   } catch (error) {
     console.warn(`Failed to read template version from ${templateUrl}:`, error);
@@ -133,12 +140,10 @@ const buildFallbackTemplates = (): TemplateManifest["templates"] =>
 
 async function fetchTemplatesFromManifest(): Promise<TemplateManifest["templates"] | null> {
   try {
-    const response = await fetch(MANIFEST_URL);
-    if (!response.ok) {
-      return null;
-    }
-
-    const payload: unknown = await response.json();
+    const payload: unknown = await fetchJsonWithLimits(MANIFEST_URL, {
+      timeoutMs: MANIFEST_TIMEOUT_MS,
+      maxBytes: MANIFEST_MAX_BYTES,
+    });
     if (!isRecord(payload) || !Array.isArray(payload.templates)) {
       return null;
     }
@@ -165,46 +170,69 @@ async function fetchTemplatesFromManifest(): Promise<TemplateManifest["templates
 }
 
 export async function fetchGithubTemplates(): Promise<TemplateManifest["templates"]> {
-  const manifestTemplates = await fetchTemplatesFromManifest();
-  if (manifestTemplates) {
-    return manifestTemplates;
+  if (cachedTemplates) {
+    return cachedTemplates;
+  }
+  if (templateFetchPromise) {
+    return templateFetchPromise;
   }
 
-  try {
-    const response = await fetch(TREE_URL);
-    if (!response.ok) throw new Error(`GitHub API error: ${response.status}`);
-    const data = await response.json();
-    const tree: GithubTreeItem[] = data.tree;
-
-    const templates: TemplateManifest["templates"] = await Promise.all(tree
-      .filter(item => {
-        if (item.type !== "blob" || !item.path.endsWith(".json")) return false;
-        return (
-          matchesTemplateKind(item.path, "omni") ||
-          matchesTemplateKind(item.path, "aiometadata") ||
-          matchesTemplateKind(item.path, "catalogs") ||
-          matchesTemplateKind(item.path, "aiostreams")
-        );
-      })
-      .map(item => transformToTemplate(item)));
-
-    // Sort: Latest version first (descending)
-    templates.sort((a, b) => {
-      return compareTemplateVersions(a.version, b.version);
-    });
-
-    // Mark the newest Omni template as default so the UI always prefers the latest version.
-    if (templates.length > 0) {
-      const defaultTemplate = templates.find((template) => matchesTemplateKind(template.id, "omni")) || templates[0];
-      defaultTemplate.isDefault = true;
+  templateFetchPromise = (async () => {
+    const manifestTemplates = await fetchTemplatesFromManifest();
+    if (manifestTemplates) {
+      cachedTemplates = manifestTemplates;
+      return manifestTemplates;
     }
 
-    return templates;
-  } catch (error) {
-    console.error("Failed to fetch templates from GitHub:", error);
-    return buildFallbackTemplates();
-  }
+    try {
+      const data = await fetchJsonWithLimits<{ tree?: GithubTreeItem[] }>(TREE_URL, {
+        timeoutMs: MANIFEST_TIMEOUT_MS,
+        maxBytes: TREE_MAX_BYTES,
+      });
+      const tree: GithubTreeItem[] = Array.isArray(data.tree) ? data.tree : [];
+
+      const templates: TemplateManifest["templates"] = await Promise.all(tree
+        .filter(item => {
+          if (item.type !== "blob" || !item.path.endsWith(".json")) return false;
+          return (
+            matchesTemplateKind(item.path, "omni") ||
+            matchesTemplateKind(item.path, "aiometadata") ||
+            matchesTemplateKind(item.path, "catalogs") ||
+            matchesTemplateKind(item.path, "aiostreams")
+          );
+        })
+        .map(item => transformToTemplate(item)));
+
+      templates.sort((a, b) => {
+        return compareTemplateVersions(a.version, b.version);
+      });
+
+      if (templates.length > 0) {
+        const defaultTemplate = templates.find((template) => matchesTemplateKind(template.id, "omni")) || templates[0];
+        defaultTemplate.isDefault = true;
+      }
+
+      cachedTemplates = templates;
+      return templates;
+    } catch (error) {
+      const fallbackTemplates = buildFallbackTemplates();
+      if (!(error instanceof RemoteFetchError && error.status === 404)) {
+        console.error("Failed to fetch templates from GitHub:", error);
+      }
+      cachedTemplates = fallbackTemplates;
+      return fallbackTemplates;
+    } finally {
+      templateFetchPromise = null;
+    }
+  })();
+
+  return templateFetchPromise;
 }
+
+export const __resetGithubTemplateCacheForTests = () => {
+  templateFetchPromise = null;
+  cachedTemplates = null;
+};
 
 async function transformToTemplate(item: GithubTreeItem): Promise<TemplateManifest["templates"][0]> {
   const pathParts = item.path.split("/");

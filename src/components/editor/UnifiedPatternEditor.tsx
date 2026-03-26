@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
-import { useConfig } from "@/context/ConfigContext";
+import { useConfigActions, useConfigSelector } from "@/context/ConfigContext";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -35,6 +35,7 @@ import {
 } from '@dnd-kit/core';
 import { editorHover, editorSurface } from "@/components/editor/ui/style-contract";
 import { cn } from "@/lib/utils";
+import { shallowEqualObject } from "@/lib/equality";
 import {
     arrayMove,
     SortableContext,
@@ -51,6 +52,8 @@ const PATTERN_DICTS = [
     { key: "regex_pattern_image_urls", label: "Image URL", type: "string", icon: <ImageIcon className="w-4 h-4 text-foreground/70" /> },
     { key: "pattern_image_color_indices", label: "Image Color", type: "imageColor", icon: <Palette className="w-4 h-4 text-foreground/70" /> },
     { key: "pattern_border_radius_indices", label: "Corner Radius", type: "borderRadius", icon: <Maximize className="w-4 h-4 text-foreground/70" /> },
+    { key: "pattern_background_opacities", label: "Background Opacity", type: "backgroundOpacity", icon: <Palette className="w-4 h-4 text-foreground/70" /> },
+    { key: "pattern_border_thickness_indices", label: "Border Thickness", type: "borderThickness", icon: <Hexagon className="w-4 h-4 text-foreground/70" /> },
     { key: "pattern_color_hex_values", label: "Color Hex", type: "color", icon: <Hexagon className="w-4 h-4 text-foreground/70" /> },
 ];
 
@@ -64,8 +67,45 @@ const IMAGE_COLOR_OPTIONS = [
 // Corner radius: Omni stores an index, displayed px = index × 2
 // Observed: index 3 = 6px, 4 = 8px, 6 = 12px → all fit index * 2
 const BORDER_RADIUS_OPTIONS = Array.from({ length: 8 }, (_, i) => ({ index: i, px: i * 2 }));
+const BORDER_THICKNESS_OPTIONS = [
+    { value: 0, label: "None" },
+    { value: 1, label: "1" },
+    { value: 2, label: "2" },
+    { value: 3, label: "3" },
+    { value: 4, label: "4" },
+    { value: 5, label: "5" },
+];
 type PatternScalar = string | number | boolean;
 type PatternInputValue = PatternScalar | "";
+
+const normalizePatternSelectNumber = (value: unknown): string => {
+    if (typeof value === "number" && Number.isFinite(value)) {
+        return String(value);
+    }
+
+    if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (!trimmed) return "";
+        const parsed = Number(trimmed.replace(/%$/, ""));
+        if (Number.isFinite(parsed)) {
+            return String(parsed);
+        }
+    }
+
+    return "";
+};
+
+const getPatternDefaultValue = (type: string): PatternInputValue => {
+    if (type === "boolean") return false;
+    if (type === "backgroundOpacity") return 1;
+    if (type === "borderThickness") return 0;
+    return "";
+};
+
+const formatBackgroundOpacityValue = (value: number) => {
+    if (value <= 1) return "None";
+    return `${value}%`;
+};
 
 const patternFieldSurface =
     "!border-slate-200/88 !bg-white/62 shadow-[inset_0_1px_0_rgba(255,255,255,0.74)] dark:!border-white/[0.11] dark:!bg-[linear-gradient(180deg,rgba(18,22,30,0.96),rgba(14,18,25,0.94))] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]";
@@ -76,8 +116,90 @@ const patternCardHeaderSurface =
 const patternRegexFrameSurface =
     "!rounded-xl !border !border-slate-300/60 dark:!border-white/[0.14] !bg-none !bg-[var(--editor-list-surface)] !shadow-none";
 
+const patternSelectControlClass =
+    "h-10 sm:h-9 text-base sm:text-sm w-full select-none focus:ring-[3px] focus:ring-ring/50 transition-colors";
+
+const patternInputControlClass =
+    "h-10 sm:h-9 text-base sm:text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 transition-colors";
+
+const PatternImageUrlInput = React.memo(function PatternImageUrlInput({
+    value,
+    onCommit,
+}: {
+    value?: string;
+    onCommit: (nextUrl: string | undefined) => void;
+}) {
+    const [urlInput, setUrlInput] = useState(value ?? "");
+    const inputRef = React.useRef<HTMLInputElement>(null);
+
+    React.useEffect(() => {
+        const nextValue = value ?? "";
+        setUrlInput(prev => (prev === nextValue ? prev : nextValue));
+    }, [value]);
+
+    const commitValue = (nextValue: string) => {
+        const normalizedCurrent = value ?? "";
+        if (nextValue === normalizedCurrent) return;
+        onCommit(nextValue === "" ? undefined : nextValue);
+    };
+
+    const handleBlur = () => {
+        commitValue(urlInput);
+    };
+
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            commitValue(urlInput);
+            event.currentTarget.blur();
+        } else if (event.key === "Escape") {
+            const nextValue = value ?? "";
+            setUrlInput(nextValue);
+            event.currentTarget.blur();
+        }
+    };
+
+    const handleClearClick = () => {
+        setUrlInput("");
+        commitValue("");
+        requestAnimationFrame(() => {
+            inputRef.current?.focus({ preventScroll: true });
+        });
+    };
+
+    return (
+        <div className="flex items-center gap-2">
+            <Input
+                ref={inputRef}
+                type="text"
+                value={urlInput}
+                onChange={(event) => setUrlInput(event.target.value)}
+                onBlur={handleBlur}
+                onKeyDown={handleKeyDown}
+                placeholder="Enter Image URL..."
+                className={cn(editorSurface.field, patternFieldSurface, patternInputControlClass, "font-mono")}
+            />
+            <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={handleClearClick}
+                className="h-10 w-10 shrink-0 rounded-md text-foreground/60 hover:bg-destructive/10 hover:text-destructive sm:h-9 sm:w-9"
+                title="Clear image URL"
+            >
+                <Trash2 className="h-4 w-4" />
+            </Button>
+        </div>
+    );
+});
+
 const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename }: { regex: string, onDelete: (r: string) => void, onRename: (oldRegex: string, newRegex: string) => void }) {
-    const { currentValues, updateValue, originalConfig } = useConfig();
+    const { currentValues, originalConfig } = useConfigSelector((state) => ({
+        currentValues: state.currentValues,
+        originalConfig: state.originalConfig,
+    }), shallowEqualObject);
+    const { updateValue } = useConfigActions();
     const [editingRegex, setEditingRegex] = useState(false);
     const [regexDraft, setRegexDraft] = useState(regex);
 
@@ -280,7 +402,7 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                         }
 
                         // Determine default empty value for uncontrolled components
-                        const defaultVal: PatternInputValue = inferredType === "boolean" ? false : inferredType === "number" ? "" : "";
+                        const defaultVal: PatternInputValue = getPatternDefaultValue(inferredType);
                         const displayVal = val !== undefined ? val : defaultVal;
 
                         const handleChange = (newVal: PatternInputValue) => {
@@ -301,26 +423,35 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                         };
 
                         return (
-                            <div key={dictDef.key} className={cn(editorSurface.panel, "flex flex-col justify-center gap-2.5 p-4")}>
-                                <Label className="flex items-center gap-2 text-xs font-semibold tracking-tight text-foreground">
-                                    <span className={cn(editorSurface.field, "p-1 rounded text-foreground/70")}>
-                                        {dictDef.icon}
+                            <div key={dictDef.key} className={cn(editorSurface.panel, "flex flex-col justify-start gap-2.5 p-4")}>
+                                <Label className="flex items-center justify-between gap-3 text-xs font-semibold tracking-tight text-foreground">
+                                    <span className="flex items-center gap-2">
+                                        <span className={cn(editorSurface.field, "p-1 rounded text-foreground/70")}>
+                                            {dictDef.icon}
+                                        </span>
+                                        {dictDef.label}
                                     </span>
-                                    {dictDef.label}
+                                    {dictDef.type === "backgroundOpacity" ? (
+                                        <span className={cn(editorSurface.field, patternFieldSurface, "select-none rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-foreground")}>
+                                            {formatBackgroundOpacityValue(Number(normalizePatternSelectNumber(displayVal) || 1))}
+                                        </span>
+                                    ) : null}
                                 </Label>
 
                                 {inferredType === "boolean" ? (
-                                    <Switch
-                                        checked={!!displayVal}
-                                        onCheckedChange={(c) => handleChange(c)}
-                                        className="data-[state=checked]:bg-primary mt-1"
-                                    />
+                                    <div className="flex h-10 sm:h-9 items-center">
+                                        <Switch
+                                            checked={!!displayVal}
+                                            onCheckedChange={(c) => handleChange(c)}
+                                            className="data-[state=checked]:bg-primary"
+                                        />
+                                    </div>
                                 ) : dictDef.type === "imageColor" ? (
                                     <Select
                                         value={displayVal !== "" ? String(displayVal) : ""}
                                         onValueChange={(v) => handleChange(Number(v))}
                                     >
-                                        <SelectTrigger className={cn(editorSurface.field, patternFieldSurface, "h-10 sm:h-9 text-base sm:text-sm w-full focus:ring-[3px] focus:ring-ring/50 transition-colors")}>
+                                        <SelectTrigger className={cn(editorSurface.field, patternFieldSurface, patternSelectControlClass)}>
                                             <SelectValue placeholder="Select color..." />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -336,7 +467,7 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                                         value={displayVal !== "" ? String(displayVal) : ""}
                                         onValueChange={(v) => handleChange(Number(v))}
                                     >
-                                        <SelectTrigger className={cn(editorSurface.field, patternFieldSurface, "h-10 sm:h-9 text-base sm:text-sm w-full focus:ring-[3px] focus:ring-ring/50 transition-colors")}>
+                                        <SelectTrigger className={cn(editorSurface.field, patternFieldSurface, patternSelectControlClass)}>
                                             <SelectValue placeholder="Select radius..." />
                                         </SelectTrigger>
                                         <SelectContent className="max-h-[250px]">
@@ -347,12 +478,47 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                                             ))}
                                         </SelectContent>
                                     </Select>
+                                ) : dictDef.type === "backgroundOpacity" ? (
+                                    <div className="space-y-1.5">
+                                        <div className={cn(editorSurface.field, patternFieldSurface, "flex h-10 sm:h-9 select-none items-center rounded-md border px-3")}>
+                                            <input
+                                                type="range"
+                                                min={1}
+                                                max={100}
+                                                step={1}
+                                                value={Number(normalizePatternSelectNumber(displayVal) || 1)}
+                                                onChange={(e) => handleChange(Number(e.target.value))}
+                                                className="h-1.5 w-full cursor-pointer accent-primary"
+                                                aria-label="Background opacity"
+                                            />
+                                        </div>
+                                        <div className="flex h-3 select-none items-center justify-between px-1 text-[10px] font-medium leading-none text-foreground/52">
+                                            <span>None</span>
+                                            <span>100%</span>
+                                        </div>
+                                    </div>
+                                ) : dictDef.type === "borderThickness" ? (
+                                    <Select
+                                        value={normalizePatternSelectNumber(displayVal)}
+                                        onValueChange={(v) => handleChange(Number(v))}
+                                    >
+                                        <SelectTrigger className={cn(editorSurface.field, patternFieldSurface, patternSelectControlClass)}>
+                                            <SelectValue placeholder="Select thickness..." />
+                                        </SelectTrigger>
+                                        <SelectContent className="max-h-[250px]">
+                                            {BORDER_THICKNESS_OPTIONS.map(opt => (
+                                                <SelectItem key={opt.value} value={String(opt.value)} className="text-base sm:text-sm focus:bg-primary focus:text-primary-foreground cursor-pointer transition-colors">
+                                                    {opt.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 ) : inferredType === "number" ? (
                                     <Input
                                         type="number"
                                         value={typeof displayVal === "number" ? displayVal : ""}
                                         onChange={(e) => handleChange(e.target.value === "" ? "" : Number(e.target.value))}
-                                        className={cn(editorSurface.field, patternFieldSurface, "h-10 sm:h-9 text-base sm:text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 font-mono transition-colors w-full")}
+                                        className={cn(editorSurface.field, patternFieldSurface, patternInputControlClass, "font-mono w-full")}
                                     />
                                 ) : inferredType === "color" ? (
                                     <div className="flex gap-2">
@@ -369,16 +535,21 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                                             value={typeof displayVal === "string" ? displayVal : ""}
                                             onChange={(e) => handleChange(e.target.value)}
                                             placeholder="#FFFFFF"
-                                            className={cn(editorSurface.field, patternFieldSurface, "h-10 sm:h-9 text-base sm:text-sm font-mono uppercase focus-visible:ring-[3px] focus-visible:ring-ring/50 transition-colors")}
+                                            className={cn(editorSurface.field, patternFieldSurface, patternInputControlClass, "font-mono uppercase")}
                                         />
                                     </div>
+                                ) : dictDef.key === "regex_pattern_image_urls" ? (
+                                    <PatternImageUrlInput
+                                        value={typeof displayVal === "string" ? displayVal : undefined}
+                                        onCommit={(nextUrl) => updateValue([dictDef.key, regex], nextUrl)}
+                                    />
                                 ) : (
                                     <Input
                                         type="text"
                                         value={typeof displayVal === "string" || typeof displayVal === "number" ? displayVal : ""}
                                         onChange={(e) => handleChange(e.target.value)}
                                         placeholder={`Enter ${dictDef.label}...`}
-                                        className={cn(editorSurface.field, patternFieldSurface, "h-10 sm:h-9 text-base sm:text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 transition-colors")}
+                                        className={cn(editorSurface.field, patternFieldSurface, patternInputControlClass)}
                                     />
                                 )}
                             </div>
@@ -391,7 +562,8 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
 });
 
 export function UnifiedPatternEditor() {
-    const { currentValues, updateValue, clearPatterns } = useConfig();
+    const currentValues = useConfigSelector((state) => state.currentValues);
+    const { updateValue, clearPatterns } = useConfigActions();
     const [newPattern, setNewPattern] = useState("");
     const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
     const [patternNameDraft, setPatternNameDraft] = useState("");
@@ -490,6 +662,12 @@ export function UnifiedPatternEditor() {
         }
         if (currentValues.pattern_border_radius_indices?.[p] === undefined) {
             updateValue(["pattern_border_radius_indices", p], 3); // Default standard radius
+        }
+        if (currentValues.pattern_background_opacities?.[p] === undefined) {
+            updateValue(["pattern_background_opacities", p], 1);
+        }
+        if (currentValues.pattern_border_thickness_indices?.[p] === undefined) {
+            updateValue(["pattern_border_thickness_indices", p], 0);
         }
         if (currentValues.pattern_color_hex_values?.[p] === undefined) {
             updateValue(["pattern_color_hex_values", p], "#FFFFFF");

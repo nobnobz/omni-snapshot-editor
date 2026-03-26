@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useDeferredValue, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useConfig } from "@/context/ConfigContext";
+import { useConfigActions, useConfigSelector } from "@/context/ConfigContext";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -54,11 +54,13 @@ import { CreateGroupModal } from "./CreateGroupModal";
 import { AddToGroupModal } from "./AddToGroupModal";
 import { ImportSetupModal } from "./ImportSetupModal";
 import { TrashBin } from "./TrashBin";
+import { hasAIOMetadataCatalogMatch, type AIOMetadataMismatchAnalysis } from "@/lib/aiometadata-mismatch";
 import { cn, formatDisplayName, resolveCatalogName, ensureCatalogPrefix } from "@/lib/utils";
 import { editorHover, editorSurface } from "@/components/editor/ui/style-contract";
 import { CATALOG_FALLBACKS, CatalogFallback } from "@/lib/catalog-fallbacks";
 import { Label } from "@/components/ui/label";
 import { normalizeSubgroupNames } from "@/lib/main-group-utils";
+import { shallowEqualObject } from "@/lib/equality";
 
 const stringArraysEqual = (a: string[], b: string[]) => (
     a.length === b.length && a.every((item, idx) => item === b[idx])
@@ -79,8 +81,150 @@ const subgroupCountBadgeClass =
 const subgroupCountInlineClass =
     "inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded-full border border-slate-200/65 bg-slate-100/70 px-1.5 text-[10px] font-semibold tabular-nums leading-none text-foreground/58 shadow-sm dark:border-white/10 dark:bg-white/[0.045] dark:text-foreground/56";
 
+const aiomMismatchBadgeClass =
+    "inline-flex h-5 items-center justify-center gap-1 rounded-full border border-amber-300/45 bg-amber-500/12 px-1.5 text-[10px] font-semibold leading-none text-amber-700 shadow-sm dark:border-amber-400/25 dark:bg-amber-400/12 dark:text-amber-200";
+
 const buildSubgroupAnchorId = (parentUUID: string, subgroupName: string) =>
     `subgroup-node-${parentUUID}-${subgroupName.toLowerCase().replace(/[^a-z0-9_-]+/g, "-")}`;
+
+const PosterUrlEditor = React.memo(function PosterUrlEditor({
+    imageUrl,
+    onCommit,
+}: {
+    imageUrl: string;
+    onCommit: (nextUrl: string) => void;
+}) {
+    const [urlInput, setUrlInput] = useState(imageUrl);
+    const [previewUrl, setPreviewUrl] = useState(imageUrl);
+    const [thumbAspect, setThumbAspect] = useState<ThumbnailAspect>("square");
+    const [thumbLoadError, setThumbLoadError] = useState(false);
+    const inputRef = React.useRef<HTMLInputElement>(null);
+
+    React.useEffect(() => {
+        setUrlInput(prev => (prev === imageUrl ? prev : imageUrl));
+        setPreviewUrl(prev => (prev === imageUrl ? prev : imageUrl));
+    }, [imageUrl]);
+
+    React.useEffect(() => {
+        setThumbAspect("square");
+        setThumbLoadError(false);
+    }, [previewUrl]);
+
+    const commitUrl = (nextUrl: string) => {
+        setPreviewUrl(prev => (prev === nextUrl ? prev : nextUrl));
+        if (nextUrl !== imageUrl) {
+            onCommit(nextUrl);
+        }
+    };
+
+    const handleUrlBlur = () => {
+        commitUrl(urlInput);
+    };
+
+    const handleClearClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+        event.stopPropagation();
+        setUrlInput(prev => (prev === "" ? prev : ""));
+        commitUrl("");
+        requestAnimationFrame(() => {
+            inputRef.current?.focus({ preventScroll: true });
+        });
+    };
+
+    const hasThumbPreview = /^https?:\/\//i.test(previewUrl.trim()) && !thumbLoadError;
+    const thumbFrameClass = thumbAspect === "landscape"
+        ? "h-10 w-16"
+        : thumbAspect === "portrait"
+            ? "h-14 w-10"
+            : "h-10 w-10";
+
+    return (
+        <div className="space-y-2">
+            <div className={`${editorSurface.panel} flex items-center gap-3 p-3`}>
+                <div
+                    className={`${thumbFrameClass} rounded-md shrink-0 overflow-hidden shadow-sm flex items-center justify-center transition-[width,height] duration-200 border border-white/10 p-1`}
+                    style={{ backgroundColor: '#020617' }}
+                >
+                    {hasThumbPreview ? (
+                        <>
+                            {/* eslint-disable-next-line @next/next/no-img-element -- Dynamic subgroup thumbnail preview from user-provided URL. */}
+                            <img
+                                src={previewUrl}
+                                alt="Thumb"
+                                className="h-full w-full object-contain"
+                                onLoad={(e) => {
+                                    const { naturalWidth, naturalHeight } = e.currentTarget;
+                                    if (!naturalWidth || !naturalHeight) {
+                                        setThumbAspect("square");
+                                        return;
+                                    }
+                                    const ratio = naturalWidth / naturalHeight;
+                                    if (ratio > 1.2) setThumbAspect("landscape");
+                                    else if (ratio < 0.82) setThumbAspect("portrait");
+                                    else setThumbAspect("square");
+                                }}
+                                onError={() => {
+                                    setThumbLoadError(true);
+                                }}
+                            />
+                        </>
+                    ) : (
+                        <ImageIcon className="w-4 h-4 text-foreground/70" />
+                    )}
+                </div>
+                <div className="flex-1 space-y-1">
+                    <Label className="text-xs uppercase font-bold tracking-widest text-foreground/70">Poster Image URL</Label>
+                    <div className="flex items-center gap-2">
+                        <Input
+                            ref={inputRef}
+                            data-no-dnd="true"
+                            placeholder="https://..."
+                            value={urlInput}
+                            onChange={e => setUrlInput(e.target.value)}
+                            onBlur={handleUrlBlur}
+                            onPointerDownCapture={(e) => e.stopPropagation()}
+                            onMouseDownCapture={(e) => e.stopPropagation()}
+                            onClickCapture={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => e.stopPropagation()}
+                            className={`${editorSurface.field} h-10 sm:h-8 text-base sm:text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 transition-colors font-mono`}
+                        />
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onMouseDown={(event) => event.preventDefault()}
+                            onClick={handleClearClick}
+                            className="h-10 w-10 shrink-0 rounded-md text-foreground/60 hover:bg-destructive/10 hover:text-destructive sm:h-8 sm:w-8"
+                            title="Clear image URL"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+});
+
+function AIOMismatchBadge({
+    count,
+    className,
+}: {
+    count: number;
+    className?: string;
+}) {
+    if (count <= 0) return null;
+
+    return (
+        <Badge
+            variant="outline"
+            className={cn(aiomMismatchBadgeClass, className)}
+            title={`${count} attention item${count === 1 ? "" : "s"} in this section.`}
+        >
+            <AlertTriangle className="h-3 w-3" />
+            <span>{count}</span>
+        </Badge>
+    );
+}
 
 const focusSearchInput = (input: HTMLInputElement | null) => {
     if (!input) return;
@@ -96,17 +240,14 @@ const focusSearchInput = (input: HTMLInputElement | null) => {
 // ----------------------------------------------------------------------
 // 1. Sortable Catalog Node (Inside a Subgroup)
 // ----------------------------------------------------------------------
-function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => void }) {
-    const { currentValues } = useConfig();
+const SortableCatalogNode = React.memo(function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => void }) {
+    const { configCustomNames, customFallbacks } = useConfigSelector((state) => ({
+        configCustomNames: state.currentValues["custom_catalog_names"] || {},
+        customFallbacks: state.customFallbacks,
+    }), shallowEqualObject);
 
     // Construct effective custom names (Config Custom Names > AIOMetadata > Default)
-    const configCustomNames = currentValues["custom_catalog_names"] || {};
-    let aioFallbacks: Record<string, string | CatalogFallback> = {};
-    if (typeof window !== "undefined") {
-        try {
-            aioFallbacks = JSON.parse(localStorage.getItem("omni_custom_fallbacks") || "{}");
-        } catch { }
-    }
+    const aioFallbacks = customFallbacks as Record<string, string | CatalogFallback>;
 
     const getCustomName = (value: unknown) => {
         if (typeof value === "string") {
@@ -167,6 +308,7 @@ function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => vo
         transition,
         zIndex: isDragging ? 20 : 1,
     };
+    const showAioCatalogMismatch = Object.keys(aioFallbacks).length > 0 && !hasAIOMetadataCatalogMatch(id, aioFallbacks);
 
     return (
         <div
@@ -199,6 +341,14 @@ function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => vo
             </div>
 
             <div className="flex items-center gap-1 shrink-0 opacity-80 hover:opacity-100 transition-opacity">
+                {showAioCatalogMismatch && (
+                    <span
+                        title="Not found in synced AIOMetadata catalogs"
+                        className="inline-flex shrink-0 items-center justify-center rounded-full border border-amber-300/45 bg-amber-500/10 p-1 text-amber-700 shadow-sm dark:border-amber-400/25 dark:bg-amber-400/10 dark:text-amber-200"
+                    >
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                    </span>
+                )}
                 {onRemove && (
                     <Button
                         variant="ghost"
@@ -213,13 +363,30 @@ function SortableCatalogNode({ id, onRemove }: { id: string, onRemove?: () => vo
             </div>
         </div>
     );
-}
+});
 
 // ----------------------------------------------------------------------
 // 2. Sortable Subgroup Node containing Catalogs & URL
 // ----------------------------------------------------------------------
-function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded: propIsExpanded, onToggle, rowAnchorId }: { subgroupName: string, parentUUID: string, onUnassign?: (name: string, parentId: string) => void, isExpanded?: boolean, onToggle?: () => void, rowAnchorId?: string }) {
-    const { currentValues, updateValue, renameCatalogGroup, unassignCatalogGroup, assignCatalogGroup, catalogs, customFallbacks } = useConfig();
+function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded: propIsExpanded, onToggle, rowAnchorId, mismatchCount = 0 }: { subgroupName: string, parentUUID: string, onUnassign?: (name: string, parentId: string) => void, isExpanded?: boolean, onToggle?: () => void, rowAnchorId?: string, mismatchCount?: number }) {
+    const {
+        rawCatalogsList,
+        imageUrl,
+        rawCustomNames,
+        mainCatalogGroups,
+        catalogs,
+        customFallbacks,
+    } = useConfigSelector((state) => ({
+        rawCatalogsList: state.currentValues.catalog_groups?.[subgroupName],
+        imageUrl: typeof state.currentValues.catalog_group_image_urls?.[subgroupName] === "string"
+            ? state.currentValues.catalog_group_image_urls[subgroupName]
+            : "",
+        rawCustomNames: state.currentValues["custom_catalog_names"],
+        mainCatalogGroups: state.currentValues.main_catalog_groups || {},
+        catalogs: state.catalogs,
+        customFallbacks: state.customFallbacks,
+    }), shallowEqualObject);
+    const { updateValue, renameCatalogGroup, unassignCatalogGroup, assignCatalogGroup } = useConfigActions();
 
     // Sortable Hook for the subgroup itself
     const {
@@ -238,15 +405,9 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
     };
 
     // Subgroup state
-    const rawCatalogsList = currentValues.catalog_groups?.[subgroupName];
     const catalogsList: string[] = Array.isArray(rawCatalogsList) ? rawCatalogsList : EMPTY_STRING_ARRAY;
-    const rawImageUrl = currentValues.catalog_group_image_urls?.[subgroupName];
-    const imageUrl: string = typeof rawImageUrl === "string" ? rawImageUrl : "";
 
     const [subgroupCatalogs, setSubgroupCatalogs] = useState<string[]>(catalogsList);
-    const [urlInput, setUrlInput] = useState(imageUrl);
-    const [thumbAspect, setThumbAspect] = useState<ThumbnailAspect>("square");
-    const [thumbLoadError, setThumbLoadError] = useState(false);
     const [isRenaming, setIsRenaming] = useState(false);
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
     const [catalogSearch, setCatalogSearch] = useState("");
@@ -264,8 +425,10 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
         };
     }, [isAddMenuOpen]);
 
-    const customNames: Record<string, string> = React.useMemo(() => currentValues["custom_catalog_names"] || {}, [currentValues]);
+    const customNames: Record<string, string> = React.useMemo(() => rawCustomNames || {}, [rawCustomNames]);
     const catalogOptions = React.useMemo(() => {
+        if (!isAddMenuOpen) return [];
+
         const options: { id: string, name: string }[] = [];
 
         // 1. All existing catalogs not already in subgroupCatalogs
@@ -302,7 +465,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
 
         // Sort options
         return options.sort((a, b) => a.name.localeCompare(b.name));
-    }, [catalogs, customFallbacks, customNames, subgroupCatalogs]);
+    }, [catalogs, customFallbacks, customNames, subgroupCatalogs, isAddMenuOpen]);
 
     const filteredCatalogs = React.useMemo(() => {
         if (!catalogSearch) return catalogOptions;
@@ -320,26 +483,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
 
     React.useEffect(() => {
         setSubgroupCatalogs(prev => (stringArraysEqual(prev, catalogsList) ? prev : catalogsList));
-        setUrlInput(prev => (prev === imageUrl ? prev : imageUrl));
-    }, [catalogsList, imageUrl]);
-
-    React.useEffect(() => {
-        setThumbAspect("square");
-        setThumbLoadError(false);
-    }, [urlInput]);
-
-    const handleUrlBlur = () => {
-        if (urlInput !== imageUrl) {
-            updateValue(["catalog_group_image_urls", subgroupName], urlInput);
-        }
-    };
-
-    const hasThumbPreview = /^https?:\/\//i.test(urlInput.trim()) && !thumbLoadError;
-    const thumbFrameClass = thumbAspect === "landscape"
-        ? "h-10 w-16"
-        : thumbAspect === "portrait"
-            ? "h-14 w-10"
-            : "h-10 w-10";
+    }, [catalogsList]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -373,7 +517,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
     };
 
     const activeCatalogName = activeCatalogId
-        ? resolveCatalogName(activeCatalogId, currentValues.custom_catalog_names || {})
+        ? resolveCatalogName(activeCatalogId, customNames)
         : "";
 
     const handleHeaderClick = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -385,7 +529,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
     const handleAddCatalog = (e: Event, catalogId: string) => {
         e.preventDefault();
         if (!catalogId.trim()) return;
-        const name = resolveCatalogName(catalogId.trim(), currentValues.custom_catalog_names || {});
+        const name = resolveCatalogName(catalogId.trim(), customNames);
         const normalizedId = ensureCatalogPrefix(catalogId.trim(), name);
 
         const updated = [...subgroupCatalogs, normalizedId];
@@ -424,12 +568,15 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                     {isExpanded ? <ChevronDown className="w-4 h-4 mr-2 text-foreground/70 group-hover:text-foreground shrink-0 transition-colors" /> : <ChevronRight className="w-4 h-4 mr-2 text-foreground/70 group-hover:text-foreground shrink-0 transition-colors" />}
                     <div className="flex-1 min-w-0 flex flex-row items-center justify-between gap-2">
                         <span className="truncate font-bold text-sm text-foreground transition-colors group-hover/subgroup:text-primary dark:group-hover/subgroup:text-primary">{formatDisplayName(subgroupName)}</span>
-                        <Badge
-                            variant="outline"
-                            className={cn(subgroupCountBadgeClass, "ml-2 shrink-0")}
-                        >
-                            {subgroupCatalogs.length}
-                        </Badge>
+                        <div className="ml-2 flex shrink-0 items-center gap-1.5">
+                            <AIOMismatchBadge count={mismatchCount} />
+                            <Badge
+                                variant="outline"
+                                className={cn(subgroupCountBadgeClass, "shrink-0")}
+                            >
+                                {subgroupCatalogs.length}
+                            </Badge>
+                        </div>
                     </div>
                 </button>
 
@@ -450,7 +597,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                         <DropdownMenuContent align="end" className={cn(editorSurface.overlay, "w-56")}>
                             <DropdownMenuLabel className="text-[10px] font-bold uppercase tracking-widest text-foreground/50">Move to group</DropdownMenuLabel>
                             <DropdownMenuSeparator className="bg-primary/10" />
-                            {(Object.entries(currentValues.main_catalog_groups || {}) as [string, { name: string }][]).map(([uuid, mg]) => (
+                            {(Object.entries(mainCatalogGroups) as [string, { name: string }][]).map(([uuid, mg]) => (
                                 <DropdownMenuItem
                                     key={uuid}
                                     disabled={uuid === parentUUID}
@@ -511,49 +658,10 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                 <div className="space-y-5 bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(248,250,252,0.1))] p-4 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.008))]">
                     {/* Image URL Input */}
                     <div className="space-y-2">
-                        <div className={`${editorSurface.panel} flex items-center gap-3 p-3`}>
-                            <div
-                                className={`${thumbFrameClass} rounded-md shrink-0 overflow-hidden shadow-sm flex items-center justify-center transition-[width,height] duration-200 border border-white/10 p-1`}
-                                style={{ backgroundColor: '#020617' }}
-                            >
-                                {hasThumbPreview ? (
-                                    <>
-                                        {/* eslint-disable-next-line @next/next/no-img-element -- Dynamic subgroup thumbnail preview from user-provided URL. */}
-                                        <img
-                                            src={urlInput}
-                                            alt="Thumb"
-                                            className="h-full w-full object-contain"
-                                            onLoad={(e) => {
-                                                const { naturalWidth, naturalHeight } = e.currentTarget;
-                                                if (!naturalWidth || !naturalHeight) {
-                                                    setThumbAspect("square");
-                                                    return;
-                                                }
-                                                const ratio = naturalWidth / naturalHeight;
-                                                if (ratio > 1.2) setThumbAspect("landscape");
-                                                else if (ratio < 0.82) setThumbAspect("portrait");
-                                                else setThumbAspect("square");
-                                            }}
-                                            onError={() => {
-                                                setThumbLoadError(true);
-                                            }}
-                                        />
-                                    </>
-                                ) : (
-                                    <ImageIcon className="w-4 h-4 text-foreground/70" />
-                                )}
-                            </div>
-                            <div className="flex-1 space-y-1">
-                                <Label className="text-xs uppercase font-bold tracking-widest text-foreground/70">Poster Image URL</Label>
-                                <Input
-                                    placeholder="https://..."
-                                    value={urlInput}
-                                    onChange={e => setUrlInput(e.target.value)}
-                                    onBlur={handleUrlBlur}
-                                    className={`${editorSurface.field} h-10 sm:h-8 text-base sm:text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 transition-colors font-mono`}
-                                />
-                            </div>
-                        </div>
+                        <PosterUrlEditor
+                            imageUrl={imageUrl}
+                            onCommit={(nextUrl) => updateValue(["catalog_group_image_urls", subgroupName], nextUrl)}
+                        />
 
                         {/* Mobile Action Buttons: Move here under layout */}
                         <div className="sm:hidden grid grid-cols-3 gap-2 pt-1">
@@ -570,7 +678,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                 <DropdownMenuContent align="start" className={cn(editorSurface.overlay, "w-[calc(100vw-3rem)]")}>
                                     <DropdownMenuLabel className="text-[10px] font-bold uppercase tracking-widest text-foreground/50">Move to group</DropdownMenuLabel>
                                     <DropdownMenuSeparator className="bg-primary/10" />
-                                    {(Object.entries(currentValues.main_catalog_groups || {}) as [string, { name: string }][]).map(([uuid, mg]) => (
+                                    {(Object.entries(mainCatalogGroups) as [string, { name: string }][]).map(([uuid, mg]) => (
                                         <DropdownMenuItem
                                             key={uuid}
                                             disabled={uuid === parentUUID}
@@ -774,11 +882,13 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
 // ----------------------------------------------------------------------
 // 3. Main Group View (Outer)
 // ----------------------------------------------------------------------
-function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSubgroup, searchTerm }: { uuid: string, name: string, subgroupNames: string[], onUnassignSubgroup?: (name: string, parentId: string) => void, onAddSubgroup?: (uuid: string) => void, searchTerm: string }) {
-    const { currentValues, updateValue, renameMainCatalogGroup, removeMainCatalogGroup } = useConfig();
+const MainGroupNode = React.memo(function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSubgroup, searchTerm, mismatchCount = 0, subgroupMismatchCounts = {} }: { uuid: string, name: string, subgroupNames: string[], onUnassignSubgroup?: (name: string, parentId: string) => void, onAddSubgroup?: (uuid: string) => void, searchTerm: string, mismatchCount?: number, subgroupMismatchCounts?: Record<string, number> }) {
+    const { mainGroupData } = useConfigSelector((state) => ({
+        mainGroupData: state.currentValues.main_catalog_groups?.[uuid] || {},
+    }), shallowEqualObject);
+    const { updateValue, renameMainCatalogGroup, removeMainCatalogGroup } = useConfigActions();
     const [isRenaming, setIsRenaming] = useState(false);
 
-    const mainGroupData = currentValues.main_catalog_groups?.[uuid] || {};
     const posterType = mainGroupData.posterType || "Poster";
     const posterSize = mainGroupData.posterSize || "Default";
 
@@ -925,6 +1035,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                     >
                                         {subgroupNames.length} {subgroupNames.length === 1 ? "Group" : "Groups"}
                                     </Badge>
+                                    <AIOMismatchBadge count={mismatchCount} />
                                     {subgroupNames.length === 0 && (
                                         <span className="text-[10px] text-foreground/30 font-bold uppercase tracking-wider">Empty Group</span>
                                     )}
@@ -1067,6 +1178,7 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
                                             parentUUID={uuid}
                                             onUnassign={onUnassignSubgroup}
                                             rowAnchorId={buildSubgroupAnchorId(uuid, sg)}
+                                            mismatchCount={subgroupMismatchCounts[sg] || 0}
                                             isExpanded={expandedSubgroup === sg}
                                             onToggle={() => handleToggleSubgroup(sg)}
                                         />
@@ -1098,19 +1210,20 @@ function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSub
             </AccordionItem>
         </div>
     );
-}
+});
 
 // ----------------------------------------------------------------------
 // 3. Global Subgroup Library (List of all catalog_groups)
 // ----------------------------------------------------------------------
 
-function UnassignedSubgroupRow({
+const UnassignedSubgroupRow = React.memo(function UnassignedSubgroupRow({
     groupName,
     catalogs: subgroupCatalogsProp,
     onRestore,
     restoreParentName,
     isExpanded: propIsExpanded,
     onToggle,
+    mismatchCount = 0,
 }: {
     groupName: string,
     catalogs: string[],
@@ -1118,16 +1231,27 @@ function UnassignedSubgroupRow({
     restoreParentName?: string,
     isExpanded?: boolean,
     onToggle?: () => void,
+    mismatchCount?: number,
 }) {
-    const { updateValue, currentValues, assignCatalogGroup, removeCatalogGroup, renameCatalogGroup, catalogs: fullCatalogs, customFallbacks } = useConfig();
-    const mainCatalogGroups = (currentValues["main_catalog_groups"] as Record<string, { name?: string; subgroupNames?: string[] }> | undefined) ?? EMPTY_RECORD;
-    const mainGroupOrder = (currentValues["main_group_order"] as string[] | undefined) ?? EMPTY_STRING_ARRAY;
-    const rawImageUrl = currentValues.catalog_group_image_urls?.[groupName];
-    const imageUrl: string = typeof rawImageUrl === "string" ? rawImageUrl : "";
+    const {
+        mainCatalogGroups,
+        mainGroupOrder,
+        imageUrl,
+        rawCustomNames,
+        fullCatalogs,
+        customFallbacks,
+    } = useConfigSelector((state) => ({
+        mainCatalogGroups: (state.currentValues["main_catalog_groups"] as Record<string, { name?: string; subgroupNames?: string[] }> | undefined) ?? EMPTY_RECORD,
+        mainGroupOrder: (state.currentValues["main_group_order"] as string[] | undefined) ?? EMPTY_STRING_ARRAY,
+        imageUrl: typeof state.currentValues.catalog_group_image_urls?.[groupName] === "string"
+            ? state.currentValues.catalog_group_image_urls[groupName]
+            : "",
+        rawCustomNames: state.currentValues["custom_catalog_names"],
+        fullCatalogs: state.catalogs,
+        customFallbacks: state.customFallbacks,
+    }), shallowEqualObject);
+    const { updateValue, assignCatalogGroup, removeCatalogGroup, renameCatalogGroup } = useConfigActions();
 
-    const [urlInput, setUrlInput] = useState(imageUrl);
-    const [thumbAspect, setThumbAspect] = useState<ThumbnailAspect>("square");
-    const [thumbLoadError, setThumbLoadError] = useState(false);
     const [isRenaming, setIsRenaming] = useState(false);
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
     const [catalogSearch, setCatalogSearch] = useState("");
@@ -1145,17 +1269,10 @@ function UnassignedSubgroupRow({
         };
     }, [isAddMenuOpen]);
 
-    React.useEffect(() => {
-        setUrlInput(prev => (prev === imageUrl ? prev : imageUrl));
-    }, [imageUrl]);
-
-    React.useEffect(() => {
-        setThumbAspect("square");
-        setThumbLoadError(false);
-    }, [urlInput]);
-
-    const customNames: Record<string, string> = React.useMemo(() => currentValues["custom_catalog_names"] || {}, [currentValues]);
+    const customNames: Record<string, string> = React.useMemo(() => rawCustomNames || {}, [rawCustomNames]);
     const catalogOptions = React.useMemo(() => {
+        if (!isAddMenuOpen) return [];
+
         const options: { id: string, name: string }[] = [];
 
         const existingBaseIds = new Set<string>();
@@ -1187,7 +1304,7 @@ function UnassignedSubgroupRow({
         });
 
         return options.sort((a, b) => a.name.localeCompare(b.name));
-    }, [fullCatalogs, customFallbacks, customNames, subgroupCatalogsProp]);
+    }, [fullCatalogs, customFallbacks, customNames, subgroupCatalogsProp, isAddMenuOpen]);
 
     const filteredCatalogs = React.useMemo(() => {
         if (!catalogSearch) return catalogOptions;
@@ -1200,7 +1317,7 @@ function UnassignedSubgroupRow({
     const handleAddCatalog = (e: Event, catalogId: string) => {
         e.preventDefault();
         if (!catalogId.trim()) return;
-        const name = resolveCatalogName(catalogId.trim(), currentValues.custom_catalog_names || {});
+        const name = resolveCatalogName(catalogId.trim(), customNames);
         const normalizedId = ensureCatalogPrefix(catalogId.trim(), name);
 
         const updated = [...subgroupCatalogsProp, normalizedId];
@@ -1248,25 +1365,12 @@ function UnassignedSubgroupRow({
     };
 
     const activeCatalogName = activeCatalogId
-        ? resolveCatalogName(activeCatalogId, currentValues.custom_catalog_names || {})
+        ? resolveCatalogName(activeCatalogId, customNames)
         : "";
 
     const [localExpanded, setLocalExpanded] = useState(false);
     const isExpanded = propIsExpanded !== undefined ? propIsExpanded : localExpanded;
     const toggleExpanded = onToggle || (() => setLocalExpanded(prev => !prev));
-
-    const handleUrlBlur = () => {
-        if (urlInput !== imageUrl) {
-            updateValue(["catalog_group_image_urls", groupName], urlInput);
-        }
-    };
-
-    const hasThumbPreview = /^https?:\/\//i.test(urlInput.trim()) && !thumbLoadError;
-    const thumbFrameClass = thumbAspect === "landscape"
-        ? "h-10 w-16"
-        : thumbAspect === "portrait"
-            ? "h-14 w-10"
-            : "h-10 w-10";
 
     return (
         <div className={`${editorSurface.cardInteractive} flex flex-col rounded-xl overflow-hidden transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out hover:border-border/80 w-full mb-3`}>
@@ -1289,6 +1393,7 @@ function UnassignedSubgroupRow({
                     >
                         {formatDisplayName(groupName)}
                     </span>
+                    <AIOMismatchBadge count={mismatchCount} className="ml-1 shrink-0" />
                 </button>
 
                 {/* Right: Actions */}
@@ -1388,49 +1493,10 @@ function UnassignedSubgroupRow({
             {isExpanded && (
                 <div className="border-t border-slate-200/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(248,250,252,0.1))] p-4 dark:border-white/8 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.008))]">
                     <div className="space-y-2 mb-4">
-                        <div className={`${editorSurface.panel} flex items-center gap-3 p-3`}>
-                            <div
-                                className={`${thumbFrameClass} rounded-md shrink-0 overflow-hidden shadow-sm flex items-center justify-center transition-[width,height] duration-200 border border-white/10 p-1`}
-                                style={{ backgroundColor: '#020617' }}
-                            >
-                                {hasThumbPreview ? (
-                                    <>
-                                        {/* eslint-disable-next-line @next/next/no-img-element -- Dynamic subgroup thumbnail preview from user-provided URL. */}
-                                        <img
-                                            src={urlInput}
-                                            alt="Thumb"
-                                            className="h-full w-full object-contain"
-                                            onLoad={(e) => {
-                                                const { naturalWidth, naturalHeight } = e.currentTarget;
-                                                if (!naturalWidth || !naturalHeight) {
-                                                    setThumbAspect("square");
-                                                    return;
-                                                }
-                                                const ratio = naturalWidth / naturalHeight;
-                                                if (ratio > 1.2) setThumbAspect("landscape");
-                                                else if (ratio < 0.82) setThumbAspect("portrait");
-                                                else setThumbAspect("square");
-                                            }}
-                                            onError={() => {
-                                                setThumbLoadError(true);
-                                            }}
-                                        />
-                                    </>
-                                ) : (
-                                    <ImageIcon className="w-4 h-4 text-foreground/70" />
-                                )}
-                            </div>
-                            <div className="flex-1 space-y-1">
-                                <Label className="text-xs uppercase font-bold tracking-widest text-foreground/70">Poster Image URL</Label>
-                                <Input
-                                    placeholder="https://..."
-                                    value={urlInput}
-                                    onChange={e => setUrlInput(e.target.value)}
-                                    onBlur={handleUrlBlur}
-                                    className={`${editorSurface.field} h-10 sm:h-8 text-base sm:text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 transition-colors font-mono`}
-                                />
-                            </div>
-                        </div>
+                        <PosterUrlEditor
+                            imageUrl={imageUrl}
+                            onCommit={(nextUrl) => updateValue(["catalog_group_image_urls", groupName], nextUrl)}
+                        />
 
                         <div className="sm:hidden grid grid-cols-3 gap-2 pt-1">
                             <DropdownMenu>
@@ -1648,17 +1714,43 @@ function UnassignedSubgroupRow({
             )}
         </div>
     );
-}
+});
 
 // ----------------------------------------------------------------------
 // Unified App Entry Point
 // ----------------------------------------------------------------------
-export function UnifiedSubgroupEditor({ onOpenGuide }: { onOpenGuide?: (guide: "install" | "update" | "use") => void }) {
-    const { currentValues, updateValue, assignCatalogGroup } = useConfig();
-    const subgroupOrder = currentValues["subgroup_order"] || {};
-    const mainCatalogGroups = (currentValues["main_catalog_groups"] as Record<string, { name?: string; subgroupNames?: string[] }> | undefined) ?? EMPTY_RECORD;
-    const mainGroupOrderFromConfig = Array.isArray(currentValues["main_group_order"])
-        ? (currentValues["main_group_order"] as string[])
+export function UnifiedSubgroupEditor({
+    onOpenGuide,
+    aiomMismatchSummary,
+}: {
+    onOpenGuide?: (guide: "install" | "update" | "use") => void;
+    aiomMismatchSummary: AIOMetadataMismatchAnalysis;
+}) {
+    const {
+        subgroupOrderRaw,
+        mainCatalogGroups,
+        mainGroupOrderRaw,
+        catalogGroups,
+    } = useConfigSelector((state) => ({
+        subgroupOrderRaw: state.currentValues["subgroup_order"],
+        mainCatalogGroups: (state.currentValues["main_catalog_groups"] as Record<string, { name?: string; subgroupNames?: string[] }> | undefined) ?? EMPTY_RECORD,
+        mainGroupOrderRaw: state.currentValues["main_group_order"],
+        catalogGroups: state.currentValues.catalog_groups || {},
+    }), shallowEqualObject);
+    const { updateValue, assignCatalogGroup } = useConfigActions();
+    const subgroupOrder = React.useMemo(
+        () => ((subgroupOrderRaw as Record<string, unknown> | undefined) ?? EMPTY_RECORD),
+        [subgroupOrderRaw]
+    );
+    const subgroupMismatchCounts = React.useMemo(() => {
+        const counts: Record<string, number> = {};
+        Object.entries(aiomMismatchSummary.affectedSubgroups).forEach(([subgroupName, subgroup]) => {
+            counts[subgroupName] = subgroup.issueCount;
+        });
+        return counts;
+    }, [aiomMismatchSummary.affectedSubgroups]);
+    const mainGroupOrderFromConfig = Array.isArray(mainGroupOrderRaw)
+        ? (mainGroupOrderRaw as string[])
         : EMPTY_STRING_ARRAY;
     const [mainGroupOrder, setMainGroupOrder] = useState<string[]>(mainGroupOrderFromConfig);
 
@@ -1671,6 +1763,7 @@ export function UnifiedSubgroupEditor({ onOpenGuide }: { onOpenGuide?: (guide: "
     const [expandedUnassignedSubgroup, setExpandedUnassignedSubgroup] = useState<string | null>(null);
     const [isUnassignedSectionOpen, setIsUnassignedSectionOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
+    const deferredSearchTerm = useDeferredValue(searchTerm);
     const searchInputRef = useRef<HTMLInputElement>(null);
 
     const handleUnassignSubgroup = (subgroupName: string, parentUuid: string) => {
@@ -1682,8 +1775,8 @@ export function UnifiedSubgroupEditor({ onOpenGuide }: { onOpenGuide?: (guide: "
     }, [mainGroupOrderFromConfig]);
 
     const filteredMainGroupOrder = React.useMemo(() => {
-        if (!searchTerm) return mainGroupOrder;
-        const q = searchTerm.toLowerCase();
+        if (!deferredSearchTerm) return mainGroupOrder;
+        const q = deferredSearchTerm.toLowerCase();
         return mainGroupOrder.filter(uuid => {
             const mg = mainCatalogGroups[uuid];
             if (!mg) return false;
@@ -1693,7 +1786,7 @@ export function UnifiedSubgroupEditor({ onOpenGuide }: { onOpenGuide?: (guide: "
             const sgs = normalizeSubgroupNames(mg.subgroupNames, subgroupOrder[uuid]);
             return sgs.some((sg: string) => sg.toLowerCase().includes(q));
         });
-    }, [mainGroupOrder, mainCatalogGroups, searchTerm, subgroupOrder]);
+    }, [mainGroupOrder, mainCatalogGroups, deferredSearchTerm, subgroupOrder]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -1730,7 +1823,6 @@ export function UnifiedSubgroupEditor({ onOpenGuide }: { onOpenGuide?: (guide: "
     };
 
     // Filter unassigned subgroups
-    const catalogGroups = currentValues.catalog_groups || {};
     const assignedGroups = new Set<string>();
 
     // Check subgroup_order (uuid → string[])
@@ -1809,7 +1901,7 @@ export function UnifiedSubgroupEditor({ onOpenGuide }: { onOpenGuide?: (guide: "
                         <Input
                             ref={searchInputRef}
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onChange={(e) => React.startTransition(() => setSearchTerm(e.target.value))}
                             placeholder="Search..."
                             className="h-9 pl-9 pr-9 bg-background/50 border-border/50 focus-visible:ring-primary/30 xl:h-10"
                         />
@@ -1838,14 +1930,14 @@ export function UnifiedSubgroupEditor({ onOpenGuide }: { onOpenGuide?: (guide: "
                         onDragEnd={handleMainDragEnd}
                     >
                         <div className="space-y-3">
-                            {filteredMainGroupOrder.length === 0 && searchTerm ? (
+                            {filteredMainGroupOrder.length === 0 && deferredSearchTerm ? (
                                 <div className="flex flex-col items-center justify-center py-12 text-center">
                                     <div className="bg-muted/50 p-4 rounded-full mb-4">
                                         <Search className="w-8 h-8 text-foreground/30" />
                                     </div>
                                     <h3 className="text-lg font-bold text-foreground mb-1">No matches found</h3>
                                     <p className="text-sm text-foreground/50 max-w-xs">
-                                        We couldn&apos;t find any groups or subgroups matching &quot;{searchTerm}&quot;.
+                                        We couldn&apos;t find any groups or subgroups matching &quot;{deferredSearchTerm}&quot;.
                                     </p>
                                     <Button 
                                         variant="link" 
@@ -1874,12 +1966,14 @@ export function UnifiedSubgroupEditor({ onOpenGuide }: { onOpenGuide?: (guide: "
                                                     uuid={uuid}
                                                     name={mg.name || `Group ${uuid.slice(0, 4)}`}
                                                     subgroupNames={resolvedSubgroupNames}
+                                                    mismatchCount={aiomMismatchSummary.affectedMainGroups[uuid]?.issueCount || 0}
+                                                    subgroupMismatchCounts={subgroupMismatchCounts}
                                                     onUnassignSubgroup={handleUnassignSubgroup}
                                                     onAddSubgroup={(id) => {
                                                         setCreateParentUUID(id);
                                                         setIsCreateModalOpen(true);
                                                     }}
-                                                    searchTerm={searchTerm}
+                                                    searchTerm={deferredSearchTerm}
                                                 />
                                             );
                                         })}
@@ -1982,6 +2076,7 @@ export function UnifiedSubgroupEditor({ onOpenGuide }: { onOpenGuide?: (guide: "
                                             key={name}
                                             groupName={name}
                                             catalogs={catalogGroups[name] || []}
+                                            mismatchCount={subgroupMismatchCounts[name] || 0}
                                             isExpanded={expandedUnassignedSubgroup === name}
                                             onToggle={() => setExpandedUnassignedSubgroup(prev => prev === name ? null : name)}
                                             onRestore={restoreParentUuid ? () => {

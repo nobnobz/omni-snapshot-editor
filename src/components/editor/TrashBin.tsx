@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useConfig } from "@/context/ConfigContext";
+import { useConfigActions, useConfigSelector } from "@/context/ConfigContext";
 import { Button } from "@/components/ui/button";
 import { Trash2, RotateCcw, XCircle, Info } from "lucide-react";
 import {
@@ -33,7 +33,9 @@ type DeletedSubgroupItem = {
 type DeletedItem = DeletedMainGroupItem | DeletedSubgroupItem;
 
 export function TrashBin() {
-    const { deletedSubgroups, deletedMainGroups, restoreSubgroup, restoreMainGroup, clearDeletedSubgroups } = useConfig();
+    const deletedSubgroups = useConfigSelector((state) => state.deletedSubgroups);
+    const deletedMainGroups = useConfigSelector((state) => state.deletedMainGroups);
+    const { restoreSubgroup, restoreMainGroup, clearDeletedSubgroups } = useConfigActions();
 
     if (deletedSubgroups.length === 0 && deletedMainGroups.length === 0) return null;
 

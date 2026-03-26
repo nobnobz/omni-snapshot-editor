@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useConfig } from '../../context/ConfigContext';
+import { useConfigActions, useConfigSelector } from '../../context/ConfigContext';
 import { cn, formatDisplayName } from '@/lib/utils';
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
@@ -10,9 +10,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Checkbox } from "../ui/checkbox";
 import { Search } from 'lucide-react';
 import { editorAction, editorLayout, editorSurface } from "./ui/style-contract";
+import { shallowEqualObject } from "@/lib/equality";
 
 export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
-    const { currentValues, assignCatalogGroup, unassignCatalogGroup } = useConfig();
+    const {
+        catalogGroups: rawCatalogGroups,
+        catalogGroupOrder,
+        mainCatalogGroups,
+        mainGroupOrder,
+        subgroupOrder,
+    } = useConfigSelector((state) => ({
+        catalogGroups: state.currentValues.catalog_groups || {},
+        catalogGroupOrder: state.currentValues.catalog_group_order,
+        mainCatalogGroups: state.currentValues.main_catalog_groups || {},
+        mainGroupOrder: state.currentValues.main_group_order,
+        subgroupOrder: state.currentValues.subgroup_order || {},
+    }), shallowEqualObject);
+    const { assignCatalogGroup, unassignCatalogGroup } = useConfigActions();
 
     // State
     const [targetMainGroupUuid, setTargetMainGroupUuid] = useState("");
@@ -21,14 +35,14 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
 
     // Lookups
     const catalogGroups = useMemo(
-        () => (currentValues.catalog_groups || {}) as Record<string, unknown>,
-        [currentValues.catalog_groups]
+        () => rawCatalogGroups as Record<string, unknown>,
+        [rawCatalogGroups]
     );
     const rawOrder: string[] = useMemo(
-        () => Array.isArray(currentValues.catalog_group_order)
-            ? (currentValues.catalog_group_order as string[])
+        () => Array.isArray(catalogGroupOrder)
+            ? (catalogGroupOrder as string[])
             : Object.keys(catalogGroups),
-        [currentValues.catalog_group_order, catalogGroups]
+        [catalogGroupOrder, catalogGroups]
     );
     const isPlaceholderSubgroup = (name: string) => {
         const normalized = name.trim();
@@ -40,17 +54,17 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
         (name: string) => catalogGroups[name] !== undefined && !isPlaceholderSubgroup(name)
     );
 
-    const mainCatalogGroups = useMemo(
-        () => (currentValues.main_catalog_groups || {}) as Record<string, { name?: string }>,
-        [currentValues.main_catalog_groups]
+    const typedMainCatalogGroups = useMemo(
+        () => mainCatalogGroups as Record<string, { name?: string }>,
+        [mainCatalogGroups]
     );
-    const mainGroupOrder = useMemo(
-        () => Array.isArray(currentValues.main_group_order) ? (currentValues.main_group_order as string[]) : [],
-        [currentValues.main_group_order]
+    const typedMainGroupOrder = useMemo(
+        () => Array.isArray(mainGroupOrder) ? (mainGroupOrder as string[]) : [],
+        [mainGroupOrder]
     );
-    const subgroupOrder = useMemo(
-        () => (currentValues.subgroup_order || {}) as Record<string, string[]>,
-        [currentValues.subgroup_order]
+    const typedSubgroupOrder = useMemo(
+        () => subgroupOrder as Record<string, string[]>,
+        [subgroupOrder]
     );
     const visibleSelectedCount = useMemo(
         () => Array.from(selectedSubgroups).filter((name) => allSubgroupNames.includes(name)).length,
@@ -59,24 +73,24 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
 
     // Preselect first main group if available and not yet set
     React.useEffect(() => {
-        if (isOpen && !targetMainGroupUuid && mainGroupOrder.length > 0) {
-            const firstGroup = mainGroupOrder[0];
+        if (isOpen && !targetMainGroupUuid && typedMainGroupOrder.length > 0) {
+            const firstGroup = typedMainGroupOrder[0];
             setTargetMainGroupUuid(firstGroup);
         }
-    }, [isOpen, mainGroupOrder, targetMainGroupUuid]);
+    }, [isOpen, typedMainGroupOrder, targetMainGroupUuid]);
 
     // Update selected subgroups whenever target main group changes
     React.useEffect(() => {
         if (isOpen && targetMainGroupUuid) {
-            const existingSubgroups = subgroupOrder[targetMainGroupUuid] || [];
+            const existingSubgroups = typedSubgroupOrder[targetMainGroupUuid] || [];
             setSelectedSubgroups(new Set(existingSubgroups));
         }
-    }, [isOpen, targetMainGroupUuid, subgroupOrder]);
+    }, [isOpen, targetMainGroupUuid, typedSubgroupOrder]);
 
     const resetState = () => {
         setSelectedSubgroups(new Set());
         setSearchQuery("");
-        setTargetMainGroupUuid(mainGroupOrder.length > 0 ? mainGroupOrder[0] : "");
+        setTargetMainGroupUuid(typedMainGroupOrder.length > 0 ? typedMainGroupOrder[0] : "");
     };
 
     const handleClose = () => {
@@ -88,7 +102,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
         if (!targetMainGroupUuid) return;
 
         // 1. Get the currently assigned subgroups for this main group BEFORE our changes
-        const existingSubgroups = new Set<string>(subgroupOrder[targetMainGroupUuid] || []);
+        const existingSubgroups = new Set<string>(typedSubgroupOrder[targetMainGroupUuid] || []);
 
         // 2. Add newly selected subgroups
         for (const sg of selectedSubgroups) {
@@ -128,12 +142,12 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                 <SelectValue placeholder="Select a Main Group" />
                             </SelectTrigger>
                             <SelectContent className={cn(editorSurface.overlay, "max-h-[200px]")}>
-                                {mainGroupOrder.length === 0 ? (
+                                {typedMainGroupOrder.length === 0 ? (
                                     <SelectItem value="none" disabled>No Main Groups available</SelectItem>
                                 ) : (
-                                    mainGroupOrder.map((uuid: string) => (
+                                    typedMainGroupOrder.map((uuid: string) => (
                                         <SelectItem key={uuid} value={uuid} className="focus:bg-accent focus:text-accent-foreground">
-                                            {formatDisplayName(mainCatalogGroups[uuid]?.name || "Unnamed")}
+                                            {formatDisplayName(typedMainCatalogGroups[uuid]?.name || "Unnamed")}
                                         </SelectItem>
                                     ))
                                 )}
@@ -163,9 +177,9 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
 
                                     // Map each subgroup to its "Home" category (the name of the first Main Group it belongs to)
                                     const getCategory = (sgName: string) => {
-                                        for (const [uuid, arr] of Object.entries(subgroupOrder)) {
+                                        for (const [uuid, arr] of Object.entries(typedSubgroupOrder)) {
                                             if (Array.isArray(arr) && arr.includes(sgName)) {
-                                                const mgName = mainCatalogGroups[uuid]?.name || "General";
+                                                const mgName = typedMainCatalogGroups[uuid]?.name || "General";
                                                 return formatDisplayName(mgName).replace(/[\[\]❗️❗]/g, '').trim();
                                             }
                                         }

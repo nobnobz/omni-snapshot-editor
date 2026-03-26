@@ -1,6 +1,7 @@
 /**
  * Utilities for decoding and encoding the _data base64 strings in the Omni Config.
  */
+import { produce } from "immer";
 
 type UnknownRecord = Record<string, unknown>;
 type Base64DataNode = { _data: string };
@@ -83,6 +84,9 @@ export const encodeConfig = (
     // List of keys that Omni EXPECTS to be base64 wrapped even if they weren't in original
     const ALWAYS_WRAPPED_KEYS = [
         "mdblist_enabled_ratings",
+        "mdblist_rating_order",
+        "mdblist_badge_text_overrides",
+        "mdblist_badge_color_hex_values",
         "selected_catalogs",
         "pinned_catalogs",
         "small_catalogs",
@@ -142,9 +146,6 @@ export const encodeConfig = (
  * Prunes disabled catalogs from specific arrays (like ordering arrays or selected catalogs).
  */
 export const pruneDisabledCatalogs = (values: Record<string, unknown>, disabledCatalogs: Set<string>) => {
-    // Deep clone to avoid mutating state directly during export
-    const cloned = JSON.parse(JSON.stringify(values)) as unknown;
-
     const pruneArray = (arr: unknown[]) => arr.filter(item => {
         if (typeof item === 'string') {
             return !disabledCatalogs.has(item);
@@ -180,7 +181,9 @@ export const pruneDisabledCatalogs = (values: Record<string, unknown>, disabledC
         return obj;
     };
 
-    return walkAndPrune(cloned);
+    return produce(values, (draft) => {
+        walkAndPrune(draft);
+    });
 };
 
 /**
@@ -188,8 +191,6 @@ export const pruneDisabledCatalogs = (values: Record<string, unknown>, disabledC
  * `disabledKeys` contains dot-notation paths like "parent.child.key".
  */
 export const pruneDisabledKeys = (values: Record<string, unknown>, disabledKeys: Set<string>) => {
-    const cloned = JSON.parse(JSON.stringify(values)) as unknown;
-
     const walkAndPrune = (obj: unknown, currentPath: string[]): unknown => {
         if (isObjectRecord(obj)) {
             for (const key in obj) {
@@ -204,7 +205,9 @@ export const pruneDisabledKeys = (values: Record<string, unknown>, disabledKeys:
         return obj;
     };
 
-    return walkAndPrune(cloned, []);
+    return produce(values, (draft) => {
+        walkAndPrune(draft, []);
+    });
 };
 /**
  * Validates if the given object is a valid Omni Configuration structure.

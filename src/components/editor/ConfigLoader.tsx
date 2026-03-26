@@ -18,7 +18,6 @@ import {
     ChevronDown,
     FileDown,
     ExternalLink,
-    ChevronRight,
     UploadCloud,
     RefreshCcw,
     type LucideIcon,
@@ -26,7 +25,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ManagerSwitcher } from "@/components/manager-switcher";
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog } from "@/components/ui/dialog";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -39,6 +38,12 @@ import { TemplateGuide } from "@/components/editor/TemplateGuide";
 import { Documentation } from "@/components/editor/Documentation";
 import { UpdateGuide } from "@/components/editor/UpdateGuide";
 import { FALLBACK_TEMPLATE_URLS, findTemplateByKind, isTemplateOfKind } from "@/lib/template-manifest";
+import {
+    MDBLIST_DEFAULT_BADGE_COLOR_VALUES,
+    MDBLIST_DEFAULT_BADGE_TEXT_OVERRIDES,
+    MDBLIST_DEFAULT_ENABLED_RATINGS,
+    MDBLIST_RATING_KEYS,
+} from "@/lib/mdblist-ratings";
 import type { OmniConfig } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { downloadTemplateFile, shouldOfferTemplateUrlChoice } from "@/lib/template-download";
@@ -47,6 +52,7 @@ import { editorHover, editorLoader, editorNoticeTone, editorSurface } from "@/co
 import { AppMeta } from "@/components/editor/AppMeta";
 import { TemplateDownloadChoiceDialog } from "@/components/editor/TemplateDownloadChoiceDialog";
 import { AIOMetadataTemplateChoiceDialog } from "@/components/editor/AIOMetadataTemplateChoiceDialog";
+import { fetchTextWithLimits } from "@/lib/remote-fetch";
 
 type DownloadableTemplate = {
     id: string;
@@ -81,6 +87,10 @@ type LoaderBadgeTone = "primary" | "neutral" | "pink" | "emerald" | "violet" | "
 
 const MAX_UPLOAD_SIZE_MB = 5;
 const MAX_UPLOAD_SIZE_BYTES = MAX_UPLOAD_SIZE_MB * 1024 * 1024;
+const encodeBase64Unicode = (value: string) =>
+    btoa(encodeURIComponent(value).replace(/%([0-9A-F]{2})/g, (_match, hex) =>
+        String.fromCharCode(parseInt(hex, 16))
+    ));
 
 const loaderBadgeToneClass: Record<LoaderBadgeTone, string> = {
     primary: "border-primary/24 bg-primary/[0.045] text-primary/90 dark:border-primary/22 dark:bg-primary/10 dark:text-primary",
@@ -304,13 +314,10 @@ export function ConfigLoader() {
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`);
-            }
-            const buffer = await response.arrayBuffer();
-            const decoder = new TextDecoder("utf-8");
-            const text = decoder.decode(buffer);
+            const text = await fetchTextWithLimits(url, {
+                timeoutMs: 12000,
+                maxBytes: 5_000_000,
+            });
             const json = repairMojibakeInConfig(JSON.parse(text)) as OmniConfig;
 
             if (!validateOmniConfig(json)) {
@@ -399,7 +406,7 @@ export function ConfigLoader() {
     };
 
     const handleCreateBlank = () => {
-        const wrap = (val: JsonValue): { _data: string } => ({ _data: btoa(JSON.stringify(val)) });
+        const wrap = (val: JsonValue): { _data: string } => ({ _data: encodeBase64Unicode(JSON.stringify(val)) });
         const skeleton: LoaderSkeleton = {
             name: "New Project",
             version: "1.0.0",
@@ -443,7 +450,10 @@ export function ConfigLoader() {
                 hide_addon_info_in_catalog_names: true,
                 hidden_stream_button_elements: ["Metadata Tags", "Addon Name"],
 
-                mdblist_enabled_ratings: wrap(["tomatoes", "imdb"]),
+                mdblist_enabled_ratings: wrap(MDBLIST_DEFAULT_ENABLED_RATINGS),
+                mdblist_rating_order: wrap(MDBLIST_RATING_KEYS),
+                mdblist_badge_text_overrides: wrap(MDBLIST_DEFAULT_BADGE_TEXT_OVERRIDES),
+                mdblist_badge_color_hex_values: wrap(MDBLIST_DEFAULT_BADGE_COLOR_VALUES),
                 searchEnabled: false,
                 traktSearchEnabled: false,
                 preferred_audio_language: "eng",

@@ -1,11 +1,12 @@
 "use client";
 
-import { useId, useState, useEffect, useRef, Fragment } from "react";
-import { useConfig } from "@/context/ConfigContext";
+import { useId, useState, useEffect, useRef, Fragment, useMemo } from "react";
+import { useConfigActions, useConfigSelector } from "@/context/ConfigContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { GenericRenderer } from "@/components/editor/GenericRenderer";
 import { CatalogEditor } from "@/components/editor/CatalogEditor";
+import { MdblistRatingsEditor } from "@/components/editor/MdblistRatingsEditor";
 import { ShelfOrderingEditor } from "@/components/editor/ShelfOrderingEditor";
 import { StreamElementOrderingEditor } from "@/components/editor/StreamElementOrderingEditor";
 import { UnifiedSubgroupEditor } from "@/components/editor/UnifiedSubgroupEditor";
@@ -63,11 +64,16 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { CatalogFallback } from "@/lib/catalog-fallbacks";
+import { analyzeAIOMetadataCatalogMismatches } from "@/lib/aiometadata-mismatch";
+import { parseAIOMetadataFallbacks } from "@/lib/aiometadata-sync";
 import { cn, isIos } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import { editorAction, editorHover, editorNoticeTone, editorSurface } from "@/components/editor/ui/style-contract";
 import { AppMeta } from "@/components/editor/AppMeta";
+import { EditorPerfDebugPanel } from "@/components/editor/EditorPerfDebugPanel";
+import { measureAsync, measureSync } from "@/lib/perf";
+import { shallowEqualObject } from "@/lib/equality";
+import { fetchTextWithLimits } from "@/lib/remote-fetch";
 
 type UiNotice = {
     tone: "success" | "error" | "info";
@@ -99,7 +105,27 @@ const EDITOR_SECTIONS = [
 const AIOMETADATA_SYNC_STORAGE_KEY = "omni_aiometadata_sync_v1";
 
 export function MainEditor() {
-    const { originalConfig, currentValues, fileName, exportConfig, exportPartialConfig, customFallbacks, setCustomFallbacks, discardSession } = useConfig();
+    const {
+        originalConfig,
+        currentValues,
+        catalogs,
+        fileName,
+        customFallbacks,
+        sessionSaveStatus,
+    } = useConfigSelector((state) => ({
+        originalConfig: state.originalConfig,
+        currentValues: state.currentValues,
+        catalogs: state.catalogs,
+        fileName: state.fileName,
+        customFallbacks: state.customFallbacks,
+        sessionSaveStatus: state.sessionSaveStatus,
+    }), shallowEqualObject);
+    const {
+        exportConfig,
+        exportPartialConfig,
+        setCustomFallbacks,
+        discardSession,
+    } = useConfigActions();
     const searchTerm = "";
     const exportSetupNameId = useId();
     const fallbackFileInputRef = useRef<HTMLInputElement>(null);
@@ -125,6 +151,7 @@ export function MainEditor() {
     const [uiNotice, setUiNotice] = useState<UiNotice | null>(null);
     const [isFallbackDropActive, setIsFallbackDropActive] = useState(false);
     const [isIosDevice, setIsIosDevice] = useState(false);
+    const activeAioImportRequestRef = useRef<Promise<void> | null>(null);
     const { theme, setTheme } = useTheme();
 
     useEffect(() => {
@@ -400,6 +427,7 @@ export function MainEditor() {
         "subtitle_color",
         "enable_external_player_trakt_scrobbling",
         "image_cache_duration",
+        "mdblist_enabled_ratings",
         "mdblist_badge_color_hex_values",
         "mdblist_badge_text_overrides",
         "disabled_shelves",
@@ -619,42 +647,10 @@ export function MainEditor() {
         }
     ) => {
         try {
-            const data = JSON.parse(jsonText);
-            
-            // Handle different AIOMetadata export formats:
-            // 1. Direct array of catalogs: [...]
-            // 2. Full export/manifest format: { config: { catalogs: [...] } }
-            // 3. Simple catalogs format: { catalogs: [...] }
-            const catalogsList = Array.isArray(data) 
-                ? data 
-                : (data?.config?.catalogs || data?.catalogs);
+            const { fallbacks, addedCount } = parseAIOMetadataFallbacks(jsonText);
 
-            if (!catalogsList || !Array.isArray(catalogsList)) {
-                showNotice("error", "Invalid JSON format. Could not find catalogs array.", "aiometadata");
-                return;
-            }
-
-            const newFallbacks: Record<string, string | CatalogFallback> = { ...customFallbacks };
-            let addedCount = 0;
-            for (const cat of catalogsList) {
-                if (cat.id && cat.name) {
-                    // Extract type if available (AIOMetadata usually has 'type' or 'displayType')
-                    const type = cat.type || cat.displayType || (cat.metadata?.mediatype === 'movie' ? 'movie' : cat.metadata?.mediatype === 'tv' ? 'series' : undefined);
-                    
-                    if (type) {
-                        newFallbacks[cat.id] = { 
-                            name: cat.name, 
-                            type: type === 'tv' ? 'series' : type 
-                        };
-                    } else {
-                        newFallbacks[cat.id] = cat.name;
-                    }
-                    addedCount++;
-                }
-            }
-
-            setCustomFallbacks(newFallbacks);
-            localStorage.setItem("omni_custom_fallbacks", JSON.stringify(newFallbacks));
+            setCustomFallbacks(fallbacks);
+            localStorage.setItem("omni_custom_fallbacks", JSON.stringify(fallbacks));
             persistAIOMetadataSyncState({
                 ...syncSource,
                 syncedAt: new Date().toISOString(),
@@ -668,7 +664,10 @@ export function MainEditor() {
             }
         } catch (err: unknown) {
             console.error(err);
-            showNotice("error", "Failed to parse JSON. Please ensure it is valid JSON.", "aiometadata");
+            const message = err instanceof Error && err.message === "Invalid AIOMetadata format. Could not find catalogs array."
+                ? err.message
+                : "Failed to parse JSON. Please ensure it is valid JSON.";
+            showNotice("error", message, "aiometadata");
         }
     };
 
@@ -720,35 +719,46 @@ export function MainEditor() {
 
         // Check if input is a URL
         if (input.startsWith("http://") || input.startsWith("https://")) {
-            setIsImportingUrl(true);
-            try {
-                const response = await fetch(input);
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch manifest: ${response.statusText}`);
-                }
-                const text = await response.text();
-                preserveScrollPosition(() => {
-                    processAIOMetadata(text, {
-                        sourceType: "url",
-                        sourceLabel: "Manifest URL",
-                        sourceValue: input,
-                    });
-                });
-            } catch (err: unknown) {
-                console.error(err);
-                showNotice("error", err instanceof Error ? err.message : "Failed to fetch AIOMetadata manifest.", "aiometadata");
-            } finally {
-                setIsImportingUrl(false);
+            if (activeAioImportRequestRef.current) {
+                await activeAioImportRequestRef.current;
+                return;
             }
+
+            setIsImportingUrl(true);
+            const request = measureAsync("aiometadataImportUrl", async () => {
+                try {
+                    const text = await fetchTextWithLimits(input, {
+                        timeoutMs: 12000,
+                        maxBytes: 5_000_000,
+                    });
+                    preserveScrollPosition(() => {
+                        processAIOMetadata(text, {
+                            sourceType: "url",
+                            sourceLabel: "Manifest URL",
+                            sourceValue: input,
+                        });
+                    });
+                } catch (err: unknown) {
+                    console.error(err);
+                    showNotice("error", err instanceof Error ? err.message : "Failed to fetch AIOMetadata manifest.", "aiometadata");
+                } finally {
+                    setIsImportingUrl(false);
+                    activeAioImportRequestRef.current = null;
+                }
+            }, { sourceType: "url" });
+            activeAioImportRequestRef.current = request;
+            await request;
             return;
         }
 
-        preserveScrollPosition(() => {
-            processAIOMetadata(input, {
-                sourceType: "json",
-                sourceLabel: "Pasted JSON",
+        await measureAsync("aiometadataImportJson", async () => {
+            preserveScrollPosition(() => {
+                processAIOMetadata(input, {
+                    sourceType: "json",
+                    sourceLabel: "Pasted JSON",
+                });
             });
-        });
+        }, { sourceType: "json" });
     };
 
     const handleResyncAIOMetadata = async () => {
@@ -807,6 +817,22 @@ export function MainEditor() {
             }
             : null);
     const showAioSyncedState = !!activeAIOMetadataSync && !isAioImportEditorOpen;
+    const aiomMismatchSummary = useMemo(() => measureSync("analyzeAIOMetadataCatalogMismatches", () => analyzeAIOMetadataCatalogMismatches({
+        catalogs,
+        catalogGroups: currentValues.catalog_groups || {},
+        mainCatalogGroups: currentValues.main_catalog_groups || {},
+        fallbacks: customFallbacks,
+    }), {
+        manifestCatalogCount: catalogs.length,
+        subgroupCount: Object.keys(currentValues.catalog_groups || {}).length,
+    }), [catalogs, currentValues.catalog_groups, currentValues.main_catalog_groups, customFallbacks]);
+    const aiomIssueSummaryText = useMemo(() => {
+        if (!aiomMismatchSummary.hasIssues) {
+            return "";
+        }
+
+        return "At least one subgroup has linked catalogs missing from the synced AIOMetadata catalogs or has no linked catalogs.";
+    }, [aiomMismatchSummary.hasIssues]);
 
     return (
         <div className="relative flex min-h-screen lg:h-[100dvh] w-full max-w-[100vw] overflow-x-hidden lg:overflow-y-hidden bg-transparent text-foreground font-sans">
@@ -1128,6 +1154,11 @@ export function MainEditor() {
                     </section>
 
                     {uiNotice && !["aiometadata", "aiometadata-editor"].includes(uiNotice.placement ?? "global") && renderNotice(uiNotice)}
+                    {sessionSaveStatus?.status === "skipped_too_large" && (
+                        <div className={cn("mb-4 rounded-2xl border p-3 text-sm", editorNoticeTone.warning)}>
+                            Session backup is temporarily limited because the editor state is very large. Your current editing session continues normally.
+                        </div>
+                    )}
 
                     {sections.map(section => {
                         // For predefined sections, show all specified keys
@@ -1191,8 +1222,8 @@ export function MainEditor() {
                                             </div>
                                             {uiNotice && uiNotice.placement === "aiometadata" && renderNotice(uiNotice)}
                                             {showAioSyncedState ? (
-                                                <div className="rounded-xl border border-emerald-500/16 bg-emerald-500/7 px-3.5 py-3 shadow-[0_8px_20px_rgba(34,197,94,0.06)]">
-                                                    <div className="flex flex-col gap-3">
+                                                <div className="space-y-3">
+                                                    <div className="rounded-xl border border-emerald-500/16 bg-emerald-500/7 px-3.5 py-3 shadow-[0_8px_20px_rgba(34,197,94,0.06)]">
                                                         <div className="flex items-start justify-between gap-3">
                                                             <div className="flex items-center gap-3 min-w-0">
                                                                 <div className="rounded-xl border border-emerald-500/16 bg-emerald-500/10 p-2 text-emerald-600 dark:text-emerald-400 shrink-0">
@@ -1239,6 +1270,21 @@ export function MainEditor() {
                                                             </div>
                                                         </div>
                                                     </div>
+
+                                                    {aiomMismatchSummary.unmatchedLinkedCatalogIds.length > 0 && aiomIssueSummaryText && (
+                                                        <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.08] px-3.5 py-3 text-sm shadow-[0_6px_14px_rgba(245,158,11,0.06)]">
+                                                            <div className="flex items-center gap-2.5">
+                                                                <div className="rounded-lg border border-amber-500/18 bg-amber-500/10 p-1.5 text-amber-600 dark:text-amber-400 shrink-0">
+                                                                    <AlertTriangle className="h-4 w-4" />
+                                                                </div>
+                                                                <div className="min-w-0">
+                                                                    <p className="font-medium text-amber-800 dark:text-amber-200">
+                                                                        {aiomIssueSummaryText}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ) : (
                                                 <div
@@ -1356,7 +1402,7 @@ export function MainEditor() {
                                                 <p className="text-sm text-foreground/70 px-1 leading-relaxed">
                                                     Create and organize groups, assign catalogs, and update your setup.
                                                 </p>
-                                                <UnifiedSubgroupEditor onOpenGuide={(guide) => {
+                                                <UnifiedSubgroupEditor aiomMismatchSummary={aiomMismatchSummary} onOpenGuide={(guide) => {
                                                     setActiveGuide(guide);
                                                     setIsGuideDialogOpen(true);
                                                 }} />
@@ -1419,6 +1465,7 @@ export function MainEditor() {
                                                     <ShelfOrderingEditor />
                                                 </Fragment>
                                             )}
+                                            <MdblistRatingsEditor />
                                         </div>
                                     ) : (
                                         <div className="space-y-6">
@@ -1654,6 +1701,7 @@ export function MainEditor() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+            <EditorPerfDebugPanel />
         </div>
     );
 }

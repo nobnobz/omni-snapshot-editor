@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
-import { useConfig } from "@/context/ConfigContext";
+import { useConfigActions, useConfigSelector } from "@/context/ConfigContext";
 import {
     DndContext,
     closestCenter,
@@ -92,10 +92,10 @@ function SortableShelfItem({
 }
 
 export function ShelfOrderingEditor() {
-    const { currentValues, toggleShelf, reorderShelves } = useConfig();
-    
-    const shelfOrder = React.useMemo(() => (currentValues.shelf_order as string[]) || [], [currentValues.shelf_order]);
-    const disabledShelves = React.useMemo(() => new Set((currentValues.disabled_shelves as string[]) || []), [currentValues.disabled_shelves]);
+    const shelfOrder = useConfigSelector((state) => (state.currentValues.shelf_order as string[]) || []);
+    const disabledShelfIds = useConfigSelector((state) => (state.currentValues.disabled_shelves as string[]) || []);
+    const disabledShelves = React.useMemo(() => new Set(disabledShelfIds), [disabledShelfIds]);
+    const { toggleShelf, reorderShelves } = useConfigActions();
 
     const [items, setItems] = useState(shelfOrder);
     const [activeId, setActiveId] = useState<string | null>(null);
