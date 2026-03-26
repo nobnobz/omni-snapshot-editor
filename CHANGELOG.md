@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.5.3] - 2026-03-26
+### Added
+- **AIOMetadata Mismatch Detection**: Enhanced detection for linked catalogs in subgroups that are missing from synchronized AIOMetadata.
+- **Improved Warning System**: Added subtle warning badges in the Group Manager for affected MainGroups and Subgroups to improve issue discoverability.
+- **Contextual Warning Icons**: Warning triangles now appear directly next to the affected linked catalogs in the editor.
+- **MDBList Ratings Support**: Expanded support for MDBList ratings and badges, including updated editor logic and test coverage.
+
+### Improved
+- **AIOMetadata UI**: Redesigned the warning box to visually separate it from the green sync status, providing clearer distinction between system status and configuration issues.
+- **Refined Alerts**: Subgroups without linked catalogs now use localized warning indicators instead of global alerts to reduce dashboard noise.
+- **Performance Optimization**: Fixed input lag when editing Poster Image URLs by decoupling the URL editor from the subgroup structure.
+- **Autosave Behavior**: Optimized session saving to favor idle periods and tab changes, preventing lag during active typing.
+
+### Changed
+- **Data Integrity**: Removed legacy backup catalog data; the editor now strictly uses uploaded or synchronized AIOMetadata.
+- **Architecture**: Centralized and unit-tested the AIOMetadata validation logic into a dedicated utility.
+
+### Fixed
+- **Input Responsiveness**: Resolved rendering bottlenecks in the URL editor for a smoother typing experience.
+- **Release Stability**: Verified all systems via successful linting, type-checking, testing, and production build cycles.
+
 ## [0.5.2] - 2026-03-24
 ### Improved
 - **UI/UX Polish**: Refined Welcome Screen CTA area, improved mobile spacing, and tuned button visual balance.
