@@ -711,6 +711,10 @@ const getOccurrenceSortKey = (occurrence: AIOMetadataCatalogOccurrence) =>
         occurrence.exportCatalog.name.toLowerCase(),
     ].join(":");
 
+const CATALOG_TYPE_DECORATION_RE = /\s+\((Movies|Shows|All|Anime)\)\s*$/iu;
+
+const stripCatalogTypeDecoration = (value: string) => value.replace(CATALOG_TYPE_DECORATION_RE, "").trim();
+
 export function getCanonicalOccurrencesByComparisonKey(
     inventory: AIOMetadataExportInventory
 ) {
@@ -1036,12 +1040,20 @@ export function matchesCatalogRule(
     occurrence: AIOMetadataCatalogOccurrence,
     rule: Extract<AIOMetadataTemplateTargetRule, { kind: "mdblist-catalog" | "trakt-catalog" }>
 ) {
+    const exportNameWithoutWidget = normalizeNamePrefix(occurrence.exportCatalog.name);
+    const matchCandidates = Array.from(new Set([
+        occurrence.exportCatalog.name,
+        occurrence.rawName,
+        occurrence.itemName,
+        exportNameWithoutWidget,
+        stripCatalogTypeDecoration(exportNameWithoutWidget),
+    ].filter(Boolean)));
     const idMatch = (rule.match.catalogIds || []).some((catalogId) => catalogId === occurrence.exportCatalog.id);
     const nameMatch = (rule.match.names || []).some((name) =>
-        normalizeMatchValue(name) === normalizeMatchValue(occurrence.exportCatalog.name)
+        matchCandidates.some((candidate) => normalizeMatchValue(name) === normalizeMatchValue(candidate))
     );
     const prefixMatch = (rule.match.namePrefixes || []).some((prefix) =>
-        occurrence.exportCatalog.name.startsWith(prefix)
+        matchCandidates.some((candidate) => candidate.startsWith(prefix))
     );
 
     return idMatch || nameMatch || prefixMatch;
@@ -1065,6 +1077,28 @@ const mergeOverrideValues = <T extends Record<string, unknown>>(
     });
 
     return nextValue;
+};
+
+const getTemplateRuleSpecificity = (rule: AIOMetadataTemplateTargetRule) => {
+    if (rule.kind === "trakt-watchlist") {
+        return 500;
+    }
+
+    if (rule.kind === "mdblist-catalog" || rule.kind === "trakt-catalog") {
+        const hasExactIds = (rule.match.catalogIds || []).length > 0;
+        const hasExactNames = (rule.match.names || []).length > 0;
+        const hasPrefixes = (rule.match.namePrefixes || []).length > 0;
+
+        if (hasExactIds || hasExactNames) return 400;
+        if (hasPrefixes) return 300;
+        return 250;
+    }
+
+    const hasWidgetNames = (rule.match.widgetNames || []).length > 0;
+    const hasPrefixes = (rule.match.namePrefixes || []).length > 0;
+
+    if (hasWidgetNames || hasPrefixes) return 200;
+    return 100;
 };
 
 const removeOverrideFields = <T extends Record<string, unknown>>(
@@ -1149,8 +1183,19 @@ export function applyAIOMetadataExportTemplate({
         catalogs: { ...currentOverrides.catalogs },
     };
     const affectedComparisonKeys = new Set<string>();
+    const orderedRules = template.rules
+        .map((rule, index) => ({ rule, index, specificity: getTemplateRuleSpecificity(rule) }))
+        .sort((left, right) => {
+            if (left.specificity !== right.specificity) {
+                return mode === "fill-unset"
+                    ? right.specificity - left.specificity
+                    : left.specificity - right.specificity;
+            }
 
-    template.rules.forEach((rule) => {
+            return left.index - right.index;
+        });
+
+    orderedRules.forEach(({ rule }) => {
         if (rule.kind === "mdblist-group") {
             const matchingOccurrences = getMatchingGroupRuleOccurrences(canonicalOccurrences, rule);
             const fullyMatchedWidgetIds = getFullyMatchedWidgetIds(canonicalOccurrences, rule);

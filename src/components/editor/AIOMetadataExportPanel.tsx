@@ -1038,6 +1038,7 @@ export function AIOMetadataExportPanel({
                 target={settingsDialogTarget}
                 inventory={inventory}
                 overrides={sanitizedExportSettingsOverrides}
+                useUmeSorting={useUmeSorting}
                 onChange={setExportSettingsOverrides}
             />
             <AIOMetadataExportTemplateDialog

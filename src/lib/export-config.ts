@@ -41,6 +41,11 @@ type BuildPartialExportConfigArgs = {
     catalogs: ManifestCatalog[];
 };
 
+const OMITTED_LEGACY_CATALOG_GROUP_NAMES = new Set([
+    "❗️[Awards]",
+    "❗[Awards]",
+]);
+
 export const CATALOG_RELATED_EXPORT_KEYS = [
     "selected_catalogs",
     "pinned_catalogs",
@@ -85,6 +90,54 @@ export const materializeSelectedCatalogsForExport = (
     ...values,
     selected_catalogs: getExplicitSelectedCatalogs(catalogs),
 });
+
+const sanitizeLegacyCatalogGroupsForExport = (values: ConfigValues): ConfigValues =>
+    produce(values, (draft) => {
+        if (draft.catalog_groups && typeof draft.catalog_groups === "object" && !Array.isArray(draft.catalog_groups)) {
+            Object.keys(draft.catalog_groups).forEach((groupName) => {
+                if (OMITTED_LEGACY_CATALOG_GROUP_NAMES.has(groupName)) {
+                    delete draft.catalog_groups[groupName];
+                }
+            });
+        }
+
+        if (draft.catalog_group_image_urls && typeof draft.catalog_group_image_urls === "object" && !Array.isArray(draft.catalog_group_image_urls)) {
+            Object.keys(draft.catalog_group_image_urls).forEach((groupName) => {
+                if (OMITTED_LEGACY_CATALOG_GROUP_NAMES.has(groupName)) {
+                    delete draft.catalog_group_image_urls[groupName];
+                }
+            });
+        }
+
+        if (Array.isArray(draft.catalog_group_order)) {
+            draft.catalog_group_order = draft.catalog_group_order.filter(
+                (groupName: string) => !OMITTED_LEGACY_CATALOG_GROUP_NAMES.has(groupName)
+            );
+        }
+
+        if (draft.main_catalog_groups && typeof draft.main_catalog_groups === "object" && !Array.isArray(draft.main_catalog_groups)) {
+            Object.values(draft.main_catalog_groups).forEach((mainGroup) => {
+                if (!mainGroup || typeof mainGroup !== "object") return;
+                const mutableMainGroup = mainGroup as { subgroupNames?: string[] };
+                if (Array.isArray(mutableMainGroup.subgroupNames)) {
+                    mutableMainGroup.subgroupNames = mutableMainGroup.subgroupNames.filter(
+                        (subgroupName: string) => !OMITTED_LEGACY_CATALOG_GROUP_NAMES.has(subgroupName)
+                    );
+                }
+            });
+        }
+
+        if (draft.subgroup_order && typeof draft.subgroup_order === "object" && !Array.isArray(draft.subgroup_order)) {
+            Object.keys(draft.subgroup_order).forEach((uuid) => {
+                const subgroupNames = draft.subgroup_order[uuid];
+                if (Array.isArray(subgroupNames)) {
+                    draft.subgroup_order[uuid] = subgroupNames.filter(
+                        (subgroupName: string) => !OMITTED_LEGACY_CATALOG_GROUP_NAMES.has(subgroupName)
+                    );
+                }
+            });
+        }
+    });
 
 export function buildExportConfig({
     originalConfig,
@@ -157,8 +210,10 @@ export function buildExportConfig({
         }
     });
 
+    const sanitizedValues = sanitizeLegacyCatalogGroupsForExport(validatedValues);
+
     // 5. Sync catalog state back to decoded values before encoding
-    const valuesToExport = { ...validatedValues };
+    const valuesToExport = { ...sanitizedValues };
     const activeIds = catalogs.map(c => c.id);
     const topRowIds = catalogs.filter(c => c.showInHome).map(c => c.id);
     const customNamesOut: Record<string, string> = {};
@@ -270,9 +325,11 @@ export function buildPartialExportConfig({
         }
     });
 
+    const sanitizedValues = sanitizeLegacyCatalogGroupsForExport(validatedValues);
+
     const valuesToExport = isCatalogRelatedExport(sectionKeys)
-        ? materializeSelectedCatalogsForExport(validatedValues, catalogs)
-        : validatedValues;
+        ? materializeSelectedCatalogsForExport(sanitizedValues, catalogs)
+        : sanitizedValues;
 
     // Encode using the original values for format detection
     const originalValues = originalConfig.values || originalConfig.config || {};

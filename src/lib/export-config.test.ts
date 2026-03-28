@@ -214,6 +214,106 @@ describe("buildExportConfig", () => {
         expect(result.includedKeys).toContain("selected_catalogs");
     });
 
+    it("omits the legacy Awards placeholder group from full exports", () => {
+        const result = buildExportConfig({
+            originalConfig: {
+                values: {
+                    catalog_groups: wrap({
+                        "❗️[Awards]": [],
+                        "Real Group": ["movie:one"],
+                    }),
+                    catalog_group_order: wrap(["❗️[Awards]", "Real Group"]),
+                    catalog_group_image_urls: wrap({
+                        "❗️[Awards]": "https://example.com/awards.jpg",
+                        "Real Group": "https://example.com/real.jpg",
+                    }),
+                    main_catalog_groups: wrap({
+                        mg1: { name: "Collections", subgroupNames: ["❗️[Awards]", "Real Group"] },
+                    }),
+                    subgroup_order: wrap({
+                        mg1: ["❗️[Awards]", "Real Group"],
+                    }),
+                    selected_catalogs: wrap(["movie:one"]),
+                    catalog_ordering: wrap(["movie:one"]),
+                    top_row_catalogs: wrap([]),
+                }
+            },
+            currentValues: {
+                catalog_groups: {
+                    "❗️[Awards]": [],
+                    "Real Group": ["movie:one"],
+                },
+                catalog_group_order: ["❗️[Awards]", "Real Group"],
+                catalog_group_image_urls: {
+                    "❗️[Awards]": "https://example.com/awards.jpg",
+                    "Real Group": "https://example.com/real.jpg",
+                },
+                main_catalog_groups: {
+                    mg1: { name: "Collections", subgroupNames: ["❗️[Awards]", "Real Group"] },
+                },
+                subgroup_order: {
+                    mg1: ["❗️[Awards]", "Real Group"],
+                },
+                selected_catalogs: ["movie:one"],
+                catalog_ordering: ["movie:one"],
+                top_row_catalogs: [],
+            },
+            initialValues: {
+                selected_catalogs: ["movie:one"],
+                catalog_ordering: ["movie:one"],
+                top_row_catalogs: [],
+            },
+            disabledKeys: new Set<string>(),
+            catalogs: [{ id: "movie:one", name: "One", enabled: true, showInHome: false }],
+            isSyntheticSession: false,
+        });
+
+        const decoded = decodeEditablePayload(result);
+
+        expect(decoded.catalog_groups).toEqual({
+            "Real Group": ["movie:one"],
+        });
+        expect(decoded.catalog_group_order).toEqual(["Real Group"]);
+        expect(decoded.catalog_group_image_urls).toEqual({
+            "Real Group": "https://example.com/real.jpg",
+        });
+        expect(decoded.main_catalog_groups).toEqual({
+            mg1: { name: "Collections", subgroupNames: ["Real Group"] },
+        });
+        expect(decoded.subgroup_order).toEqual({
+            mg1: ["Real Group"],
+        });
+    });
+
+    it("omits the legacy Awards placeholder group from partial exports", () => {
+        const result = buildPartialExportConfig({
+            originalConfig: {
+                values: {
+                    catalog_groups: wrap({
+                        "❗️[Awards]": [],
+                        "Real Group": ["movie:one"],
+                    }),
+                    catalog_group_order: wrap(["❗️[Awards]", "Real Group"]),
+                }
+            },
+            currentValues: {
+                catalog_groups: {
+                    "❗️[Awards]": [],
+                    "Real Group": ["movie:one"],
+                },
+                catalog_group_order: ["❗️[Awards]", "Real Group"],
+            },
+            disabledKeys: new Set<string>(),
+            sectionKeys: ["catalog_groups", "catalog_group_order"],
+            catalogs: [{ id: "movie:one", name: "One", enabled: true, showInHome: false }],
+        });
+
+        expect(decodeConfig(result.values?.catalog_groups)).toEqual({
+            "Real Group": ["movie:one"],
+        });
+        expect(decodeConfig(result.values?.catalog_group_order)).toEqual(["Real Group"]);
+    });
+
     it("config-root export does not reintroduce pruned keys", () => {
         const originalConfig = {
             config: {

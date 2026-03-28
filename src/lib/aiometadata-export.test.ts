@@ -1330,6 +1330,323 @@ describe("aiometadata export helpers", () => {
         });
     });
 
+    it("applies UME sorting special cases for named catalog exceptions", () => {
+        const inventory = buildAIOMetadataExportInventory({
+            currentValues: {
+                main_group_order: ["discover-group"],
+                main_catalog_groups: {
+                    "discover-group": {
+                        name: "Discover",
+                        subgroupNames: ["Special Picks"],
+                    },
+                },
+                catalog_groups: {
+                    "Special Picks": [
+                        "movie:mdblist.201",
+                        "series:mdblist.202",
+                        "movie:mdblist.203",
+                        "movie:mdblist.204",
+                        "movie:mdblist.205",
+                        "movie:mdblist.206",
+                        "movie:mdblist.207",
+                        "movie:mdblist.208",
+                        "movie:mdblist.209",
+                        "series:mdblist.210",
+                    ],
+                },
+                custom_catalog_names: {
+                    "mdblist.201": "IMDb Top Movies",
+                    "mdblist.202": "IMDb Top Shows",
+                    "mdblist.203": "Oscars 2026",
+                    "mdblist.204": "Academy Awards",
+                    "mdblist.205": "Emmy Awards",
+                    "mdblist.206": "Golden Globe Awards",
+                    "mdblist.207": "Cannes Film Festival",
+                    "mdblist.208": "Marvel",
+                    "mdblist.209": "DC Universe",
+                    "mdblist.210": "DC Universe",
+                },
+            },
+            importedCatalogs: [],
+            customFallbacks: {
+                "mdblist.201": { name: "IMDb Top Movies", type: "movie" },
+                "mdblist.202": { name: "IMDb Top Shows", type: "series" },
+                "mdblist.203": { name: "Oscars 2026", type: "movie" },
+                "mdblist.204": { name: "Academy Awards", type: "movie" },
+                "mdblist.205": { name: "Emmy Awards", type: "movie" },
+                "mdblist.206": { name: "Golden Globe Awards", type: "movie" },
+                "mdblist.207": { name: "Cannes Film Festival", type: "movie" },
+                "mdblist.208": { name: "Marvel", type: "movie" },
+                "mdblist.209": { name: "DC Universe", type: "movie" },
+                "mdblist.210": { name: "DC Universe", type: "series" },
+            },
+        });
+
+        const result = applyAIOMetadataExportTemplate({
+            inventory,
+            currentOverrides: {
+                widgets: {},
+                items: {},
+                catalogs: {},
+            },
+            template: DEFAULT_AIOMETADATA_EXPORT_TEMPLATE,
+            mode: "fill-unset",
+        });
+
+        expect(result.nextOverrides.catalogs["mdblist.201"]).toEqual({
+            sort: "random",
+            order: "asc",
+            cacheTTL: 43200,
+        });
+        expect(result.nextOverrides.catalogs["mdblist.202"]).toEqual({
+            sort: "tmdbpopular",
+            order: "asc",
+            cacheTTL: 43200,
+        });
+        expect(result.nextOverrides.catalogs["mdblist.203"]).toEqual({
+            sort: "tmdbpopular",
+            order: "asc",
+            cacheTTL: 43200,
+        });
+        expect(result.nextOverrides.catalogs["mdblist.204"]).toEqual({
+            sort: "released",
+            order: "asc",
+            cacheTTL: 43200,
+        });
+        expect(result.nextOverrides.catalogs["mdblist.205"]).toEqual({
+            sort: "released",
+            order: "asc",
+            cacheTTL: 43200,
+        });
+        expect(result.nextOverrides.catalogs["mdblist.206"]).toEqual({
+            sort: "released",
+            order: "asc",
+            cacheTTL: 43200,
+        });
+        expect(result.nextOverrides.catalogs["mdblist.207"]).toEqual({
+            sort: "released",
+            order: "asc",
+            cacheTTL: 43200,
+        });
+        expect(result.nextOverrides.catalogs["mdblist.208"]).toEqual({
+            sort: "released",
+            order: "asc",
+            cacheTTL: 43200,
+        });
+        expect(result.nextOverrides.catalogs["mdblist.209"]).toEqual({
+            sort: "released",
+            order: "asc",
+            cacheTTL: 43200,
+        });
+        expect(result.nextOverrides.catalogs["mdblist.210"]).toEqual({
+            sort: "released",
+            order: "asc",
+            cacheTTL: 43200,
+        });
+    });
+
+    it("lets named UME special cases override generic discover latest rules in fill-unset mode", () => {
+        const inventory = buildAIOMetadataExportInventory({
+            currentValues: {
+                main_group_order: ["discover-group"],
+                main_catalog_groups: {
+                    "discover-group": {
+                        name: "Discover",
+                        subgroupNames: ["Latest"],
+                    },
+                },
+                catalog_groups: {
+                    Latest: ["movie:mdblist.201"],
+                },
+                custom_catalog_names: {
+                    "mdblist.201": "IMDb Top Movies",
+                },
+            },
+            importedCatalogs: [],
+            customFallbacks: {
+                "mdblist.201": { name: "IMDb Top Movies", type: "movie" },
+            },
+        });
+
+        const result = applyAIOMetadataExportTemplate({
+            inventory,
+            currentOverrides: {
+                widgets: {},
+                items: {},
+                catalogs: {},
+            },
+            template: DEFAULT_AIOMETADATA_EXPORT_TEMPLATE,
+            mode: "fill-unset",
+        });
+
+        expect(result.nextOverrides.catalogs["mdblist.201"]).toEqual({
+            sort: "random",
+            order: "asc",
+            cacheTTL: 43200,
+        });
+    });
+
+    it("lets named UME special cases override generic widget rules in replace-matching mode", () => {
+        const inventory = buildAIOMetadataExportInventory({
+            currentValues: {
+                main_group_order: ["discover-group", "collections-group"],
+                main_catalog_groups: {
+                    "discover-group": {
+                        name: "Discover",
+                        subgroupNames: ["Latest"],
+                    },
+                    "collections-group": {
+                        name: "Collections",
+                        subgroupNames: ["Collection Picks"],
+                    },
+                },
+                catalog_groups: {
+                    Latest: ["movie:mdblist.201"],
+                    "Collection Picks": ["movie:mdblist.204"],
+                },
+                custom_catalog_names: {
+                    "mdblist.201": "IMDb Top Movies",
+                    "mdblist.204": "Academy Awards",
+                },
+            },
+            importedCatalogs: [],
+            customFallbacks: {
+                "mdblist.201": { name: "IMDb Top Movies", type: "movie" },
+                "mdblist.204": { name: "Academy Awards", type: "movie" },
+            },
+        });
+
+        const result = applyAIOMetadataExportTemplate({
+            inventory,
+            currentOverrides: {
+                widgets: {},
+                items: {},
+                catalogs: {},
+            },
+            template: DEFAULT_AIOMETADATA_EXPORT_TEMPLATE,
+            mode: "replace-matching",
+        });
+
+        expect(result.nextOverrides.widgets["collections-group"]).toEqual({
+            mdblist: {
+                sort: "released",
+                order: "desc",
+                cacheTTL: 43200,
+            },
+        });
+        expect(result.nextOverrides.catalogs["mdblist.201"]).toEqual({
+            sort: "random",
+            order: "asc",
+            cacheTTL: 43200,
+        });
+        expect(result.nextOverrides.catalogs["mdblist.204"]).toEqual({
+            sort: "released",
+            order: "asc",
+            cacheTTL: 43200,
+        });
+    });
+
+    it("includes named UME special cases in effective default overrides", () => {
+        const inventory = buildAIOMetadataExportInventory({
+            currentValues: {
+                main_group_order: ["discover-group", "collections-group"],
+                main_catalog_groups: {
+                    "discover-group": {
+                        name: "Discover",
+                        subgroupNames: ["Latest"],
+                    },
+                    "collections-group": {
+                        name: "Collections",
+                        subgroupNames: ["Collection Picks"],
+                    },
+                },
+                catalog_groups: {
+                    Latest: ["movie:mdblist.201", "series:mdblist.202"],
+                    "Collection Picks": ["movie:mdblist.204"],
+                },
+                custom_catalog_names: {
+                    "mdblist.201": "IMDb Top Movies",
+                    "mdblist.202": "IMDb Top Shows",
+                    "mdblist.204": "Academy Awards",
+                },
+            },
+            importedCatalogs: [],
+            customFallbacks: {
+                "mdblist.201": { name: "IMDb Top Movies", type: "movie" },
+                "mdblist.202": { name: "IMDb Top Shows", type: "series" },
+                "mdblist.204": { name: "Academy Awards", type: "movie" },
+            },
+        });
+
+        const effectiveOverrides = getDefaultAIOMetadataExportOverrides({
+            inventory,
+            currentOverrides: {
+                widgets: {},
+                items: {},
+                catalogs: {},
+            },
+        });
+
+        expect(effectiveOverrides.catalogs["mdblist.201"]).toEqual({
+            sort: "random",
+            order: "asc",
+            cacheTTL: 43200,
+        });
+        expect(effectiveOverrides.catalogs["mdblist.202"]).toEqual({
+            sort: "tmdbpopular",
+            order: "asc",
+            cacheTTL: 43200,
+        });
+        expect(effectiveOverrides.catalogs["mdblist.204"]).toEqual({
+            sort: "released",
+            order: "asc",
+            cacheTTL: 43200,
+        });
+    });
+
+    it("matches UME special-case catalog rules from subgroup-derived export names", () => {
+        const inventory = buildAIOMetadataExportInventory({
+            currentValues: {
+                main_group_order: ["collections-group"],
+                main_catalog_groups: {
+                    "collections-group": {
+                        name: "Collections",
+                        subgroupNames: ["IMDb Top Movies", "Academy Awards"],
+                    },
+                },
+                catalog_groups: {
+                    "IMDb Top Movies": ["movie:mdblist.501"],
+                    "Academy Awards": ["movie:mdblist.502"],
+                },
+            },
+            importedCatalogs: [],
+            customFallbacks: {
+                "mdblist.501": { name: "Some Other Source Name", type: "movie" },
+                "mdblist.502": { name: "Another Source Name", type: "movie" },
+            },
+        });
+
+        const effectiveOverrides = getDefaultAIOMetadataExportOverrides({
+            inventory,
+            currentOverrides: {
+                widgets: {},
+                items: {},
+                catalogs: {},
+            },
+        });
+
+        expect(effectiveOverrides.catalogs["mdblist.501"]).toEqual({
+            sort: "random",
+            order: "asc",
+            cacheTTL: 43200,
+        });
+        expect(effectiveOverrides.catalogs["mdblist.502"]).toEqual({
+            sort: "released",
+            order: "asc",
+            cacheTTL: 43200,
+        });
+    });
+
     it("preserves existing matching overrides in fill-unset mode and replaces them in replace-matching mode", () => {
         const inventory = buildAIOMetadataExportInventory({
             currentValues: templateCurrentValues,

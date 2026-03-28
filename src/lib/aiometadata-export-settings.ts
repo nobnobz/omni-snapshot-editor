@@ -442,6 +442,58 @@ export const DEFAULT_AIOMETADATA_EXPORT_TEMPLATE: AIOMetadataExportTemplateDefin
         {
             kind: "mdblist-catalog",
             match: {
+                names: ["IMDb Top Movies"],
+            },
+            values: {
+                sort: "random",
+                order: "asc",
+                cacheTTL: 43200,
+            },
+        },
+        {
+            kind: "mdblist-catalog",
+            match: {
+                names: ["IMDb Top Shows"],
+            },
+            values: {
+                sort: "tmdbpopular",
+                order: "asc",
+                cacheTTL: 43200,
+            },
+        },
+        {
+            kind: "mdblist-catalog",
+            match: {
+                names: ["Oscars 2026"],
+            },
+            values: {
+                sort: "tmdbpopular",
+                order: "asc",
+                cacheTTL: 43200,
+            },
+        },
+        {
+            kind: "mdblist-catalog",
+            match: {
+                names: [
+                    "Academy Awards",
+                    "Emmy Awards",
+                    "Golden Globe Awards",
+                    "Cannes Film Festival",
+                    "Marvel",
+                    "DC",
+                    "DC Universe",
+                ],
+            },
+            values: {
+                sort: "released",
+                order: "asc",
+                cacheTTL: 43200,
+            },
+        },
+        {
+            kind: "mdblist-catalog",
+            match: {
                 namePrefixes: [
                     "[Discover] Latest Movies (Movies)",
                     "[Discover] Latest Shows (Shows)",

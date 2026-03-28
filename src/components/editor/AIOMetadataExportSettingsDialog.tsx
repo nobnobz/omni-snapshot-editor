@@ -34,6 +34,7 @@ import {
 import {
     applyAIOMetadataExportTemplate,
     applyExportOverrideToCatalog,
+    getDefaultAIOMetadataExportOverrides,
     getCanonicalOccurrencesByComparisonKey,
     type AIOMetadataCanonicalOccurrence,
     type AIOMetadataExportInventory,
@@ -632,12 +633,14 @@ function AIOMetadataExportSettingsDialogBody({
     target,
     inventory,
     initialOverrides,
+    useUmeSorting,
     onCancel,
     onSave,
 }: {
     target: AIOMetadataExportSettingsDialogTarget | null;
     inventory: AIOMetadataExportInventory;
     initialOverrides: AIOMetadataExportOverrideState;
+    useUmeSorting: boolean;
     onCancel: () => void;
     onSave: (nextValue: AIOMetadataExportOverrideState) => void;
 }) {
@@ -731,6 +734,16 @@ function AIOMetadataExportSettingsDialogBody({
     const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
     const [isResetAllConfirmOpen, setIsResetAllConfirmOpen] = useState(false);
     const isSearching = browserQuery.trim().length > 0;
+
+    const effectiveDraftOverrides = useMemo(
+        () => useUmeSorting
+            ? getDefaultAIOMetadataExportOverrides({
+                inventory,
+                currentOverrides: draftOverrides,
+            })
+            : draftOverrides,
+        [draftOverrides, inventory, useUmeSorting]
+    );
 
     const filteredEditableWidgets = useMemo(() => {
         const normalizedQuery = browserQuery.trim().toLocaleLowerCase();
@@ -949,10 +962,10 @@ function AIOMetadataExportSettingsDialogBody({
     const selectedScopeCurrentValues = useMemo(
         () => (
             selectedTargetOccurrences.length > 0
-                ? getScopeCurrentValues(selectedTargetOccurrences, draftOverrides)
+                ? getScopeCurrentValues(selectedTargetOccurrences, effectiveDraftOverrides)
                 : { mdblist: {}, trakt: {}, streaming: {} }
         ),
-        [draftOverrides, selectedTargetOccurrences]
+        [effectiveDraftOverrides, selectedTargetOccurrences]
     );
     const selectedScopeOccurrenceCount = selectedTargetOccurrences.length;
     const selectedSourceBuckets = useMemo(() => {
@@ -1622,6 +1635,7 @@ export function AIOMetadataExportSettingsDialog({
     target,
     inventory,
     overrides,
+    useUmeSorting,
     onChange,
 }: {
     open: boolean;
@@ -1629,11 +1643,15 @@ export function AIOMetadataExportSettingsDialog({
     target: AIOMetadataExportSettingsDialogTarget | null;
     inventory: AIOMetadataExportInventory;
     overrides: AIOMetadataExportOverrideState;
+    useUmeSorting: boolean;
     onChange: (nextValue: AIOMetadataExportOverrideState) => void;
 }) {
     const sessionKey = useMemo(
-        () => buildDialogSessionKey(open, target, overrides),
-        [open, overrides, target]
+        () => JSON.stringify({
+            sessionKey: buildDialogSessionKey(open, target, overrides),
+            useUmeSorting,
+        }),
+        [open, overrides, target, useUmeSorting]
     );
 
     return (
@@ -1644,6 +1662,7 @@ export function AIOMetadataExportSettingsDialog({
                     target={target}
                     inventory={inventory}
                     initialOverrides={overrides}
+                    useUmeSorting={useUmeSorting}
                     onCancel={() => onOpenChange(false)}
                     onSave={(nextValue) => {
                         onChange(nextValue);
