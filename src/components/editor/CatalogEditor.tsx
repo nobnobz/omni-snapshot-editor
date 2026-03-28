@@ -51,7 +51,7 @@ import {
 import { CATALOG_FALLBACKS, CatalogFallback } from "@/lib/catalog-fallbacks";
 import { resolveCatalogName, cn, ensureCatalogPrefix } from "@/lib/utils";
 import { GripVertical, Eye, EyeOff, Trash2, ArrowDownAZ, ArrowUpZA, Search, Settings2, Shuffle, LayoutGrid, Star, ChevronDown, ChevronUp, Plus, Maximize, Pencil, ListX, Pin } from "lucide-react";
-import { editorAction, editorHover, editorLayout, editorSurface, editorToneBadge } from "@/components/editor/ui/style-contract";
+import { editorAction, editorCompactBadge, editorHover, editorLayout, editorSurface, editorToneBadge } from "@/components/editor/ui/style-contract";
 import { shallowEqualObject } from "@/lib/equality";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -87,14 +87,6 @@ const updateCatalogFlagList = (list: string[], catalogId: string, isEnabled: boo
     if (isEnabled) next.push(catalogId);
     return next;
 };
-
-const catalogManagerBadgeTone = {
-    blue: "bg-primary/10 text-primary dark:text-primary border-primary/30",
-    amber: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30",
-    emerald: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
-    orange: "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20",
-    violet: "bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-500/25",
-} as const;
 
 const focusSearchInput = (input: HTMLInputElement | null) => {
     if (!input) return;
@@ -285,44 +277,44 @@ function SortableCatalogItem({
                 </div>
 
                 {/* Badges */}
-                <div className="flex items-center gap-1 shrink-0 flex-wrap sm:justify-end">
+                    <div className="flex items-center gap-1 shrink-0 flex-wrap sm:justify-end">
                     {!catalog.enabled && (
-                        <Badge variant="outline" className={cn("text-xs font-bold px-2 py-0.5 rounded-md", editorToneBadge.neutral)}>Hidden</Badge>
+                        <Badge variant="outline" className={cn(editorCompactBadge.base, editorToneBadge.neutral)}>Hidden</Badge>
                     )}
                     {isPinned && (
-                        <Badge variant="outline" className={cn("text-xs font-bold px-2 py-0.5 rounded-md", catalogManagerBadgeTone.emerald)}>Header</Badge>
+                        <Badge variant="outline" className={cn(editorCompactBadge.base, editorCompactBadge.emerald)}>Header</Badge>
                     )}
                     {catalog.isOrphaned && (
-                        <Badge variant="outline" className={cn("text-xs font-bold px-2 py-0.5 rounded-md", catalogManagerBadgeTone.violet)}>Orphaned</Badge>
+                        <Badge variant="outline" className={cn(editorCompactBadge.base, editorCompactBadge.violet)}>Orphaned</Badge>
                     )}
                     
                     {/* Top Row Group */}
-                    <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1">
                         {isSmall && (
-                            <Badge variant="outline" className={cn("text-xs font-bold px-2 py-0.5 rounded-md", catalogManagerBadgeTone.blue)}>Small</Badge>
+                            <Badge variant="outline" className={cn(editorCompactBadge.base, editorCompactBadge.primary)}>Small</Badge>
                         )}
                         {catalog.showInHome && (
                             <Badge
                                 variant="outline"
                                 className={cn(
-                                    "text-xs font-bold px-2 py-0.5 rounded-md",
-                                    catalogManagerBadgeTone.amber
+                                    editorCompactBadge.base,
+                                    editorCompactBadge.amber
                                 )}
                             >
                                 {isSmallTopRow ? 'Top Row (small)' : 'Top Row'}
                             </Badge>
                         )}
                         {itemCount && catalog.showInHome && (
-                            <Badge variant="outline" className="text-xs font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30">{itemCount}</Badge>
+                            <Badge variant="outline" className={cn(editorCompactBadge.base, editorCompactBadge.amber)}>{itemCount}</Badge>
                         )}
                     </div>
 
                     {/* Shelf Specifics */}
                     {isLandscape && (
-                        <Badge variant="outline" className={cn("text-xs font-bold px-2 py-0.5 rounded-md", catalogManagerBadgeTone.orange)}>Wide</Badge>
+                        <Badge variant="outline" className={cn(editorCompactBadge.base, editorCompactBadge.orange)}>Landscape</Badge>
                     )}
                     {isRandom && (
-                        <Badge variant="outline" className={cn("text-xs font-bold px-2 py-0.5 rounded-md", catalogManagerBadgeTone.violet)}>Rand</Badge>
+                        <Badge variant="outline" className={cn(editorCompactBadge.base, editorCompactBadge.violet)}>Rand</Badge>
                     )}
                 </div>
             </div>
@@ -731,127 +723,127 @@ export function CatalogEditor() {
         <div className="space-y-4 max-w-full overflow-x-hidden">
             <div className={cn(editorSurface.card, "overflow-hidden")}>
                 {/* Unified Toolbar */}
-                <div className={cn(editorSurface.toolbar, "sticky top-0 z-20 flex flex-wrap items-center gap-2 rounded-none border-x-0 border-t-0 p-3")}>
-                    {/* Add Catalog */}
-                    <Dialog
-                        open={isAddDialogOpen}
-                        onOpenChange={(open) => {
-                            setIsAddDialogOpen(open);
-                            if (!open) resetAddSelectionUi();
-                        }}
-                    >
-                        <DialogTrigger asChild>
-                            <Button
-                                size="sm"
-                                className="h-10 px-5 font-bold bg-primary hover:bg-primary/92 text-primary-foreground shadow-lg shadow-primary/20"
-                            >
-                                <Plus className="w-4 h-4 mr-1.5" /> Add Catalog
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent
-                            onOpenAutoFocus={(e) => {
-                                e.preventDefault();
-                                focusSearchInput(addSearchInputRef.current);
-                                window.setTimeout(() => focusSearchInput(addSearchInputRef.current), 50);
+                <div className={cn(editorSurface.toolbar, "sticky top-0 z-20 flex items-center rounded-none border-x-0 border-t-0 p-3")}>
+                    <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+                        <Button variant="outline" size="sm" onClick={handleSortAZ} className="h-10 text-xs font-semibold border-border hover:bg-muted/80 text-foreground/80 hover:text-foreground px-3">
+                            <ArrowDownAZ className="w-4 h-4 mr-1" /> A-Z
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={handleSortZA} className="h-10 text-xs font-semibold border-border hover:bg-muted/80 text-foreground/80 hover:text-foreground px-3">
+                            <ArrowUpZA className="w-4 h-4 mr-1" /> Z-A
+                        </Button>
+
+                        <Dialog
+                            open={isAddDialogOpen}
+                            onOpenChange={(open) => {
+                                setIsAddDialogOpen(open);
+                                if (!open) resetAddSelectionUi();
                             }}
-                            className={cn(editorLayout.dialogContent, "p-0 sm:max-w-[520px] sm:max-h-[90dvh]")}
                         >
-                            <DialogHeader className="shrink-0 border-b border-border/60 p-4 pb-3">
-                                <DialogTitle>Add Catalog</DialogTitle>
-                                <DialogDescription className="text-sm text-foreground/60">
-                                    Select one or more catalogs to import.
-                                </DialogDescription>
-                                <div className="relative mt-2">
-                                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground/70" />
-                                    <Input
-                                        ref={addSearchInputRef}
-                                        placeholder="Search by name or ID..."
-                                        value={addSearch}
-                                        onChange={e => setAddSearch(e.target.value)}
-                                        className={cn(editorSurface.field, "pl-8 h-10 sm:h-8 text-base sm:text-sm focus-visible:ring-ring/50")}
-                                    />
-                                </div>
-                            </DialogHeader>
-
-                            <div className={cn(editorSurface.overlayList, "flex-1 overflow-y-auto rounded-md border-y border-border/50 px-4 pb-4 min-h-[180px]")}>
-                                {groupedAddCandidates.length === 0 ? (
-                                    <p className="text-sm text-foreground/70 italic p-4">No catalogs found.</p>
-                                ) : (
-                                    <div className="space-y-1 pb-2 pt-4">
-                                        {groupedAddCandidates.map(group => (
-                                            <div key={group.category}>
-                                                <div className={cn(editorSurface.sticky, "sticky top-0 py-2.5 z-20 mb-2 ml-[-1rem] w-[calc(100%+2rem)] px-4")}>
-                                                    <h5 className="text-xs font-bold text-foreground/50 uppercase tracking-[0.2em]">{group.category}</h5>
-                                                </div>
-                                                {group.items.map(c => (
-                                                    <div
-                                                        key={c.id}
-                                                        className="flex items-start gap-2.5 pl-2 py-2 sm:py-1.5 hover:bg-primary/10 dark:hover:bg-primary/16 rounded-sm transition-colors group/candidate"
-                                                    >
-                                                        <Checkbox
-                                                            id={`add-cat-${c.id}`}
-                                                            checked={pendingAddSelections.has(c.id)}
-                                                            onCheckedChange={() => togglePendingSelection(c.id)}
-                                                            className="mt-0.5 border-border data-[state=unchecked]:hover:border-primary/70 data-[state=unchecked]:hover:bg-primary/10 data-[state=checked]:bg-primary data-[state=checked]:border-primary h-4 w-4 shrink-0"
-                                                        />
-                                                        <label
-                                                            htmlFor={`add-cat-${c.id}`}
-                                                            className="flex-1 min-w-0 cursor-pointer select-none flex flex-col gap-0.5 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(120px,34%)] sm:items-center sm:gap-2.5"
-                                                        >
-                                                            <p className={`text-sm leading-snug transition-colors truncate min-w-0 ${pendingAddSelections.has(c.id) ? "text-primary dark:text-primary font-semibold" : "text-foreground"}`}>
-                                                                {c.name}
-                                                            </p>
-                                                            <p className={`text-[11px] sm:text-xs font-mono font-normal tracking-tight truncate text-left sm:text-right min-w-0 ${pendingAddSelections.has(c.id) ? "text-primary/70 dark:text-primary/70" : "text-foreground/45 sm:text-foreground/24"}`}>
-                                                                {c.id}
-                                                            </p>
-                                                        </label>
-                                                        {c.action === 'reenable' && (
-                                                            <Badge variant="outline" className="text-xs h-5 px-1.5 border-border text-foreground/70 shrink-0 self-center">
-                                                                disabled
-                                                            </Badge>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        ))}
+                            <DialogTrigger asChild>
+                                <Button
+                                    size="sm"
+                                    className="h-10 px-5 font-bold bg-primary hover:bg-primary/92 text-primary-foreground shadow-lg shadow-primary/20"
+                                >
+                                    <Plus className="w-4 h-4 mr-1.5" /> Add Catalog
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent
+                                onOpenAutoFocus={(e) => {
+                                    e.preventDefault();
+                                    focusSearchInput(addSearchInputRef.current);
+                                    window.setTimeout(() => focusSearchInput(addSearchInputRef.current), 50);
+                                }}
+                                className={cn(editorLayout.dialogContent, "p-0 sm:max-w-[520px] sm:max-h-[90dvh]")}
+                            >
+                                <DialogHeader className="shrink-0 border-b border-border/60 p-4 pb-3">
+                                    <DialogTitle>Add Catalog</DialogTitle>
+                                    <DialogDescription className="text-sm text-foreground/60">
+                                        Select one or more catalogs to import.
+                                    </DialogDescription>
+                                    <div className="relative mt-2">
+                                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground/70" />
+                                        <Input
+                                            ref={addSearchInputRef}
+                                            placeholder="Search by name or ID..."
+                                            value={addSearch}
+                                            onChange={e => setAddSearch(e.target.value)}
+                                            className={cn(editorSurface.field, "pl-8 h-10 sm:h-8 text-base sm:text-sm focus-visible:ring-ring/50")}
+                                        />
                                     </div>
-                                )}
-                            </div>
+                                </DialogHeader>
 
-                            <DialogFooter className="mt-0 shrink-0 flex flex-col gap-3 border-t border-border/50 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between">
-                                <p className="text-xs text-foreground/70 sm:order-1">
-                                    {pendingAddSelections.size} selected
-                                </p>
-                                <div className="flex w-full sm:w-auto gap-2 sm:order-2">
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => {
-                                            setIsAddDialogOpen(false);
-                                            resetAddSelectionUi();
-                                        }}
-                                        className={cn("flex-1 sm:flex-none", editorAction.secondary)}
-                                    >
-                                        Cancel
-                                    </Button>
-                                    <Button
-                                        onClick={handleBatchImport}
-                                        disabled={pendingAddSelections.size === 0}
-                                        className={cn("flex-1 sm:flex-none", editorAction.primary)}
-                                    >
-                                        Import ({pendingAddSelections.size})
-                                    </Button>
+                                <div className={cn(editorSurface.overlayList, "flex-1 overflow-y-auto rounded-md border-y border-border/50 px-4 pb-4 min-h-[180px]")}>
+                                    {groupedAddCandidates.length === 0 ? (
+                                        <p className="text-sm text-foreground/70 italic p-4">No catalogs found.</p>
+                                    ) : (
+                                        <div className="space-y-1 pb-2 pt-4">
+                                            {groupedAddCandidates.map(group => (
+                                                <div key={group.category}>
+                                                    <div className={cn(editorSurface.sticky, "sticky top-0 py-2.5 z-20 mb-2 ml-[-1rem] w-[calc(100%+2rem)] px-4")}>
+                                                        <h5 className="text-xs font-bold text-foreground/50 uppercase tracking-[0.2em]">{group.category}</h5>
+                                                    </div>
+                                                    {group.items.map(c => (
+                                                        <div
+                                                            key={c.id}
+                                                            className="flex items-start gap-2.5 pl-2 py-2 sm:py-1.5 hover:bg-primary/10 dark:hover:bg-primary/16 rounded-sm transition-colors group/candidate"
+                                                        >
+                                                            <Checkbox
+                                                                id={`add-cat-${c.id}`}
+                                                                checked={pendingAddSelections.has(c.id)}
+                                                                onCheckedChange={() => togglePendingSelection(c.id)}
+                                                                className="mt-0.5 border-border data-[state=unchecked]:hover:border-primary/70 data-[state=unchecked]:hover:bg-primary/10 data-[state=checked]:bg-primary data-[state=checked]:border-primary h-4 w-4 shrink-0"
+                                                            />
+                                                            <label
+                                                                htmlFor={`add-cat-${c.id}`}
+                                                                className="flex-1 min-w-0 cursor-pointer select-none flex flex-col gap-0.5 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(120px,34%)] sm:items-center sm:gap-2.5"
+                                                            >
+                                                                <p className={`text-sm leading-snug transition-colors truncate min-w-0 ${pendingAddSelections.has(c.id) ? "text-primary dark:text-primary font-semibold" : "text-foreground"}`}>
+                                                                    {c.name}
+                                                                </p>
+                                                                <p className={`text-[11px] sm:text-xs font-mono font-normal tracking-tight truncate text-left sm:text-right min-w-0 ${pendingAddSelections.has(c.id) ? "text-primary/70 dark:text-primary/70" : "text-foreground/45 sm:text-foreground/24"}`}>
+                                                                    {c.id}
+                                                                </p>
+                                                            </label>
+                                                            {c.action === 'reenable' && (
+                                                                <Badge variant="outline" className="text-xs h-5 px-1.5 border-border text-foreground/70 shrink-0 self-center">
+                                                                    disabled
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
 
-                    <div className="w-px h-6 bg-border mx-1" />
-                    <Button variant="outline" size="sm" onClick={handleSortAZ} className="h-10 text-xs font-semibold border-border hover:bg-muted/80 text-foreground/80 hover:text-foreground px-3">
-                        <ArrowDownAZ className="w-4 h-4 mr-1" /> A-Z
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={handleSortZA} className="h-10 text-xs font-semibold border-border hover:bg-muted/80 text-foreground/80 hover:text-foreground px-3">
-                        <ArrowUpZA className="w-4 h-4 mr-1" /> Z-A
-                    </Button>
+                                <DialogFooter className="mt-0 shrink-0 flex flex-col gap-3 border-t border-border/50 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between">
+                                    <p className="text-xs text-foreground/70 sm:order-1">
+                                        {pendingAddSelections.size} selected
+                                    </p>
+                                    <div className="flex w-full sm:w-auto gap-2 sm:order-2">
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => {
+                                                setIsAddDialogOpen(false);
+                                                resetAddSelectionUi();
+                                            }}
+                                            className={cn("flex-1 sm:flex-none", editorAction.secondary)}
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            onClick={handleBatchImport}
+                                            disabled={pendingAddSelections.size === 0}
+                                            className={cn("flex-1 sm:flex-none", editorAction.primary)}
+                                        >
+                                            Import ({pendingAddSelections.size})
+                                        </Button>
+                                    </div>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
                 </div>
 
                 <div className="p-3">

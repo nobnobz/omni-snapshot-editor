@@ -4,7 +4,6 @@ import { validateOmniConfig } from "@/lib/config-utils";
 import { useState, useEffect, useMemo, type ReactNode } from "react";
 import { useConfig } from "@/context/ConfigContext";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -53,6 +52,7 @@ import { AppMeta } from "@/components/editor/AppMeta";
 import { TemplateDownloadChoiceDialog } from "@/components/editor/TemplateDownloadChoiceDialog";
 import { AIOMetadataTemplateChoiceDialog } from "@/components/editor/AIOMetadataTemplateChoiceDialog";
 import { fetchTextWithLimits } from "@/lib/remote-fetch";
+import { LockedUrlInput } from "@/components/editor/LockedUrlInput";
 
 type DownloadableTemplate = {
     id: string;
@@ -877,16 +877,17 @@ export function ConfigLoader() {
                                                 </div>
 
                                                 <div className="space-y-2.5">
-                                                    <Label htmlFor="url" className={cn(editorLoader.subtleMeta, "text-foreground/48")}>Raw URL</Label>
-                                                    <Input
-                                                        id="url"
+                                                    <Label className={cn(editorLoader.subtleMeta, "text-foreground/48")}>Raw URL</Label>
+                                                    <LockedUrlInput
                                                         value={url}
-                                                        onChange={(e) => setUrl(e.target.value)}
+                                                        onCommit={(nextUrl) => setUrl(nextUrl ?? "")}
                                                         placeholder="https://raw.githubusercontent.com/..."
-                                                        className={cn(
+                                                        inputClassName={cn(
                                                             loaderFieldClass,
                                                             "focus:border-ring/50"
                                                         )}
+                                                        copyTitle="Copy raw URL"
+                                                        clearTitle="Clear raw URL"
                                                     />
                                                 </div>
                                             </div>

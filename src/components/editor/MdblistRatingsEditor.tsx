@@ -40,7 +40,7 @@ import {
     useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Info, Plus, RotateCcw, SmilePlus, X } from "lucide-react";
+import { ChevronRight, GripVertical, Info, Plus, RotateCcw, SmilePlus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { shallowEqualObject } from "@/lib/equality";
 import {
@@ -188,6 +188,8 @@ function SortableMdblistRow({
     definition,
     badgeText,
     badgeColor,
+    isExpanded,
+    onToggleExpanded,
     onBadgeTextChange,
     onColorChange,
     onTransparencyChange,
@@ -196,6 +198,8 @@ function SortableMdblistRow({
     definition: MdblistRatingDefinition;
     badgeText: string;
     badgeColor: string;
+    isExpanded: boolean;
+    onToggleExpanded: () => void;
     onBadgeTextChange: (value: string) => void;
     onColorChange: (value: string) => void;
     onTransparencyChange: (value: number) => void;
@@ -223,6 +227,7 @@ function SortableMdblistRow({
 
     const parsedColor = parseBadgeColor(badgeColor, MDBLIST_DEFAULT_BADGE_COLOR_VALUES[definition.key]);
     const emojiShortcutHint = "Tip: you can also use your system emoji picker here, for example Ctrl+Cmd+Space on macOS or Win+. on Windows.";
+    const contentId = `mdblist-settings-${definition.key}`;
     const applyEmojiSelection = (emoji: string) => {
         onBadgeTextChange(applyEmojiToBadgeText(emoji, badgeText));
         setIsEmojiDialogOpen(false);
@@ -255,8 +260,17 @@ function SortableMdblistRow({
                             <GripVertical className="h-4 w-4" />
                         </button>
 
-                        <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={onToggleExpanded}
+                            aria-expanded={isExpanded}
+                            aria-controls={contentId}
+                            className={cn(
+                                "flex min-w-0 flex-1 items-center justify-between gap-3 rounded-xl px-2 py-1.5 text-left transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out",
+                                editorHover.softAction
+                            )}
+                        >
+                            <div className="flex min-w-0 items-center gap-3">
                                 <div
                                     className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-base shadow-sm"
                                     style={{
@@ -274,7 +288,13 @@ function SortableMdblistRow({
                                     </p>
                                 </div>
                             </div>
-                        </div>
+                            <ChevronRight
+                                className={cn(
+                                    "h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200",
+                                    isExpanded ? "rotate-90" : ""
+                                )}
+                            />
+                        </button>
 
                         <Button
                             type="button"
@@ -289,98 +309,100 @@ function SortableMdblistRow({
                         </Button>
                     </div>
 
-                    <div className="grid gap-3 md:grid-cols-2">
-                        <div className="flex h-full flex-col rounded-xl border border-border/70 bg-background/30 p-3">
-                            <div className="mb-2 flex h-6 items-center justify-between gap-3">
-                                <Label htmlFor={`mdblist-badge-text-${definition.key}`} className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                                    Text
-                                </Label>
-                                <span className="text-xs text-transparent select-none">
-                                    Placeholder
-                                </span>
-                            </div>
-                            <div className="flex min-h-10 items-center gap-2">
-                                <Input
-                                    id={`mdblist-badge-text-${definition.key}`}
-                                    value={badgeText}
-                                    onChange={(event) => onBadgeTextChange(event.target.value)}
-                                    placeholder={MDBLIST_DEFAULT_BADGE_TEXT_OVERRIDES[definition.key]}
-                                    className="h-10 bg-background/55 text-sm"
-                                />
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="icon-sm"
-                                            className="h-10 w-10 shrink-0 border-border/70"
-                                            aria-label={`Select emoji for ${definition.label}`}
-                                            title="Insert emoji"
-                                        >
-                                            <SmilePlus className="h-4 w-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-56 p-2">
-                                        <div className="grid grid-cols-5 gap-1">
-                                            {EMOJI_QUICK_OPTIONS.map((emoji) => (
-                                                <DropdownMenuItem
-                                                    key={`${definition.key}-${emoji}`}
-                                                    className="flex h-9 w-9 items-center justify-center rounded-md p-0 text-lg"
-                                                    onSelect={() => onBadgeTextChange(applyEmojiToBadgeText(emoji, badgeText))}
-                                                >
-                                                    {emoji}
-                                                </DropdownMenuItem>
-                                            ))}
-                                        </div>
-                                        <div className="mt-2 border-t border-border/60 pt-2">
-                                            <DropdownMenuItem
-                                                className="justify-center rounded-md text-sm"
-                                                onSelect={() => {
-                                                    setIsEmojiDialogOpen(true);
-                                                    setEmojiInput("");
-                                                }}
+                    {isExpanded ? (
+                        <div id={contentId} className="grid gap-3 md:grid-cols-2">
+                            <div className="flex h-full flex-col rounded-xl border border-border/70 bg-background/30 p-3">
+                                <div className="mb-2 flex h-6 items-center justify-between gap-3">
+                                    <Label htmlFor={`mdblist-badge-text-${definition.key}`} className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                                        Text
+                                    </Label>
+                                    <span className="text-xs text-transparent select-none">
+                                        Placeholder
+                                    </span>
+                                </div>
+                                <div className="flex min-h-10 items-center gap-2">
+                                    <Input
+                                        id={`mdblist-badge-text-${definition.key}`}
+                                        value={badgeText}
+                                        onChange={(event) => onBadgeTextChange(event.target.value)}
+                                        placeholder={MDBLIST_DEFAULT_BADGE_TEXT_OVERRIDES[definition.key]}
+                                        className="h-10 bg-background/55 text-sm"
+                                    />
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="icon-sm"
+                                                className="h-10 w-10 shrink-0 border-border/70"
+                                                aria-label={`Select emoji for ${definition.label}`}
+                                                title="Insert emoji"
                                             >
-                                                More...
-                                            </DropdownMenuItem>
-                                        </div>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                                                <SmilePlus className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-56 p-2">
+                                            <div className="grid grid-cols-5 gap-1">
+                                                {EMOJI_QUICK_OPTIONS.map((emoji) => (
+                                                    <DropdownMenuItem
+                                                        key={`${definition.key}-${emoji}`}
+                                                        className="flex h-9 w-9 items-center justify-center rounded-md p-0 text-lg"
+                                                        onSelect={() => onBadgeTextChange(applyEmojiToBadgeText(emoji, badgeText))}
+                                                    >
+                                                        {emoji}
+                                                    </DropdownMenuItem>
+                                                ))}
+                                            </div>
+                                            <div className="mt-2 border-t border-border/60 pt-2">
+                                                <DropdownMenuItem
+                                                    className="justify-center rounded-md text-sm"
+                                                    onSelect={() => {
+                                                        setIsEmojiDialogOpen(true);
+                                                        setEmojiInput("");
+                                                    }}
+                                                >
+                                                    More...
+                                                </DropdownMenuItem>
+                                            </div>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                            </div>
+
+                            <div className="flex h-full flex-col rounded-xl border border-border/70 bg-background/30 p-3">
+                                <div className="mb-2 flex h-6 items-center justify-between gap-3">
+                                    <Label htmlFor={`mdblist-color-${definition.key}`} className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                                        Background
+                                    </Label>
+                                    <span className="text-xs text-muted-foreground">
+                                        {parsedColor.transparency === 100
+                                            ? "No background"
+                                            : `${parsedColor.transparency}% transparent`}
+                                    </span>
+                                </div>
+
+                                <div className="flex min-h-10 flex-1 items-center gap-3 rounded-xl border border-border/70 bg-background/35 px-3 py-2">
+                                    <Input
+                                        id={`mdblist-color-${definition.key}`}
+                                        type="color"
+                                        value={parsedColor.hex}
+                                        onChange={(event) => onColorChange(event.target.value)}
+                                        className="h-10 w-10 cursor-pointer rounded-lg border border-border/70 bg-background/55 p-1"
+                                    />
+                                    <input
+                                        type="range"
+                                        min={0}
+                                        max={100}
+                                        step={1}
+                                        value={parsedColor.transparency}
+                                        onChange={(event) => onTransparencyChange(Number(event.target.value))}
+                                        className="h-2 w-full accent-primary"
+                                        aria-label={`${definition.label} background transparency`}
+                                    />
+                                </div>
                             </div>
                         </div>
-
-                        <div className="flex h-full flex-col rounded-xl border border-border/70 bg-background/30 p-3">
-                            <div className="mb-2 flex h-6 items-center justify-between gap-3">
-                                <Label htmlFor={`mdblist-color-${definition.key}`} className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                                    Background
-                                </Label>
-                                <span className="text-xs text-muted-foreground">
-                                    {parsedColor.transparency === 100
-                                        ? "No background"
-                                        : `${parsedColor.transparency}% transparent`}
-                                </span>
-                            </div>
-
-                            <div className="flex min-h-10 flex-1 items-center gap-3 rounded-xl border border-border/70 bg-background/35 px-3 py-2">
-                                <Input
-                                    id={`mdblist-color-${definition.key}`}
-                                    type="color"
-                                    value={parsedColor.hex}
-                                    onChange={(event) => onColorChange(event.target.value)}
-                                    className="h-10 w-10 cursor-pointer rounded-lg border border-border/70 bg-background/55 p-1"
-                                />
-                                <input
-                                    type="range"
-                                    min={0}
-                                    max={100}
-                                    step={1}
-                                    value={parsedColor.transparency}
-                                    onChange={(event) => onTransparencyChange(Number(event.target.value))}
-                                    className="h-2 w-full accent-primary"
-                                    aria-label={`${definition.label} background transparency`}
-                                />
-                            </div>
-                        </div>
-                    </div>
+                    ) : null}
                 </div>
             </div>
             <Dialog
@@ -484,6 +506,7 @@ export function MdblistRatingsEditor() {
     );
 
     const [activeId, setActiveId] = useState<MdblistRatingKey | null>(null);
+    const [expandedRatings, setExpandedRatings] = useState<MdblistRatingKey[]>([]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -538,12 +561,21 @@ export function MdblistRatingsEditor() {
     };
 
     const handleRemove = (key: MdblistRatingKey) => {
+        setExpandedRatings((current) => current.filter((entry) => entry !== key));
         updateEnabledRatings(enabledSupportedRatings.filter((ratingKey) => ratingKey !== key));
     };
 
     const handleAdd = (key: MdblistRatingKey) => {
         updateEnabledRatings(orderedSupportedRatings.filter(
             (ratingKey) => enabledSupportedRatings.includes(ratingKey) || ratingKey === key
+        ));
+    };
+
+    const handleToggleExpanded = (key: MdblistRatingKey) => {
+        setExpandedRatings((current) => (
+            current.includes(key)
+                ? current.filter((entry) => entry !== key)
+                : [...current, key]
         ));
     };
 
@@ -583,6 +615,7 @@ export function MdblistRatingsEditor() {
     };
 
     const resetToDefaults = () => {
+        setExpandedRatings([]);
         updateValue(["mdblist_enabled_ratings"], [...MDBLIST_DEFAULT_ENABLED_RATINGS, ...unknownEnabledEntries]);
         updateValue(["mdblist_rating_order"], [
             ...MDBLIST_RATING_DEFINITIONS.map((definition) => definition.key),
@@ -617,13 +650,13 @@ export function MdblistRatingsEditor() {
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className={cn(editorSurface.panel, "inline-flex items-center gap-1 rounded-xl p-1.5")}>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button
-                                    variant="outline"
+                                    variant="ghost"
                                     size="sm"
-                                    className="h-8 gap-2 border-border/70"
+                                    className="h-9 gap-2 rounded-lg px-3.5 text-foreground/82 hover:bg-muted/70 hover:text-foreground"
                                     disabled={inactiveDefinitions.length === 0}
                                 >
                                     <Plus className="h-3.5 w-3.5" />
@@ -639,7 +672,12 @@ export function MdblistRatingsEditor() {
                             </DropdownMenuContent>
                         </DropdownMenu>
 
-                        <Button variant="ghost" size="sm" onClick={resetToDefaults} className="h-8 gap-2 text-foreground/75 hover:bg-muted/70 hover:text-foreground">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={resetToDefaults}
+                            className="h-9 gap-2 rounded-lg px-3.5 text-foreground/72 hover:bg-muted/70 hover:text-foreground"
+                        >
                             <RotateCcw className="h-3.5 w-3.5" />
                             Reset
                         </Button>
@@ -673,6 +711,8 @@ export function MdblistRatingsEditor() {
                                     definition={getDefinition(key)}
                                     badgeText={badgeTextOverrides[key]}
                                     badgeColor={badgeColorValues[key]}
+                                    isExpanded={expandedRatings.includes(key)}
+                                    onToggleExpanded={() => handleToggleExpanded(key)}
                                     onBadgeTextChange={(value) => updateBadgeTextOverride(key, value)}
                                     onColorChange={(value) => handleColorChange(key, value)}
                                     onTransparencyChange={(value) => handleTransparencyChange(key, value)}

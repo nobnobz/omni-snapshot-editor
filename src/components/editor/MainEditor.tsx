@@ -12,6 +12,8 @@ import { StreamElementOrderingEditor } from "@/components/editor/StreamElementOr
 import { UnifiedSubgroupEditor } from "@/components/editor/UnifiedSubgroupEditor";
 import { UnifiedPatternEditor } from "@/components/editor/UnifiedPatternEditor";
 import { ImportPatternsModal } from "@/components/editor/ImportPatternsModal";
+import { AIOMetadataExportPanel } from "@/components/editor/AIOMetadataExportPanel";
+import { LockedUrlInput } from "@/components/editor/LockedUrlInput";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Textarea } from "@/components/ui/textarea";
 import { Documentation } from "@/components/editor/Documentation";
@@ -65,7 +67,12 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { analyzeAIOMetadataCatalogMismatches } from "@/lib/aiometadata-mismatch";
-import { parseAIOMetadataFallbacks } from "@/lib/aiometadata-sync";
+import { deriveAIOMetadataConfigLoadUrl, pickRicherAIOMetadataPayload } from "@/lib/aiometadata-source";
+import {
+    mergeAIOMetadataCatalogs,
+    parseAIOMetadataFallbacks,
+    type AIOMetadataNormalizedCatalog,
+} from "@/lib/aiometadata-sync";
 import { cn, isIos } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import { editorAction, editorHover, editorNoticeTone, editorSurface } from "@/components/editor/ui/style-contract";
@@ -86,6 +93,7 @@ type AIOMetadataSyncState = {
     sourceLabel: string;
     sourceValue?: string;
     syncedAt?: string;
+    catalogs?: AIOMetadataNormalizedCatalog[];
 };
 
 type ScrollSnapshot = {
@@ -140,6 +148,7 @@ export function MainEditor() {
     const searchTerm = "";
     const exportSetupNameId = useId();
     const fallbackFileInputRef = useRef<HTMLInputElement>(null);
+    const aiomUrlInputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 
     // Export Modal State
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -150,7 +159,9 @@ export function MainEditor() {
     const [isSectionsOpen, setIsSectionsOpen] = useState(false);
     const [isDesktopDocsMenuOpen, setIsDesktopDocsMenuOpen] = useState(false);
     const [isMobileDocsMenuOpen, setIsMobileDocsMenuOpen] = useState(false);
-    const [pastedJson, setPastedJson] = useState("");
+    const [aioManifestUrlInput, setAioManifestUrlInput] = useState("");
+    const [aioManifestUrlDraft, setAioManifestUrlDraft] = useState("");
+    const [aioJsonInput, setAioJsonInput] = useState("");
     const [isExitConfirmOpen, setIsExitConfirmOpen] = useState(false);
     const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
     const [isImportingUrl, setIsImportingUrl] = useState(false);
@@ -189,10 +200,12 @@ export function MainEditor() {
                         sourceLabel: parsed.sourceLabel,
                         sourceValue: typeof parsed.sourceValue === "string" ? parsed.sourceValue : undefined,
                         syncedAt: typeof parsed.syncedAt === "string" ? parsed.syncedAt : undefined,
+                        catalogs: Array.isArray(parsed.catalogs) ? parsed.catalogs as AIOMetadataNormalizedCatalog[] : undefined,
                     });
 
                     if (parsed.sourceType === "url" && typeof parsed.sourceValue === "string") {
-                        setPastedJson(parsed.sourceValue);
+                        setAioManifestUrlInput(parsed.sourceValue);
+                        setAioManifestUrlDraft(parsed.sourceValue);
                     }
                 }
             }
@@ -660,13 +673,15 @@ export function MainEditor() {
         options: ProcessAIOMetadataOptions = {}
     ) => {
         try {
-            const { fallbacks, addedCount } = parseAIOMetadataFallbacks(jsonText);
+            const { fallbacks, addedCount, normalizedCatalogs } = parseAIOMetadataFallbacks(jsonText);
             const shouldShowSuccessNotice = options.showSuccessNotice ?? true;
+            const mergedCatalogs = mergeAIOMetadataCatalogs(aioSyncState?.catalogs, normalizedCatalogs);
 
             setCustomFallbacks(fallbacks);
             localStorage.setItem("omni_custom_fallbacks", JSON.stringify(fallbacks));
             persistAIOMetadataSyncState({
                 ...syncSource,
+                catalogs: mergedCatalogs,
                 syncedAt: new Date().toISOString(),
             });
             setIsAioImportEditorOpen(false);
@@ -674,9 +689,13 @@ export function MainEditor() {
                 showNotice("success", `Imported ${addedCount} catalogs from AIOMetadata.`, "aiometadata");
             }
             if (syncSource.sourceType === "url" && syncSource.sourceValue) {
-                setPastedJson(syncSource.sourceValue);
+                setAioManifestUrlInput(syncSource.sourceValue);
+                setAioManifestUrlDraft(syncSource.sourceValue);
+                setAioJsonInput("");
             } else {
-                setPastedJson("");
+                setAioManifestUrlInput("");
+                setAioManifestUrlDraft("");
+                setAioJsonInput("");
             }
         } catch (err: unknown) {
             console.error(err);
@@ -685,7 +704,7 @@ export function MainEditor() {
                 : "Failed to parse JSON. Please ensure it is valid JSON.";
             showNotice("error", message, "aiometadata");
         }
-    }, [persistAIOMetadataSyncState, setCustomFallbacks, showNotice]);
+    }, [aioSyncState?.catalogs, persistAIOMetadataSyncState, setCustomFallbacks, showNotice]);
 
     const syncAIOMetadataFromUrl = useCallback(async (
         sourceValue: string,
@@ -702,13 +721,35 @@ export function MainEditor() {
         setIsImportingUrl(true);
         const request = measureAsync("aiometadataImportUrl", async () => {
             try {
-                const text = await fetchTextWithLimits(sourceValue, {
+                const manifestText = await fetchTextWithLimits(sourceValue, {
                     timeoutMs: 12000,
                     maxBytes: 5_000_000,
                 });
+                let importText = manifestText;
+                const configLoadUrl = deriveAIOMetadataConfigLoadUrl(sourceValue);
+
+                if (configLoadUrl) {
+                    try {
+                        const response = await fetch(configLoadUrl, {
+                            method: "POST",
+                            headers: {
+                                Accept: "application/json",
+                                "Content-Type": "application/json",
+                            },
+                            body: "{}",
+                        });
+
+                        if (response.ok) {
+                            const configText = await response.text();
+                            importText = pickRicherAIOMetadataPayload(manifestText, configText);
+                        }
+                    } catch (configLoadError) {
+                        console.warn("Failed to load richer AIOMetadata config payload, falling back to manifest.", configLoadError);
+                    }
+                }
 
                 const importWork = () => {
-                    processAIOMetadata(text, {
+                    processAIOMetadata(importText, {
                         sourceType: "url",
                         sourceLabel: "Manifest URL",
                         sourceValue,
@@ -777,22 +818,29 @@ export function MainEditor() {
         processFallbackFile(file);
     };
 
-    const handlePasteImport = async () => {
-        const input = pastedJson.trim();
-        if (!input) return;
+    const handleSyncAIOMetadataUrl = async () => {
+        const sourceValue = aioManifestUrlDraft.trim();
+        if (!sourceValue) return;
 
         if (document.activeElement instanceof HTMLElement) {
             document.activeElement.blur();
         }
 
-        // Check if input is a URL
-        if (input.startsWith("http://") || input.startsWith("https://")) {
-            await syncAIOMetadataFromUrl(input, {
-                showSuccessNotice: true,
-                preserveScroll: true,
-                errorPlacement: "aiometadata",
-            });
-            return;
+        setAioManifestUrlInput(sourceValue);
+        setAioManifestUrlDraft(sourceValue);
+        await syncAIOMetadataFromUrl(sourceValue, {
+            showSuccessNotice: true,
+            preserveScroll: true,
+            errorPlacement: "aiometadata",
+        });
+    };
+
+    const handleImportAIOMetadataJson = async () => {
+        const input = aioJsonInput.trim();
+        if (!input) return;
+
+        if (document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
         }
 
         await measureAsync("aiometadataImportJson", async () => {
@@ -807,7 +855,8 @@ export function MainEditor() {
 
     const handleResyncAIOMetadata = async () => {
         if (aioSyncState?.sourceType === "url" && aioSyncState.sourceValue) {
-            setPastedJson(aioSyncState.sourceValue);
+            setAioManifestUrlInput(aioSyncState.sourceValue);
+            setAioManifestUrlDraft(aioSyncState.sourceValue);
             await syncAIOMetadataFromUrl(aioSyncState.sourceValue, {
                 showSuccessNotice: true,
                 preserveScroll: true,
@@ -821,7 +870,8 @@ export function MainEditor() {
 
     const handleEditAIOMetadataSource = () => {
         if (aioSyncState?.sourceType === "url" && aioSyncState.sourceValue) {
-            setPastedJson(aioSyncState.sourceValue);
+            setAioManifestUrlInput(aioSyncState.sourceValue);
+            setAioManifestUrlDraft(aioSyncState.sourceValue);
         }
         setIsAioImportEditorOpen(true);
     };
@@ -835,7 +885,9 @@ export function MainEditor() {
         localStorage.removeItem("omni_custom_fallbacks");
         clearAIOMetadataSyncState();
         setIsAioImportEditorOpen(true);
-        setPastedJson("");
+        setAioManifestUrlInput("");
+        setAioManifestUrlDraft("");
+        setAioJsonInput("");
         showNotice("info", "Imported AIOMetadata names were cleared.", "aiometadata-editor");
         setIsResetConfirmOpen(false);
     };
@@ -1258,16 +1310,13 @@ export function MainEditor() {
                                     {section.id === "aiometadata" ? (
                                         <div className="space-y-4">
                                             <div className="flex flex-col gap-1.5 px-1">
-                                                <p className="text-sm text-foreground/70 leading-relaxed">
-                                                    Import your catalogs by uploading an AIOMetadata config.
-                                                </p>
                                                 <div className={cn("rounded-xl p-4 text-sm flex gap-4 items-start mt-4 shadow-sm border", editorNoticeTone.info)}>
                                                     <Info className="w-5 h-5 shrink-0 mt-0.5 text-primary dark:text-primary" />
                                                     <p className="leading-relaxed">
                                                         <span className="font-bold">Note:</span> You can sync your AIOMetadata manifest URL to always keep your catalogs up to date. Imported catalog names are stored locally in your browser.
                                                     </p>
                                                 </div>
-                                                {Object.keys(customFallbacks).length > 0 && (
+                                                {Object.keys(customFallbacks).length > 0 && !showAioSyncedState && (
                                                     <div className="mt-2 text-right">
                                                         <Button
                                                             variant="ghost"
@@ -1322,12 +1371,25 @@ export function MainEditor() {
                                                                     variant="outline"
                                                                     size="icon-sm"
                                                                     className="size-8 rounded-xl border-emerald-500/14 bg-emerald-500/[0.04] text-emerald-700/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] hover:border-emerald-500/24 hover:bg-emerald-500/[0.08] hover:text-emerald-700 dark:bg-emerald-500/[0.06] dark:text-emerald-400/90 md:size-9"
-                                                                    onClick={handleEditAIOMetadataSource}
-                                                                    aria-label="Change AIOMetadata source"
-                                                                    title="Change Source"
+                                                            onClick={handleEditAIOMetadataSource}
+                                                            aria-label="Change AIOMetadata source"
+                                                            title="Change Source"
                                                                 >
                                                                     <Pencil className="w-4 h-4" />
                                                                 </Button>
+                                                                {Object.keys(customFallbacks).length > 0 && (
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="outline"
+                                                                        size="icon-sm"
+                                                                        className="size-8 rounded-xl border-red-500/14 bg-red-500/[0.03] text-red-600/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] hover:border-red-500/24 hover:bg-red-500/[0.08] hover:text-red-600 dark:bg-red-500/[0.05] dark:text-red-400/90 md:size-9"
+                                                                        onClick={handleResetCatalogNames}
+                                                                        aria-label="Reset imported AIOMetadata data"
+                                                                        title="Reset Imported Data"
+                                                                    >
+                                                                        <Trash2 className="w-4 h-4" />
+                                                                    </Button>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1380,82 +1442,128 @@ export function MainEditor() {
                                                         <div>
                                                             <h4 className="text-base font-bold text-foreground">Import AIOMetadata Catalogs</h4>
                                                             <p className="text-sm text-foreground/70 leading-relaxed max-w-2xl">
-                                                                Paste your AIOMetadata manifest URL, catalogs, or drop a <code className="text-xs bg-white/5 border border-white/10 px-1 py-0.5 rounded text-foreground">.json</code> file.
+                                                                Sync a manifest URL, import raw catalogs JSON, or drop a <code className="text-xs bg-white/5 border border-white/10 px-1 py-0.5 rounded text-foreground">.json</code> file.
                                                             </p>
                                                         </div>
                                                     </div>
 
-                                                    <div className="flex flex-col gap-3 relative z-10">
+                                                    <div className="flex flex-col gap-4 relative z-10">
                                                         {activeAIOMetadataSync && (
                                                             <div className="rounded-xl border border-border/60 bg-background/40 px-4 py-3 text-xs text-foreground/60">
                                                                 Updating the source will replace the currently synced AIOMetadata data.
                                                             </div>
                                                         )}
                                                         {uiNotice && uiNotice.placement === "aiometadata-editor" && renderNotice(uiNotice)}
-                                                        <div className="relative group">
-                                                            <Textarea
-                                                                placeholder="Paste URL / JSON or drop .json file here..."
-                                                                className={cn(
-                                                                    editorSurface.field,
-                                                                    "min-h-[120px] text-sm focus:border-primary/50 text-foreground resize-none font-sans placeholder:text-foreground/40 custom-scrollbar rounded-xl transition-all",
-                                                                    isFallbackDropActive && "opacity-20"
-                                                                )}
-                                                                value={pastedJson}
-                                                                onChange={(e) => setPastedJson(e.target.value)}
-                                                            />
-                                                            <div className="absolute bottom-2 right-2 flex gap-1.5 translate-y-1 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all">
-                                                                <Button
-                                                                    variant="secondary"
-                                                                    size="sm"
-                                                                    className="h-8 px-2.5 rounded-lg text-xs bg-white/10 hover:bg-white/20 border-white/5 backdrop-blur-sm"
-                                                                    onClick={() => setPastedJson("")}
-                                                                    disabled={!pastedJson.trim()}
-                                                                >
-                                                                    Clear
-                                                                </Button>
+                                                        <div className="grid gap-4 xl:grid-cols-2">
+                                                            <div className={cn(editorSurface.panel, "flex h-full flex-col gap-3 rounded-xl p-4")}>
+                                                                <p className="text-sm font-semibold tracking-tight text-foreground">Sync AIOMetadata Manifest URL</p>
+                                                                <LockedUrlInput
+                                                                    ref={aiomUrlInputRef}
+                                                                    value={aioManifestUrlInput}
+                                                                    onCommit={(nextUrl) => {
+                                                                        const normalizedUrl = nextUrl ?? "";
+                                                                        setAioManifestUrlInput(normalizedUrl);
+                                                                        setAioManifestUrlDraft(normalizedUrl);
+                                                                    }}
+                                                                    onDraftValueChange={setAioManifestUrlDraft}
+                                                                    placeholder="https://..."
+                                                                    multiline
+                                                                    rows={2}
+                                                                    inputClassName={cn(
+                                                                        editorSurface.field,
+                                                                        "min-h-[4.5rem] rounded-xl py-3 text-sm leading-[1.35] resize-none overflow-y-auto"
+                                                                    )}
+                                                                    iconButtonClassName="h-8 w-8 shrink-0 rounded-lg text-foreground/52"
+                                                                    copyTitle="Copy AIOMetadata URL"
+                                                                    clearTitle="Delete AIOMetadata URL"
+                                                                />
+                                                                <div className="flex justify-end pt-2">
+                                                                    <Button
+                                                                        type="button"
+                                                                        className="h-11 rounded-xl bg-primary font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-transform active:scale-[0.98]"
+                                                                        onClick={() => void handleSyncAIOMetadataUrl()}
+                                                                        disabled={!aioManifestUrlDraft.trim() || isImportingUrl}
+                                                                    >
+                                                                        {isImportingUrl ? (
+                                                                            <span className="flex items-center gap-2">
+                                                                                <RotateCcw className="w-4 h-4 animate-spin" />
+                                                                                Syncing...
+                                                                            </span>
+                                                                        ) : (
+                                                                            <>
+                                                                                <Check className="w-4 h-4 mr-2.5" />
+                                                                                Sync Manifest URL
+                                                                            </>
+                                                                        )}
+                                                                    </Button>
+                                                                </div>
                                                             </div>
-                                                        </div>
 
-                                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
-                                                            <Button
-                                                                type="button"
-                                                                className="sm:min-w-[220px] font-bold h-11 rounded-xl bg-primary hover:bg-primary/92 text-primary-foreground shadow-lg shadow-primary/20 transition-transform active:scale-[0.98]"
-                                                                onClick={handlePasteImport}
-                                                                disabled={!pastedJson.trim() || isImportingUrl}
-                                                            >
-                                                                {isImportingUrl ? (
-                                                                    <span className="flex items-center gap-2">
-                                                                        <RotateCcw className="w-4 h-4 animate-spin" />
-                                                                        Fetching...
-                                                                    </span>
-                                                                ) : (
-                                                                    <>
+                                                            <div className={cn(editorSurface.panel, "flex h-full flex-col gap-3 rounded-xl p-4")}>
+                                                                <p className="text-sm font-semibold tracking-tight text-foreground">Import AIOMetadata JSON</p>
+                                                                <div className="relative group">
+                                                                    <Textarea
+                                                                        placeholder="Paste catalogs JSON or drop a .json file here..."
+                                                                        rows={2}
+                                                                        className={cn(
+                                                                            editorSurface.field,
+                                                                            "min-h-[4.5rem] max-h-[4.5rem] pr-16 py-3 text-sm leading-[1.35] focus:border-primary/50 text-foreground resize-none font-sans placeholder:text-foreground/40 custom-scrollbar rounded-xl transition-all overflow-y-auto",
+                                                                            isFallbackDropActive && "opacity-20"
+                                                                        )}
+                                                                        value={aioJsonInput}
+                                                                        onChange={(e) => setAioJsonInput(e.target.value)}
+                                                                    />
+                                                                    <div className="absolute right-2 top-1/2 flex -translate-y-1/2 gap-1.5 translate-x-1 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all">
+                                                                        <Button
+                                                                            variant="secondary"
+                                                                            size="sm"
+                                                                            className="h-8 px-2.5 rounded-lg text-xs bg-white/10 hover:bg-white/20 border-white/5 backdrop-blur-sm"
+                                                                            onClick={() => setAioJsonInput("")}
+                                                                            disabled={!aioJsonInput.trim()}
+                                                                        >
+                                                                            Clear
+                                                                        </Button>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
+                                                                    <Button
+                                                                        type="button"
+                                                                        className="sm:min-w-[220px] font-bold h-11 rounded-xl bg-primary hover:bg-primary/92 text-primary-foreground shadow-lg shadow-primary/20 transition-transform active:scale-[0.98]"
+                                                                        onClick={() => void handleImportAIOMetadataJson()}
+                                                                        disabled={!aioJsonInput.trim()}
+                                                                    >
                                                                         <Check className="w-4 h-4 mr-2.5" />
-                                                                        Import Configuration
-                                                                    </>
-                                                                )}
-                                                            </Button>
+                                                                        Import JSON
+                                                                    </Button>
 
-                                                            <input
-                                                                type="file"
-                                                                id="unified-fallback-upload"
-                                                                accept=".json"
-                                                                className="hidden"
-                                                                ref={fallbackFileInputRef}
-                                                                onChange={handleUploadFallbacks}
-                                                            />
-                                                            <Button
-                                                                variant="outline"
-                                                                className="h-11 px-5 rounded-xl border-border/60 hover:bg-muted/50 font-medium"
-                                                                onClick={() => fallbackFileInputRef.current?.click()}
-                                                            >
-                                                                <FileJson className="w-4 h-4 mr-2.5" />
-                                                                Select JSON File
-                                                            </Button>
+                                                                    <input
+                                                                        type="file"
+                                                                        id="unified-fallback-upload"
+                                                                        accept=".json"
+                                                                        className="hidden"
+                                                                        ref={fallbackFileInputRef}
+                                                                        onChange={handleUploadFallbacks}
+                                                                    />
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        className="h-11 px-5 rounded-xl border-border/60 hover:bg-muted/50 font-medium"
+                                                                        onClick={() => fallbackFileInputRef.current?.click()}
+                                                                    >
+                                                                        <FileJson className="w-4 h-4 mr-2.5" />
+                                                                        Select JSON File
+                                                                    </Button>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             )}
+                                            <AIOMetadataExportPanel
+                                                currentValues={currentValues}
+                                                importedCatalogs={aioSyncState?.catalogs ?? null}
+                                                customFallbacks={customFallbacks}
+                                            />
                                         </div>
                                     ) : section.id === "groups" ? (
                                         <div className="space-y-6">
@@ -1473,7 +1581,7 @@ export function MainEditor() {
                                         <div className="space-y-6">
                                             <div className="space-y-5">
                                                 <p className="text-sm text-foreground/70 px-1 leading-relaxed">
-                                                    Manage global catalogs that appear below your groups. Enable/disable them, adjust appearance and configure the ranked Top Row or Header display.
+                                                    Manage the catalogs that appear on your Omni home tab. Enable or disable catalogs, adjust their appearance, and configure the ranked Top Row or Header.
                                                 </p>
                                                 <CatalogEditor />
                                             </div>

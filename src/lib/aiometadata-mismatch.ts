@@ -1,4 +1,5 @@
 import { CatalogFallback } from "./catalog-fallbacks";
+import { getAIOMetadataCatalogLookupKeys, stripAIOMetadataCatalogTypePrefix as stripCatalogTypePrefix } from "./aiometadata-sync";
 
 type CatalogLike = {
     id: string;
@@ -47,7 +48,6 @@ type AnalyzeAIOMetadataCatalogMismatchesArgs = {
     fallbacks: AIOMetadataFallbackMap;
 };
 
-const CATALOG_TYPE_PREFIX_RE = /^(movie:|series:|anime:|all:)/;
 const IGNORED_CATALOG_IDS = new Set(["omni_empty_setup_placeholder"]);
 
 const hasOwn = (record: Record<string, unknown>, key: string) =>
@@ -69,11 +69,10 @@ const uniqueStrings = (entries: string[]) => {
 const toStringArray = (value: unknown): string[] =>
     Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === "string") : [];
 
-export const stripAIOMetadataCatalogTypePrefix = (catalogId: string) =>
-    catalogId.replace(CATALOG_TYPE_PREFIX_RE, "");
-
 export const getAIOMetadataCatalogMatchKeys = (catalogId: string) =>
-    uniqueStrings([catalogId, stripAIOMetadataCatalogTypePrefix(catalogId)]);
+    uniqueStrings(getAIOMetadataCatalogLookupKeys(catalogId));
+
+export const stripAIOMetadataCatalogTypePrefix = stripCatalogTypePrefix;
 
 export const hasAIOMetadataCatalogMatch = (catalogId: string, fallbacks: AIOMetadataFallbackMap) =>
     getAIOMetadataCatalogMatchKeys(catalogId).some((key) => hasOwn(fallbacks, key));

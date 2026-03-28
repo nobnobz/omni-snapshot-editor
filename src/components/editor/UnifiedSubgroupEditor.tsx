@@ -34,7 +34,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from "@/components/ui/button";
-import { GripVertical, ImageIcon, LinkIcon, ChevronRight, ChevronDown, RotateCcw, Search, X, Plus, Pencil, Trash2, FolderPlus, FolderInput, UploadCloud, AlertTriangle, Check } from "lucide-react";
+import { GripVertical, ImageIcon, LinkIcon, ChevronRight, ChevronDown, RotateCcw, Search, X, Plus, Pencil, Trash2, FolderPlus, FolderInput, UploadCloud, AlertTriangle, Check, ArrowUpAZ, ArrowDownAZ } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
@@ -53,10 +53,11 @@ import { RenameGroupModal } from "./RenameGroupModal";
 import { CreateGroupModal } from "./CreateGroupModal";
 import { AddToGroupModal } from "./AddToGroupModal";
 import { ImportSetupModal } from "./ImportSetupModal";
+import { LockedUrlInput } from "./LockedUrlInput";
 import { TrashBin } from "./TrashBin";
 import { hasAIOMetadataCatalogMatch, type AIOMetadataMismatchAnalysis } from "@/lib/aiometadata-mismatch";
 import { cn, formatDisplayName, resolveCatalogName, ensureCatalogPrefix } from "@/lib/utils";
-import { editorHover, editorSurface } from "@/components/editor/ui/style-contract";
+import { editorCompactBadge, editorHover, editorSurface } from "@/components/editor/ui/style-contract";
 import { CATALOG_FALLBACKS, CatalogFallback } from "@/lib/catalog-fallbacks";
 import { Label } from "@/components/ui/label";
 import { normalizeSubgroupNames } from "@/lib/main-group-utils";
@@ -65,6 +66,13 @@ import { shallowEqualObject } from "@/lib/equality";
 const stringArraysEqual = (a: string[], b: string[]) => (
     a.length === b.length && a.every((item, idx) => item === b[idx])
 );
+const reconcileOrderedNames = (snapshot: string[], currentNames: string[]) => {
+    const currentNameSet = new Set(currentNames);
+    const preserved = snapshot.filter((name) => currentNameSet.has(name));
+    const preservedSet = new Set(preserved);
+    const appended = currentNames.filter((name) => !preservedSet.has(name));
+    return [...preserved, ...appended];
+};
 const EMPTY_STRING_ARRAY: string[] = [];
 const EMPTY_RECORD: Record<string, never> = {};
 type ThumbnailAspect = "portrait" | "landscape" | "square";
@@ -94,14 +102,11 @@ const PosterUrlEditor = React.memo(function PosterUrlEditor({
     imageUrl: string;
     onCommit: (nextUrl: string) => void;
 }) {
-    const [urlInput, setUrlInput] = useState(imageUrl);
     const [previewUrl, setPreviewUrl] = useState(imageUrl);
     const [thumbAspect, setThumbAspect] = useState<ThumbnailAspect>("square");
     const [thumbLoadError, setThumbLoadError] = useState(false);
-    const inputRef = React.useRef<HTMLInputElement>(null);
 
     React.useEffect(() => {
-        setUrlInput(prev => (prev === imageUrl ? prev : imageUrl));
         setPreviewUrl(prev => (prev === imageUrl ? prev : imageUrl));
     }, [imageUrl]);
 
@@ -115,19 +120,6 @@ const PosterUrlEditor = React.memo(function PosterUrlEditor({
         if (nextUrl !== imageUrl) {
             onCommit(nextUrl);
         }
-    };
-
-    const handleUrlBlur = () => {
-        commitUrl(urlInput);
-    };
-
-    const handleClearClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-        event.stopPropagation();
-        setUrlInput(prev => (prev === "" ? prev : ""));
-        commitUrl("");
-        requestAnimationFrame(() => {
-            inputRef.current?.focus({ preventScroll: true });
-        });
     };
 
     const hasThumbPreview = /^https?:\/\//i.test(previewUrl.trim()) && !thumbLoadError;
@@ -173,32 +165,16 @@ const PosterUrlEditor = React.memo(function PosterUrlEditor({
                 </div>
                 <div className="flex-1 space-y-1">
                     <Label className="text-xs uppercase font-bold tracking-widest text-foreground/70">Poster Image URL</Label>
-                    <div className="flex items-center gap-2">
-                        <Input
-                            ref={inputRef}
-                            data-no-dnd="true"
-                            placeholder="https://..."
-                            value={urlInput}
-                            onChange={e => setUrlInput(e.target.value)}
-                            onBlur={handleUrlBlur}
-                            onPointerDownCapture={(e) => e.stopPropagation()}
-                            onMouseDownCapture={(e) => e.stopPropagation()}
-                            onClickCapture={(e) => e.stopPropagation()}
-                            onKeyDown={(e) => e.stopPropagation()}
-                            className={`${editorSurface.field} h-10 sm:h-8 text-base sm:text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 transition-colors font-mono`}
-                        />
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onMouseDown={(event) => event.preventDefault()}
-                            onClick={handleClearClick}
-                            className="h-10 w-10 shrink-0 rounded-md text-foreground/60 hover:bg-destructive/10 hover:text-destructive sm:h-8 sm:w-8"
-                            title="Clear image URL"
-                        >
-                            <Trash2 className="h-4 w-4" />
-                        </Button>
-                    </div>
+                    <LockedUrlInput
+                        value={imageUrl}
+                        onCommit={(nextUrl) => commitUrl(nextUrl ?? "")}
+                        placeholder="https://..."
+                        stopPropagation
+                        inputClassName={`${editorSurface.field} h-10 sm:h-8 text-base sm:text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 transition-colors`}
+                        iconButtonClassName="h-8 w-8 shrink-0 rounded-md text-foreground/56 sm:h-7 sm:w-7"
+                        copyTitle="Copy image URL"
+                        clearTitle="Delete image URL"
+                    />
                 </div>
             </div>
         </div>
@@ -882,7 +858,29 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
 // ----------------------------------------------------------------------
 // 3. Main Group View (Outer)
 // ----------------------------------------------------------------------
-const MainGroupNode = React.memo(function MainGroupNode({ uuid, name, subgroupNames, onUnassignSubgroup, onAddSubgroup, searchTerm, mismatchCount = 0, subgroupMismatchCounts = {} }: { uuid: string, name: string, subgroupNames: string[], onUnassignSubgroup?: (name: string, parentId: string) => void, onAddSubgroup?: (uuid: string) => void, searchTerm: string, mismatchCount?: number, subgroupMismatchCounts?: Record<string, number> }) {
+const MainGroupNode = React.memo(function MainGroupNode({
+    uuid,
+    name,
+    subgroupNames,
+    onUnassignSubgroup,
+    onAddSubgroup,
+    searchTerm,
+    mismatchCount = 0,
+    subgroupMismatchCounts = {},
+    manualSubgroupOrderSnapshot,
+    onManualSubgroupOrderSnapshotChange,
+}: {
+    uuid: string,
+    name: string,
+    subgroupNames: string[],
+    onUnassignSubgroup?: (name: string, parentId: string) => void,
+    onAddSubgroup?: (uuid: string) => void,
+    searchTerm: string,
+    mismatchCount?: number,
+    subgroupMismatchCounts?: Record<string, number>,
+    manualSubgroupOrderSnapshot?: string[],
+    onManualSubgroupOrderSnapshotChange?: (uuid: string, order: string[]) => void,
+}) {
     const { mainGroupData } = useConfigSelector((state) => ({
         mainGroupData: state.currentValues.main_catalog_groups?.[uuid] || {},
     }), shallowEqualObject);
@@ -918,10 +916,21 @@ const MainGroupNode = React.memo(function MainGroupNode({ uuid, name, subgroupNa
     const [subgroups, setSubgroups] = useState(filteredSubgroups);
     const [activeSubgroupId, setActiveSubgroupId] = useState<string | null>(null);
     const [expandedSubgroup, setExpandedSubgroup] = useState<string | null>(null);
+    const [subgroupSortMode, setSubgroupSortMode] = useState<"manual" | "asc" | "desc">("manual");
+    const effectiveManualSubgroupOrder = React.useMemo(
+        () => reconcileOrderedNames(manualSubgroupOrderSnapshot ?? subgroupNames, subgroupNames),
+        [manualSubgroupOrderSnapshot, subgroupNames]
+    );
 
     React.useEffect(() => {
         setSubgroups(prev => (stringArraysEqual(prev, filteredSubgroups) ? prev : filteredSubgroups));
     }, [filteredSubgroups]);
+
+    React.useEffect(() => {
+        if (subgroupSortMode !== "manual") return;
+        if (stringArraysEqual(effectiveManualSubgroupOrder, subgroupNames)) return;
+        onManualSubgroupOrderSnapshotChange?.(uuid, subgroupNames);
+    }, [effectiveManualSubgroupOrder, onManualSubgroupOrderSnapshotChange, subgroupNames, subgroupSortMode, uuid]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -953,11 +962,37 @@ const MainGroupNode = React.memo(function MainGroupNode({ uuid, name, subgroupNa
             const newArray = arrayMove(subgroups, oldIndex, newIndex);
 
             setSubgroups(newArray);
+            onManualSubgroupOrderSnapshotChange?.(uuid, newArray);
+            setSubgroupSortMode("manual");
 
             // We need to update both subgroup_order and main_catalog_groups.subgroupNames
             updateValue(["subgroup_order", uuid], newArray);
             updateValue(["main_catalog_groups", uuid, "subgroupNames"], newArray);
         }
+    };
+
+    const commitSubgroupOrder = (nextOrder: string[]) => {
+        setSubgroups(searchTerm
+            ? nextOrder.filter((subgroupName) => subgroupName.toLowerCase().includes(searchTerm.toLowerCase()))
+            : nextOrder
+        );
+        updateValue(["subgroup_order", uuid], nextOrder);
+        updateValue(["main_catalog_groups", uuid, "subgroupNames"], nextOrder);
+    };
+
+    const handleSortSubgroups = (direction: "asc" | "desc") => {
+        const sorted = [...subgroupNames].sort((left, right) => {
+            const comparison = left.localeCompare(right, undefined, { sensitivity: "base" });
+            return direction === "asc" ? comparison : -comparison;
+        });
+
+        commitSubgroupOrder(sorted);
+        setSubgroupSortMode(direction);
+    };
+
+    const handleRestoreManualSubgroupOrder = () => {
+        commitSubgroupOrder(effectiveManualSubgroupOrder);
+        setSubgroupSortMode("manual");
     };
 
     const handleToggleSubgroup = (subgroupName: string) => {
@@ -995,51 +1030,47 @@ const MainGroupNode = React.memo(function MainGroupNode({ uuid, name, subgroupNa
                         <GripVertical className="h-5 w-5" />
                     </div>
 
-                    <AccordionTrigger className={`flex-1 text-foreground px-4 py-4 transition-colors group/trigger ${editorHover.rowSubtle}`}>
-                        <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div className="flex flex-col min-w-0 gap-1">
-                                <div className="flex items-center gap-3 min-w-0">
-                                    <span className="min-w-0 truncate font-bold text-base text-foreground group-hover/trigger:text-primary transition-colors">
-                                        {formatDisplayName(name)}
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-1 shrink-0 flex-wrap sm:justify-start">
-                                    {posterSize !== "Default" && (
-                                        <Badge
-                                            variant="outline"
-                                            className={cn(
-                                                "text-xs font-bold px-1.5 py-0 rounded-md h-5",
-                                                posterSize === "Small"
-                                                    ? "bg-primary/10 text-primary dark:text-primary border-primary/30"
-                                                    : "bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20"
-                                            )}
-                                        >
-                                            {posterSize}
-                                        </Badge>
-                                    )}
-                                    {posterType === "Poster" && (
-                                        <Badge variant="outline" className="text-xs font-bold px-1.5 py-0 rounded-md h-5 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/25">Poster</Badge>
-                                    )}
-                                    {posterType === "Square" && (
-                                        <Badge variant="outline" className="text-xs font-bold px-1.5 py-0 rounded-md h-5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">Square</Badge>
-                                    )}
-                                    {posterType === "Landscape" && (
-                                        <Badge variant="outline" className="text-xs font-bold px-1.5 py-0 rounded-md h-5 bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20">Landscape</Badge>
-                                    )}
+                    <AccordionTrigger indicator="right-down" className={`flex-1 items-center text-foreground px-4 py-4 transition-colors group/trigger ${editorHover.rowSubtle}`}>
+                        <div className="flex-1 min-w-0 flex flex-wrap items-center gap-x-3 gap-y-2">
+                            <span className="min-w-0 basis-full truncate font-bold text-base text-foreground group-hover/trigger:text-primary transition-colors sm:basis-auto sm:flex-1">
+                                {formatDisplayName(name)}
+                            </span>
+                            <div className="flex min-w-0 flex-wrap items-center gap-1">
+                                {posterSize !== "Default" && (
                                     <Badge
                                         variant="outline"
                                         className={cn(
-                                            "text-xs font-bold px-1.5 py-0 rounded-md h-5",
-                                            "bg-slate-400/8 text-slate-600 dark:text-slate-400 border-slate-400/18"
+                                            editorCompactBadge.base,
+                                            posterSize === "Small"
+                                                ? editorCompactBadge.primary
+                                                : editorCompactBadge.neutral
                                         )}
                                     >
-                                        {subgroupNames.length} {subgroupNames.length === 1 ? "Group" : "Groups"}
+                                        {posterSize}
                                     </Badge>
-                                    <AIOMismatchBadge count={mismatchCount} />
-                                    {subgroupNames.length === 0 && (
-                                        <span className="text-[10px] text-foreground/30 font-bold uppercase tracking-wider">Empty Group</span>
+                                )}
+                                {posterType === "Poster" && (
+                                    <Badge variant="outline" className={cn(editorCompactBadge.base, editorCompactBadge.cyan)}>Poster</Badge>
+                                )}
+                                {posterType === "Square" && (
+                                    <Badge variant="outline" className={cn(editorCompactBadge.base, editorCompactBadge.emerald)}>Square</Badge>
+                                )}
+                                {posterType === "Landscape" && (
+                                    <Badge variant="outline" className={cn(editorCompactBadge.base, editorCompactBadge.orange)}>Landscape</Badge>
+                                )}
+                                <Badge
+                                    variant="outline"
+                                    className={cn(
+                                        editorCompactBadge.base,
+                                        editorCompactBadge.neutral
                                     )}
-                                </div>
+                                >
+                                    {subgroupNames.length} {subgroupNames.length === 1 ? "Group" : "Groups"}
+                                </Badge>
+                                <AIOMismatchBadge count={mismatchCount} />
+                                {subgroupNames.length === 0 && (
+                                    <span className="text-[10px] text-foreground/30 font-bold uppercase tracking-wider">Empty Group</span>
+                                )}
                             </div>
                         </div>
                     </AccordionTrigger>
@@ -1083,6 +1114,46 @@ const MainGroupNode = React.memo(function MainGroupNode({ uuid, name, subgroupNa
                                         className={`text-xs ${posterSize === "Small" ? "bg-primary/20 text-primary" : ""}`}
                                     >
                                         Small {posterSize === "Small" && "✓"}
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 shrink-0 text-foreground/70 hover:text-foreground hover:bg-muted/60 dark:hover:bg-muted/40"
+                                        title="Sort subgroups"
+                                        aria-label="Sort subgroups"
+                                    >
+                                        {subgroupSortMode === "desc" ? (
+                                            <ArrowDownAZ className="w-4 h-4" />
+                                        ) : (
+                                            <ArrowUpAZ className="w-4 h-4" />
+                                        )}
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className={cn(editorSurface.overlay, "min-w-[11rem]")}>
+                                    <DropdownMenuLabel className="px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-foreground/55 font-semibold">
+                                        Sort Subgroups
+                                    </DropdownMenuLabel>
+                                    <DropdownMenuItem onClick={() => handleSortSubgroups("asc")} className="text-xs">
+                                        <ArrowUpAZ className="mr-2 h-3.5 w-3.5" />
+                                        A-Z{subgroupSortMode === "asc" ? " ✓" : ""}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleSortSubgroups("desc")} className="text-xs">
+                                        <ArrowDownAZ className="mr-2 h-3.5 w-3.5" />
+                                        Z-A{subgroupSortMode === "desc" ? " ✓" : ""}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator className="bg-border" />
+                                    <DropdownMenuItem
+                                        onClick={handleRestoreManualSubgroupOrder}
+                                        className="text-xs"
+                                        disabled={subgroupSortMode === "manual"}
+                                    >
+                                        <RotateCcw className="mr-2 h-3.5 w-3.5" />
+                                        Default{subgroupSortMode === "manual" ? " ✓" : ""}
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -1759,6 +1830,8 @@ export function UnifiedSubgroupEditor({
     const [isAddToGroupModalOpen, setIsAddToGroupModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [activeMainGroupId, setActiveMainGroupId] = useState<string | null>(null);
+    const [expandedMainGroup, setExpandedMainGroup] = useState<string | undefined>(undefined);
+    const [manualSubgroupOrderSnapshots, setManualSubgroupOrderSnapshots] = useState<Record<string, string[]>>({});
     const [recentUnassigns, setRecentUnassigns] = useState<Record<string, string>>({}); // subgroupName -> parentUuid
     const [expandedUnassignedSubgroup, setExpandedUnassignedSubgroup] = useState<string | null>(null);
     const [isUnassignedSectionOpen, setIsUnassignedSectionOpen] = useState(false);
@@ -1770,9 +1843,43 @@ export function UnifiedSubgroupEditor({
         setRecentUnassigns(prev => ({ ...prev, [subgroupName]: parentUuid }));
     };
 
+    const handleManualSubgroupOrderSnapshotChange = (uuid: string, order: string[]) => {
+        setManualSubgroupOrderSnapshots((current) => {
+            const previous = current[uuid];
+            if (previous && stringArraysEqual(previous, order)) return current;
+            return { ...current, [uuid]: order };
+        });
+    };
+
     React.useEffect(() => {
         setMainGroupOrder(prev => (stringArraysEqual(prev, mainGroupOrderFromConfig) ? prev : mainGroupOrderFromConfig));
     }, [mainGroupOrderFromConfig]);
+
+    React.useEffect(() => {
+        setManualSubgroupOrderSnapshots((current) => {
+            const next: Record<string, string[]> = {};
+            let changed = false;
+
+            mainGroupOrderFromConfig.forEach((uuid) => {
+                const currentNames = normalizeSubgroupNames(mainCatalogGroups[uuid]?.subgroupNames, subgroupOrder[uuid]);
+                const previousSnapshot = current[uuid];
+                const nextSnapshot = previousSnapshot
+                    ? reconcileOrderedNames(previousSnapshot, currentNames)
+                    : currentNames;
+
+                next[uuid] = nextSnapshot;
+                if (!previousSnapshot || !stringArraysEqual(previousSnapshot, nextSnapshot)) {
+                    changed = true;
+                }
+            });
+
+            if (!changed && Object.keys(current).length === Object.keys(next).length) {
+                return current;
+            }
+
+            return next;
+        });
+    }, [mainCatalogGroups, mainGroupOrderFromConfig, subgroupOrder]);
 
     const filteredMainGroupOrder = React.useMemo(() => {
         if (!deferredSearchTerm) return mainGroupOrder;
@@ -1787,6 +1894,12 @@ export function UnifiedSubgroupEditor({
             return sgs.some((sg: string) => sg.toLowerCase().includes(q));
         });
     }, [mainGroupOrder, mainCatalogGroups, deferredSearchTerm, subgroupOrder]);
+
+    React.useEffect(() => {
+        if (!expandedMainGroup) return;
+        if (filteredMainGroupOrder.includes(expandedMainGroup)) return;
+        setExpandedMainGroup(undefined);
+    }, [expandedMainGroup, filteredMainGroupOrder]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -1860,12 +1973,12 @@ export function UnifiedSubgroupEditor({
         <div className="space-y-4">
             <div className={cn(editorSurface.card, "overflow-hidden")}>
                 {/* Unified Sticky Toolbar */}
-                <div className={cn(editorSurface.toolbar, "sticky top-0 z-30 rounded-none border-x-0 border-t-0 p-3 xl:flex xl:items-center xl:gap-2")}>
-                    <div className="grid grid-cols-3 gap-2 xl:flex xl:flex-1 xl:flex-wrap xl:items-center">
+                <div className={cn(editorSurface.toolbar, "sticky top-0 z-30 flex flex-col gap-2 rounded-none border-x-0 border-t-0 p-3 xl:flex-row xl:items-center xl:gap-3")}>
+                    <div className="grid grid-cols-3 gap-2 xl:order-2 xl:ml-auto xl:flex xl:flex-none xl:flex-wrap xl:justify-end xl:gap-2">
                         <Button
                             onClick={() => setIsCreateModalOpen(true)}
                             size="sm"
-                            className="bg-primary hover:bg-primary/92 text-primary-foreground font-bold h-9 px-2.5 shadow-lg shadow-primary/20 min-w-0 justify-center xl:h-10 xl:px-5 xl:justify-start"
+                            className="bg-primary hover:bg-primary/92 text-primary-foreground font-bold h-9 px-2.5 shadow-lg shadow-primary/20 min-w-0 justify-center xl:order-3 xl:h-10 xl:px-5 xl:justify-start"
                         >
                             <Plus className="w-4 h-4 shrink-0 xl:mr-1.5" />
                             <span className="sm:hidden">New</span>
@@ -1876,7 +1989,7 @@ export function UnifiedSubgroupEditor({
                             onClick={() => setIsAddToGroupModalOpen(true)}
                             variant="outline"
                             size="sm"
-                            className="h-9 text-[13px] border-border/60 hover:bg-muted/60 dark:hover:bg-muted/40 text-foreground/80 hover:text-foreground transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out px-2.5 font-medium min-w-0 justify-center xl:h-10 xl:px-5 xl:text-sm xl:justify-start"
+                            className="h-9 text-[13px] border-border/60 hover:bg-muted/60 dark:hover:bg-muted/40 text-foreground/80 hover:text-foreground transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out px-2.5 font-medium min-w-0 justify-center xl:order-1 xl:h-10 xl:px-5 xl:text-sm xl:justify-start"
                         >
                             <FolderPlus className="w-4 h-4 shrink-0 xl:mr-1.5" />
                             <span className="sm:hidden">Add</span>
@@ -1887,7 +2000,7 @@ export function UnifiedSubgroupEditor({
                             onClick={() => setIsImportModalOpen(true)}
                             variant="outline"
                             size="sm"
-                            className="h-9 text-[13px] border-border/60 hover:bg-muted/60 dark:hover:bg-muted/40 text-foreground/80 hover:text-foreground transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out px-2.5 font-medium min-w-0 justify-center xl:h-10 xl:px-5 xl:text-sm xl:justify-start"
+                            className="h-9 text-[13px] border-border/60 hover:bg-muted/60 dark:hover:bg-muted/40 text-foreground/80 hover:text-foreground transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out px-2.5 font-medium min-w-0 justify-center xl:order-2 xl:h-10 xl:px-5 xl:text-sm xl:justify-start"
                         >
                             <UploadCloud className="w-4 h-4 shrink-0 xl:mr-1.5" />
                             <span className="sm:hidden">Update</span>
@@ -1896,7 +2009,7 @@ export function UnifiedSubgroupEditor({
                         </Button>
                     </div>
 
-                    <div className="relative mt-2 w-full xl:ml-auto xl:mt-0 xl:w-64">
+                    <div className="relative w-full border-t border-border/50 pt-2 xl:order-1 xl:max-w-sm xl:flex-1 xl:border-t-0 xl:pt-0">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/45 pointer-events-none" />
                         <Input
                             ref={searchInputRef}
@@ -1919,6 +2032,7 @@ export function UnifiedSubgroupEditor({
                             </Button>
                         )}
                     </div>
+
                 </div>
 
                 <div className="p-4 bg-transparent">
@@ -1950,7 +2064,10 @@ export function UnifiedSubgroupEditor({
                             ) : (
                                 <SortableContext items={filteredMainGroupOrder} strategy={verticalListSortingStrategy}>
                                     <Accordion 
-                                        type="multiple" 
+                                        type="single"
+                                        collapsible
+                                        value={expandedMainGroup}
+                                        onValueChange={(value) => setExpandedMainGroup(value || undefined)}
                                         className="w-full space-y-3"
                                     >
                                         {filteredMainGroupOrder.map(uuid => {
@@ -1974,6 +2091,8 @@ export function UnifiedSubgroupEditor({
                                                         setIsCreateModalOpen(true);
                                                     }}
                                                     searchTerm={deferredSearchTerm}
+                                                    manualSubgroupOrderSnapshot={manualSubgroupOrderSnapshots[uuid]}
+                                                    onManualSubgroupOrderSnapshotChange={handleManualSubgroupOrderSnapshotChange}
                                                 />
                                             );
                                         })}

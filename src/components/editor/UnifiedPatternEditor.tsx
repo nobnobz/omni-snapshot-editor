@@ -34,6 +34,7 @@ import {
     defaultDropAnimationSideEffects,
 } from '@dnd-kit/core';
 import { editorHover, editorSurface } from "@/components/editor/ui/style-contract";
+import { LockedUrlInput } from "@/components/editor/LockedUrlInput";
 import { cn } from "@/lib/utils";
 import { shallowEqualObject } from "@/lib/equality";
 import {
@@ -129,68 +130,16 @@ const PatternImageUrlInput = React.memo(function PatternImageUrlInput({
     value?: string;
     onCommit: (nextUrl: string | undefined) => void;
 }) {
-    const [urlInput, setUrlInput] = useState(value ?? "");
-    const inputRef = React.useRef<HTMLInputElement>(null);
-
-    React.useEffect(() => {
-        const nextValue = value ?? "";
-        setUrlInput(prev => (prev === nextValue ? prev : nextValue));
-    }, [value]);
-
-    const commitValue = (nextValue: string) => {
-        const normalizedCurrent = value ?? "";
-        if (nextValue === normalizedCurrent) return;
-        onCommit(nextValue === "" ? undefined : nextValue);
-    };
-
-    const handleBlur = () => {
-        commitValue(urlInput);
-    };
-
-    const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-        if (event.key === "Enter") {
-            event.preventDefault();
-            commitValue(urlInput);
-            event.currentTarget.blur();
-        } else if (event.key === "Escape") {
-            const nextValue = value ?? "";
-            setUrlInput(nextValue);
-            event.currentTarget.blur();
-        }
-    };
-
-    const handleClearClick = () => {
-        setUrlInput("");
-        commitValue("");
-        requestAnimationFrame(() => {
-            inputRef.current?.focus({ preventScroll: true });
-        });
-    };
-
     return (
-        <div className="flex items-center gap-2">
-            <Input
-                ref={inputRef}
-                type="text"
-                value={urlInput}
-                onChange={(event) => setUrlInput(event.target.value)}
-                onBlur={handleBlur}
-                onKeyDown={handleKeyDown}
-                placeholder="Enter Image URL..."
-                className={cn(editorSurface.field, patternFieldSurface, patternInputControlClass, "font-mono")}
-            />
-            <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={handleClearClick}
-                className="h-10 w-10 shrink-0 rounded-md text-foreground/60 hover:bg-destructive/10 hover:text-destructive sm:h-9 sm:w-9"
-                title="Clear image URL"
-            >
-                <Trash2 className="h-4 w-4" />
-            </Button>
-        </div>
+        <LockedUrlInput
+            value={value}
+            onCommit={onCommit}
+            placeholder="Enter Image URL..."
+            inputClassName={cn(editorSurface.field, patternFieldSurface, patternInputControlClass)}
+            iconButtonClassName="h-8 w-8 shrink-0 rounded-md text-foreground/56 sm:h-7 sm:w-7"
+            copyTitle="Copy image URL"
+            clearTitle="Delete image URL"
+        />
     );
 });
 
@@ -728,7 +677,7 @@ export function UnifiedPatternEditor() {
     return (
         <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="patterns-root" className={`!border-b-0 ${editorSurface.card} ring-1 ring-inset ring-white/5 dark:ring-white/[0.06]`}>
-                <AccordionTrigger className="px-5 py-4 flex justify-between items-center group transition-colors !rounded-none hover:bg-transparent dark:hover:bg-transparent">
+                <AccordionTrigger indicator="right-down" className="px-5 py-4 flex justify-between items-center group transition-colors !rounded-none hover:bg-transparent dark:hover:bg-transparent">
                     <div className="flex items-center gap-3">
                         <WandSparkles className="w-5 h-5 text-primary group-hover:text-primary transition-colors" />
                         <span className="font-bold text-base tracking-tight text-foreground flex items-center gap-2">

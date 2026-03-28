@@ -1,0 +1,276 @@
+"use client";
+
+import React from "react";
+import { Check, Copy, Trash2 } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+
+type LockedUrlInputProps = {
+    value?: string;
+    onCommit: (nextValue: string | undefined) => void;
+    onDraftValueChange?: (nextValue: string) => void;
+    placeholder?: string;
+    className?: string;
+    inputClassName?: string;
+    iconButtonClassName?: string;
+    copyTitle?: string;
+    clearTitle?: string;
+    stopPropagation?: boolean;
+    disabled?: boolean;
+    multiline?: boolean;
+    rows?: number;
+};
+
+export const LockedUrlInput = React.forwardRef<HTMLInputElement | HTMLTextAreaElement, LockedUrlInputProps>(function LockedUrlInput({
+    value,
+    onCommit,
+    onDraftValueChange,
+    placeholder = "https://...",
+    className,
+    inputClassName,
+    iconButtonClassName,
+    copyTitle = "Copy URL",
+    clearTitle = "Clear URL",
+    stopPropagation = false,
+    disabled = false,
+    multiline = false,
+    rows = 2,
+}, forwardedRef) {
+    const [draftValue, setDraftValue] = React.useState(value ?? "");
+    const [copied, setCopied] = React.useState(false);
+    const internalRef = React.useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+
+    React.useEffect(() => {
+        const nextValue = value ?? "";
+        setDraftValue((currentValue) => (currentValue === nextValue ? currentValue : nextValue));
+    }, [value]);
+
+    React.useEffect(() => {
+        onDraftValueChange?.(draftValue);
+    }, [draftValue, onDraftValueChange]);
+
+    React.useEffect(() => {
+        if (!copied) return;
+
+        const timeoutId = window.setTimeout(() => setCopied(false), 1200);
+        return () => window.clearTimeout(timeoutId);
+    }, [copied]);
+
+    const assignInputRef = React.useCallback((node: HTMLInputElement | HTMLTextAreaElement | null) => {
+        internalRef.current = node;
+
+        if (typeof forwardedRef === "function") {
+            forwardedRef(node);
+            return;
+        }
+
+        if (forwardedRef) {
+            (forwardedRef as React.MutableRefObject<HTMLInputElement | HTMLTextAreaElement | null>).current = node;
+        }
+    }, [forwardedRef]);
+
+    const committedValue = value ?? "";
+    const hasCommittedValue = committedValue.trim().length > 0;
+    const isLocked = hasCommittedValue && !disabled;
+    const hasAnyValue = committedValue.trim().length > 0 || draftValue.trim().length > 0;
+
+    const stopInputPropagation = <T extends { stopPropagation: () => void }>(event: T) => {
+        if (stopPropagation) {
+            event.stopPropagation();
+        }
+    };
+
+    const commitValue = (nextValue: string) => {
+        if (disabled) return;
+
+        const normalizedNextValue = nextValue.trim();
+        const normalizedCurrentValue = committedValue.trim();
+        if (normalizedNextValue === normalizedCurrentValue) return;
+
+        onCommit(normalizedNextValue === "" ? undefined : normalizedNextValue);
+    };
+
+    const handleBlur = () => {
+        if (isLocked) return;
+        commitValue(draftValue);
+    };
+
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        stopInputPropagation(event);
+        if (isLocked) return;
+
+        if (event.key === "Enter") {
+            event.preventDefault();
+            commitValue(draftValue);
+            event.currentTarget.blur();
+            return;
+        }
+
+        if (event.key === "Escape") {
+            const nextValue = value ?? "";
+            setDraftValue(nextValue);
+            event.currentTarget.blur();
+        }
+    };
+
+    const copyCommittedValue = React.useCallback(async () => {
+        if (!hasCommittedValue || typeof navigator === "undefined" || !navigator.clipboard) return;
+
+        try {
+            await navigator.clipboard.writeText(committedValue.trim());
+            setCopied(true);
+        } catch {
+            setCopied(false);
+        }
+    }, [committedValue, hasCommittedValue]);
+
+    const handleCopyClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+        event.preventDefault();
+        stopInputPropagation(event);
+        void copyCommittedValue();
+    };
+
+    const handleLockedDisplayClick = (event: React.MouseEvent<HTMLElement>) => {
+        event.preventDefault();
+        stopInputPropagation(event);
+        void copyCommittedValue();
+    };
+
+    const handleEditableFieldPointerDown = (event: React.PointerEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        stopInputPropagation(event);
+    };
+
+    const handleEditableFieldMouseDown = (event: React.MouseEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        stopInputPropagation(event);
+    };
+
+    const handleEditableFieldClick = (event: React.MouseEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        stopInputPropagation(event);
+    };
+
+    const handleClearClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+        event.preventDefault();
+        stopInputPropagation(event);
+        if (!hasAnyValue || disabled) return;
+
+        setDraftValue("");
+        setCopied(false);
+        commitValue("");
+
+        requestAnimationFrame(() => {
+            internalRef.current?.focus({ preventScroll: true });
+        });
+    };
+
+    return (
+        <div className={cn("relative w-full", className)}>
+            {isLocked ? (
+                <div
+                    onPointerDown={(event) => {
+                        stopInputPropagation(event);
+                        event.preventDefault();
+                    }}
+                    onMouseDown={(event) => {
+                        stopInputPropagation(event);
+                        event.preventDefault();
+                    }}
+                    onClick={handleLockedDisplayClick}
+                    className={cn(
+                        "w-full min-w-0 overflow-hidden rounded-md border text-left select-none transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out",
+                        "pr-28 font-mono border-slate-200/95 bg-slate-100/86 text-foreground/58 shadow-none dark:border-white/10 dark:bg-white/[0.045] dark:text-foreground/58 sm:pr-24",
+                        multiline
+                            ? "whitespace-pre-wrap break-all px-3 py-3 leading-[1.35]"
+                            : "flex items-center px-3",
+                        inputClassName
+                    )}
+                >
+                    {multiline ? committedValue : (
+                        <span className="block min-w-0 flex-1 truncate">
+                            {committedValue}
+                        </span>
+                    )}
+                </div>
+            ) : multiline ? (
+                <Textarea
+                    ref={assignInputRef}
+                    value={draftValue}
+                    readOnly={isLocked}
+                    disabled={disabled}
+                    rows={rows}
+                    placeholder={placeholder}
+                    onChange={(event) => setDraftValue(event.target.value)}
+                    onBlur={handleBlur}
+                    onKeyDown={handleKeyDown}
+                    onPointerDown={handleEditableFieldPointerDown}
+                    onMouseDown={handleEditableFieldMouseDown}
+                    onClick={handleEditableFieldClick}
+                    className={cn(
+                        "w-full pr-28 font-mono leading-[1.35] read-only:cursor-default read-only:border-slate-200/95 read-only:bg-slate-100/86 read-only:text-foreground/58 read-only:shadow-none read-only:hover:border-slate-200/95 read-only:hover:bg-slate-100/86 read-only:focus-visible:border-slate-200/95 read-only:focus-visible:ring-0 read-only:selection:bg-primary/15 dark:read-only:border-white/10 dark:read-only:bg-white/[0.045] dark:read-only:text-foreground/58 dark:read-only:hover:border-white/10 dark:read-only:hover:bg-white/[0.045] sm:pr-24",
+                        inputClassName
+                    )}
+                />
+            ) : (
+                <Input
+                    ref={assignInputRef}
+                    type="text"
+                    value={draftValue}
+                    readOnly={isLocked}
+                    disabled={disabled}
+                    placeholder={placeholder}
+                    onChange={(event) => setDraftValue(event.target.value)}
+                    onBlur={handleBlur}
+                    onKeyDown={handleKeyDown}
+                    onPointerDown={handleEditableFieldPointerDown}
+                    onMouseDown={handleEditableFieldMouseDown}
+                    onClick={handleEditableFieldClick}
+                    className={cn(
+                        "w-full pr-28 font-mono read-only:cursor-default read-only:border-slate-200/95 read-only:bg-slate-100/86 read-only:text-foreground/58 read-only:shadow-none read-only:hover:border-slate-200/95 read-only:hover:bg-slate-100/86 read-only:focus-visible:border-slate-200/95 read-only:focus-visible:ring-0 read-only:selection:bg-primary/15 dark:read-only:border-white/10 dark:read-only:bg-white/[0.045] dark:read-only:text-foreground/58 dark:read-only:hover:border-white/10 dark:read-only:hover:bg-white/[0.045] sm:pr-24",
+                        inputClassName
+                    )}
+                />
+            )}
+            {copied && (
+                <div className="pointer-events-none absolute right-0 top-0 -translate-y-[calc(100%+0.35rem)]">
+                    <div className="inline-flex items-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-500/12 px-2 py-1 text-[11px] font-medium text-emerald-700 shadow-sm backdrop-blur-sm dark:border-emerald-400/25 dark:bg-emerald-400/12 dark:text-emerald-200">
+                        <Check className="h-3.5 w-3.5" />
+                        <span>Copied</span>
+                    </div>
+                </div>
+            )}
+            <div className="pointer-events-none absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-1 border-l border-border/65 bg-slate-100/92 pl-2 dark:bg-[rgba(18,22,30,0.96)]">
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={handleCopyClick}
+                    disabled={!hasCommittedValue}
+                    className={cn("pointer-events-auto h-8 w-8 shrink-0 rounded-md text-foreground/56 sm:h-7 sm:w-7", iconButtonClassName)}
+                    title={copyTitle}
+                    aria-label={copyTitle}
+                >
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={handleClearClick}
+                    disabled={!hasAnyValue || disabled}
+                    className={cn(
+                        "pointer-events-auto h-8 w-8 shrink-0 rounded-md text-foreground/56 hover:bg-destructive/10 hover:text-destructive sm:h-7 sm:w-7",
+                        iconButtonClassName
+                    )}
+                    title={clearTitle}
+                    aria-label={clearTitle}
+                >
+                    <Trash2 className="h-4 w-4" />
+                </Button>
+            </div>
+        </div>
+    );
+});

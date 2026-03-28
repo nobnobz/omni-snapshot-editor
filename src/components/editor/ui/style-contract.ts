@@ -121,6 +121,24 @@ export const editorToneBadge: Record<EditorTone, string> = {
   danger: "bg-[var(--editor-danger-bg)] text-[var(--editor-danger-fg)] border-[var(--editor-danger-border)]",
 }
 
+export const editorCompactBadge = {
+  base: "h-5 rounded-md px-1.5 py-0 text-xs font-bold leading-none",
+  neutral:
+    "bg-slate-400/8 text-slate-600 border-slate-400/18 dark:text-slate-400",
+  primary:
+    "bg-primary/10 text-primary border-primary/30 dark:text-primary",
+  cyan:
+    "bg-cyan-500/10 text-cyan-700 border-cyan-500/25 dark:text-cyan-300",
+  amber:
+    "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-400",
+  emerald:
+    "bg-emerald-500/10 text-emerald-700 border-emerald-500/20 dark:text-emerald-400",
+  orange:
+    "bg-orange-500/10 text-orange-700 border-orange-500/20 dark:text-orange-400",
+  violet:
+    "bg-violet-500/10 text-violet-700 border-violet-500/25 dark:text-violet-400",
+} as const
+
 export const editorNoticeTone: Record<EditorTone, string> = {
   neutral: "border-border bg-muted/40 text-foreground",
   info: "editor-tone-info",

@@ -335,7 +335,7 @@ function SortableMainGroupItem({
                         <GripVertical className="w-5 h-5" />
                     </button>
 
-                    <AccordionTrigger className={`flex-1 text-foreground px-4 py-4 transition-colors ${editorHover.rowSubtle}`}>
+                    <AccordionTrigger indicator="right-down" className={`flex-1 text-foreground px-4 py-4 transition-colors ${editorHover.rowSubtle}`}>
                         <div className="flex flex-col items-start gap-1 min-w-0">
                             <span className="font-bold text-sm tracking-tight text-foreground group-hover/accordion:text-primary transition-colors uppercase">
                                 {groupData.name || "Unnamed Group"}
