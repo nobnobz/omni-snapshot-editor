@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.6.0] - 2026-03-28
+### Added
+- **AIOMetadata Export Panel** for generating ready-to-use catalog JSON directly from Omni catalogs.
+- Support for exporting all linked catalogs, or only new catalogs missing from the AIOMetadata setup.
+- Copy to clipboard and download to JSON actions for AIOMetadata exports.
+- **Export overrides** for AIOMetadata at global, main group, subgroup, and catalog levels.
+- Built-in **UME Sorting** template with recommended defaults.
+
+### Improved
+- AIOMetadata sync now supports manifest URLs, raw JSON, and JSON file uploads.
+- Preference for the richer AIOMetadata config response in payload handling.
+- Normalization and matching for **MDBList**, **Trakt**, and **Streaming** catalogs.
+- Handling of Omni sections (Header, Top Row, Catalog, General) during export.
+- Naming and structure generation from Omni groups for consistent catalog ordering.
+
+### Editor & Validation
+- Mismatch detection for catalogs linked in Omni but missing from synced AIOMetadata.
+- Clearer warnings for affected main- and sub-groups.
+- Synced-state detection isolates existing AIOMetadata catalogs from new exportable ones.
+
 ## [0.5.4] - 2026-03-26
 ### Improved
 - **Performance Optimizations**: Internal refactoring and logic decoupling for a smoother editor experience and more responsive UI during active configuration updates.
