@@ -48,7 +48,14 @@ export function TrashBin() {
     const allDeleted: DeletedItem[] = [
         ...mainGroupItems.map(g => ({ ...g, type: "Main Group" as const })),
         ...subgroupItems.map(s => ({ ...s, type: "Subgroup" as const }))
-    ].sort((a, b) => new Date(b.deletedAt).getTime() - new Date(a.deletedAt).getTime());
+    ].sort((a, b) => {
+        // Sort by Type (Main Group first, then Subgroup)
+        if (a.type !== b.type) {
+            return a.type === "Main Group" ? -1 : 1;
+        }
+        // Sort Alphabetically by Name
+        return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+    });
 
     return (
         <div className={cn(editorSurface.card, "mt-8 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300")}>
@@ -108,7 +115,7 @@ export function TrashBin() {
                                             </span>
                                             {item.type === 'Subgroup' && (
                                                 <span className="text-[10px] sm:text-xs text-foreground/50">
-                                                    in <span className="text-foreground/70">{item.parentName}</span>
+                                                    in <span className="text-foreground/70">{item.parentName === "General" || !item.parentName ? "Unassigned" : item.parentName}</span>
                                                 </span>
                                             )}
                                         </div>
