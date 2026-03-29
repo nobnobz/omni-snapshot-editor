@@ -82,10 +82,10 @@ export function TrashBin() {
                     <div className="animate-in slide-in-from-top-2 fade-in duration-200">
                         <div className="mb-4 flex justify-end">
                             <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="sm"
                                 onClick={clearDeletedSubgroups}
-                                className="h-9 text-red-500 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/30 text-xs px-3 gap-2 border-border/50"
+                                className={cn("h-9 text-xs px-3 gap-2 border border-transparent", editorHover.iconDanger)}
                             >
                                 <Trash2 className="w-4 h-4" /> Delete All
                             </Button>
