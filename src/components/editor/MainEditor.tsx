@@ -931,7 +931,7 @@ export function MainEditor() {
             return "";
         }
 
-        return "At least one subgroup has linked catalogs missing from the synced AIOMetadata catalogs or has no linked catalogs.";
+        return "One or more groups have missing or empty linked catalogs. Add the missing catalogs to AIOMetadata using Export New Catalogs, or update the linked catalogs in the affected groups.";
     }, [aiomMismatchSummary.hasIssues]);
 
     useEffect(() => {
