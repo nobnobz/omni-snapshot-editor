@@ -13,7 +13,8 @@ import { Button } from "@/components/ui/button";
 import { useConfigActions, useConfigSelector } from "@/context/ConfigContext";
 import { AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { editorAction, editorLayout, editorNoticeTone } from "@/components/editor/ui/style-contract";
+import { editorAction, editorLayout } from "@/components/editor/ui/style-contract";
+import { EditorNotice } from "@/components/editor/ui/EditorNotice";
 
 interface RenameGroupModalProps {
     isOpen: boolean;
@@ -72,22 +73,20 @@ export function RenameGroupModal({ isOpen, onClose, oldName, isMainGroup = false
                         />
                     </div>
 
-                    <div className={cn("p-3 rounded-lg border text-sm flex items-start gap-3", editorNoticeTone.info)}>
-                        <AlertCircle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                    <EditorNotice tone="info" icon={<AlertCircle className="w-4 h-4" />}>
                         <div>
-                            <p className="text-foreground/70">This group is referenced in <strong className="text-foreground">{refCount}</strong> places.</p>
-                            <p className="text-foreground/70 text-xs mt-1">Renaming will automatically update all references to prevent orphans.</p>
+                            <p className="text-inherit opacity-90">This group is referenced in <strong className="font-bold opacity-100">{refCount}</strong> places.</p>
+                            <p className="text-inherit opacity-75 text-xs mt-1">Renaming will automatically update all references to prevent orphans.</p>
                         </div>
-                    </div>
+                    </EditorNotice>
 
                     {newNameExists && (
-                        <div className={cn("p-3 rounded-lg border text-sm flex items-start gap-3", editorNoticeTone.warning)}>
-                            <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
+                        <EditorNotice tone="warning" icon={<AlertCircle className="w-4 h-4" />}>
                             <div>
-                                <p className="text-yellow-500 font-medium">Merge Warning</p>
-                                <p className="text-yellow-500/80 text-xs mt-1">A group named &quot;{newName.trim()}&quot; already exists. Proceeding will merge their contents together.</p>
+                                <p className="font-bold opacity-100">Merge Warning</p>
+                                <p className="text-inherit opacity-80 text-xs mt-1">A group named &quot;{newName.trim()}&quot; already exists. Proceeding will merge their contents together.</p>
                             </div>
-                        </div>
+                        </EditorNotice>
                     )}
 
                     <DialogFooter className="mt-6">

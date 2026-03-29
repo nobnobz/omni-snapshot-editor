@@ -26,7 +26,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { editorAction, editorLayout, editorSurface, editorToneBadge, editorNoticeTone } from "@/components/editor/ui/style-contract";
+import { editorAction, editorLayout, editorSurface, editorToneBadge } from "@/components/editor/ui/style-contract";
+import { EditorNotice } from "@/components/editor/ui/EditorNotice";
 import { FALLBACK_TEMPLATE_URLS, findTemplateByKind, isTemplateOfKind } from "@/lib/template-manifest";
 import { normalizeMainGroupOrder } from "@/lib/main-group-utils";
 import { fetchTextWithLimits } from "@/lib/remote-fetch";
@@ -879,10 +880,9 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                 {step === 1 && (
                     <div className="space-y-4 flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1">
                         {/* Hint Box */}
-                        <div className={cn("rounded-xl p-4 text-sm flex gap-4 items-start shadow-sm border mb-2", editorNoticeTone.warning)}>
-                            <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-amber-600 dark:text-amber-500" />
+                        <EditorNotice tone="warning" className="mb-2 w-full">
                             <div className="flex flex-col items-start gap-y-1 sm:flex-row sm:items-center sm:justify-between sm:gap-x-4 w-full">
-                                <p className="leading-relaxed font-semibold">
+                                <p className="leading-relaxed font-semibold text-inherit opacity-90">
                                     Updating your setup for the first time?
                                 </p>
                                 {onOpenGuide && (
@@ -890,14 +890,14 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => onOpenGuide("update")}
-                                        className="h-8 px-3 text-xs font-bold text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 -ml-2 sm:ml-0"
+                                        className="h-8 px-3 text-xs font-bold text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 -ml-2 sm:ml-0 shrink-0"
                                     >
-                                        <BookOpen className="w-3.5 h-3.5 mr-2" />
+                                        <BookOpen className="w-3.5 h-3.5 mr-2 shrink-0" />
                                         How to Update
                                     </Button>
                                 )}
                             </div>
-                        </div>
+                        </EditorNotice>
 
                         {/* Template Loader */}
                         <div className={cn(editorSurface.card, "p-5")}>
@@ -1005,10 +1005,9 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                         </div>
 
                         {error && (
-                            <div className={cn("flex items-center border text-sm px-3 py-2 rounded", editorNoticeTone.danger)}>
-                                <AlertTriangle className="w-4 h-4 mr-2" />
+                            <EditorNotice tone="danger" alignCenter>
                                 {error}
-                            </div>
+                            </EditorNotice>
                         )}
                     </div>
                 )}

@@ -286,6 +286,11 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                     {editingRegex ? (
                         <div className="flex flex-col gap-2">
                             <Textarea
+                                autoFocus
+                                onFocus={(e) => {
+                                    const len = e.currentTarget.value.length;
+                                    e.currentTarget.setSelectionRange(len, len);
+                                }}
                                 value={regexDraft}
                                 onChange={(e) => setRegexDraft(e.target.value)}
                                 onKeyDown={(e) => {
@@ -310,10 +315,21 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                             </div>
                         </div>
                     ) : (
-                        <div className={cn(editorSurface.field, patternFieldSurface, patternRegexFrameSurface, "flex items-center gap-3 p-2.5 group/regex")}>
+                        <div 
+                            onClick={handleStartEdit}
+                            className={cn(editorSurface.field, patternFieldSurface, patternRegexFrameSurface, "flex items-center gap-3 p-2.5 group/regex cursor-text hover:border-primary/50 transition-colors")}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    handleStartEdit(e as any);
+                                }
+                            }}
+                        >
                             <code className="text-xs sm:text-sm font-mono text-primary flex-1 break-all tracking-tight">{regex}</code>
-                            <Button size="icon" variant="ghost" onClick={handleStartEdit} className="h-7 w-7 text-foreground/70 hover:text-primary hover:bg-primary/10 rounded-md opacity-100 sm:opacity-0 sm:group-hover/regex:opacity-100 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out shrink-0">
-                                <Pencil className="w-3.5 h-3.5" />
+                            <Button tabIndex={-1} size="icon" variant="ghost" className="h-7 w-7 text-foreground/70 group-hover/regex:text-primary group-hover/regex:bg-primary/10 rounded-md opacity-100 sm:opacity-0 sm:group-hover/regex:opacity-100 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out shrink-0">
+                                <Pencil className="w-3.5 h-3.5 flex-shrink-0" />
                             </Button>
                         </div>
                     )}

@@ -47,7 +47,8 @@ import type { OmniConfig } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { downloadTemplateFile, shouldOfferTemplateUrlChoice } from "@/lib/template-download";
 import { getTemplateDisplay } from "@/lib/template-display";
-import { editorHover, editorLoader, editorNoticeTone, editorSurface } from "@/components/editor/ui/style-contract";
+import { editorHover, editorLoader, editorSurface } from "@/components/editor/ui/style-contract";
+import { EditorNotice } from "@/components/editor/ui/EditorNotice";
 import { AppMeta } from "@/components/editor/AppMeta";
 import { TemplateDownloadChoiceDialog } from "@/components/editor/TemplateDownloadChoiceDialog";
 import { AIOMetadataTemplateChoiceDialog } from "@/components/editor/AIOMetadataTemplateChoiceDialog";
@@ -779,12 +780,9 @@ export function ConfigLoader() {
                             </div>
 
                             {error ? (
-                                <div className={cn("rounded-[1.2rem] border px-4 py-4 text-sm shadow-[0_14px_32px_rgba(15,23,42,0.06)] backdrop-blur-sm sm:px-5", editorNoticeTone.danger)}>
-                                    <div className="flex items-start gap-3">
-                                        <AlertCircle className="mt-0.5 size-5 shrink-0" />
-                                        <span className="leading-relaxed">{error}</span>
-                                    </div>
-                                </div>
+                                <EditorNotice tone="danger" className="shadow-[0_14px_32px_rgba(15,23,42,0.06)] backdrop-blur-sm rounded-[1.2rem] px-4 py-4 sm:px-5">
+                                    <span className="leading-relaxed">{error}</span>
+                                </EditorNotice>
                             ) : null}
 
                             <div className="mx-auto w-full max-w-[72rem] pt-3 sm:pt-4">

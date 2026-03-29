@@ -75,7 +75,8 @@ import {
 } from "@/lib/aiometadata-sync";
 import { cn, isIos } from "@/lib/utils";
 import { useTheme } from "next-themes";
-import { editorAction, editorHover, editorNoticeTone, editorSurface } from "@/components/editor/ui/style-contract";
+import { editorAction, editorHover, editorSurface } from "@/components/editor/ui/style-contract";
+import { EditorNotice } from "@/components/editor/ui/EditorNotice";
 import { AppMeta } from "@/components/editor/AppMeta";
 import { EditorPerfDebugPanel } from "@/components/editor/EditorPerfDebugPanel";
 import { measureAsync, measureSync } from "@/lib/perf";
@@ -496,32 +497,34 @@ export function MainEditor() {
         setUiNotice({ tone, message, placement });
     }, []);
 
+    useEffect(() => {
+        if (uiNotice?.tone === "success") {
+            const timer = setTimeout(() => {
+                setUiNotice(null);
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [uiNotice]);
+
     const renderNotice = (notice: UiNotice) => (
-        <div
-            className={cn(
-                "rounded-xl border px-4 py-3 text-sm leading-relaxed animate-in fade-in slide-in-from-top-2 duration-300",
-                notice.tone === "error"
-                    ? editorNoticeTone.danger
-                    : notice.tone === "success"
-                        ? "border-emerald-500/16 bg-emerald-500/7 text-emerald-700 shadow-[0_8px_20px_rgba(34,197,94,0.06)] dark:text-emerald-400"
-                        : editorNoticeTone.info
-            )}
-            role="status"
-            aria-live="polite"
+        <EditorNotice
+            tone={notice.tone === "error" ? "danger" : notice.tone === "success" ? "success" : "info"}
+            className="animate-in fade-in slide-in-from-top-2 duration-300 mb-4"
+            alignCenter
         >
-            <div className="flex items-center justify-between gap-3">
-                <span className="font-medium tracking-tight">{notice.message}</span>
+            <div className="flex flex-1 items-center justify-between gap-3 min-w-0">
+                <span className="font-medium tracking-tight truncate">{notice.message}</span>
                 <Button
                     variant="ghost"
                     size="icon-xs"
-                    className="shrink-0 text-current/60 hover:text-current hover:bg-current/10 rounded-full"
+                    className="shrink-0 text-current/60 hover:text-current hover:bg-current/10 rounded-full flex items-center justify-center p-0 h-6 w-6"
                     onClick={() => setUiNotice(null)}
                     aria-label="Dismiss notice"
                 >
                     <X className="w-3.5 h-3.5" />
                 </Button>
             </div>
-        </div>
+        </EditorNotice>
     );
 
     const persistAIOMetadataSyncState = useCallback((nextState: AIOMetadataSyncState) => {
@@ -1268,9 +1271,9 @@ export function MainEditor() {
 
                     {uiNotice && !["aiometadata", "aiometadata-editor"].includes(uiNotice.placement ?? "global") && renderNotice(uiNotice)}
                     {sessionSaveStatus?.status === "skipped_too_large" && (
-                        <div className={cn("mb-4 rounded-2xl border p-3 text-sm", editorNoticeTone.warning)}>
+                        <EditorNotice tone="warning" className="mb-4">
                             Session backup is temporarily limited because the editor state is very large. Your current editing session continues normally.
-                        </div>
+                        </EditorNotice>
                     )}
 
                     {sections.map(section => {
@@ -1310,12 +1313,11 @@ export function MainEditor() {
                                     {section.id === "aiometadata" ? (
                                         <div className="space-y-4">
                                             <div className="flex flex-col gap-1.5 px-1">
-                                                <div className={cn("rounded-xl p-4 text-sm flex gap-4 items-start mt-4 shadow-sm border", editorNoticeTone.info)}>
-                                                    <Info className="w-5 h-5 shrink-0 mt-0.5 text-primary dark:text-primary" />
-                                                    <p className="leading-relaxed">
+                                                <EditorNotice tone="info" className="mt-4" alignCenter>
+                                                    <p className="font-medium text-inherit">
                                                         <span className="font-bold">Note:</span> You can sync your AIOMetadata manifest URL to always keep your catalogs up to date. Imported catalog names are stored locally in your browser.
                                                     </p>
-                                                </div>
+                                                </EditorNotice>
                                                 {Object.keys(customFallbacks).length > 0 && !showAioSyncedState && (
                                                     <div className="mt-2 text-right">
                                                         <Button
@@ -1333,25 +1335,20 @@ export function MainEditor() {
                                             {uiNotice && uiNotice.placement === "aiometadata" && renderNotice(uiNotice)}
                                             {showAioSyncedState ? (
                                                 <div className="space-y-3">
-                                                    <div className="rounded-xl border border-emerald-500/16 bg-emerald-500/7 px-3.5 py-3 shadow-[0_8px_20px_rgba(34,197,94,0.06)]">
-                                                        <div className="flex items-start justify-between gap-3">
-                                                            <div className="flex items-center gap-3 min-w-0">
-                                                                <div className="rounded-xl border border-emerald-500/16 bg-emerald-500/10 p-2 text-emerald-600 dark:text-emerald-400 shrink-0">
-                                                                    <Check className="w-4.5 h-4.5" />
-                                                                </div>
-                                                                <div className="min-w-0">
-                                                                    <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400 md:whitespace-nowrap">
-                                                                        AIOMetadata synced
+                                                    <EditorNotice tone="success" className="shadow-[0_8px_20px_rgba(34,197,94,0.06)] py-3 px-3.5" alignCenter>
+                                                        <div className="flex items-center justify-between gap-3 w-full min-w-0">
+                                                            <div className="min-w-0 flex flex-col justify-center">
+                                                                <p className="text-sm font-semibold text-inherit md:whitespace-nowrap">
+                                                                    AIOMetadata synced
+                                                                </p>
+                                                                {activeAIOMetadataSync.syncedAt && (
+                                                                    <p className="mt-0.5 text-xs text-inherit opacity-80">
+                                                                        Last synced: {formatAIOMetadataSyncTime(activeAIOMetadataSync.syncedAt)}
                                                                     </p>
-                                                                    {activeAIOMetadataSync.syncedAt && (
-                                                                        <p className="mt-0.5 text-xs text-foreground/58">
-                                                                            Last synced: {formatAIOMetadataSyncTime(activeAIOMetadataSync.syncedAt)}
-                                                                        </p>
-                                                                    )}
-                                                                </div>
+                                                                )}
                                                             </div>
 
-                                                            <div className="flex items-center gap-1 md:gap-2">
+                                                            <div className="flex items-center gap-1 md:gap-2 shrink-0">
                                                                 {activeAIOMetadataSync.sourceType === "url" && activeAIOMetadataSync.sourceValue && (
                                                                     <Button
                                                                         type="button"
@@ -1371,9 +1368,9 @@ export function MainEditor() {
                                                                     variant="outline"
                                                                     size="icon-sm"
                                                                     className="size-8 rounded-xl border-emerald-500/14 bg-emerald-500/[0.04] text-emerald-700/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] hover:border-emerald-500/24 hover:bg-emerald-500/[0.08] hover:text-emerald-700 dark:bg-emerald-500/[0.06] dark:text-emerald-400/90 md:size-9"
-                                                            onClick={handleEditAIOMetadataSource}
-                                                            aria-label="Change AIOMetadata source"
-                                                            title="Change Source"
+                                                                    onClick={handleEditAIOMetadataSource}
+                                                                    aria-label="Change AIOMetadata source"
+                                                                    title="Change Source"
                                                                 >
                                                                     <Pencil className="w-4 h-4" />
                                                                 </Button>
@@ -1392,21 +1389,16 @@ export function MainEditor() {
                                                                 )}
                                                             </div>
                                                         </div>
-                                                    </div>
+                                                    </EditorNotice>
 
                                                     {aiomMismatchSummary.unmatchedLinkedCatalogIds.length > 0 && aiomIssueSummaryText && (
-                                                        <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.08] px-3.5 py-3 text-sm shadow-[0_6px_14px_rgba(245,158,11,0.06)]">
-                                                            <div className="flex items-center gap-2.5">
-                                                                <div className="rounded-lg border border-amber-500/18 bg-amber-500/10 p-1.5 text-amber-600 dark:text-amber-400 shrink-0">
-                                                                    <AlertTriangle className="h-4 w-4" />
-                                                                </div>
-                                                                <div className="min-w-0">
-                                                                    <p className="font-medium text-amber-800 dark:text-amber-200">
-                                                                        {aiomIssueSummaryText}
-                                                                    </p>
-                                                                </div>
+                                                        <EditorNotice tone="warning" className="py-3 px-3.5 shadow-[0_6px_14px_rgba(245,158,11,0.06)]" alignCenter>
+                                                            <div className="min-w-0 flex-1">
+                                                                <p className="font-medium text-inherit">
+                                                                    {aiomIssueSummaryText}
+                                                                </p>
                                                             </div>
-                                                        </div>
+                                                        </EditorNotice>
                                                     )}
                                                 </div>
                                             ) : (

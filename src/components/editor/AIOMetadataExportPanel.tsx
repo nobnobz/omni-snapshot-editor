@@ -27,7 +27,8 @@ import type {
     AIOMetadataNormalizedCatalog,
 } from "@/lib/aiometadata-sync";
 import { cn } from "@/lib/utils";
-import { editorNoticeTone, editorSurface } from "@/components/editor/ui/style-contract";
+import { editorSurface } from "@/components/editor/ui/style-contract";
+import { EditorNotice } from "@/components/editor/ui/EditorNotice";
 import { Switch } from "@/components/ui/switch";
 import {
     Check,
@@ -112,14 +113,11 @@ const filterVisibleWidgets = (
 
 function ExportNote() {
     return (
-        <div className={cn("rounded-xl border px-4 py-3 text-sm", editorNoticeTone.info)}>
-            <div className="flex items-center gap-3">
-                <Info className="h-4 w-4 shrink-0 text-primary dark:text-primary" />
-                <p className="leading-relaxed text-balance">
-                    Paste exported catalogs into AIOMetadata under Catalogs &gt; Import Setup, then save your changes.
-                </p>
-            </div>
-        </div>
+        <EditorNotice tone="info" alignCenter>
+            <p className="leading-relaxed text-balance">
+                Paste exported catalogs into AIOMetadata under Catalogs &gt; Import Setup, then save your changes.
+            </p>
+        </EditorNotice>
     );
 }
 

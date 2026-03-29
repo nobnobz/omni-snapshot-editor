@@ -18,7 +18,8 @@ import { decodeConfig } from "@/lib/config-utils";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { editorAction, editorLayout, editorNoticeTone, editorSurface, editorToneBadge } from "@/components/editor/ui/style-contract";
+import { editorAction, editorLayout, editorSurface, editorToneBadge } from "@/components/editor/ui/style-contract";
+import { EditorNotice } from "@/components/editor/ui/EditorNotice";
 import { FALLBACK_TEMPLATE_URLS, findTemplateByKind, isTemplateOfKind } from "@/lib/template-manifest";
 import { fetchTextWithLimits } from "@/lib/remote-fetch";
 
@@ -580,10 +581,9 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                 </div>
 
                 {error && (
-                    <div className={cn("mt-3 p-3 border rounded-lg flex items-center gap-3 text-sm animate-in fade-in slide-in-from-bottom-2 shrink-0", editorNoticeTone.danger)}>
-                        <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <EditorNotice tone="danger" alignCenter className="mt-3 animate-in fade-in slide-in-from-bottom-2 shrink-0">
                         <p>{error}</p>
-                    </div>
+                    </EditorNotice>
                 )}
 
                 <DialogFooter className="mt-4 shrink-0 border-t border-border/50 pt-3 pb-[calc(0.5rem+env(safe-area-inset-bottom))] flex-row justify-end gap-2">

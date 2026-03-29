@@ -56,7 +56,8 @@ import {
     normalizeMdblistEnabledRatings,
     normalizeMdblistRatingOrder,
 } from "@/lib/mdblist-ratings";
-import { editorHover, editorNoticeTone, editorSurface } from "@/components/editor/ui/style-contract";
+import { editorHover, editorSurface } from "@/components/editor/ui/style-contract";
+import { EditorNotice } from "@/components/editor/ui/EditorNotice";
 
 const isHexColor = (value: string) => /^#[0-9A-Fa-f]{6}$/.test(value);
 const isHexColorWithAlpha = (value: string) => /^#[0-9A-Fa-f]{8}$/.test(value);
@@ -422,12 +423,11 @@ function SortableMdblistRow({
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-3">
-                        <div className={cn("rounded-xl p-3 text-sm flex gap-3 items-start", editorNoticeTone.info)}>
-                            <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                        <EditorNotice tone="info" alignCenter>
                             <p className="leading-relaxed">
                                 {emojiShortcutHint}
                             </p>
-                        </div>
+                        </EditorNotice>
                         <div className="rounded-xl border border-border/70 bg-background/30 p-3">
                             <Label htmlFor={`emoji-input-${definition.key}`} className="mb-2 block text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
                                 Emoji Input
@@ -684,12 +684,11 @@ export function MdblistRatingsEditor() {
                     </div>
                 </div>
 
-                <div className={cn("rounded-xl p-3 text-sm flex gap-3 items-start", editorNoticeTone.info)}>
-                    <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                <EditorNotice tone="info" alignCenter>
                     <p className="leading-relaxed">
                         This feature requires an MDBList API key in your Omni settings. To disable MDBList ratings in Omni, simply remove the MDBList API key from the settings.
                     </p>
-                </div>
+                </EditorNotice>
             </div>
 
             <DndContext
