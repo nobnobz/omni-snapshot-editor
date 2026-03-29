@@ -2148,7 +2148,7 @@ export function UnifiedSubgroupEditor({
                         <button
                             type="button"
                             onClick={() => setIsUnassignedSectionOpen((prev) => !prev)}
-                            className="mb-4 flex w-full items-start justify-between gap-3 rounded-xl text-left transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                            className={cn("flex w-full items-start justify-between gap-3 rounded-xl text-left transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30", isUnassignedSectionOpen && "mb-4")}
                             aria-expanded={isUnassignedSectionOpen}
                             aria-controls="unassigned-subgroups-panel"
                         >
