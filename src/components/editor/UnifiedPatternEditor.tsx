@@ -33,7 +33,7 @@ import {
     DragOverlay,
     defaultDropAnimationSideEffects,
 } from '@dnd-kit/core';
-import { editorHover, editorSurface } from "@/components/editor/ui/style-contract";
+import { editorAction, editorHover, editorSurface } from "@/components/editor/ui/style-contract";
 import { LockedUrlInput } from "@/components/editor/LockedUrlInput";
 import { cn } from "@/lib/utils";
 import { shallowEqualObject } from "@/lib/equality";
@@ -718,7 +718,7 @@ export function UnifiedPatternEditor() {
                                 <div className="flex items-center gap-2 sm:shrink-0">
                                     <Button
                                         onClick={handleAddPattern}
-                                        className="h-10 flex-1 bg-primary hover:bg-primary/92 text-primary-foreground shadow-lg shadow-primary/20 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out font-semibold px-4 sm:flex-none sm:px-6"
+                                        className={editorAction.premium}
                                     >
                                         <Plus className="w-4 h-4 mr-2" /> Add Pattern
                                     </Button>

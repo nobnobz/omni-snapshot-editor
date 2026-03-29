@@ -50,9 +50,9 @@ export const editorHover = {
   softActionStrong:
     "text-foreground/80 hover:text-foreground hover:bg-muted/75 dark:hover:bg-muted/45",
   iconAction:
-    "text-foreground/70 hover:text-foreground hover:bg-muted/65 dark:hover:bg-muted/45 border border-transparent hover:border-border/60",
+    "text-foreground/75 hover:text-foreground hover:bg-muted/80 dark:text-foreground/70 dark:hover:bg-muted/45 border border-transparent hover:border-border/60",
   iconDanger:
-    "transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out text-foreground/70 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/30",
+    "transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out text-foreground/75 hover:text-red-500 hover:bg-red-500/10 border border-transparent hover:border-red-500/30",
   row:
     "hover:bg-muted/28 hover:border-border/74 dark:hover:bg-muted/19 dark:hover:border-white/10",
   rowSubtle:
@@ -67,11 +67,13 @@ export const editorHover = {
 
 export const editorAction = {
   primary:
-    `${uiControl.field} ${uiAction.primary} shadow-[0_10px_24px_rgba(2,6,23,0.16)]`,
+    `${uiControl.field} ${uiAction.primary} shadow-[0_8px_20px_rgba(37,99,235,0.14)] dark:shadow-[0_10px_24px_rgba(2,6,23,0.18)]`,
+  premium:
+    `${uiControl.field} h-11 rounded-xl bg-gradient-to-br from-primary via-primary to-primary/94 text-primary-foreground font-bold shadow-[0_12px_28px_rgba(37,99,235,0.22)] transition-all hover:-translate-y-px hover:shadow-[0_16px_34px_rgba(37,99,235,0.28)] active:scale-[0.985]`,
   secondary:
-    "h-9 border-border text-foreground/80 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out hover:bg-muted/80",
+    "h-9 border-border/85 text-foreground/90 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out hover:bg-muted/95 dark:text-foreground/80 dark:hover:bg-muted/80",
   danger:
-    "h-9 bg-destructive text-white transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out hover:bg-destructive/92",
+    "h-9 bg-destructive/90 text-white transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out hover:bg-destructive shadow-sm",
   icon: "size-8",
 } as const
 

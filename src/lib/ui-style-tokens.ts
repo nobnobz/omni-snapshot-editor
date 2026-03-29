@@ -23,9 +23,9 @@ export const uiControl = {
 
 export const uiAction = {
   primary:
-    "transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out bg-primary text-primary-foreground hover:bg-primary/92",
+    "transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out bg-primary text-primary-foreground hover:bg-primary/95 shadow-sm active:scale-[0.985]",
   accentGhost:
-    "transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out text-primary hover:text-primary hover:bg-primary/10",
+    "transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out text-primary/90 hover:text-primary hover:bg-primary/12 dark:text-primary dark:hover:bg-primary/10",
   subtleGhost:
-    "transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out text-foreground/70 hover:text-foreground hover:bg-accent/70",
+    "transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out text-foreground/75 hover:text-foreground hover:bg-accent/80 dark:text-foreground/70 dark:hover:bg-accent/70",
 } as const

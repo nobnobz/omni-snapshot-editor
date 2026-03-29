@@ -27,7 +27,7 @@ import type {
     AIOMetadataNormalizedCatalog,
 } from "@/lib/aiometadata-sync";
 import { cn } from "@/lib/utils";
-import { editorSurface } from "@/components/editor/ui/style-contract";
+import { editorAction, editorSurface } from "@/components/editor/ui/style-contract";
 import { EditorNotice } from "@/components/editor/ui/EditorNotice";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -763,10 +763,10 @@ export function AIOMetadataExportPanel({
                                     type="button"
                                     variant={exportMode === "all" ? "default" : "ghost"}
                                     className={cn(
-                                        "h-9 flex-1 rounded-xl px-4 sm:flex-none",
+                                        "h-9 flex-1 rounded-xl px-4 sm:flex-none transition-all",
                                         exportMode === "all"
-                                            ? "bg-primary font-bold text-primary-foreground hover:bg-primary/92"
-                                            : "text-foreground/70 hover:text-foreground hover:bg-muted/60 dark:hover:bg-muted/40"
+                                            ? editorAction.primary
+                                            : "text-foreground/75 hover:text-foreground hover:bg-muted/80 dark:text-foreground/70 dark:hover:bg-muted/40"
                                     )}
                                     onClick={() => setExportMode("all")}
                                 >
@@ -776,10 +776,10 @@ export function AIOMetadataExportPanel({
                                     type="button"
                                     variant={exportMode === "new" ? "default" : "ghost"}
                                     className={cn(
-                                        "h-9 flex-1 rounded-xl px-4 sm:flex-none",
+                                        "h-9 flex-1 rounded-xl px-4 sm:flex-none transition-all",
                                         exportMode === "new"
-                                            ? "bg-primary font-bold text-primary-foreground hover:bg-primary/92"
-                                            : "text-foreground/70 hover:text-foreground hover:bg-muted/60 dark:hover:bg-muted/40"
+                                            ? editorAction.primary
+                                            : "text-foreground/75 hover:text-foreground hover:bg-muted/80 dark:text-foreground/70 dark:hover:bg-muted/40"
                                     )}
                                     onClick={() => setExportMode("new")}
                                 >

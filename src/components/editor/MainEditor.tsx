@@ -1471,7 +1471,7 @@ export function MainEditor() {
                                                                 <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
                                                                     <Button
                                                                         type="button"
-                                                                        className="sm:min-w-[220px] h-11 rounded-xl bg-primary font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-transform active:scale-[0.98]"
+                                                                        className={editorAction.premium}
                                                                         onClick={() => void handleSyncAIOMetadataUrl()}
                                                                         disabled={!aioManifestUrlDraft.trim() || isImportingUrl}
                                                                     >
@@ -1506,9 +1506,9 @@ export function MainEditor() {
                                                                     />
                                                                     <div className="absolute right-2 top-1/2 flex -translate-y-1/2 gap-1.5 translate-x-1 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all">
                                                                         <Button
-                                                                            variant="secondary"
+                                                                            variant="ghost"
                                                                             size="sm"
-                                                                            className="h-8 px-2.5 rounded-lg text-xs bg-white/10 hover:bg-white/20 border-white/5 backdrop-blur-sm"
+                                                                            className={cn("h-8 px-2.5 rounded-lg text-xs", editorHover.iconDanger)}
                                                                             onClick={() => setAioJsonInput("")}
                                                                             disabled={!aioJsonInput.trim()}
                                                                         >
@@ -1520,7 +1520,7 @@ export function MainEditor() {
                                                                 <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
                                                                     <Button
                                                                         type="button"
-                                                                        className="sm:min-w-[220px] font-bold h-11 rounded-xl bg-primary hover:bg-primary/92 text-primary-foreground shadow-lg shadow-primary/20 transition-transform active:scale-[0.98]"
+                                                                        className={editorAction.premium}
                                                                         onClick={() => void handleImportAIOMetadataJson()}
                                                                         disabled={!aioJsonInput.trim()}
                                                                     >

@@ -57,7 +57,7 @@ import { LockedUrlInput } from "./LockedUrlInput";
 import { TrashBin } from "./TrashBin";
 import { hasAIOMetadataCatalogMatch, type AIOMetadataMismatchAnalysis } from "@/lib/aiometadata-mismatch";
 import { cn, formatDisplayName, resolveCatalogName, ensureCatalogPrefix } from "@/lib/utils";
-import { editorCompactBadge, editorHover, editorSurface } from "@/components/editor/ui/style-contract";
+import { editorAction, editorCompactBadge, editorHover, editorSurface } from "@/components/editor/ui/style-contract";
 import { CATALOG_FALLBACKS, CatalogFallback } from "@/lib/catalog-fallbacks";
 import { Label } from "@/components/ui/label";
 import { normalizeSubgroupNames } from "@/lib/main-group-utils";
@@ -685,7 +685,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                     unassignCatalogGroup(subgroupName);
                                     if (onUnassign) onUnassign(subgroupName, parentUUID);
                                 }}
-                                className={`${editorSurface.field} h-9 text-xs text-red-400 hover:text-red-300`}
+                                className={cn(editorSurface.field, "h-9 text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 border-rose-500/20 hover:border-rose-500/30 dark:text-rose-400 dark:hover:text-rose-300 dark:hover:bg-rose-500/15")}
                             >
                                 <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
                             </Button>
@@ -768,7 +768,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                 if (!open) setCatalogSearch("");
                             }}>
                                 <DropdownMenuTrigger asChild>
-                                    <Button size="sm" variant="outline" className={`${editorSurface.dropzone} w-full justify-start text-xs text-foreground/70 hover:text-foreground hover:border-primary/30 hover:bg-primary/[0.035]`}>
+                                    <Button size="sm" variant="outline" className={cn(editorSurface.dropzone, "w-full justify-start text-xs text-foreground/75 hover:text-foreground hover:border-primary/45 hover:bg-primary/5 transition-all active:scale-[0.995]")}>
                                         <Plus className="w-3.5 h-3.5 mr-2" /> Add Catalog...
                                     </Button>
                                 </DropdownMenuTrigger>
@@ -1685,7 +1685,7 @@ const UnassignedSubgroupRow = React.memo(function UnassignedSubgroupRow({
                                 if (!open) setCatalogSearch("");
                             }}>
                                 <DropdownMenuTrigger asChild>
-                                    <Button size="sm" variant="outline" className={`${editorSurface.dropzone} w-full justify-start text-xs text-foreground/70 hover:text-foreground hover:border-primary/30 hover:bg-primary/[0.035]`}>
+                                    <Button size="sm" variant="outline" className={cn(editorSurface.dropzone, "w-full justify-start text-xs text-foreground/75 hover:text-foreground hover:border-primary/45 hover:bg-primary/5 transition-all active:scale-[0.995]")}>
                                         <Plus className="w-3.5 h-3.5 mr-2" /> Add Catalog...
                                     </Button>
                                 </DropdownMenuTrigger>

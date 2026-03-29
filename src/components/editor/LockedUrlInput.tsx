@@ -240,37 +240,42 @@ export const LockedUrlInput = React.forwardRef<HTMLInputElement | HTMLTextAreaEl
                     </div>
                 </div>
             )}
-            <div className="pointer-events-none absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-1 border-l border-border/65 bg-slate-100/92 pl-2 dark:bg-[rgba(18,22,30,0.96)]">
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={handleCopyClick}
-                    disabled={!hasCommittedValue}
-                    className={cn("pointer-events-auto h-8 w-8 shrink-0 rounded-md text-foreground/56 sm:h-7 sm:w-7", iconButtonClassName)}
-                    title={copyTitle}
-                    aria-label={copyTitle}
-                >
-                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                </Button>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={handleClearClick}
-                    disabled={!hasAnyValue || disabled}
-                    className={cn(
-                        "pointer-events-auto h-8 w-8 shrink-0 rounded-md text-foreground/56 hover:bg-destructive/10 hover:text-destructive sm:h-7 sm:w-7",
-                        iconButtonClassName
-                    )}
-                    title={clearTitle}
-                    aria-label={clearTitle}
-                >
-                    <Trash2 className="h-4 w-4" />
-                </Button>
-            </div>
+            {hasAnyValue && (
+                <div className="pointer-events-none absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-1 border-l border-slate-200/60 bg-white/40 pl-2 backdrop-blur-md dark:border-white/10 dark:bg-[#12151b]/90 dark:backdrop-blur-lg">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={handleCopyClick}
+                        disabled={!hasCommittedValue}
+                        className={cn(
+                            "pointer-events-auto h-8 w-8 shrink-0 rounded-md text-foreground/65 hover:bg-muted/80 hover:text-foreground active:scale-[0.92] dark:text-foreground/56 dark:hover:bg-muted/40",
+                            iconButtonClassName
+                        )}
+                        title={copyTitle}
+                        aria-label={copyTitle}
+                    >
+                        {copied ? <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={handleClearClick}
+                        disabled={!hasAnyValue || disabled}
+                        className={cn(
+                            "pointer-events-auto h-8 w-8 shrink-0 rounded-md text-foreground/65 hover:bg-rose-500/10 hover:text-rose-600 active:scale-[0.92] dark:text-foreground/56 dark:hover:bg-rose-500/15 dark:hover:text-rose-400",
+                            iconButtonClassName
+                        )}
+                        title={clearTitle}
+                        aria-label={clearTitle}
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </div>
+            )}
         </div>
     );
 });
