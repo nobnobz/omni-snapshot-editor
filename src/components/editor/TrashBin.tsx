@@ -115,16 +115,16 @@ export function TrashBin() {
                                     </div>
                                 </AccordionTrigger>
                                 <Button
-                                    variant="outline"
+                                    variant="ghost"
                                     size="sm"
                                     onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
                                         item.type === 'Main Group' ? restoreMainGroup(item) : restoreSubgroup(item);
                                     }}
-                                    className="h-7 px-3 text-xs font-semibold tracking-tight border-border/50 text-foreground/70 bg-transparent hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors gap-1.5 z-10 shrink-0"
+                                    className={cn("h-7 px-3 text-xs font-semibold tracking-tight text-foreground/70 transition-all gap-1.5 z-10 shrink-0 border border-transparent hover:text-primary", editorHover.iconAction)}
                                 >
-                                    <RotateCcw className="w-3.5 h-3.5" /> Restore
+                                    <RotateCcw className="w-3.5 h-3.5 transition-transform group-hover/item:rotate-[-20deg]" /> Restore
                                 </Button>
                             </div>
                             <AccordionContent className="px-12 pb-5 pt-1">
