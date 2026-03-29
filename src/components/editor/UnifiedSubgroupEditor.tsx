@@ -1472,11 +1472,11 @@ const UnassignedSubgroupRow = React.memo(function UnassignedSubgroupRow({
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="sm"
-                                className="h-7 px-2 text-xs font-semibold uppercase tracking-tight text-foreground/70 border-border/50 hover:bg-muted/60 dark:hover:bg-muted/40 hover:text-foreground flex items-center gap-1 transition-colors"
+                                className={cn("h-7 px-2 text-xs font-semibold text-foreground/70 transition-all gap-1.5 z-10 shrink-0 border border-transparent", editorHover.iconAction)}
                             >
-                                Assign To... <ChevronDown className="w-3 h-3" />
+                                Assign to... <ChevronDown className="w-3 h-3" />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className={cn(editorSurface.overlay, "min-w-[200px]")}>
