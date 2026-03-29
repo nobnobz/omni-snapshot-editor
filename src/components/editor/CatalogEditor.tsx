@@ -724,11 +724,11 @@ export function CatalogEditor() {
             <div className={cn(editorSurface.card, "overflow-hidden")}>
                 {/* Unified Toolbar */}
                 <div className={cn(editorSurface.toolbar, "sticky top-0 z-20 flex items-center rounded-none border-x-0 border-t-0 p-3")}>
-                    <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-                        <Button variant="outline" size="sm" onClick={handleSortAZ} className="h-10 text-xs font-semibold border-border hover:bg-muted/80 text-foreground/80 hover:text-foreground px-3">
+                    <div className="w-full sm:w-auto grid grid-cols-2 sm:flex items-center gap-2 sm:ml-auto">
+                        <Button variant="outline" size="sm" onClick={handleSortAZ} className="h-10 text-xs font-semibold border-border hover:bg-muted/80 text-foreground/80 hover:text-foreground px-3 w-full sm:w-auto">
                             <ArrowDownAZ className="w-4 h-4 mr-1" /> A-Z
                         </Button>
-                        <Button variant="outline" size="sm" onClick={handleSortZA} className="h-10 text-xs font-semibold border-border hover:bg-muted/80 text-foreground/80 hover:text-foreground px-3">
+                        <Button variant="outline" size="sm" onClick={handleSortZA} className="h-10 text-xs font-semibold border-border hover:bg-muted/80 text-foreground/80 hover:text-foreground px-3 w-full sm:w-auto">
                             <ArrowUpZA className="w-4 h-4 mr-1" /> Z-A
                         </Button>
 
@@ -742,7 +742,7 @@ export function CatalogEditor() {
                             <DialogTrigger asChild>
                                 <Button
                                     size="sm"
-                                    className="h-10 px-5 font-bold bg-primary hover:bg-primary/92 text-primary-foreground shadow-lg shadow-primary/20"
+                                    className="h-10 px-5 font-bold bg-primary hover:bg-primary/92 text-primary-foreground shadow-lg shadow-primary/20 col-span-2 sm:col-span-1 w-full sm:w-auto"
                                 >
                                     <Plus className="w-4 h-4 mr-1.5" /> Add Catalog
                                 </Button>

@@ -1468,10 +1468,10 @@ export function MainEditor() {
                                                                     copyTitle="Copy AIOMetadata URL"
                                                                     clearTitle="Delete AIOMetadata URL"
                                                                 />
-                                                                <div className="flex justify-end pt-2">
+                                                                <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
                                                                     <Button
                                                                         type="button"
-                                                                        className="h-11 rounded-xl bg-primary font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-transform active:scale-[0.98]"
+                                                                        className="sm:min-w-[220px] h-11 rounded-xl bg-primary font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-transform active:scale-[0.98]"
                                                                         onClick={() => void handleSyncAIOMetadataUrl()}
                                                                         disabled={!aioManifestUrlDraft.trim() || isImportingUrl}
                                                                     >
