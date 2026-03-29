@@ -724,12 +724,12 @@ export function CatalogEditor() {
             <div className={cn(editorSurface.card, "overflow-hidden")}>
                 {/* Unified Toolbar */}
                 <div className={cn(editorSurface.toolbar, "sticky top-0 z-20 flex items-center rounded-none border-x-0 border-t-0 p-3")}>
-                    <div className="w-full sm:w-auto grid grid-cols-2 sm:flex items-center gap-2 sm:ml-auto">
-                        <Button variant="outline" size="sm" onClick={handleSortAZ} className="h-10 text-xs font-semibold border-border hover:bg-muted/80 text-foreground/80 hover:text-foreground px-3 w-full sm:w-auto">
-                            <ArrowDownAZ className="w-4 h-4 mr-1" /> A-Z
+                    <div className="flex flex-1 items-center justify-end gap-1.5 sm:gap-2 sm:ml-auto">
+                        <Button variant="outline" size="sm" onClick={handleSortAZ} className="h-9 sm:h-10 text-[10px] sm:text-xs font-semibold border-border/60 hover:bg-muted/80 text-foreground/80 px-2 sm:px-3">
+                            <ArrowDownAZ className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" /> A-Z
                         </Button>
-                        <Button variant="outline" size="sm" onClick={handleSortZA} className="h-10 text-xs font-semibold border-border hover:bg-muted/80 text-foreground/80 hover:text-foreground px-3 w-full sm:w-auto">
-                            <ArrowUpZA className="w-4 h-4 mr-1" /> Z-A
+                        <Button variant="outline" size="sm" onClick={handleSortZA} className="h-9 sm:h-10 text-[10px] sm:text-xs font-semibold border-border/60 hover:bg-muted/80 text-foreground/80 px-2 sm:px-3">
+                            <ArrowUpZA className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" /> Z-A
                         </Button>
 
                         <Dialog
@@ -742,9 +742,9 @@ export function CatalogEditor() {
                             <DialogTrigger asChild>
                                 <Button
                                     size="sm"
-                                    className="h-10 px-5 font-bold bg-primary hover:bg-primary/92 text-primary-foreground shadow-lg shadow-primary/20 col-span-2 sm:col-span-1 w-full sm:w-auto"
+                                    className="h-9 sm:h-10 px-2.5 sm:px-5 font-bold bg-primary hover:bg-primary/92 text-primary-foreground shadow-lg shadow-primary/20 text-[11px] sm:text-sm"
                                 >
-                                    <Plus className="w-4 h-4 mr-1.5" /> Add Catalog
+                                    <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" /> Add Catalog
                                 </Button>
                             </DialogTrigger>
                             <DialogContent

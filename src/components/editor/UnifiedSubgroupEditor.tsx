@@ -2143,8 +2143,8 @@ export function UnifiedSubgroupEditor({
             )}
 
             {unassignedGroups.length > 0 && (
-                <div className="mt-8 border border-border rounded-xl bg-card/20 overflow-hidden shadow-inner animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <div className="p-4 sm:p-5 bg-muted/5">
+                <div className={cn(editorSurface.card, "mt-8 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300")}>
+                    <div className="p-4 sm:p-5">
                         <button
                             type="button"
                             onClick={() => setIsUnassignedSectionOpen((prev) => !prev)}
