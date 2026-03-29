@@ -718,7 +718,7 @@ export function UnifiedPatternEditor() {
                                 <div className="flex items-center gap-2 sm:shrink-0">
                                     <Button
                                         onClick={handleAddPattern}
-                                        className={cn(editorAction.premium, "px-4 sm:px-6")}
+                                        className={cn(editorAction.premium, "h-10 px-4 sm:px-6")}
                                     >
                                         <Plus className="w-4 h-4 mr-2" strokeWidth={2.5} /> Add Pattern
                                     </Button>

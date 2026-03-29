@@ -742,7 +742,7 @@ export function CatalogEditor() {
                             <DialogTrigger asChild>
                                 <Button
                                     size="sm"
-                                    className={cn(editorAction.premium, "px-4 sm:px-6")}
+                                    className={cn(editorAction.premium, "h-9 sm:h-10 px-4 sm:px-6")}
                                 >
                                     <Plus className="w-4 h-4 mr-2" strokeWidth={2.5} /> Add Catalog
                                 </Button>
