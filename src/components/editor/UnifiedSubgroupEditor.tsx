@@ -2144,15 +2144,15 @@ export function UnifiedSubgroupEditor({
 
             {unassignedGroups.length > 0 && (
                 <div className={cn(editorSurface.card, "mt-8 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300")}>
-                    <div className="p-4 sm:p-5">
+                    <div className="p-5 sm:p-6">
                         <button
                             type="button"
                             onClick={() => setIsUnassignedSectionOpen((prev) => !prev)}
-                            className={cn("flex w-full items-start justify-between gap-3 rounded-xl text-left transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30", isUnassignedSectionOpen && "mb-4")}
+                            className={cn("flex w-full items-center justify-between gap-3 rounded-xl text-left transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30", isUnassignedSectionOpen && "mb-4")}
                             aria-expanded={isUnassignedSectionOpen}
                             aria-controls="unassigned-subgroups-panel"
                         >
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-4">
                                 <div className="bg-amber-500/10 p-2 rounded-lg border border-amber-500/25">
                                     <AlertTriangle className="w-5 h-5 text-amber-400" />
                                 </div>
