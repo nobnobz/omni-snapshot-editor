@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useConfigActions, useConfigSelector } from "@/context/ConfigContext";
 import { Button } from "@/components/ui/button";
 import { Trash2, RotateCcw, XCircle, Info, ChevronDown, ChevronRight } from "lucide-react";
-import { editorSurface } from "@/components/editor/ui/style-contract";
+import { editorSurface, editorHover } from "@/components/editor/ui/style-contract";
 import { cn } from "@/lib/utils";
 import {
     Accordion,
