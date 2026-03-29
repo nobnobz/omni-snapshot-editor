@@ -179,7 +179,7 @@ export function AddToGroupModal({ isOpen, onClose }: { isOpen: boolean, onClose:
                                     const getCategory = (sgName: string) => {
                                         for (const [uuid, arr] of Object.entries(typedSubgroupOrder)) {
                                             if (Array.isArray(arr) && arr.includes(sgName)) {
-                                                const mgName = typedMainCatalogGroups[uuid]?.name || "General";
+                                                const mgName = typedMainCatalogGroups[uuid]?.name || "Unassigned";
                                                 return formatDisplayName(mgName).replace(/[\[\]❗️❗]/g, '').trim();
                                             }
                                         }

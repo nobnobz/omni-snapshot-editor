@@ -281,8 +281,8 @@ describe("aiometadata export helpers", () => {
                 omniCatalogId: "all:trakt.list.2",
             },
             {
-                widgetId: "__general__",
-                widgetName: "General",
+                widgetId: "__unassigned__",
+                widgetName: "Unassigned",
                 itemName: "Loose",
                 omniCatalogId: "movie:mdblist.3",
             },
@@ -348,7 +348,7 @@ describe("aiometadata export helpers", () => {
             "mdblist.3",
         ]);
         expect(inventory.exportableSources).toEqual(["mdblist", "streaming"]);
-        expect(inventory.widgets.map((widget) => widget.name)).toEqual(["Discover", "Collections", "General"]);
+        expect(inventory.widgets.map((widget) => widget.name)).toEqual(["Discover", "Collections", "Unassigned"]);
         expect(inventory.widgets[0].items.map((item) => item.name)).toEqual(["Streaming", "Trending"]);
         expect(inventory.widgets[0].items[1].occurrences.map((occurrence) => ({
             name: occurrence.exportCatalog.name,
@@ -367,7 +367,7 @@ describe("aiometadata export helpers", () => {
                 exportable: false,
             },
         ]);
-        expect(inventory.widgets[2].items[0].occurrences[0].exportCatalog.name).toBe("[General] Loose (Movies) ");
+        expect(inventory.widgets[2].items[0].occurrences[0].exportCatalog.name).toBe("[Unassigned] Loose (Movies) ");
     });
 
     it("dedupes streaming by type plus id while keeping mdblist and trakt by id", () => {
@@ -504,7 +504,7 @@ describe("aiometadata export helpers", () => {
             "Header",
             "Top Row",
             "Catalog",
-            "General",
+            "Unassigned",
         ]);
         expect(inventory.widgets[2].items[0].occurrences[0].exportCatalog.name).toBe("[Header] Hero Movies (Movies) ");
         expect(inventory.widgets[3].items[0].occurrences[0].exportCatalog.name).toBe("[Top Row] Top Shelf Shows (Shows)");
@@ -730,7 +730,7 @@ describe("aiometadata export helpers", () => {
             "[Discover] Trending (All)   ",
             "[Discover] Trending (Movies) ",
             "[Discover] Trending (Movies) 2",
-            "[General] Loose (Movies) ",
+            "[Unassigned] Loose (Movies) ",
         ]);
     });
 

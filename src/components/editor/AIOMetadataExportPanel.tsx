@@ -114,7 +114,7 @@ const filterVisibleWidgets = (
 function ExportNote() {
     return (
         <EditorNotice tone="info" alignCenter>
-            <p className="leading-relaxed text-balance">
+            <p className="leading-relaxed">
                 Paste exported catalogs into AIOMetadata under Catalogs &gt; Import Setup, then save your changes.
             </p>
         </EditorNotice>

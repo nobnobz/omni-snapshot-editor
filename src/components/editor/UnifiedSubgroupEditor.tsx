@@ -1523,30 +1523,16 @@ const UnassignedSubgroupRow = React.memo(function UnassignedSubgroupRow({
                         <Pencil className="w-3.5 h-3.5" />
                     </Button>
 
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className={`h-9 w-9 p-0 flex items-center justify-center rounded-md ${editorHover.iconDanger}`} aria-label="Delete subgroup">
-                                <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className={cn(editorSurface.overlay, "text-popover-foreground")}>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Subgroup?</AlertDialogTitle>
-                                <AlertDialogDescription className="text-foreground/70">
-                                    This will completely delete <span className="text-foreground font-bold">&quot;{groupName}&quot;</span> from the configuration. This action cannot be undone.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel className="bg-muted border-border text-foreground/70 hover:bg-accent hover:text-accent-foreground">Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                    onClick={() => removeCatalogGroup(groupName)}
-                                    className="bg-red-600 text-white hover:bg-red-700 font-bold"
-                                >
-                                    Delete Subgroup
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeCatalogGroup(groupName)}
+                        className={`h-9 w-9 p-0 flex items-center justify-center rounded-md ${editorHover.iconDanger}`}
+                        aria-label="Delete subgroup"
+                        title="Delete subgroup"
+                    >
+                        <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
                 </div>
             </div>
 
@@ -1808,7 +1794,7 @@ export function UnifiedSubgroupEditor({
         mainGroupOrderRaw: state.currentValues["main_group_order"],
         catalogGroups: state.currentValues.catalog_groups || {},
     }), shallowEqualObject);
-    const { updateValue, assignCatalogGroup } = useConfigActions();
+    const { updateValue, assignCatalogGroup, removeCatalogGroup } = useConfigActions();
     const subgroupOrder = React.useMemo(
         () => ((subgroupOrderRaw as Record<string, unknown> | undefined) ?? EMPTY_RECORD),
         [subgroupOrderRaw]
@@ -2186,6 +2172,18 @@ export function UnifiedSubgroupEditor({
                         </button>
                         {isUnassignedSectionOpen && (
                             <div id="unassigned-subgroups-panel" className="flex flex-col">
+                                {unassignedGroups.length > 0 && (
+                                    <div className="mb-4 flex justify-end">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => unassignedGroups.forEach(name => removeCatalogGroup(name))}
+                                            className="h-9 text-red-500 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/30 text-xs px-3 gap-2 border-border/50"
+                                        >
+                                            <Trash2 className="w-4 h-4" /> Delete All
+                                        </Button>
+                                    </div>
+                                )}
                                 {unassignedGroups.map(name => {
                                     const restoreParentUuid = recentUnassigns[name];
                                     const restoreParentName = restoreParentUuid ? (mainCatalogGroups[restoreParentUuid]?.name || "Original Group") : undefined;

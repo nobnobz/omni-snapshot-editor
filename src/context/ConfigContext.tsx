@@ -863,7 +863,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
             ) || "";
         }
 
-        const parentName = parentUUID ? (currentValues.main_catalog_groups?.[parentUUID]?.name || "General") : "General";
+        const parentName = parentUUID ? (currentValues.main_catalog_groups?.[parentUUID]?.name || "Unassigned") : "Unassigned";
 
         setDeletedSubgroups(prev => [
             { name, catalogs, imageUrl, parentUUID, parentName, deletedAt: new Date().toISOString() },

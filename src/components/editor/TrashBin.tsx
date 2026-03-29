@@ -79,6 +79,16 @@ export function TrashBin() {
 
                 {isOpen && (
                     <div className="animate-in slide-in-from-top-2 fade-in duration-200">
+                        <div className="mb-4 flex justify-end">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={clearDeletedSubgroups}
+                                className="h-9 text-red-500 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/30 text-xs px-3 gap-2 border-border/50"
+                            >
+                                <Trash2 className="w-4 h-4" /> Delete All
+                            </Button>
+                        </div>
                         <Accordion type="single" collapsible className="space-y-1">
                             {allDeleted.map((item, idx) => (
                         <AccordionItem
@@ -156,16 +166,6 @@ export function TrashBin() {
                         </AccordionItem>
                     ))}
                         </Accordion>
-                        <div className="mt-4 flex justify-end">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={clearDeletedSubgroups}
-                                className="h-9 text-red-500 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/30 text-xs px-3 gap-2 border-border/50"
-                            >
-                                <Trash2 className="w-4 h-4" /> Empty Trash
-                            </Button>
-                        </div>
                     </div>
                 )}
             </div>

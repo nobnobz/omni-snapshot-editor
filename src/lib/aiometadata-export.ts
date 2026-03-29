@@ -129,8 +129,8 @@ export type AIOMetadataResolvedStreamingExportFields = {
     sortDirection?: "asc" | "desc";
 };
 
-const GENERAL_WIDGET_ID = "__general__";
-const GENERAL_WIDGET_NAME = "General";
+const GENERAL_WIDGET_ID = "__unassigned__";
+const GENERAL_WIDGET_NAME = "Unassigned";
 const HEADER_WIDGET_ID = "__catalog_manager_header__";
 const HEADER_WIDGET_NAME = "Header";
 const TOP_ROW_WIDGET_ID = "__catalog_manager_top_row__";
