@@ -707,7 +707,7 @@ export function UnifiedPatternEditor() {
                 <AccordionContent className="rounded-b-xl border-t border-border/30 p-5 pb-6 pt-5">
                     <div className="space-y-6">
                         <div className={`${editorSurface.panel} flex flex-col gap-3 p-4`}>
-                            <div className="flex flex-col gap-3 sm:h-10 sm:flex-row sm:items-center">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                                 <Input
                                     value={newPattern}
                                     onChange={e => setNewPattern(e.target.value)}
@@ -715,7 +715,7 @@ export function UnifiedPatternEditor() {
                                     placeholder="Enter new Regex string (e.g. (?i)uhd|4k)"
                                     className={cn(editorSurface.field, patternFieldSurface, "h-10 text-sm font-medium focus-visible:ring-[3px] focus-visible:ring-ring/50 transition-colors flex-1")}
                                 />
-                                <div className="flex h-10 items-center gap-2 sm:shrink-0">
+                                <div className="flex items-center gap-2 sm:shrink-0">
                                     <Button
                                         onClick={handleAddPattern}
                                         className={cn(editorAction.premium, "h-10 px-4 sm:px-6")}

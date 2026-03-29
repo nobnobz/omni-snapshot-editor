@@ -535,7 +535,7 @@ export function ConfigLoader() {
     ];
 
     const loaderUtilityButtonClass =
-        "size-10 rounded-[1.2rem] border border-slate-200/82 bg-white/78 p-0 text-foreground/62 shadow-[0_8px_18px_rgba(15,23,42,0.055)] backdrop-blur-xl transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 ease-out hover:-translate-y-px hover:border-slate-300/88 hover:bg-white/88 hover:text-foreground hover:shadow-[0_10px_22px_rgba(15,23,42,0.075)] dark:border-white/10 dark:bg-white/[0.04] dark:text-foreground/72 dark:shadow-[0_10px_24px_rgba(2,6,23,0.22)] dark:hover:border-white/14 dark:hover:bg-white/[0.08] dark:hover:text-foreground dark:hover:shadow-[0_12px_26px_rgba(2,6,23,0.28)] sm:size-11";
+        "size-10 rounded-lg border border-slate-200/82 bg-white/78 p-0 text-foreground/62 shadow-[0_8px_18px_rgba(15,23,42,0.055)] backdrop-blur-xl transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 ease-out hover:-translate-y-px hover:border-slate-300/88 hover:bg-white/88 hover:text-foreground hover:shadow-[0_10px_22px_rgba(15,23,42,0.075)] dark:border-white/10 dark:bg-white/[0.04] dark:text-foreground/72 dark:shadow-[0_10px_24px_rgba(2,6,23,0.22)] dark:hover:border-white/14 dark:hover:bg-white/[0.08] dark:hover:text-foreground dark:hover:shadow-[0_12px_26px_rgba(2,6,23,0.28)] sm:size-11";
     const loaderThemeToggleClass = cn(loaderUtilityButtonClass, "[&_svg]:size-[1.05rem] sm:[&_svg]:size-[1.1rem]");
     const loaderUtilityIconButtonClass = loaderUtilityButtonClass;
     const loaderUtilityDividerClass = "h-4 w-px bg-slate-300/80 dark:bg-white/10";
@@ -545,11 +545,11 @@ export function ConfigLoader() {
         "shadow-[0_8px_16px_rgba(37,99,235,0.05)] hover:shadow-[0_10px_20px_rgba(37,99,235,0.07)] dark:shadow-[0_18px_38px_rgba(37,99,235,0.26)]"
     );
     const loaderGuideShortcutClass = cn(
-        "relative isolate h-[3.35rem] w-[3.35rem] shrink-0 overflow-hidden rounded-[1.6rem] border border-slate-300/74 bg-[linear-gradient(180deg,rgba(255,255,255,0.99),rgba(255,252,248,0.965))] px-0 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.92),0_8px_18px_rgba(217,119,6,0.024)] backdrop-blur-xl transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 ease-out after:pointer-events-none after:absolute after:inset-x-[18%] after:top-0 after:h-[56%] after:bg-[radial-gradient(circle_at_top,rgba(251,191,36,0.075),transparent_72%)] after:opacity-45 hover:-translate-y-px hover:border-amber-100/72 hover:bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(255,248,242,0.98))] hover:text-amber-700 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_10px_20px_rgba(217,119,6,0.045)] dark:border-amber-400/44 dark:bg-[linear-gradient(180deg,rgba(57,41,16,0.88),rgba(43,31,12,0.94))] dark:text-amber-50 dark:shadow-[0_16px_34px_rgba(217,119,6,0.22)] dark:after:opacity-0 dark:hover:border-amber-400/58 dark:hover:bg-[linear-gradient(180deg,rgba(64,46,19,0.92),rgba(49,35,14,0.98))] dark:hover:text-amber-50 dark:hover:shadow-[0_18px_36px_rgba(217,119,6,0.24)] sm:h-[3.55rem] sm:w-[3.55rem] [&_svg]:relative [&_svg]:z-[1] [&_svg]:size-[1.08rem] sm:[&_svg]:size-[1.14rem]"
+        "relative isolate h-[3.35rem] w-[3.35rem] shrink-0 overflow-hidden rounded-2xl border border-slate-300/74 bg-[linear-gradient(180deg,rgba(255,255,255,0.99),rgba(255,252,248,0.965))] px-0 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.92),0_8px_18px_rgba(217,119,6,0.024)] backdrop-blur-xl transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 ease-out after:pointer-events-none after:absolute after:inset-x-[18%] after:top-0 after:h-[56%] after:bg-[radial-gradient(circle_at_top,rgba(251,191,36,0.075),transparent_72%)] after:opacity-45 hover:-translate-y-px hover:border-amber-100/72 hover:bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(255,248,242,0.98))] hover:text-amber-700 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_10px_20px_rgba(217,119,6,0.045)] dark:border-amber-400/44 dark:bg-[linear-gradient(180deg,rgba(57,41,16,0.88),rgba(43,31,12,0.94))] dark:text-amber-50 dark:shadow-[0_16px_34px_rgba(217,119,6,0.22)] dark:after:opacity-0 dark:hover:border-amber-400/58 dark:hover:bg-[linear-gradient(180deg,rgba(64,46,19,0.92),rgba(49,35,14,0.98))] dark:hover:text-amber-50 dark:hover:shadow-[0_18px_36px_rgba(217,119,6,0.24)] sm:h-[3.55rem] sm:w-[3.55rem] [&_svg]:relative [&_svg]:z-[1] [&_svg]:size-[1.08rem] sm:[&_svg]:size-[1.14rem]"
     );
 
     const loaderDropdownItemClass = cn(
-        "group/item flex cursor-pointer items-center gap-3 rounded-[1rem] px-3 py-2.5 text-foreground",
+        "group/item flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-foreground",
         editorHover.transition
     );
 
@@ -578,7 +578,7 @@ export function ConfigLoader() {
     );
 
     const loaderFieldClass = cn(
-        "h-11 rounded-[1rem] border-slate-300/84 bg-white/[0.82] text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.82)] hover:border-slate-400/88 hover:bg-white/[0.95] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(18,21,27,0.92),rgba(16,19,25,0.9))] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] dark:hover:border-white/12 dark:hover:bg-input/52",
+        "h-11 rounded-lg border-slate-300/84 bg-white/[0.82] text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.82)] hover:border-slate-400/88 hover:bg-white/[0.95] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(18,21,27,0.92),rgba(16,19,25,0.9))] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] dark:hover:border-white/12 dark:hover:bg-input/52",
         "placeholder:text-foreground/38"
     );
     const loaderDropzoneClass = cn(
@@ -662,7 +662,7 @@ export function ConfigLoader() {
                                                 <DropdownMenuContent
                                                     align="center"
                                                     sideOffset={8}
-                                                    className={cn(editorSurface.overlay, "w-[min(22rem,calc(100vw-1.125rem))] sm:w-[28rem] rounded-[1.4rem] p-1.5 max-h-[320px] overflow-y-auto")}
+                                                    className={cn(editorSurface.overlay, "w-[min(22rem,calc(100vw-1.125rem))] sm:w-[28rem] rounded-lg p-1.5 max-h-[320px] overflow-y-auto")}
                                                 >
                                                     <DropdownMenuLabel className={cn(editorLoader.subtleMeta, "px-3 pt-1 pb-1 text-foreground/38")}>UME Templates</DropdownMenuLabel>
                                                     {templateDownloads.length === 0 ? (
@@ -754,7 +754,7 @@ export function ConfigLoader() {
                                             <DropdownMenuContent
                                                 align="end"
                                                 sideOffset={8}
-                                                className={cn(editorSurface.overlay, "w-[min(17rem,calc(100vw-1.125rem))] rounded-[1.25rem] p-2")}
+                                                className={cn(editorSurface.overlay, "w-[min(17rem,calc(100vw-1.125rem))] rounded-lg p-2")}
                                             >
                                                 <DropdownMenuLabel className={cn(editorLoader.subtleMeta, "px-3 pt-1.5 pb-1 text-foreground/38")}>
                                                     Guides
@@ -779,7 +779,7 @@ export function ConfigLoader() {
                             </div>
 
                             {error ? (
-                                <EditorNotice tone="danger" className="shadow-[0_14px_32px_rgba(15,23,42,0.06)] backdrop-blur-sm rounded-[1.2rem] px-4 py-4 sm:px-5">
+                                <EditorNotice tone="danger" className="shadow-[0_14px_32px_rgba(15,23,42,0.06)] backdrop-blur-sm rounded-lg px-4 py-4 sm:px-5">
                                     <span className="leading-relaxed">{error}</span>
                                 </EditorNotice>
                             ) : null}

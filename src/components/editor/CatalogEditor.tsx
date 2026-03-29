@@ -725,10 +725,10 @@ export function CatalogEditor() {
                 {/* Unified Toolbar */}
                 <div className={cn(editorSurface.toolbar, "sticky top-0 z-20 flex items-center rounded-none border-x-0 border-t-0 p-3")}>
                     <div className="flex flex-1 items-center justify-end gap-1.5 sm:gap-2 sm:ml-auto">
-                        <Button variant="outline" size="sm" onClick={handleSortAZ} className={cn(editorAction.secondary, "h-9 sm:h-10 text-[10px] sm:text-xs px-2.5 sm:px-3.5")}>
+                        <Button variant="outline" onClick={handleSortAZ} className={cn(editorAction.secondary, "rounded-lg px-2.5 sm:px-3.5 text-[10px] sm:text-xs")}>
                             <ArrowDownAZ className="w-4 h-4 mr-2" strokeWidth={2.2} /> A-Z
                         </Button>
-                        <Button variant="outline" size="sm" onClick={handleSortZA} className={cn(editorAction.secondary, "h-9 sm:h-10 text-[10px] sm:text-xs px-2.5 sm:px-3.5")}>
+                        <Button variant="outline" onClick={handleSortZA} className={cn(editorAction.secondary, "rounded-lg px-2.5 sm:px-3.5 text-[10px] sm:text-xs")}>
                             <ArrowUpZA className="w-4 h-4 mr-2" strokeWidth={2.2} /> Z-A
                         </Button>
 
@@ -741,8 +741,7 @@ export function CatalogEditor() {
                         >
                             <DialogTrigger asChild>
                                 <Button
-                                    size="sm"
-                                    className={cn(editorAction.premium, "h-9 sm:h-10 px-4 sm:px-6")}
+                                    className={cn(editorAction.premium, "px-4 sm:px-6")}
                                 >
                                     <Plus className="w-4 h-4 mr-2" strokeWidth={2.5} /> Add Catalog
                                 </Button>

@@ -763,7 +763,7 @@ export function AIOMetadataExportPanel({
                                     type="button"
                                     variant={exportMode === "all" ? "default" : "ghost"}
                                     className={cn(
-                                        "h-9 flex-1 rounded-xl px-4 sm:flex-none transition-all",
+                                        "h-10 sm:h-9 flex-1 rounded-lg px-4 sm:flex-none transition-all",
                                         exportMode === "all"
                                             ? editorAction.primary
                                             : "text-foreground/75 hover:text-foreground hover:bg-muted/80 dark:text-foreground/70 dark:hover:bg-muted/40"
@@ -776,7 +776,7 @@ export function AIOMetadataExportPanel({
                                     type="button"
                                     variant={exportMode === "new" ? "default" : "ghost"}
                                     className={cn(
-                                        "h-9 flex-1 rounded-xl px-4 sm:flex-none transition-all",
+                                        "h-10 sm:h-9 flex-1 rounded-lg px-4 sm:flex-none transition-all",
                                         exportMode === "new"
                                             ? editorAction.primary
                                             : "text-foreground/75 hover:text-foreground hover:bg-muted/80 dark:text-foreground/70 dark:hover:bg-muted/40"
@@ -829,7 +829,7 @@ export function AIOMetadataExportPanel({
                                     size="icon-sm"
                                     className={cn(
                                         editorSurface.panel,
-                                        "h-11 w-14 shrink-0 rounded-xl text-foreground/76 hover:text-foreground sm:w-11 sm:text-foreground/68"
+                                        "h-11 w-14 shrink-0 rounded-lg text-foreground/76 hover:text-foreground sm:w-11 sm:text-foreground/68"
                                     )}
                                     onClick={() => openSettingsDialog({ kind: "root" })}
                                     disabled={!hasEditableAIOMetadataCatalogs}
@@ -846,7 +846,7 @@ export function AIOMetadataExportPanel({
                                     <Button
                                         type="button"
                                         variant="outline"
-                                        className="h-10 w-full rounded-xl border-border/60 bg-background/35 text-foreground/88 hover:bg-muted/55 sm:w-auto sm:min-w-[16rem] sm:flex-1 lg:min-w-[19rem] lg:flex-none"
+                                        className="h-10 sm:h-9 w-full rounded-lg border-border/60 bg-background/35 text-foreground/88 hover:bg-muted/55 sm:w-auto sm:min-w-[16rem] sm:flex-1 lg:min-w-[19rem] lg:flex-none text-base sm:text-sm"
                                         onClick={handleDownloadFull}
                                         disabled={!hasLinkedCatalogs}
                                     >
@@ -855,7 +855,7 @@ export function AIOMetadataExportPanel({
                                     </Button>
                                     <Button
                                         type="button"
-                                        className="h-10 w-full rounded-xl bg-primary font-bold text-primary-foreground sm:w-auto sm:min-w-[16rem] sm:flex-1 lg:min-w-[19rem] lg:flex-none"
+                                        className="h-10 sm:h-9 w-full rounded-lg bg-primary font-bold text-primary-foreground sm:w-auto sm:min-w-[16rem] sm:flex-1 lg:min-w-[19rem] lg:flex-none text-base sm:text-sm"
                                         onClick={() => void handleCopyFull()}
                                         disabled={!hasLinkedCatalogs}
                                     >
@@ -870,7 +870,7 @@ export function AIOMetadataExportPanel({
                                     <Button
                                         type="button"
                                         variant="outline"
-                                        className="h-10 w-full rounded-xl sm:w-auto sm:min-w-[16rem] sm:flex-1 lg:min-w-[19rem] lg:flex-none"
+                                        className="h-10 sm:h-9 w-full rounded-lg sm:w-auto sm:min-w-[16rem] sm:flex-1 lg:min-w-[19rem] lg:flex-none text-base sm:text-sm"
                                         onClick={handleDownloadSelected}
                                         disabled={selectedCount === 0}
                                     >
@@ -879,7 +879,7 @@ export function AIOMetadataExportPanel({
                                     </Button>
                                     <Button
                                         type="button"
-                                        className="h-10 w-full rounded-xl bg-primary font-bold text-primary-foreground sm:w-auto sm:min-w-[16rem] sm:flex-1 lg:min-w-[19rem] lg:flex-none"
+                                        className="h-10 sm:h-9 w-full rounded-lg bg-primary font-bold text-primary-foreground sm:w-auto sm:min-w-[16rem] sm:flex-1 lg:min-w-[19rem] lg:flex-none text-base sm:text-sm"
                                         onClick={() => void handleCopySelected()}
                                         disabled={selectedCount === 0}
                                     >
@@ -894,7 +894,7 @@ export function AIOMetadataExportPanel({
                                         value={searchTerm}
                                         onChange={(event) => setSearchTerm(event.target.value)}
                                         placeholder="Search catalogs, widgets, or items..."
-                                        className={cn(editorSurface.field, "h-10 rounded-xl pl-9")}
+                                        className={cn(editorSurface.field, "h-10 sm:h-9 rounded-lg pl-9 text-base sm:text-sm")}
                                     />
                                 </div>
 

@@ -105,7 +105,7 @@ export function TemplateDownloadChoiceDialog({
                                     type="button"
                                     variant="ghost"
                                     size="icon"
-                                    className="h-10 w-10 shrink-0 rounded-[1.05rem] border border-white/8 bg-white/[0.03] text-foreground/58 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out hover:border-white/12 hover:bg-white/[0.055] hover:text-foreground"
+                                    className="h-10 w-10 shrink-0 rounded-lg border border-white/8 bg-white/[0.03] text-foreground/58 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out hover:border-white/12 hover:bg-white/[0.055] hover:text-foreground"
                                 >
                                     <X className="h-4 w-4" />
                                     <span className="sr-only">Close</span>
@@ -115,7 +115,7 @@ export function TemplateDownloadChoiceDialog({
                     </DialogHeader>
 
                     <div className="space-y-3">
-                        <div className={cn(editorSurface.inset, "rounded-[1.45rem] border-primary/14 px-5 py-4")}>
+                        <div className={cn(editorSurface.inset, "rounded-lg border-primary/14 px-5 py-4")}>
                             <p className="text-[0.95rem] font-semibold tracking-[-0.015em] text-foreground sm:text-[1rem]">{templateName}</p>
                             <p className="mt-2 break-all font-mono text-[10.5px] leading-6 text-foreground/50 sm:text-[11px]">
                                 {templateUrl}
@@ -132,7 +132,7 @@ export function TemplateDownloadChoiceDialog({
                             className={cn(
                                 editorAction.secondary,
                                 editorSurface.field,
-                                "h-11 min-w-[10.5rem] rounded-[1.05rem] border-white/10 bg-white/[0.02] px-4 text-[0.95rem] font-medium text-foreground/84 hover:bg-white/[0.045]"
+                                "h-11 min-w-[10.5rem] rounded-lg border-white/10 bg-white/[0.02] px-4 text-[0.95rem] font-medium text-foreground/84 hover:bg-white/[0.045]"
                             )}
                         >
                             {copyState === "copied" ? "Copied" : "Copy URL"}
@@ -142,7 +142,7 @@ export function TemplateDownloadChoiceDialog({
                             type="button"
                             onClick={handleDownload}
                             disabled={!templateUrl}
-                            className={cn(editorAction.primary, "h-11 min-w-[10.5rem] rounded-[1.05rem] px-5 text-[0.95rem] font-medium")}
+                            className={cn(editorAction.primary, "h-11 min-w-[10.5rem] rounded-lg px-5 text-[0.95rem] font-medium")}
                         >
                             Download
                             <Download className="h-4 w-4" />

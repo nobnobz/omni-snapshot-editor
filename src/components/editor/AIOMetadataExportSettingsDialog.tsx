@@ -1316,7 +1316,7 @@ function AIOMetadataExportSettingsDialogBody({
                         <Button
                             type="button"
                             variant="outline"
-                            className="h-9 rounded-xl"
+                            className="h-10 sm:h-9 rounded-lg text-base sm:text-sm"
                             onClick={() => setIsTemplateDialogOpen(true)}
                         >
                             <WandSparkles className="h-4 w-4" />
@@ -1325,7 +1325,7 @@ function AIOMetadataExportSettingsDialogBody({
                         <Button
                             type="button"
                             variant="outline"
-                            className="h-9 rounded-xl"
+                            className="h-10 sm:h-9 rounded-lg text-base sm:text-sm"
                             onClick={() => {
                                 if (isRootScope) {
                                     setIsResetAllConfirmOpen(true);

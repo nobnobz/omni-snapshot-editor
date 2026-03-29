@@ -954,7 +954,7 @@ export function MainEditor() {
 
             <aside className="hidden lg:flex lg:static inset-y-0 left-0 z-50 w-72 lg:w-[17.5rem] bg-transparent flex-col">
                 <div className="px-4 py-5">
-                    <div className="flex h-[calc(100dvh-2.5rem)] flex-col rounded-[1.75rem] border border-slate-200/72 bg-[linear-gradient(180deg,rgba(255,255,255,0.56),rgba(248,250,252,0.44))] shadow-[0_18px_38px_rgba(15,23,42,0.065)] backdrop-blur-md dark:border-white/8 dark:bg-[linear-gradient(180deg,rgba(21,24,31,0.92),rgba(13,16,22,0.9))] dark:shadow-[0_18px_38px_rgba(2,6,23,0.14)]">
+                    <div className="flex h-[calc(100dvh-2.5rem)] flex-col rounded-lg border border-slate-200/72 bg-[linear-gradient(180deg,rgba(255,255,255,0.56),rgba(248,250,252,0.44))] shadow-[0_18px_38px_rgba(15,23,42,0.065)] backdrop-blur-md dark:border-white/8 dark:bg-[linear-gradient(180deg,rgba(21,24,31,0.92),rgba(13,16,22,0.9))] dark:shadow-[0_18px_38px_rgba(2,6,23,0.14)]">
                         <div className="px-5 pt-5 pb-4">
                             <h1 className="text-base font-black flex items-center gap-2 text-primary-foreground tracking-tight">
                                 <div className="relative flex shrink-0 items-center justify-center group" style={{ width: '56px', height: '46px' }}>
@@ -979,7 +979,7 @@ export function MainEditor() {
                                             key={section.id}
                                             href={`#${section.id}`}
                                             className={cn(
-                                                `block rounded-[0.9rem] px-3 py-2 text-[14px] font-medium tracking-tight ${editorHover.transition}`,
+                                                `block rounded-lg px-3 py-2 text-[14px] font-medium tracking-tight ${editorHover.transition}`,
                                                 activeSectionId === section.id
                                                     ? "bg-primary/10 text-foreground border border-primary/20"
                                                     : "text-foreground/66 hover:text-foreground hover:bg-muted/30"
@@ -1004,7 +1004,7 @@ export function MainEditor() {
                                     <DropdownMenuTrigger asChild>
                                         <Button
                                             variant="ghost"
-                                            className="w-full justify-between gap-3 h-10 rounded-[0.95rem] px-3 text-sm text-primary dark:text-primary hover:text-primary dark:hover:text-primary hover:bg-primary/10 font-medium"
+                                            className="w-full justify-between gap-3 h-10 rounded-lg px-3 text-sm text-primary dark:text-primary hover:text-primary dark:hover:text-primary hover:bg-primary/10 font-medium"
                                         >
                                             <span className="flex items-center gap-3">
                                                 <BookOpen className="w-4 h-4" />
@@ -1051,7 +1051,7 @@ export function MainEditor() {
                                 <Button
                                     asChild
                                     variant="ghost"
-                                    className="w-full justify-start gap-3 h-10 rounded-[0.95rem] px-3 text-sm text-pink-600 dark:text-pink-500 hover:text-pink-700 dark:hover:text-pink-400 hover:bg-pink-500/10 font-medium"
+                                    className="w-full justify-start gap-3 h-10 rounded-lg px-3 text-sm text-pink-600 dark:text-pink-500 hover:text-pink-700 dark:hover:text-pink-400 hover:bg-pink-500/10 font-medium"
                                 >
                                     <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer">
                                         <Heart className="w-4 h-4" />
@@ -1062,7 +1062,7 @@ export function MainEditor() {
                         </nav>
 
                         <div className="mt-auto border-t border-slate-200/80 px-4 py-4 dark:border-white/6">
-                            <div className="rounded-[1rem] border border-slate-200/80 bg-white/42 px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] dark:border-white/8 dark:bg-background/26 dark:shadow-none">
+                            <div className="rounded-lg border border-slate-200/80 bg-white/42 px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] dark:border-white/8 dark:bg-background/26 dark:shadow-none">
                                 <div className="flex justify-between items-center mb-1.5">
                                     <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/44 flex items-center gap-1.5 leading-none">
                                         <FileJson className="w-3 h-3 text-primary/80" />
@@ -1085,7 +1085,7 @@ export function MainEditor() {
                             <div className="hidden lg:flex items-center gap-2.5 mt-3">
                                 <Button
                                     onClick={handleDownloadClick}
-                                    className="flex-1 font-bold h-11 rounded-[1rem] bg-primary hover:bg-primary/92 text-primary-foreground shadow-[0_10px_24px_rgba(2,6,23,0.18)]"
+                                    className="flex-1 font-bold h-11 rounded-lg bg-primary hover:bg-primary/92 text-primary-foreground shadow-[0_10px_24px_rgba(2,6,23,0.18)]"
                                 >
                                     <Download className="w-4 h-4 mr-2.5" />
                                     Download
@@ -1095,7 +1095,7 @@ export function MainEditor() {
                                     variant="ghost"
                                     size="icon"
                                     className={cn(
-                                        `h-11 w-11 shrink-0 rounded-[1rem] border border-slate-200/80 bg-white/42 dark:border-white/8 dark:bg-background/30 ${editorHover.transition} ${editorHover.iconAction}`,
+                                        `h-11 w-11 shrink-0 rounded-lg border border-slate-200/80 bg-white/42 dark:border-white/8 dark:bg-background/30 ${editorHover.transition} ${editorHover.iconAction}`,
                                         isCopied ? "border-emerald-500/35 text-emerald-400 bg-emerald-500/8" : ""
                                     )}
                                     title={isCopied ? "Copied to clipboard" : "Copy to clipboard"}
@@ -1180,7 +1180,7 @@ export function MainEditor() {
                         </Button>
                     </div>
                     <section className="lg:hidden pt-[calc(0.35rem+env(safe-area-inset-top))]">
-                        <div className="rounded-[1.35rem] border border-slate-200/72 bg-[linear-gradient(180deg,rgba(255,255,255,0.56),rgba(248,250,252,0.44))] p-3.5 shadow-[0_18px_38px_rgba(15,23,42,0.065)] backdrop-blur-md dark:border-white/8 dark:bg-[linear-gradient(180deg,rgba(21,24,31,0.92),rgba(13,16,22,0.9))] dark:shadow-[0_18px_38px_rgba(2,6,23,0.14)]">
+                        <div className="rounded-lg border border-slate-200/72 bg-[linear-gradient(180deg,rgba(255,255,255,0.56),rgba(248,250,252,0.44))] p-3.5 shadow-[0_18px_38px_rgba(15,23,42,0.065)] backdrop-blur-md dark:border-white/8 dark:bg-[linear-gradient(180deg,rgba(21,24,31,0.92),rgba(13,16,22,0.9))] dark:shadow-[0_18px_38px_rgba(2,6,23,0.14)]">
                             <div className="flex items-start gap-2.5">
                                 <h1 className="min-w-0 flex flex-1 items-center gap-2 text-base font-black tracking-tight text-primary-foreground">
                                     <div className="relative flex shrink-0 items-center justify-center group" style={{ width: '44px', height: '36px' }}>
@@ -1251,7 +1251,7 @@ export function MainEditor() {
                                 </div>
                             </div>
 
-                            <div className="mt-2.5 flex items-center gap-2 rounded-[0.95rem] border border-slate-200/80 bg-white/42 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] dark:border-white/8 dark:bg-background/26 dark:shadow-none">
+                            <div className="mt-2.5 flex items-center gap-2 rounded-lg border border-slate-200/80 bg-white/42 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] dark:border-white/8 dark:bg-background/26 dark:shadow-none">
                                 <FileJson className="h-3.5 w-3.5 shrink-0 text-primary/78" />
                                 <span className="min-w-0 flex-1 truncate text-[11px] font-mono text-foreground/58">{fileName}</span>
                                 <Button
@@ -1647,7 +1647,7 @@ export function MainEditor() {
                     })}
 
                     <div className="lg:hidden pt-1">
-                        <div className="rounded-[1.15rem] border border-slate-200/72 bg-[linear-gradient(180deg,rgba(255,255,255,0.5),rgba(248,250,252,0.36))] px-4 py-3 shadow-[0_10px_26px_rgba(15,23,42,0.045)] backdrop-blur-md dark:border-white/8 dark:bg-[linear-gradient(180deg,rgba(20,23,29,0.82),rgba(16,19,25,0.78))] dark:shadow-[0_10px_22px_rgba(2,6,23,0.12)]">
+                        <div className="rounded-lg border border-slate-200/72 bg-[linear-gradient(180deg,rgba(255,255,255,0.5),rgba(248,250,252,0.36))] px-4 py-3 shadow-[0_10px_26px_rgba(15,23,42,0.045)] backdrop-blur-md dark:border-white/8 dark:bg-[linear-gradient(180deg,rgba(20,23,29,0.82),rgba(16,19,25,0.78))] dark:shadow-[0_10px_22px_rgba(2,6,23,0.12)]">
                             <AppMeta align="center" showGitHub />
                         </div>
                     </div>
@@ -1680,7 +1680,7 @@ export function MainEditor() {
                                 <X className="h-4 w-4" />
                             </Button>
                         </div>
-                        <div className="mt-3 overflow-hidden rounded-[1.15rem] border border-white/8 bg-white/4">
+                        <div className="mt-3 overflow-hidden rounded-lg border border-white/8 bg-white/4">
                             {sections.map((section) => (
                                 <button
                                     key={section.id}
@@ -1739,7 +1739,7 @@ export function MainEditor() {
                                     <MoreHorizontal className="w-4 h-4" />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent side="top" align="end" className="mb-2 w-52 rounded-[1.25rem]">
+                            <DropdownMenuContent side="top" align="end" className="mb-2 w-52 rounded-lg">
                                 <div className="p-2 pb-1.5">
                                     <div className="flex items-center gap-1 rounded-xl bg-muted/40 p-1">
                                         <Button

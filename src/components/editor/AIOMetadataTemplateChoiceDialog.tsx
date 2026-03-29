@@ -30,7 +30,7 @@ type AIOMetadataTemplateChoiceDialogProps = {
 };
 
 const optionCardClass =
-    "group w-full rounded-[1.35rem] border px-5 py-4 text-left shadow-[0_10px_24px_rgba(15,23,42,0.05)] outline-none transition-[border-color,background-color,box-shadow,opacity,transform] duration-200 ease-out active:scale-[0.998] focus-visible:ring-[3px] focus-visible:ring-ring/50";
+    "group w-full rounded-lg border px-5 py-4 text-left shadow-[0_10px_24px_rgba(15,23_42,0.05)] outline-none transition-[border-color,background-color,box-shadow,opacity,transform] duration-200 ease-out active:scale-[0.998] focus-visible:ring-[3px] focus-visible:ring-ring/50";
 
 export function AIOMetadataTemplateChoiceDialog({
     open,
@@ -101,7 +101,7 @@ export function AIOMetadataTemplateChoiceDialog({
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-5">
                 <div className="min-w-0 space-y-1.5">
                     <div className="flex items-center gap-2.5">
-                        <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-[1rem] border", iconClassName)}>
+                        <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-lg border", iconClassName)}>
                             {icon}
                         </span>
                         <div className="min-w-0">
@@ -147,7 +147,7 @@ export function AIOMetadataTemplateChoiceDialog({
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="h-10 w-10 shrink-0 rounded-[1.05rem] border border-slate-200/78 bg-white/72 text-foreground/50 shadow-[0_6px_16px_rgba(15,23,42,0.05)] transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out hover:border-slate-300/82 hover:bg-white/86 hover:text-foreground/72 hover:shadow-[0_8px_18px_rgba(15,23,42,0.07)] dark:border-white/10 dark:bg-white/[0.03] dark:text-foreground/58 dark:shadow-none dark:hover:border-white/12 dark:hover:bg-white/[0.055] dark:hover:text-foreground"
+                                className="h-10 w-10 shrink-0 rounded-lg border border-slate-200/78 bg-white/72 text-foreground/50 shadow-[0_6px_16px_rgba(15,23,42,0.05)] transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out hover:border-slate-300/82 hover:bg-white/86 hover:text-foreground/72 hover:shadow-[0_8px_18px_rgba(15,23,42,0.07)] dark:border-white/10 dark:bg-white/[0.03] dark:text-foreground/58 dark:shadow-none dark:hover:border-white/12 dark:hover:bg-white/[0.055] dark:hover:text-foreground"
                             >
                                 <X className="h-4 w-4" />
                                 <span className="sr-only">Close</span>
