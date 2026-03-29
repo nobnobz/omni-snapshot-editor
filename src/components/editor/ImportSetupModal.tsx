@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useConfig } from "@/context/ConfigContext";
 import { formatDisplayName, cn } from "@/lib/utils";
-import { UploadCloud, AlertTriangle, ChevronDown, BookOpen, Search, RefreshCw, Image as ImageIcon, Check, X, Type } from "lucide-react";
+import { UploadCloud, ChevronDown, BookOpen, Search, RefreshCw, Image as ImageIcon, Check, X, Type } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { decodeConfig } from "@/lib/config-utils";

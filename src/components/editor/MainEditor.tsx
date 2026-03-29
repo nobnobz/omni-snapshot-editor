@@ -41,7 +41,6 @@ import {
     Trash2,
     Heart,
     LogOut,
-    Info,
     AlertTriangle,
     Pencil,
     MoreHorizontal,

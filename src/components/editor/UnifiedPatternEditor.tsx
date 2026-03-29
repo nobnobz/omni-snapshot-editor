@@ -180,8 +180,8 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
         onDelete(regex);
     };
 
-    const handleStartEdit = (e: React.MouseEvent) => {
-        e.stopPropagation();
+    const handleStartEdit = (e?: React.SyntheticEvent) => {
+        e?.stopPropagation();
         setRegexDraft(regex);
         setEditingRegex(true);
     };
@@ -323,7 +323,7 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter' || e.key === ' ') {
                                     e.preventDefault();
-                                    handleStartEdit(e as any);
+                                    handleStartEdit(e);
                                 }
                             }}
                         >

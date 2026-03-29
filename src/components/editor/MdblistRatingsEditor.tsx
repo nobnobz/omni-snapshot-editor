@@ -40,7 +40,7 @@ import {
     useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronRight, GripVertical, Info, Plus, RotateCcw, SmilePlus, X } from "lucide-react";
+import { ChevronRight, GripVertical, Plus, RotateCcw, SmilePlus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { shallowEqualObject } from "@/lib/equality";
 import {

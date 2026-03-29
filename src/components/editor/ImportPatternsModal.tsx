@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useConfig } from "@/context/ConfigContext";
-import { UploadCloud, AlertTriangle, Search } from "lucide-react";
+import { UploadCloud, Search } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { decodeConfig } from "@/lib/config-utils";
