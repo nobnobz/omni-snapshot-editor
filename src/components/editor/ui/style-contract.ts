@@ -67,9 +67,9 @@ export const editorHover = {
 
 export const editorAction = {
   primary:
-    `${uiControl.field} ${uiAction.primary} shadow-[0_8px_20px_rgba(37,99,235,0.14)] dark:shadow-[0_10px_24px_rgba(2,6,23,0.18)]`,
+    `${uiControl.field} ${uiAction.primary} shadow-[0_4px_12px_rgba(37,99,235,0.08)] dark:shadow-[0_8px_20px_rgba(2,6,23,0.18)]`,
   premium:
-    `${uiControl.field} h-11 rounded-xl bg-gradient-to-br from-primary via-primary to-primary/94 text-primary-foreground font-bold shadow-[0_12px_28px_rgba(37,99,235,0.22)] transition-all hover:-translate-y-px hover:shadow-[0_16px_34px_rgba(37,99,235,0.28)] active:scale-[0.985]`,
+    `${uiControl.field} h-11 rounded-xl bg-gradient-to-br from-primary via-primary to-primary/94 text-primary-foreground font-bold shadow-[0_8px_20px_rgba(37,99,235,0.12)] transition-all hover:-translate-y-px hover:shadow-[0_12px_28px_rgba(37,99,235,0.18)] active:scale-[0.985]`,
   secondary:
     "h-9 border-border/85 text-foreground/90 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out hover:bg-muted/95 dark:text-foreground/80 dark:hover:bg-muted/80",
   danger:
