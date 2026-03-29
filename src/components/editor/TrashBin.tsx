@@ -1,9 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useConfigActions, useConfigSelector } from "@/context/ConfigContext";
 import { Button } from "@/components/ui/button";
-import { Trash2, RotateCcw, XCircle, Info } from "lucide-react";
+import { Trash2, RotateCcw, XCircle, Info, ChevronDown, ChevronRight } from "lucide-react";
+import { editorSurface } from "@/components/editor/ui/style-contract";
 import {
     Accordion,
     AccordionContent,
@@ -35,6 +36,7 @@ type DeletedItem = DeletedMainGroupItem | DeletedSubgroupItem;
 export function TrashBin() {
     const deletedSubgroups = useConfigSelector((state) => state.deletedSubgroups);
     const deletedMainGroups = useConfigSelector((state) => state.deletedMainGroups);
+    const [isOpen, setIsOpen] = useState(false);
     const { restoreSubgroup, restoreMainGroup, clearDeletedSubgroups } = useConfigActions();
 
     if (deletedSubgroups.length === 0 && deletedMainGroups.length === 0) return null;
@@ -50,61 +52,71 @@ export function TrashBin() {
     return (
         <div className="mt-8 border border-border rounded-xl bg-card/20 overflow-hidden shadow-inner animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="p-4 sm:p-5 bg-muted/5">
-                <div className="flex items-start justify-between gap-3 mb-4">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-red-500/10 p-2 rounded-lg border border-red-500/20">
-                            <Trash2 className="w-5 h-5 text-red-400" />
+                    <button
+                        type="button"
+                        onClick={() => setIsOpen((prev) => !prev)}
+                        className="mb-4 flex w-full items-start justify-between gap-3 rounded-xl text-left transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                        aria-expanded={isOpen}
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="bg-red-500/10 p-2 rounded-lg border border-red-500/20">
+                                <Trash2 className="w-5 h-5 text-red-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-foreground">Recycle Bin</h3>
+                                <p className="text-sm text-foreground/70">Deleted groups can be restored here.</p>
+                            </div>
                         </div>
-                        <div>
-                            <h3 className="text-lg font-bold text-foreground">Recycle Bin</h3>
-                            <p className="text-sm text-foreground/70">Deleted groups can be restored here.</p>
+                        <div className="flex items-center gap-2">
+                            <span className="inline-flex h-7 items-center rounded-full border border-border bg-muted px-2.5 text-xs font-semibold text-foreground/70">
+                                {allDeleted.length}
+                            </span>
+                            <span className="flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-background/60 text-foreground/55">
+                                <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${!isOpen ? "-rotate-90" : ""}`} />
+                            </span>
                         </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="inline-flex h-7 items-center rounded-full border border-border bg-muted px-2.5 text-xs font-semibold text-foreground/70">
-                            {allDeleted.length}
-                        </span>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={clearDeletedSubgroups}
-                            className="h-9 text-foreground/70 hover:text-red-400 hover:bg-red-500/10 text-sm gap-2"
-                        >
-                            <XCircle className="w-4 h-4" /> Clear Trash
-                        </Button>
-                    </div>
-                </div>
+                    </button>
 
-                <Accordion type="single" collapsible className="space-y-3">
-                    {allDeleted.map((item, idx) => (
+                {isOpen && (
+                    <div className="animate-in slide-in-from-top-2 fade-in duration-200">
+                        <Accordion type="single" collapsible className="space-y-1">
+                            {allDeleted.map((item, idx) => (
                         <AccordionItem
                             key={`${item.name}-${item.deletedAt}`}
                             value={`deleted-${idx}`}
-                            className="border border-border/80 bg-card rounded-lg overflow-hidden"
+                            className={`${editorSurface.cardInteractive} group/item flex flex-col rounded-xl overflow-hidden transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out hover:border-border/80 w-full mb-3 shadow-sm border`}
                         >
-                            <div className="flex items-center justify-between px-4 py-3">
-                                <div className="flex items-center gap-3">
-                                    <AccordionTrigger className="p-0 [&>svg]:hidden flex items-center gap-2">
-                                        <Badge variant="outline" className={`text-xs uppercase tracking-tighter bg-muted/50 border-border ${item.type === 'Main Group' ? 'text-primary border-primary/40' : 'text-foreground/70'}`}>
-                                            {item.type}
-                                        </Badge>
-                                        <span className="font-semibold text-foreground">{item.name}</span>
-                                    </AccordionTrigger>
-                                    {item.type === 'Subgroup' && (
-                                        <span className="text-xs text-foreground/70">
-                                            was in <span className="text-foreground/70">{item.parentName}</span>
-                                        </span>
-                                    )}
-                                </div>
+                            <div className="flex items-center justify-between p-3 gap-4 group">
+                                <AccordionTrigger className="flex-1 min-w-0 py-1.5 px-1 hover:no-underline [&>svg]:hidden [&[data-state=open]>.chevron]:rotate-90">
+                                    <div className="flex items-center gap-3 text-left">
+                                        <ChevronRight className="chevron h-4 w-4 shrink-0 text-foreground/50 transition-transform duration-200" />
+                                        <span className="font-medium text-sm text-foreground transition-colors group-hover/item:text-primary">{item.name}</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] uppercase font-bold tracking-widest text-foreground/50 bg-muted/50 border border-border/50 rounded px-1.5 py-0.5">
+                                                {item.type}
+                                            </span>
+                                            {item.type === 'Subgroup' && (
+                                                <span className="text-[10px] sm:text-xs text-foreground/50">
+                                                    in <span className="text-foreground/70">{item.parentName}</span>
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </AccordionTrigger>
                                 <Button
+                                    variant="outline"
                                     size="sm"
-                                    onClick={() => item.type === 'Main Group' ? restoreMainGroup(item) : restoreSubgroup(item)}
-                                    className="h-9 bg-primary hover:bg-primary/92 text-primary-foreground text-sm gap-2 shadow-lg shadow-primary/20"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        item.type === 'Main Group' ? restoreMainGroup(item) : restoreSubgroup(item);
+                                    }}
+                                    className="h-7 px-3 text-xs font-semibold tracking-tight border-border/50 text-foreground/70 bg-transparent hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors gap-1.5 z-10 shrink-0"
                                 >
                                     <RotateCcw className="w-3.5 h-3.5" /> Restore
                                 </Button>
                             </div>
-                            <AccordionContent className="px-4 pb-4 pt-0">
+                            <AccordionContent className="px-12 pb-5 pt-1">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                                     <div className="space-y-2">
                                         <div className="flex items-center gap-2 text-xs text-foreground/70 uppercase font-bold tracking-widest">
@@ -143,7 +155,19 @@ export function TrashBin() {
                             </AccordionContent>
                         </AccordionItem>
                     ))}
-                </Accordion>
+                        </Accordion>
+                        <div className="mt-4 flex justify-end">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={clearDeletedSubgroups}
+                                className="h-9 text-red-500 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/30 text-xs px-3 gap-2 border-border/50"
+                            >
+                                <Trash2 className="w-4 h-4" /> Empty Trash
+                            </Button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

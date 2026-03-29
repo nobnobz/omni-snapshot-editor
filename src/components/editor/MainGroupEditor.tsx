@@ -6,7 +6,8 @@ import {
     DndContext,
     closestCenter,
     KeyboardSensor,
-    PointerSensor,
+    MouseSensor,
+    TouchSensor,
     useSensor,
     useSensors,
     type DragEndEvent,
@@ -206,7 +207,12 @@ function SingleMainGroupEditor({
     }, [subgroupNames]);
 
     const sensors = useSensors(
-        useSensor(PointerSensor),
+        useSensor(MouseSensor, {
+            activationConstraint: { distance: 5 },
+        }),
+        useSensor(TouchSensor, {
+            activationConstraint: { delay: 250, tolerance: 5 },
+        }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
@@ -262,7 +268,7 @@ function SingleMainGroupEditor({
                 </div>
 
                 <div className="p-3">
-                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <DndContext id={`inner-dnd-${groupId}`} sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                         <SortableContext items={items} strategy={verticalListSortingStrategy}>
                             <div className="space-y-1 max-h-[450px] overflow-y-auto pr-1 custom-scrollbar">
                                 {items.map((id) => (
@@ -318,13 +324,14 @@ function SortableMainGroupItem({
     };
 
     return (
-        <div ref={setNodeRef} style={style}>
-            <AccordionItem 
-                value={groupId} 
-                className={`${editorSurface.cardInteractive} transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out overflow-hidden group/accordion mb-2
-                    ${isDragging ? "opacity-50 border-primary shadow-2xl z-50" : ""}
-                `}
-            >
+        <AccordionItem 
+            ref={setNodeRef}
+            style={style}
+            value={groupId} 
+            className={`${editorSurface.cardInteractive} transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out overflow-hidden group/accordion mb-2
+                ${isDragging ? "opacity-50 border-primary shadow-2xl z-50 relative" : ""}
+            `}
+        >
                 <div className="flex items-center">
                     {/* Consistent Drag Handle */}
                     <button 
@@ -360,7 +367,6 @@ function SortableMainGroupItem({
                     />
                 </AccordionContent>
             </AccordionItem>
-        </div>
     );
 }
 
@@ -370,6 +376,9 @@ export function MainGroupEditor() {
         disabledCatalogs: state.disabledCatalogs,
     }), shallowEqualObject);
     const { updateValue, toggleCatalog, renameCatalogGroup } = useConfigActions();
+    
+    // Controlled state for accordion to fix Radix UI double-click to close bugs
+    const [openGroups, setOpenGroups] = useState<string[]>([]);
 
     const mainGroupsKey = "main_catalog_groups";
     const mainGroupsValue = currentValues[mainGroupsKey];
@@ -399,7 +408,12 @@ export function MainGroupEditor() {
     };
 
     const sensors = useSensors(
-        useSensor(PointerSensor),
+        useSensor(MouseSensor, {
+            activationConstraint: { distance: 5 },
+        }),
+        useSensor(TouchSensor, {
+            activationConstraint: { delay: 250, tolerance: 5 },
+        }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
@@ -427,9 +441,14 @@ export function MainGroupEditor() {
                 Manage and organize main catalogs groups. Drag headers to reorder top-level presentation.
             </p>
 
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <DndContext id="outer-dnd-maingroups" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={orderedGroups} strategy={verticalListSortingStrategy}>
-                    <Accordion type="multiple" className="w-full space-y-0">
+                    <Accordion 
+                         type="multiple" 
+                         value={openGroups} 
+                         onValueChange={setOpenGroups} 
+                         className="w-full space-y-0"
+                    >
                         {orderedGroups.map((groupId) => (
                             <SortableMainGroupItem 
                                 key={groupId}
