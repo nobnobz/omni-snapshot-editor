@@ -158,7 +158,7 @@ function CatalogRow({
             >
                 <p className="truncate text-sm font-medium tracking-tight">{occurrence.exportCatalog.name}</p>
                 <p className="truncate text-xs text-foreground/54 dark:text-foreground/44">
-                    {occurrence.itemName}
+                    {occurrence.omniCatalogId}
                 </p>
             </button>
             <div className="flex shrink-0 items-center gap-2">
