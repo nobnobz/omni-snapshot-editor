@@ -336,7 +336,7 @@ function SortableCatalogItem({
                         <Settings2 className="w-4 h-4" />
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-64">
+                <DropdownMenuContent align="center" sideOffset={8} className="w-64 max-w-[calc(100vw-2rem)]">
 
                     <DropdownMenuLabel className="text-xs uppercase text-foreground/70 font-bold">Visibility</DropdownMenuLabel>
 

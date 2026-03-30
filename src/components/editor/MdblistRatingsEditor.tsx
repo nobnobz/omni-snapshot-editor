@@ -342,8 +342,8 @@ function SortableMdblistRow({
                                                 <SmilePlus className="h-4 w-4" />
                                             </Button>
                                         </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-56 p-2">
-                                            <div className="grid grid-cols-5 gap-1">
+                                        <DropdownMenuContent align="center" sideOffset={8} className="w-56 p-2">
+    <div className="grid grid-cols-5 gap-1">
                                                 {EMOJI_QUICK_OPTIONS.map((emoji) => (
                                                     <DropdownMenuItem
                                                         key={`${definition.key}-${emoji}`}
@@ -663,7 +663,7 @@ export function MdblistRatingsEditor() {
                                     Add source
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuContent align="center" sideOffset={8} className="w-56">
                                 {inactiveDefinitions.map((definition) => (
                                     <DropdownMenuItem key={definition.key} onSelect={() => handleAdd(definition.key)}>
                                         {definition.label}

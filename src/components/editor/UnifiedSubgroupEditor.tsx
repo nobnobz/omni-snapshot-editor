@@ -131,40 +131,48 @@ const PosterUrlEditor = React.memo(function PosterUrlEditor({
 
     return (
         <div className="space-y-2">
-            <div className={`${editorSurface.panel} flex items-center gap-3 p-3`}>
-                <div
-                    className={`${thumbFrameClass} rounded-md shrink-0 overflow-hidden shadow-sm flex items-center justify-center transition-[width,height] duration-200 border border-white/10 p-1`}
-                    style={{ backgroundColor: '#020617' }}
-                >
-                    {hasThumbPreview ? (
-                        <>
-                            {/* eslint-disable-next-line @next/next/no-img-element -- Dynamic subgroup thumbnail preview from user-provided URL. */}
-                            <img
-                                src={previewUrl}
-                                alt="Thumb"
-                                className="h-full w-full object-contain"
-                                onLoad={(e) => {
-                                    const { naturalWidth, naturalHeight } = e.currentTarget;
-                                    if (!naturalWidth || !naturalHeight) {
-                                        setThumbAspect("square");
-                                        return;
-                                    }
-                                    const ratio = naturalWidth / naturalHeight;
-                                    if (ratio > 1.2) setThumbAspect("landscape");
-                                    else if (ratio < 0.82) setThumbAspect("portrait");
-                                    else setThumbAspect("square");
-                                }}
-                                onError={() => {
-                                    setThumbLoadError(true);
-                                }}
-                            />
-                        </>
-                    ) : (
-                        <ImageIcon className="w-4 h-4 text-foreground/70" />
-                    )}
+            <div className={`${editorSurface.panel} flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:gap-4`}>
+                <div className="flex items-center gap-3 sm:block">
+                    <div
+                        className={cn(
+                            thumbFrameClass,
+                            "rounded-md shrink-0 overflow-hidden shadow-sm flex items-center justify-center transition-[width,height] duration-200 border border-white/10 p-1 bg-[#020617]"
+                        )}
+                    >
+                        {hasThumbPreview ? (
+                            <>
+                                {/* eslint-disable-next-line @next/next/no-img-element -- Dynamic subgroup thumbnail preview from user-provided URL. */}
+                                <img
+                                    src={previewUrl}
+                                    alt="Thumb"
+                                    className="h-full w-full object-contain"
+                                    onLoad={(e) => {
+                                        const { naturalWidth, naturalHeight } = e.currentTarget;
+                                        if (!naturalWidth || !naturalHeight) {
+                                            setThumbAspect("square");
+                                            return;
+                                        }
+                                        const ratio = naturalWidth / naturalHeight;
+                                        if (ratio > 1.2) setThumbAspect("landscape");
+                                        else if (ratio < 0.82) setThumbAspect("portrait");
+                                        else setThumbAspect("square");
+                                    }}
+                                    onError={() => {
+                                        setThumbLoadError(true);
+                                    }}
+                                />
+                            </>
+                        ) : (
+                            <ImageIcon className="w-4 h-4 text-foreground/70" />
+                        )}
+                    </div>
+                    {/* On mobile, show the label next to the thumb if desired, or keep it inside the flex-1 area */}
+                    <div className="sm:hidden">
+                        <Label className="text-[10px] uppercase font-bold tracking-[0.16em] text-foreground/50">Poster Image URL</Label>
+                    </div>
                 </div>
-                <div className="flex-1 space-y-1">
-                    <Label className="text-xs uppercase font-bold tracking-widest text-foreground/70">Poster Image URL</Label>
+                <div className="flex-1 space-y-1.5 min-w-0">
+                    <Label className="hidden sm:block text-xs uppercase font-bold tracking-widest text-foreground/70">Poster Image URL</Label>
                     <LockedUrlInput
                         value={imageUrl}
                         onCommit={(nextUrl) => commitUrl(nextUrl ?? "")}
@@ -645,13 +653,14 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                 <DropdownMenuTrigger asChild>
                                     <Button
                                         variant="outline"
-                                        size="sm"
-                                        className={`${editorSurface.field} h-9 text-xs text-foreground/70 hover:text-foreground`}
+                                        size="sm" aria-label="Move subgroup"
+                                        className={`${editorSurface.field} h-9 text-xs text-foreground/70 hover:text-foreground flex items-center justify-center`}
                                     >
-                                        <FolderInput className="w-3.5 h-3.5 mr-2" /> Move
+                                        <FolderInput className="w-4 h-4 sm:w-3.5 sm:h-3.5 sm:mr-2" />
+                                        <span className="hidden sm:inline">Move</span>
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="start" className={cn(editorSurface.overlay, "w-[calc(100vw-3rem)]")}>
+                                <DropdownMenuContent align="center" sideOffset={8} className={cn(editorSurface.overlay, "w-64 max-w-[calc(100vw-2rem)]")}>
                                     <DropdownMenuLabel className="text-[10px] font-bold uppercase tracking-widest text-foreground/50">Move to group</DropdownMenuLabel>
                                     <DropdownMenuSeparator className="bg-primary/10" />
                                     {(Object.entries(mainCatalogGroups) as [string, { name: string }][]).map(([uuid, mg]) => (
@@ -673,10 +682,11 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => setIsRenaming(true)}
-                                className={`${editorSurface.field} h-9 text-xs text-foreground/70 hover:text-foreground`}
+                                aria-label="Rename subgroup"
+                                className={`${editorSurface.field} h-9 text-xs text-foreground/70 hover:text-foreground flex items-center justify-center`}
                             >
-                                <Pencil className="w-3.5 h-3.5 mr-2" /> Rename
+                                <Pencil className="w-4 h-4 sm:w-3.5 sm:h-3.5 sm:mr-2" />
+                                <span className="hidden sm:inline">Rename</span>
                             </Button>
                             <Button
                                 variant="outline"
@@ -685,9 +695,11 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                     unassignCatalogGroup(subgroupName);
                                     if (onUnassign) onUnassign(subgroupName, parentUUID);
                                 }}
-                                className={cn(editorSurface.field, "h-9 text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 border-rose-500/20 hover:border-rose-500/30 dark:text-rose-400 dark:hover:text-rose-300 dark:hover:bg-rose-500/15")}
+                                aria-label="Delete subgroup"
+                                className={cn(editorSurface.field, "h-9 text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 border-rose-500/20 hover:border-rose-500/30 dark:text-rose-400 dark:hover:text-rose-300 dark:hover:bg-rose-500/15 flex items-center justify-center")}
                             >
-                                <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
+                                <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5 sm:mr-2" />
+                                <span className="hidden sm:inline">Delete</span>
                             </Button>
                         </div>
                     </div>
@@ -772,7 +784,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                         <Plus className="w-3.5 h-3.5 mr-2" /> Add Catalog...
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent className={cn(editorSurface.overlay, "w-[30rem] max-w-[92vw] p-0 overflow-hidden")}>
+                                <DropdownMenuContent align="center" sideOffset={8} className={cn(editorSurface.overlay, "w-[30rem] max-w-[92vw] p-0 overflow-hidden")}>
                                     <div className={cn(editorSurface.overlaySection, "space-y-2 border-b border-primary/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.66),rgba(239,246,255,0.5))] p-3 dark:border-primary/14 dark:bg-[linear-gradient(180deg,rgba(18,24,35,0.95),rgba(14,20,31,0.92))]")}>
                                         <h4 className="flex justify-between text-[11px] font-bold uppercase tracking-[0.18em] text-foreground/58">
                                             <span>Select Catalog</span>
@@ -1560,13 +1572,14 @@ const UnassignedSubgroupRow = React.memo(function UnassignedSubgroupRow({
                                 <DropdownMenuTrigger asChild>
                                     <Button
                                         variant="outline"
-                                        size="sm"
-                                        className={`${editorSurface.field} h-9 text-xs text-foreground/70 hover:text-foreground`}
+                                        size="sm" aria-label="Move subgroup"
+                                        className={`${editorSurface.field} h-9 text-xs text-foreground/70 hover:text-foreground flex items-center justify-center`}
                                     >
-                                        <FolderInput className="w-3.5 h-3.5 mr-2" /> Move
+                                        <FolderInput className="w-4 h-4 sm:w-3.5 sm:h-3.5 sm:mr-2" />
+                                        <span className="hidden sm:inline">Move</span>
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="start" className={cn(editorSurface.overlay, "w-[calc(100vw-3rem)]")}>
+                                <DropdownMenuContent align="center" sideOffset={8} className={cn(editorSurface.overlay, "w-64 max-w-[calc(100vw-2rem)]")}>
                                     {onRestore && restoreParentName && (
                                         <>
                                             <DropdownMenuItem
@@ -1606,17 +1619,21 @@ const UnassignedSubgroupRow = React.memo(function UnassignedSubgroupRow({
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setIsRenaming(true)}
-                                className={`${editorSurface.field} h-9 text-xs text-foreground/70 hover:text-foreground`}
+                                aria-label="Rename subgroup"
+                                className={`${editorSurface.field} h-9 text-xs text-foreground/70 hover:text-foreground flex items-center justify-center`}
                             >
-                                <Pencil className="w-3.5 h-3.5 mr-2" /> Rename
+                                <Pencil className="w-4 h-4 sm:w-3.5 sm:h-3.5 sm:mr-2" />
+                                <span className="hidden sm:inline">Rename</span>
                             </Button>
                             <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => removeCatalogGroup(groupName)}
-                                className={`${editorSurface.field} h-9 text-xs text-red-400 hover:text-red-300`}
+                                aria-label="Delete subgroup"
+                                className={cn(editorSurface.field, "h-9 text-xs text-red-400 hover:text-red-300 flex items-center justify-center")}
                             >
-                                <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
+                                <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5 sm:mr-2" />
+                                <span className="hidden sm:inline">Delete</span>
                             </Button>
                         </div>
                     </div>
@@ -1689,7 +1706,7 @@ const UnassignedSubgroupRow = React.memo(function UnassignedSubgroupRow({
                                         <Plus className="w-3.5 h-3.5 mr-2" /> Add Catalog...
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent className={cn(editorSurface.overlay, "w-[30rem] max-w-[92vw] p-0 overflow-hidden")}>
+                                <DropdownMenuContent align="center" sideOffset={8} className={cn(editorSurface.overlay, "w-[30rem] max-w-[92vw] p-0 overflow-hidden")}>
                                     <div className={cn(editorSurface.overlaySection, "space-y-2 border-b border-primary/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.66),rgba(239,246,255,0.5))] p-3 dark:border-primary/14 dark:bg-[linear-gradient(180deg,rgba(18,24,35,0.95),rgba(14,20,31,0.92))]")}>
                                         <h4 className="flex justify-between text-[11px] font-bold uppercase tracking-[0.18em] text-foreground/58">
                                             <span>Select Catalog</span>

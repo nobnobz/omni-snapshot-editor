@@ -180,7 +180,7 @@ export const LockedUrlInput = React.forwardRef<HTMLInputElement | HTMLTextAreaEl
                     onClick={handleLockedDisplayClick}
                     className={cn(
                         "w-full min-w-0 overflow-hidden rounded-md border text-left select-none transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out",
-                        "pr-28 font-mono border-slate-200/95 bg-slate-100/86 text-foreground/58 shadow-none dark:border-white/10 dark:bg-white/[0.045] dark:text-foreground/58 sm:pr-24",
+                        "!pr-[116px] font-mono border-slate-200/95 bg-slate-100/90 text-foreground/58 shadow-none dark:border-white/10 dark:bg-white/[0.05] dark:text-foreground/58 sm:!pr-[104px]",
                         multiline
                             ? "whitespace-pre-wrap break-all px-3 py-3 leading-[1.35]"
                             : "flex items-center px-3",
@@ -208,7 +208,7 @@ export const LockedUrlInput = React.forwardRef<HTMLInputElement | HTMLTextAreaEl
                     onMouseDown={handleEditableFieldMouseDown}
                     onClick={handleEditableFieldClick}
                     className={cn(
-                        "w-full pr-28 font-mono leading-[1.35] read-only:cursor-default read-only:border-slate-200/95 read-only:bg-slate-100/86 read-only:text-foreground/58 read-only:shadow-none read-only:hover:border-slate-200/95 read-only:hover:bg-slate-100/86 read-only:focus-visible:border-slate-200/95 read-only:focus-visible:ring-0 read-only:selection:bg-primary/15 dark:read-only:border-white/10 dark:read-only:bg-white/[0.045] dark:read-only:text-foreground/58 dark:read-only:hover:border-white/10 dark:read-only:hover:bg-white/[0.045] sm:pr-24",
+                        "w-full !pr-[116px] font-mono leading-[1.35] read-only:cursor-default read-only:border-slate-200/95 read-only:bg-slate-100/90 read-only:text-foreground/58 read-only:shadow-none read-only:hover:border-slate-200/95 read-only:hover:bg-slate-100/90 read-only:focus-visible:border-slate-200/95 read-only:focus-visible:ring-0 read-only:selection:bg-primary/15 dark:read-only:border-white/10 dark:read-only:bg-white/[0.05] dark:read-only:text-foreground/58 dark:read-only:hover:border-white/10 dark:read-only:hover:bg-white/[0.05] sm:!pr-[104px]",
                         inputClassName
                     )}
                 />
@@ -227,7 +227,7 @@ export const LockedUrlInput = React.forwardRef<HTMLInputElement | HTMLTextAreaEl
                     onMouseDown={handleEditableFieldMouseDown}
                     onClick={handleEditableFieldClick}
                     className={cn(
-                        "w-full pr-28 font-mono read-only:cursor-default read-only:border-slate-200/95 read-only:bg-slate-100/86 read-only:text-foreground/58 read-only:shadow-none read-only:hover:border-slate-200/95 read-only:hover:bg-slate-100/86 read-only:focus-visible:border-slate-200/95 read-only:focus-visible:ring-0 read-only:selection:bg-primary/15 dark:read-only:border-white/10 dark:read-only:bg-white/[0.045] dark:read-only:text-foreground/58 dark:read-only:hover:border-white/10 dark:read-only:hover:bg-white/[0.045] sm:pr-24",
+                        "w-full !pr-[116px] font-mono read-only:cursor-default read-only:border-slate-200/95 read-only:bg-slate-100/90 read-only:text-foreground/58 read-only:shadow-none read-only:hover:border-slate-200/95 read-only:hover:bg-slate-100/90 read-only:focus-visible:border-slate-200/95 read-only:focus-visible:ring-0 read-only:selection:bg-primary/15 dark:read-only:border-white/10 dark:read-only:bg-white/[0.05] dark:read-only:text-foreground/58 dark:read-only:hover:border-white/10 dark:read-only:hover:bg-white/[0.05] sm:!pr-[104px]",
                         inputClassName
                     )}
                 />
@@ -241,7 +241,7 @@ export const LockedUrlInput = React.forwardRef<HTMLInputElement | HTMLTextAreaEl
                 </div>
             )}
             {hasAnyValue && (
-                <div className="pointer-events-none absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-1 border-l border-slate-200/60 bg-white/40 pl-2 backdrop-blur-md dark:border-white/10 dark:bg-[#12151b]/90 dark:backdrop-blur-lg">
+                <div className="pointer-events-none absolute right-[1px] top-[1px] bottom-[1px] flex items-center gap-1 border-l border-slate-200/60 bg-white pl-1.5 pr-1 dark:border-white/10 dark:bg-[#0c0f16] rounded-r-[inherit]">
                     <Button
                         type="button"
                         variant="ghost"
