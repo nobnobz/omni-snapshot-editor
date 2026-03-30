@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { copyTemplateUrl, downloadTemplateFile } from "@/lib/template-download";
 import { cn } from "@/lib/utils";
-import { editorAction, editorSurface } from "@/components/editor/ui/style-contract";
+import { editorAction, editorSurface, editorHover, editorLayout } from "@/components/editor/ui/style-contract";
 
 type TemplateDownloadChoiceDialogProps = {
     open: boolean;
