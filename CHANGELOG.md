@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.6.1] - 2026-04-01
+### Changed
+- Reworked the **Update from Template** flow with a cleaner import review and better duplicate handling.
+- Simplified **Export Catalogs** controls and AIOMetadata settings to reduce friction during export setup.
+- Polished editor dialogs, spacing, and mobile interactions across the release candidate.
+
+### Fixed
+- Fixed AIOMetadata/template download edge cases in the chooser flow.
+- Fixed release metadata and in-app versioning so the UI now consistently reports `v0.6.1`.
+- Fixed release hygiene issues by aligning branding, documentation, and ignored local workspace files.
+
 ## [0.6.0] - 2026-03-28
 ### Added
 - **AIOMetadata Export Panel** for generating ready-to-use catalog JSON directly from Omni catalogs.
