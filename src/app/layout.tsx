@@ -4,12 +4,12 @@ import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
 export const metadata = {
-  title: "Omni Config Editor",
-  description: "A client-side JSON editor for Omni configs",
+  title: "Omni Snapshot Manager",
+  description: "A client-side editor for Omni snapshots",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Omni Editor",
+    title: "Omni Snapshot Manager",
   },
   manifest: "/omni-snapshot-editor/manifest.json",
   icons: {

@@ -1,7 +1,7 @@
 {
-  "name": "Omni Config Editor",
-  "short_name": "Omni Editor",
-  "description": "A client-side JSON editor for Omni configs",
+  "name": "Omni Snapshot Manager",
+  "short_name": "Omni Snapshot",
+  "description": "A client-side editor for Omni snapshots",
   "id": "/omni-snapshot-editor/",
   "start_url": "/omni-snapshot-editor/",
   "display": "standalone",

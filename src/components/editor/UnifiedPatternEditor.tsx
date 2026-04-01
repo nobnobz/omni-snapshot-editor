@@ -259,7 +259,7 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                     {imageUrl && (
                         <div 
                             className={cn(
-                                "h-8 w-auto min-w-[32px] max-w-24 shrink-0 overflow-hidden rounded-md flex items-center justify-center transition-opacity border border-white/10 p-1",
+                                "h-10 w-auto min-w-[28px] max-w-24 shrink-0 overflow-hidden rounded-md flex items-center justify-center transition-opacity border border-white/10 p-0.5",
                                 !isTagEnabled && "opacity-30"
                             )}
                             style={{ backgroundColor: '#020617' }}

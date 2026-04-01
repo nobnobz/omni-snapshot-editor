@@ -5,9 +5,9 @@
 
 ## Summary
 
-The **Omni Snapshot Manager** is a tool for managing and editing Omni configuration files (Snapshots). It serves as a companion tool for the [**Unified Media Experience (UME)**](https://github.com/nobnobz/Omni-Template-Bot-Bid-Raiser) project but you can also build your complete own setup with it.
+The **Omni Snapshot Manager** is a tool for managing and editing Omni configuration files (snapshots). It serves as a companion tool for the [**Unified Media Experience (UME)**](https://github.com/nobnobz/Omni-Template-Bot-Bid-Raiser) project, but you can also build your own setup with it.
 
-The application allows for adjusting the JSON structures of the Omni Snapshosts via a graphical interface, eliminating the need to edit the file in Omni or manually in a text editor. The goal is to reduce configuration errors and simplify the management of Omni setups.
+The application lets you adjust Omni snapshot JSON structures through a graphical interface, eliminating the need to edit files directly in Omni or in a text editor. The goal is to reduce configuration errors and simplify the management of Omni setups.
 
 ### Website
 The application is available as a web app and requires no local installation:
@@ -33,8 +33,7 @@ The application is available as a web app and requires no local installation:
 ### 3. Advanced Regex & Patterns
 - **Regex Tagging**: Define patterns to automatically tag content based on titles or metadata.
 - **Dynamic Styling**: Override interface properties—such as opacity, border thickness, and color—dynamically for your patterns.
-- **Pattern-based Images**: Assign custom icons to your regex
-- 
+- **Pattern-based Images**: Assign custom icons to your regex rules.
 ### 4. Seamless Integrations
 - **AIOMetadata Mapping**: Full support for AIOMetadata export files to map MDBList IDs back to human-readable names.
 - **Universal Import**: Fetch configurations directly from GitHub Raw URLs or upload local `.json` snapshots.
@@ -76,4 +75,3 @@ If this tool makes your Omni management easier, please consider supporting the c
 [<img src="https://cdn.prod.website-files.com/5c14e387dab576fe667689cf/670f5a02fcf48af59c591185_support_me_on_kofi_dark.png" width="230" alt="Support my work at Ko-fi">](https://ko-fi.com/botbidraiser)
 
 ---
-

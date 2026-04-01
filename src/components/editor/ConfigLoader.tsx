@@ -535,8 +535,8 @@ export function ConfigLoader() {
     ];
 
     const loaderUtilityButtonClass =
-        "size-10 rounded-lg border border-slate-200/82 bg-white/78 p-0 text-foreground/62 shadow-[0_8px_18px_rgba(15,23,42,0.055)] backdrop-blur-xl transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 ease-out hover:-translate-y-px hover:border-slate-300/88 hover:bg-white/88 hover:text-foreground hover:shadow-[0_10px_22px_rgba(15,23,42,0.075)] dark:border-white/10 dark:bg-white/[0.04] dark:text-foreground/72 dark:shadow-[0_10px_24px_rgba(2,6,23,0.22)] dark:hover:border-white/14 dark:hover:bg-white/[0.08] dark:hover:text-foreground dark:hover:shadow-[0_12px_26px_rgba(2,6,23,0.28)] sm:size-11";
-    const loaderThemeToggleClass = cn(loaderUtilityButtonClass, "[&_svg]:size-[1.05rem] sm:[&_svg]:size-[1.1rem]");
+        "size-10 rounded-[1.2rem] border border-slate-200/76 bg-white/70 p-0 text-foreground/64 shadow-[0_10px_24px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 ease-out hover:-translate-y-px hover:border-slate-300/84 hover:bg-white/82 hover:text-foreground dark:border-white/10 dark:bg-white/[0.04] dark:text-foreground/76 dark:hover:border-white/14 dark:hover:bg-white/[0.08] dark:hover:text-foreground sm:size-11";
+    const loaderThemeToggleClass = cn(loaderUtilityButtonClass, "[&_svg]:size-[1.05rem] sm:[&_svg]:size-[1.1rem] [&_svg]:stroke-[1.9]");
     const loaderUtilityIconButtonClass = loaderUtilityButtonClass;
     const loaderUtilityDividerClass = "h-4 w-px bg-slate-300/80 dark:bg-white/10";
     const loaderUtilityRowClass = "pointer-events-auto flex items-center gap-1.5 pr-1.5 sm:gap-2 sm:pr-0";
@@ -612,7 +612,7 @@ export function ConfigLoader() {
                                 <div className={loaderUtilityDividerClass} />
                                 <Button asChild type="button" variant="ghost" size="icon" className={loaderUtilityIconButtonClass}>
                                     <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer" title="Support My Work">
-                                        <Heart className="size-[1.05rem] sm:size-[1.1rem]" strokeWidth={2.05} />
+                                        <Heart className="size-[1.05rem] sm:size-[1.1rem]" strokeWidth={1.9} />
                                         <span className="sr-only">Support My Work</span>
                                     </a>
                                 </Button>

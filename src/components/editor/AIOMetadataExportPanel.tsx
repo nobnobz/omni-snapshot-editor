@@ -565,7 +565,6 @@ export function AIOMetadataExportPanel({
         ),
         [canonicalOccurrences]
     );
-    const hasEditableAIOMetadataCatalogs = canonicalEditableItemIds.size > 0;
     const hasNewCatalogs = inventory.exportableComparisonKeys.length > 0;
 
     useEffect(() => {
@@ -786,11 +785,11 @@ export function AIOMetadataExportPanel({
                                     New Catalogs
                                 </Button>
                             </div>
-                            <div className="grid w-full grid-cols-[minmax(0,1fr)_3.5rem] items-stretch gap-2 sm:flex sm:w-auto sm:flex-row sm:items-center">
+                            <div className="w-full sm:w-auto">
                                 <div
                                     className={cn(
                                         editorSurface.panel,
-                                        "flex h-11 min-w-0 cursor-pointer items-center justify-between gap-4 rounded-xl px-3.5 sm:w-auto sm:min-w-[14rem]"
+                                        "flex h-11 min-w-0 cursor-pointer items-center justify-between gap-4 rounded-xl px-3.5 sm:min-w-[14rem]"
                                     )}
                                 >
                                     <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-1">
@@ -823,20 +822,6 @@ export function AIOMetadataExportPanel({
                                         aria-label="Toggle UME sorting for exported catalogs"
                                     />
                                 </div>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    className={cn(
-                                        editorSurface.panel,
-                                        "h-11 w-14 shrink-0 rounded-lg text-foreground/76 hover:text-foreground sm:w-11 sm:text-foreground/68"
-                                    )}
-                                    onClick={() => openSettingsDialog({ kind: "root" })}
-                                    disabled={!hasEditableAIOMetadataCatalogs}
-                                    aria-label="Open AIOMetadata settings"
-                                >
-                                    <SlidersHorizontal className="h-4 w-4" />
-                                </Button>
                             </div>
                         </div>
                         <ExportNote />

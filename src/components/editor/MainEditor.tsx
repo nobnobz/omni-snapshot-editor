@@ -36,7 +36,6 @@ import {
     Check,
     UploadCloud,
     BookOpen,
-    Menu,
     FileJson,
     Trash2,
     Heart,
@@ -50,7 +49,6 @@ import {
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
     DialogHeader,
     DialogTitle,
     DialogFooter
@@ -156,7 +154,6 @@ export function MainEditor() {
     const [isImportPatternsOpen, setIsImportPatternsOpen] = useState(false);
     const [isGuideDialogOpen, setIsGuideDialogOpen] = useState(false);
     const [activeGuide, setActiveGuide] = useState<"install" | "update" | "use">("use");
-    const [isSectionsOpen, setIsSectionsOpen] = useState(false);
     const [isDesktopDocsMenuOpen, setIsDesktopDocsMenuOpen] = useState(false);
     const [isMobileDocsMenuOpen, setIsMobileDocsMenuOpen] = useState(false);
     const [aioManifestUrlInput, setAioManifestUrlInput] = useState("");
@@ -894,17 +891,6 @@ export function MainEditor() {
         setIsResetConfirmOpen(false);
     };
 
-    const handleMobileSectionSelect = (sectionId: string) => {
-        setActiveSectionId(sectionId);
-        setIsSectionsOpen(false);
-        requestAnimationFrame(() => {
-            document.getElementById(sectionId)?.scrollIntoView({
-                behavior: "smooth",
-                block: "start",
-            });
-        });
-    };
-
     const openGuide = (guide: "install" | "update" | "use") => {
         setActiveGuide(guide);
         setIsGuideDialogOpen(true);
@@ -1008,7 +994,7 @@ export function MainEditor() {
                                         >
                                             <span className="flex items-center gap-3">
                                                 <BookOpen className="w-4 h-4" />
-                                                <span>Documentation</span>
+                                                <span>How To</span>
                                             </span>
                                             <ChevronDown
                                                 className={cn(
@@ -1055,7 +1041,7 @@ export function MainEditor() {
                                 >
                                     <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer">
                                         <Heart className="w-4 h-4" />
-                                        <span>Support My Work</span>
+                                        <span>Support Me</span>
                                     </a>
                                 </Button>
                             </div>
@@ -1194,14 +1180,6 @@ export function MainEditor() {
                                 </h1>
 
                                 <div className="flex shrink-0 items-center gap-1">
-                                    <Button
-                                        variant="ghost"
-                                        onClick={() => setIsSectionsOpen(true)}
-                                        className="h-7 rounded-full px-2 text-[11px] font-medium text-foreground/70 hover:bg-muted/60 hover:text-foreground"
-                                    >
-                                        <Menu className="h-3.5 w-3.5 text-primary" />
-                                        <span className="ml-1 hidden min-[430px]:inline">Sections</span>
-                                    </Button>
                                     <DropdownMenu open={isMobileDocsMenuOpen} onOpenChange={setIsMobileDocsMenuOpen}>
                                         <DropdownMenuTrigger asChild>
                                             <Button
@@ -1209,7 +1187,7 @@ export function MainEditor() {
                                                 className="h-7 rounded-full px-2 text-[11px] font-medium text-foreground/70 hover:bg-primary/10 hover:text-foreground"
                                             >
                                                 <BookOpen className="h-3.5 w-3.5 text-primary" />
-                                                <span className="ml-1 hidden min-[430px]:inline">Docs</span>
+                                                <span className="ml-1 hidden min-[430px]:inline">How To</span>
                                                 <ChevronDown
                                                     className={cn(
                                                         "ml-1 h-3 w-3 text-primary/80 transition-transform duration-200",
@@ -1655,68 +1633,6 @@ export function MainEditor() {
                 </div>
             </main>
 
-            <Dialog open={isSectionsOpen} onOpenChange={setIsSectionsOpen}>
-                <DialogContent
-                    showCloseButton={false}
-                    className="top-auto left-0 right-0 bottom-0 max-w-none translate-x-0 translate-y-0 rounded-t-[2rem] rounded-b-none border-x-0 border-b-0 border-border/70 bg-popover/96 p-0 shadow-[0_-20px_56px_rgba(2,6,23,0.4)] backdrop-blur-2xl sm:max-w-none dark:bg-popover/94"
-                >
-                    <DialogHeader className="sr-only">
-                        <DialogTitle>Sections</DialogTitle>
-                        <DialogDescription>Jump to a section of the editor.</DialogDescription>
-                    </DialogHeader>
-                    <div className="px-4 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-                        <div className="mx-auto mb-2.5 h-1.5 w-10 rounded-full bg-white/12" />
-                        <div className="flex items-center justify-between gap-3">
-                            <div>
-                                <h2 className="text-lg font-black tracking-tight text-foreground">Sections</h2>
-                            </div>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setIsSectionsOpen(false)}
-                                className="h-9 w-9 rounded-xl border border-border/70 bg-background/70 text-foreground/74 shadow-none hover:bg-accent/60 hover:text-foreground backdrop-blur-md"
-                                aria-label="Close sections"
-                            >
-                                <X className="h-4 w-4" />
-                            </Button>
-                        </div>
-                        <div className="mt-3 overflow-hidden rounded-lg border border-white/8 bg-white/4">
-                            {sections.map((section) => (
-                                <button
-                                    key={section.id}
-                                    type="button"
-                                    onClick={() => handleMobileSectionSelect(section.id)}
-                                    className={cn(
-                                        "flex w-full items-center justify-between border-b border-white/6 px-4 py-3 text-left transition-colors last:border-b-0",
-                                        activeSectionId === section.id
-                                            ? "bg-primary/10"
-                                            : "hover:bg-muted/40"
-                                    )}
-                                >
-                                    <div className="flex items-center gap-2.5">
-                                        <span
-                                            className={cn(
-                                                "h-2 w-2 rounded-full transition-colors",
-                                                activeSectionId === section.id ? "bg-primary" : "bg-transparent border border-white/14"
-                                            )}
-                                        />
-                                        <p
-                                            className={cn(
-                                                "text-[14px] font-semibold tracking-tight",
-                                                activeSectionId === section.id ? "text-foreground" : "text-foreground/88"
-                                            )}
-                                        >
-                                            {section.title}
-                                        </p>
-                                    </div>
-                                    <span className={cn("text-base", activeSectionId === section.id ? "text-primary" : "text-foreground/34")}>›</span>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
-
             <div className="pointer-events-none fixed bottom-0 right-0 z-30 px-4 pb-[calc(0.9rem+env(safe-area-inset-bottom))] lg:hidden">
                 <div className="pointer-events-auto flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.78),rgba(226,232,240,0.72))] p-1.5 shadow-[0_14px_34px_rgba(15,23,42,0.14)] backdrop-blur-2xl supports-[backdrop-filter]:bg-[linear-gradient(180deg,rgba(255,255,255,0.62),rgba(226,232,240,0.56))] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(24,24,27,0.74),rgba(10,10,12,0.88))] dark:shadow-[0_14px_34px_rgba(2,6,23,0.26)] dark:supports-[backdrop-filter]:bg-[linear-gradient(180deg,rgba(24,24,27,0.56),rgba(10,10,12,0.74))]">
                         <Button
@@ -1800,7 +1716,7 @@ export function MainEditor() {
                                 <DropdownMenuItem asChild className="cursor-pointer rounded-xl px-3 py-2.5 text-foreground/72 focus:text-foreground focus:bg-muted/60">
                                     <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer">
                                         <Heart className="w-4 h-4" />
-                                        <span className="flex-1">Support</span>
+                                        <span className="flex-1">Support Me</span>
                                     </a>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -1816,21 +1732,21 @@ export function MainEditor() {
 
             {/* Exit Confirmation Dialog */}
             <AlertDialog open={isExitConfirmOpen} onOpenChange={setIsExitConfirmOpen}>
-                <AlertDialogContent>
+                <AlertDialogContent size="sm">
                     <AlertDialogHeader>
                         <AlertDialogTitle className="text-xl font-bold">Unsaved Changes?</AlertDialogTitle>
                         <AlertDialogDescription className="text-foreground/70">
                             Are you sure you want to return to the start screen? Any unsaved modifications to your configuration will be lost.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter className="mt-4">
-                        <AlertDialogCancel className="bg-muted border-border text-foreground hover:bg-accent hover:text-foreground">
+                    <AlertDialogFooter className="mt-2 sm:mt-3">
+                        <AlertDialogCancel className="bg-muted border-border text-foreground hover:bg-accent hover:text-foreground sm:min-w-[9rem]">
                             Stay here
                         </AlertDialogCancel>
                         <AlertDialogAction
                             onClick={confirmBackToStart}
                             variant="destructive"
-                            className="h-9 border-none bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 font-bold"
+                            className="h-9 border-none bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 font-bold sm:min-w-[11rem]"
                         >
                             Yes, Discard Changes
                         </AlertDialogAction>
@@ -1840,21 +1756,21 @@ export function MainEditor() {
 
             {/* Reset Catalog Names Confirmation */}
             <AlertDialog open={isResetConfirmOpen} onOpenChange={setIsResetConfirmOpen}>
-                <AlertDialogContent>
+                <AlertDialogContent size="sm">
                     <AlertDialogHeader>
                         <AlertDialogTitle className="text-xl font-bold">Reset Catalog Names?</AlertDialogTitle>
                         <AlertDialogDescription className="text-foreground/70">
                             Are you sure you want to reset all imported catalog names? This will clear your custom overrides and revert to AIOMetadata defaults.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter className="mt-4">
-                        <AlertDialogCancel className="bg-muted border-border text-foreground hover:bg-accent hover:text-foreground">
+                    <AlertDialogFooter className="mt-2 sm:mt-3">
+                        <AlertDialogCancel className="bg-muted border-border text-foreground hover:bg-accent hover:text-foreground sm:min-w-[9rem]">
                             Cancel
                         </AlertDialogCancel>
                         <AlertDialogAction
                             onClick={confirmResetCatalogNames}
                             variant="destructive"
-                            className="h-9 border-none bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 font-bold"
+                            className="h-9 border-none bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 font-bold sm:min-w-[11rem]"
                         >
                             Yes, Reset All
                         </AlertDialogAction>

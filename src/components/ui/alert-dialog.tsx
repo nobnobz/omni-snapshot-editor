@@ -59,7 +59,7 @@ function AlertDialogContent({
         data-slot="alert-dialog-content"
         data-size={size}
         className={cn(
-          `group/alert-dialog-content ${uiChrome.modalContent} data-[size=sm]:max-w-xs data-[size=default]:sm:max-w-lg`,
+          `group/alert-dialog-content ${uiChrome.modalContent} data-[size=sm]:gap-3 data-[size=sm]:sm:max-w-md data-[size=sm]:sm:p-7 data-[size=default]:sm:max-w-lg`,
           className
         )}
         {...props}
@@ -92,7 +92,7 @@ function AlertDialogFooter({
     <div
       data-slot="alert-dialog-footer"
       className={cn(
-        "flex flex-col-reverse gap-2 group-data-[size=sm]/alert-dialog-content:grid group-data-[size=sm]/alert-dialog-content:grid-cols-2 sm:flex-row sm:justify-end",
+        "flex flex-col-reverse gap-2 w-full group-data-[size=sm]/alert-dialog-content:grid group-data-[size=sm]/alert-dialog-content:grid-cols-2 sm:flex-row sm:justify-end",
         className
       )}
       {...props}

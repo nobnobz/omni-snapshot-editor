@@ -57,7 +57,7 @@ import { LockedUrlInput } from "./LockedUrlInput";
 import { TrashBin } from "./TrashBin";
 import { hasAIOMetadataCatalogMatch, type AIOMetadataMismatchAnalysis } from "@/lib/aiometadata-mismatch";
 import { cn, formatDisplayName, resolveCatalogName, ensureCatalogPrefix } from "@/lib/utils";
-import { editorAction, editorCompactBadge, editorHover, editorSurface } from "@/components/editor/ui/style-contract";
+import { editorCompactBadge, editorHover, editorSurface } from "@/components/editor/ui/style-contract";
 import { CATALOG_FALLBACKS, CatalogFallback } from "@/lib/catalog-fallbacks";
 import { Label } from "@/components/ui/label";
 import { normalizeSubgroupNames } from "@/lib/main-group-utils";
@@ -124,14 +124,14 @@ const PosterUrlEditor = React.memo(function PosterUrlEditor({
 
     const hasThumbPreview = /^https?:\/\//i.test(previewUrl.trim()) && !thumbLoadError;
     const thumbFrameClass = thumbAspect === "landscape"
-        ? "h-10 w-16"
+        ? "h-20 w-32"
         : thumbAspect === "portrait"
-            ? "h-14 w-10"
-            : "h-10 w-10";
+            ? "h-28 w-20"
+            : "h-20 w-20";
 
     return (
         <div className="space-y-2">
-            <div className={`${editorSurface.panel} flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:gap-4`}>
+            <div className={`${editorSurface.panel} flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:gap-6`}>
                 <div className="flex items-center gap-3 sm:block">
                     <div
                         className={cn(
@@ -298,7 +298,7 @@ const SortableCatalogNode = React.memo(function SortableCatalogNode({ id, onRemo
         <div
             ref={setNodeRef}
             style={style}
-            className={`flex items-center gap-3 p-2.5 border rounded-xl mb-2 group/cat transition-[background-color,border-color,opacity,box-shadow] duration-150
+            className={`flex items-center gap-4 p-3.5 border rounded-xl mb-2.5 group/cat transition-[background-color,border-color,opacity,box-shadow] duration-150
                 ${isDragging ? "opacity-15 border-border/70 bg-muted/45 border-dashed shadow-none" : `${editorSurface.field} hover:border-slate-300/85 dark:hover:border-white/12 shadow-[0_8px_20px_rgba(15,23,42,0.05)] dark:shadow-[0_10px_22px_rgba(2,6,23,0.18)]`}`}
         >
             <button
@@ -526,7 +526,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
             {/* Header: Drag Handle + Subgroup Name */}
             <div
                 onClick={handleHeaderClick}
-                className={`group/subgroup flex items-stretch gap-3 p-3 bg-[linear-gradient(180deg,rgba(255,255,255,0.22),rgba(248,250,252,0.14))] dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.025),rgba(255,255,255,0.012))] backdrop-blur-sm ${isExpanded ? "border-b border-slate-200/75 dark:border-white/8" : ""}`}
+                className={`group/subgroup flex items-stretch gap-4 p-4 bg-[linear-gradient(180deg,rgba(255,255,255,0.22),rgba(248,250,252,0.14))] dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.025),rgba(255,255,255,0.012))] backdrop-blur-sm ${isExpanded ? "border-b border-slate-200/75 dark:border-white/8" : ""}`}
             >
                 <button
                     {...attributes}
@@ -639,7 +639,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
             />
 
             {isExpanded && (
-                <div className="space-y-5 bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(248,250,252,0.1))] p-4 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.008))]">
+                <div className="space-y-6 bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(248,250,252,0.1))] p-6 sm:p-8 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.008))]">
                     {/* Image URL Input */}
                     <div className="space-y-2">
                         <PosterUrlEditor
@@ -705,7 +705,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                     </div>
 
                     {/* Inner Sortable Catalogs */}
-                    <div className={`${editorSurface.panel} p-3 sm:p-3.5`}>
+                    <div className={`${editorSurface.panel} p-5 sm:p-6`}>
                         <div className="mb-3 flex items-center justify-between rounded-lg border border-slate-200/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.34),rgba(248,250,252,0.2))] px-3 py-2 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))]">
                             <h5 className="inline-flex items-center gap-2 text-xs font-bold text-foreground/80 uppercase tracking-widest">
                                 <LinkIcon className="h-3.5 w-3.5 text-foreground/60" />
@@ -1194,18 +1194,18 @@ const MainGroupNode = React.memo(function MainGroupNode({
                                             <Trash2 className="w-4 h-4" />
                                         </Button>
                                     </AlertDialogTrigger>
-                                    <AlertDialogContent>
+                                    <AlertDialogContent size="sm">
                                         <AlertDialogHeader>
                                             <AlertDialogTitle>Delete Main Group?</AlertDialogTitle>
                                             <AlertDialogDescription className="text-foreground/70">
                                                 This will remove the group <span className="text-foreground font-bold">&quot;{formatDisplayName(name)}&quot;</span> and all its subgroups. You can restore them anytime from the Recycle Bin at the bottom.
                                             </AlertDialogDescription>
                                         </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel className="bg-muted border-border text-foreground/70 hover:bg-accent hover:text-accent-foreground">Cancel</AlertDialogCancel>
+                                        <AlertDialogFooter className="mt-2 sm:mt-3">
+                                            <AlertDialogCancel className="bg-muted border-border text-foreground/70 hover:bg-accent hover:text-accent-foreground sm:min-w-[9rem]">Cancel</AlertDialogCancel>
                                             <AlertDialogAction
                                                 onClick={() => removeMainCatalogGroup(uuid)}
-                                                className="bg-red-600 text-white hover:bg-red-700 font-bold"
+                                                className="bg-red-600 text-white hover:bg-red-700 font-bold sm:min-w-[11rem]"
                                             >
                                                 Delete Group
                                             </AlertDialogAction>

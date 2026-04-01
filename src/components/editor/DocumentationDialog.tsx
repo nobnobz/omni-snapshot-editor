@@ -152,7 +152,7 @@ function Menu({ onSelect }: { onSelect: (id: GuideId) => void }) {
             <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(circle_at_top_left,color-mix(in_oklab,var(--color-primary)_18%,transparent),transparent_58%),radial-gradient(circle_at_top_right,color-mix(in_oklab,var(--color-primary)_24%,transparent),transparent_46%)] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
             <div className="relative px-4 py-4 sm:px-6 sm:py-6">
                 <GuideHeader
-                    badge="Documentation"
+                    badge="How To"
                     title="Choose your guide"
                     icon={Sparkles}
                     tone="indigo"

@@ -6,7 +6,7 @@ const editorListSurface = `!bg-none ${uiChrome.overlayList}`
 
 export const editorLayout = {
   dialogContent:
-    "fixed left-1/2 top-1/2 w-[calc(100%-2rem)] max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-slate-200 bg-white p-4 shadow-[0_24px_56px_rgba(15,23,42,0.22)] backdrop-blur-2xl focus:outline-none z-50 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 ease-out dark:border-white/10 dark:bg-[#090b11] dark:shadow-[0_24px_56px_rgba(0,0,0,0.64)] h-auto max-h-[calc(100dvh-2rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] flex flex-col overflow-y-auto custom-scrollbar sm:w-auto sm:max-h-[92dvh] sm:rounded-lg sm:max-w-6xl sm:w-[94vw] sm:bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.95))] sm:dark:bg-[linear-gradient(180deg,rgba(10,12,18,0.97),rgba(7,9,14,0.99))]",
+    "fixed left-1/2 top-1/2 w-[calc(100%-2rem)] max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-slate-200 bg-white p-5 sm:p-10 shadow-[0_24px_56px_rgba(15,23,42,0.22)] backdrop-blur-2xl focus:outline-none z-50 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 ease-out dark:border-white/10 dark:bg-[#090b11] dark:shadow-[0_24px_56px_rgba(0,0,0,0.64)] h-auto max-h-[calc(100dvh-2rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] flex flex-col overflow-y-auto custom-scrollbar sm:w-auto sm:max-h-[92dvh] sm:rounded-3xl sm:max-w-6xl sm:w-[94vw] sm:bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.95))] sm:dark:bg-[linear-gradient(180deg,rgba(10,12,18,0.97),rgba(7,9,14,0.99))]",
   sectionCard:
     "rounded-lg border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.72),rgba(248,250,252,0.6))] shadow-[0_10px_24px_rgba(15,23,42,0.05)] backdrop-blur-md dark:border-white/8 dark:bg-[linear-gradient(180deg,rgba(23,26,33,0.86),rgba(20,23,29,0.84))] dark:shadow-[0_8px_18px_rgba(2,6,23,0.1)]",
   panel:
@@ -14,7 +14,7 @@ export const editorLayout = {
   headerTitle: "text-xl font-bold tracking-tight text-foreground",
   helperText: "text-sm text-muted-foreground leading-relaxed",
   metaText: "text-xs text-muted-foreground",
-  label: "text-xs font-semibold text-muted-foreground",
+  label: "text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground/80",
 } as const
 
 export const editorSurface = {
@@ -106,7 +106,7 @@ export const editorLoader = {
   iconBadge:
     "flex items-center justify-center rounded-[0.95rem] border shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_1px_2px_rgba(15,23,42,0.03)] transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 ease-out dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]",
   bodyPanel:
-    "rounded-lg border border-slate-300/78 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(247,250,253,0.8))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.86),0_12px_22px_rgba(15,23,42,0.03)] backdrop-blur-sm sm:p-5 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(17,20,27,0.94),rgba(13,16,22,0.97))] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]",
+    "rounded-lg border border-slate-300/78 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(247,250,253,0.8))] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.86),0_12px_22px_rgba(15,23,42,0.03)] backdrop-blur-sm sm:p-8 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(17,20,27,0.94),rgba(13,16,22,0.97))] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]",
   dropzonePanel:
     "rounded-lg border-2 border-dashed border-slate-300/92 bg-[linear-gradient(180deg,rgba(255,255,255,0.72),rgba(244,248,252,0.5))] shadow-[inset_0_1px_0_rgba(255,255,255,0.84)] backdrop-blur-sm transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 ease-out dark:border-white/12 dark:bg-[linear-gradient(180deg,rgba(9,12,18,0.96),rgba(7,10,16,0.98))] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]",
   primaryCta:

@@ -327,11 +327,11 @@ const getTargetDescription = (
     occurrenceCount: number
 ) => {
     if (target.kind === "widget") {
-        return `Override defaults for ${occurrenceCount} canonical AIOMetadata catalog${occurrenceCount === 1 ? "" : "s"} in this main group.`;
+        return `Override defaults for ${occurrenceCount} exportable AIOMetadata catalog${occurrenceCount === 1 ? "" : "s"} in this main group.`;
     }
 
     if (target.kind === "item") {
-        return `Override defaults for ${occurrenceCount} canonical AIOMetadata catalog${occurrenceCount === 1 ? "" : "s"} in this subgroup.`;
+        return `Override defaults for ${occurrenceCount} exportable AIOMetadata catalog${occurrenceCount === 1 ? "" : "s"} in this subgroup.`;
     }
 
     if (target.kind === "catalog") {
@@ -430,8 +430,8 @@ function MDBListOverrideForm({
         : "Select cache TTL";
 
     return (
-        <div className="space-y-4">
-            <div className="space-y-2">
+        <div className="space-y-6">
+            <div className="space-y-2.5">
                 <div className="flex items-center justify-between gap-3">
                     <Label className="text-foreground">Sort</Label>
                     <OverrideFieldResetButton
@@ -457,7 +457,7 @@ function MDBListOverrideForm({
                 </Select>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2.5">
                 <div className="flex items-center justify-between gap-3">
                     <Label className="text-foreground">Order</Label>
                     <OverrideFieldResetButton
@@ -546,14 +546,14 @@ function DirectionalOverrideForm<TSort extends string>({
         : "Select cache TTL";
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
             {title ? (
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center justify-between gap-4 mb-1">
                     <p className="text-sm font-semibold tracking-tight text-foreground">{title}</p>
                 </div>
             ) : null}
 
-            <div className="space-y-2">
+            <div className="space-y-2.5">
                 <div className="flex items-center justify-between gap-3">
                     <Label className="text-foreground">Sort</Label>
                     <OverrideFieldResetButton
@@ -650,7 +650,7 @@ function AIOMetadataExportSettingsDialogBody({
     );
     const editableOccurrences = useMemo(
         () => Array.from(canonicalMap.values()).filter((occurrence) =>
-            EDITABLE_SOURCES.includes(occurrence.source as EditableSource)
+            occurrence.isExportable && EDITABLE_SOURCES.includes(occurrence.source as EditableSource)
         ),
         [canonicalMap]
     );
@@ -1289,7 +1289,7 @@ function AIOMetadataExportSettingsDialogBody({
             <DialogContent
                 className={cn(
                     editorLayout.dialogContent,
-                    "h-[min(88dvh,58rem)] w-[min(calc(100%-2rem),68rem)] max-w-[min(calc(100%-2rem),68rem)] overflow-hidden p-5 sm:w-[min(94vw,68rem)] sm:max-w-[min(94vw,68rem)] sm:p-6"
+                    "h-[min(88dvh,58rem)] w-[min(calc(100%-2rem),68rem)] max-w-[min(calc(100%-2rem),68rem)] overflow-hidden p-6 sm:w-[min(94vw,68rem)] sm:max-w-[min(94vw,68rem)] sm:p-10"
                 )}
                 showCloseButton={false}
             >
@@ -1344,7 +1344,7 @@ function AIOMetadataExportSettingsDialogBody({
 
                 <div className="min-h-0 flex-1 overflow-hidden">
                     <div className={cn(editorSurface.card, "flex min-h-0 h-full flex-col overflow-hidden")}>
-                        <div className="border-b border-slate-200/70 px-4 py-3 dark:border-white/8">
+                        <div className="border-b border-slate-200/70 px-6 py-4 dark:border-white/8">
                             <div className="min-w-0">
                                 <p className="text-sm font-semibold tracking-tight text-foreground">{selectedScopeLabel}</p>
                                 {selectedScopeMeta && (
@@ -1355,7 +1355,7 @@ function AIOMetadataExportSettingsDialogBody({
                             </div>
                         </div>
                         <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-                            <div className="space-y-4 p-4">
+                            <div className="space-y-6 p-6 sm:p-8">
                                 {isRootScope && (
                                     <div className="border-b border-slate-200/70 pb-4 dark:border-white/8">
                                         <button
@@ -1604,7 +1604,7 @@ function AIOMetadataExportSettingsDialogBody({
                 onApply={handleApplyUMESettings}
             />
             <AlertDialog open={isResetAllConfirmOpen} onOpenChange={setIsResetAllConfirmOpen}>
-                <AlertDialogContent className={cn(editorSurface.overlay, "text-popover-foreground")}>
+                <AlertDialogContent size="sm" className={cn(editorSurface.overlay, "text-popover-foreground")}>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Reset all AIOMetadata settings?</AlertDialogTitle>
                         <AlertDialogDescription className="text-foreground/70">
@@ -1612,12 +1612,12 @@ function AIOMetadataExportSettingsDialogBody({
                             Click Save afterwards to keep the reset.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel className="bg-muted border-border text-foreground/70 hover:bg-accent hover:text-accent-foreground">
+                    <AlertDialogFooter className="mt-2 sm:mt-3">
+                        <AlertDialogCancel className="bg-muted border-border text-foreground/70 hover:bg-accent hover:text-accent-foreground sm:min-w-[9rem]">
                             Cancel
                         </AlertDialogCancel>
                         <AlertDialogAction
-                            className="border-destructive/40 bg-destructive text-white hover:bg-destructive/92"
+                            className="border-destructive/40 bg-destructive text-white hover:bg-destructive/92 sm:min-w-[11rem]"
                             onClick={handleResetAllOverrides}
                         >
                             Reset All

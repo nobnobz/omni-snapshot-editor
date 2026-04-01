@@ -132,16 +132,16 @@ export function CreateGroupModal({ isOpen, onClose, initialParentUUID }: { isOpe
 
     const isSubImagePreviewable = /^https?:\/\//i.test(subImageUrl.trim());
     const subImageFrameClass = subImageAspect === "landscape"
-        ? "h-10 w-16"
+        ? "h-20 w-32"
         : subImageAspect === "portrait"
-            ? "h-11 w-8"
-            : "h-10 w-10";
+            ? "h-28 w-20"
+            : "h-20 w-20";
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
             <DialogContent 
                 onOpenAutoFocus={(e) => e.preventDefault()}
-                className={cn(editorLayout.dialogContent, "sm:max-w-[425px] md:max-w-3xl sm:max-h-[95dvh]")}
+                className={cn(editorLayout.dialogContent, "sm:max-w-[30rem] md:max-w-4xl sm:max-h-[95dvh]")}
             >
                 <DialogHeader className="shrink-0">
                     <DialogTitle>Create New Group</DialogTitle>

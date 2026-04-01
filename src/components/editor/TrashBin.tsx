@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useConfigActions, useConfigSelector } from "@/context/ConfigContext";
 import { Button } from "@/components/ui/button";
-import { Trash2, RotateCcw, XCircle, Info, ChevronDown, ChevronRight } from "lucide-react";
+import { Trash2, RotateCcw, Info, ChevronDown, ChevronRight } from "lucide-react";
 import { editorSurface, editorHover } from "@/components/editor/ui/style-contract";
 import { cn } from "@/lib/utils";
 import {
@@ -12,7 +12,6 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
 
 type DeletedMainGroupItem = {
     uuid: string;
@@ -127,7 +126,12 @@ export function TrashBin() {
                                     onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
-                                        item.type === 'Main Group' ? restoreMainGroup(item) : restoreSubgroup(item);
+                                        if (item.type === "Main Group") {
+                                            restoreMainGroup(item);
+                                            return;
+                                        }
+
+                                        restoreSubgroup(item);
                                     }}
                                     className={cn("h-7 px-3 text-xs font-semibold tracking-tight text-foreground/70 transition-all gap-1.5 z-10 shrink-0 border border-transparent hover:text-primary", editorHover.iconAction)}
                                 >

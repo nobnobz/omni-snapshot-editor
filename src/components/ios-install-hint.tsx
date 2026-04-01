@@ -84,7 +84,7 @@ export function IosInstallHint({ avoidBottomDock = false }: IosInstallHintProps)
                     <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold text-foreground">Install on your iPhone</p>
                         <p className="mt-1 text-xs leading-relaxed text-foreground/75">
-                            Open <strong>Share</strong>, then tap <strong>Add to Home Screen</strong> to launch Omni Config Editor like an app.
+                            Open <strong>Share</strong>, then tap <strong>Add to Home Screen</strong> to launch Omni Snapshot Manager like an app.
                         </p>
                         <div className="mt-2 flex items-center gap-2 text-[11px] font-medium text-foreground/70">
                             <span className="inline-flex items-center gap-1 rounded-md border border-border/70 bg-muted/50 px-2 py-1">

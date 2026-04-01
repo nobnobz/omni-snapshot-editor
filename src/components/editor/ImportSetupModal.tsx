@@ -1,6 +1,6 @@
 "use client";
 
-import React, { startTransition, useDeferredValue, useState, useRef, useEffect, useMemo } from "react";
+import React, { startTransition, useDeferredValue, useState, useRef, useEffect, useMemo, useCallback } from "react";
 import {
     Dialog,
     DialogContent,
@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useConfig } from "@/context/ConfigContext";
 import { formatDisplayName, cn } from "@/lib/utils";
-import { UploadCloud, ChevronDown, BookOpen, Search, RefreshCw, Image as ImageIcon, Check, X, Type } from "lucide-react";
+import { UploadCloud, ChevronDown, BookOpen, Search, Check } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { decodeConfig } from "@/lib/config-utils";
@@ -45,6 +45,8 @@ interface ParsedMainGroup {
     posterType: string;
     posterSize: string;
     isDuplicate: boolean;
+    basicNewSubgroupCount: number;
+    basicUpdatedSubgroupCount: number;
     hasChanges?: boolean;
 }
 
@@ -53,6 +55,7 @@ interface ParsedSubgroup {
     catalogs: string[];
     imageUrl?: string;
     isDuplicate: boolean;
+    basicIsExisting: boolean;
     matchedExistingName?: string;
     hasRename?: boolean;
     hasNewImage?: boolean;
@@ -61,6 +64,7 @@ interface ParsedSubgroup {
 }
 
 const isPlaceholderSg = (name: string, catalogs: unknown) => {
+    if (isIgnoredUpdateManagerSubgroup(name)) return true;
     const cats = Array.isArray(catalogs) ? catalogs : [];
     if (cats.length > 0) return false;
     const placeholders = ["[Decades]", "[Actors]", "[Awards]", "[Discover]", "[Collections]", "[Streaming Services]", "[Directors]", "[Genres]"];
@@ -79,35 +83,34 @@ const getSubgroupCategory = (name: string) => {
     return "Other";
 };
 
+const normalizeUpdateManagerSubgroupName = (name: string) =>
+    name.replace(/\uFE0F/g, "").trim();
+
+const isIgnoredUpdateManagerSubgroup = (name: string) =>
+    /^\s*[!❗]\s*\[[^\]]+\]\s*$/u.test(normalizeUpdateManagerSubgroupName(name));
+
 const buildCatalogSignature = (catalogs: string[]) =>
     JSON.stringify([...catalogs].sort((a, b) => a.localeCompare(b)));
 
-const catalogListsEqual = (left: string[], right: string[]) =>
-    left.length === right.length && left.every((catalogId, index) => catalogId === right[index]);
+type ImportedMainGroupSelection = {
+    name: string;
+    subgroupNames: string[];
+    posterType: string;
+    posterSize: string;
+};
 
-const importSetupTone = {
-    warningAction: "border-orange-500/20 bg-orange-500/10 text-orange-700 dark:text-orange-400 hover:bg-orange-500/16 hover:border-orange-500/35",
-    infoAction: "border-primary/30 bg-primary/10 text-primary dark:text-primary hover:bg-primary/16 hover:border-primary/45",
-    warningBadge: "border-orange-500/20 bg-orange-500/10 text-orange-700 dark:text-orange-400",
-    infoBadge: "border-primary/30 bg-primary/10 text-primary dark:text-primary",
-} as const;
-
-const importSetupChipBase =
-    "h-7 rounded-full border px-3 text-[11px] font-medium transition-[background-color,border-color,color,box-shadow,transform] duration-150 shadow-sm";
-const importSetupChipIdle =
-    "border-border/80 bg-background/45 text-foreground/78 hover:text-foreground hover:bg-muted/78 hover:border-border/95 hover:shadow-md";
-const importSetupChipSelected =
-    "shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_8px_18px_rgba(0,0,0,0.12)]";
-const importSetupStickySurface =
-    "border-slate-200/85 bg-white dark:border-white/8 dark:bg-[rgb(23,26,33)]";
+type ImportedSubgroupSelection = {
+    catalogs: string[];
+    imageUrl?: string;
+    renameFrom?: string;
+    overwriteCatalogs?: boolean;
+    overwriteImage?: boolean;
+};
 
 export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupModalProps) {
     const { currentValues, importGroups, manifest, fetchManifest } = useConfig();
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const subgroupReviewContainerRef = useRef<HTMLDivElement>(null);
-    const updateSectionRef = useRef<HTMLElement>(null);
-    const newSectionRef = useRef<HTMLElement>(null);
-    const existingSectionRef = useRef<HTMLElement>(null);
+    const dragDepthRef = useRef(0);
 
     useEffect(() => {
         if (isOpen) {
@@ -184,10 +187,6 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
     const [fileName, setFileName] = useState("");
     const [error, setError] = useState("");
 
-    // State for all imported values (needed for metadata extraction)
-    const [importedValues, setImportedValues] = useState<Record<string, unknown>>({});
-    const [selectedGlobalKeys, setSelectedGlobalKeys] = useState<Set<string>>(new Set());
-
     // Parsed Data
     const [parsedMainGroups, setParsedMainGroups] = useState<ParsedMainGroup[]>([]);
     const [parsedSubgroups, setParsedSubgroups] = useState<ParsedSubgroup[]>([]);
@@ -199,12 +198,10 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
     const [selectedCatalogUpdateSubgroups, setSelectedCatalogUpdateSubgroups] = useState<Set<string>>(new Set());
     const [selectedImageUpdateSubgroups, setSelectedImageUpdateSubgroups] = useState<Set<string>>(new Set());
     const [selectedRenameUpdateSubgroups, setSelectedRenameUpdateSubgroups] = useState<Set<string>>(new Set());
-    const [activeReviewTab, setActiveReviewTab] = useState<"subgroups" | "main">("subgroups");
+    const [activeReviewTab, setActiveReviewTab] = useState<"subgroups" | "main">("main");
+    const [activeMainFilter, setActiveMainFilter] = useState<"updates" | "new">("new");
     const [reviewSearch, setReviewSearch] = useState("");
     const deferredReviewSearch = useDeferredValue(reviewSearch);
-
-    // assignments: subgroupName -> targetMainGroupUuid (from the CURRENT setup, not the parsed one)
-    const [standaloneAssignments, setStandaloneAssignments] = useState<Record<string, string>>({});
 
     const resetState = () => {
         setStep(1);
@@ -218,17 +215,17 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         setSelectedCatalogUpdateSubgroups(new Set());
         setSelectedImageUpdateSubgroups(new Set());
         setSelectedRenameUpdateSubgroups(new Set());
-        setActiveReviewTab("subgroups");
+        setActiveReviewTab("main");
+        setActiveMainFilter("new");
         setReviewSearch("");
-        setStandaloneAssignments({});
-        setImportedValues({});
-        setSelectedGlobalKeys(new Set());
         setTemplateLoading(false);
         if (fileInputRef.current) fileInputRef.current.value = "";
     };
 
     const handleClose = () => {
         resetState();
+        dragDepthRef.current = 0;
+        setIsFileDropActive(false);
         onClose();
     };
 
@@ -237,9 +234,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
             const rawData = JSON.parse(jsonString);
             let imported: Record<string, unknown> = {};
 
-            // Check if it's an OmniConfig (with `.values`) or a raw decoded JSON
             if (rawData.values) {
-                // Decode it like we do in ConfigContext
                 for (const [key, val] of Object.entries(rawData.values)) {
                     imported[key] = decodeConfig(val);
                 }
@@ -248,15 +243,11 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                     imported[key] = decodeConfig(val);
                 }
             } else if (rawData.main_catalog_groups || rawData.catalog_groups) {
-                // Already raw decoded
                 imported = rawData;
             } else {
                 throw new Error("Invalid format. Could not find configuration data.");
             }
 
-            setImportedValues(imported);
-
-            // Current state for duplicate checking
             const currentMainGroupNames = new Set(
                 Object.values(currentValues.main_catalog_groups || {})
                     .map((group) => {
@@ -269,6 +260,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
             const currentCatalogGroups = (currentValues.catalog_groups || {}) as Record<string, string[]>;
             const currentSubgroupsBySignature: Record<string, string[]> = {};
             Object.entries(currentCatalogGroups).forEach(([name, catalogs]) => {
+                if (isIgnoredUpdateManagerSubgroup(name)) return;
                 const signature = buildCatalogSignature(Array.isArray(catalogs) ? catalogs : []);
                 if (!currentSubgroupsBySignature[signature]) {
                     currentSubgroupsBySignature[signature] = [];
@@ -276,7 +268,6 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                 currentSubgroupsBySignature[signature].push(name);
             });
 
-            // Parse Main Groups
             const inMainGroups = (imported.main_catalog_groups || {}) as Record<string, {
                 name?: string;
                 subgroupNames?: string[];
@@ -292,890 +283,807 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                 const group = inMainGroups[uuid];
                 if (!group) continue;
                 const groupName = group.name || "Unnamed Group";
+                const subgroupNames = (subgroupOrder[uuid] || group.subgroupNames || []).filter((sg: string) => !isPlaceholderSg(sg, inCatalogsGroups[sg]));
+                const basicUpdatedSubgroupCount = subgroupNames.filter((sg) => Boolean(currentCatalogGroups[sg])).length;
+                const basicNewSubgroupCount = subgroupNames.length - basicUpdatedSubgroupCount;
                 parsedMGs.push({
                     originalUuid: uuid,
                     name: groupName,
-                    subgroupNames: (subgroupOrder[uuid] || group.subgroupNames || []).filter((sg: string) => !isPlaceholderSg(sg, inCatalogsGroups[sg])),
-                    posterType: group.posterType || "Poster",
-                    posterSize: group.posterSize || "Default",
-                    isDuplicate: currentMainGroupNames.has(groupName)
+                    subgroupNames,
+                    posterType: group.posterType || "movie",
+                    posterSize: group.posterSize || "normal",
+                    isDuplicate: currentMainGroupNames.has(groupName),
+                    basicNewSubgroupCount,
+                    basicUpdatedSubgroupCount,
+                    hasChanges: true,
                 });
             }
 
-            // Create a mapping from subgroup name to its parent main group category
-            const sgCategoryMap: Record<string, string> = {};
-            parsedMGs.forEach(mg => {
-                mg.subgroupNames.forEach(sgName => {
-                    if (!sgCategoryMap[sgName]) {
-                        sgCategoryMap[sgName] = mg.name;
-                    }
-                });
-            });
+            const parsedSgs: ParsedSubgroup[] = [];
+            Object.entries(inCatalogsGroups).forEach(([name, catalogs]) => {
+                const cats = Array.isArray(catalogs) ? catalogs : [];
+                if (isPlaceholderSg(name, cats) || isIgnoredUpdateManagerSubgroup(name)) return;
 
-            // Parse Subgroups
-            const inImageUrls = (imported.catalog_group_image_urls || {}) as Record<string, string>;
-            const inCatalogGroupOrder = (imported.catalog_group_order as string[] | undefined) || Object.keys(inCatalogsGroups);
-            const parsedSGs: ParsedSubgroup[] = [];
-            const directNameMatches = new Set(
-                inCatalogGroupOrder.filter((sgName) => Object.prototype.hasOwnProperty.call(currentCatalogGroups, sgName))
-            );
-            const claimedExistingSubgroups = new Set(directNameMatches);
+                const signature = buildCatalogSignature(cats);
+                const matchedNames = currentSubgroupsBySignature[signature] || [];
+                const exactNameMatch = currentCatalogGroups[name] && !isIgnoredUpdateManagerSubgroup(name) ? name : undefined;
+                const hasMatchBySignature = matchedNames.length > 0;
 
-            for (const sgName of inCatalogGroupOrder) {
-                if (!inCatalogsGroups[sgName]) continue;
-                if (isPlaceholderSg(sgName, inCatalogsGroups[sgName])) continue;
-                const parsedCats = Array.isArray(inCatalogsGroups[sgName]) ? inCatalogsGroups[sgName] : [];
-                let matchedExistingName = Object.prototype.hasOwnProperty.call(currentCatalogGroups, sgName) ? sgName : undefined;
+                const isDuplicate = !!exactNameMatch || hasMatchBySignature;
+                let hasRename = false;
+                let matchedExistingName: string | undefined;
 
-                if (!matchedExistingName) {
-                    const signature = buildCatalogSignature(parsedCats);
-                    const unmatchedCandidates = (currentSubgroupsBySignature[signature] || [])
-                        .filter((candidate) => !claimedExistingSubgroups.has(candidate));
-
-                    if (unmatchedCandidates.length === 1) {
-                        matchedExistingName = unmatchedCandidates[0];
-                        claimedExistingSubgroups.add(matchedExistingName);
-                    }
+                if (!exactNameMatch && hasMatchBySignature) {
+                    hasRename = true;
+                    matchedExistingName = matchedNames[0];
                 }
 
-                const newImage = inImageUrls[sgName];
-                const existingImage = matchedExistingName ? currentValues.catalog_group_image_urls?.[matchedExistingName] : undefined;
-                const isDup = !!matchedExistingName;
-                const existCats = matchedExistingName ? (currentCatalogGroups[matchedExistingName] || []) : [];
-
-                // Compare arrays for exact match to know if an update is actually needed
-                const isCatsDiff = !catalogListsEqual(parsedCats, existCats);
-                const hasNewCats = isDup && isCatsDiff;
-
-                parsedSGs.push({
-                    name: sgName,
-                    catalogs: parsedCats,
-                    imageUrl: newImage,
-                    isDuplicate: isDup,
+                parsedSgs.push({
+                    name,
+                    catalogs: cats,
+                    isDuplicate,
+                    basicIsExisting: !!exactNameMatch,
+                    hasRename,
                     matchedExistingName,
-                    hasRename: isDup && matchedExistingName !== sgName,
-                    hasNewImage: isDup && !!newImage && newImage !== existingImage,
-                    hasNewCatalogs: hasNewCats,
-                    category: sgCategoryMap[sgName] || getSubgroupCategory(sgName)
+                    hasNewCatalogs: !isDuplicate,
+                    hasNewImage: true,
+                    category: getSubgroupCategory(name),
                 });
-            }
-
-            const currentMgByName: Record<string, string> = {};
-            Object.entries(currentValues.main_catalog_groups || {}).forEach(([uid, mg]) => {
-                if (!mg || typeof mg !== "object") return;
-                const maybeName = (mg as { name?: unknown }).name;
-                if (typeof maybeName === "string" && maybeName) currentMgByName[maybeName] = uid;
             });
-
-            parsedMGs.forEach(mg => {
-                if (!mg.isDuplicate) {
-                    mg.hasChanges = true;
-                    return;
-                }
-
-                const existingUuid = currentMgByName[mg.name];
-                const existingSubgroups = currentValues.subgroup_order?.[existingUuid] || [];
-
-                let linksChanged = false;
-                if (existingSubgroups.length !== mg.subgroupNames.length) {
-                    linksChanged = true;
-                } else {
-                    for (let i = 0; i < mg.subgroupNames.length; i++) {
-                        if (existingSubgroups[i] !== mg.subgroupNames[i]) {
-                            linksChanged = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (linksChanged) {
-                    mg.hasChanges = true;
-                    return;
-                }
-
-                const hasSgChanges = mg.subgroupNames.some(sgName => {
-                    const sg = parsedSGs.find(s => s.name === sgName);
-                    if (!sg) return false;
-                    return !sg.isDuplicate || sg.hasNewCatalogs || sg.hasNewImage || sg.hasRename;
-                });
-
-                mg.hasChanges = hasSgChanges;
-            });
-
-            const getSgWeight = (sg: ParsedSubgroup) => sg.isDuplicate ? ((sg.hasNewCatalogs || sg.hasNewImage || sg.hasRename) ? 1 : 2) : 0;
-
-            parsedMGs.sort((a, b) => Number(a.isDuplicate) - Number(b.isDuplicate));
-            parsedSGs.sort((a, b) => getSgWeight(a) - getSgWeight(b));
 
             setParsedMainGroups(parsedMGs);
-            setParsedSubgroups(parsedSGs);
+            setParsedSubgroups(parsedSgs);
+            setActiveMainFilter(parsedMGs.some((group) => group.basicNewSubgroupCount > 0) ? "new" : "updates");
             setStep(2);
             setError("");
-
-        } catch (err: unknown) {
-            console.error("Parse error:", err);
-            setError(err instanceof Error ? err.message : "Failed to parse JSON file.");
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "Failed to parse file.");
         }
     };
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-
-        if (!isJsonFile(file)) {
-            setError("Please drop a valid JSON file.");
-            e.target.value = "";
-            return;
-        }
-
-        processFile(file);
-        e.target.value = "";
-    };
-
-    const isJsonFile = (file: File) => file.name.toLowerCase().endsWith(".json") || file.type === "application/json";
-
-    const processFile = (file: File) => {
+        dragDepthRef.current = 0;
+        setIsFileDropActive(false);
         setFileName(file.name);
         const reader = new FileReader();
         reader.onload = (event) => {
-            const content = event.target?.result as string;
-            processUploadedJson(content);
+            processUploadedJson(event.target?.result as string);
         };
         reader.readAsText(file);
     };
 
-    const handleFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsFileDropActive(false);
-
-        const file = e.dataTransfer.files?.[0];
+    const handleDroppedFile = (file: File | null | undefined) => {
         if (!file) return;
-
-        if (!isJsonFile(file)) {
-            setError("Please drop a valid JSON file.");
+        if (!file.name.toLowerCase().endsWith(".json")) {
+            setError("Please drop a JSON configuration file.");
             return;
         }
 
-        processFile(file);
+        dragDepthRef.current = 0;
+        setIsFileDropActive(false);
+        setFileName(file.name);
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            processUploadedJson(event.target?.result as string);
+        };
+        reader.readAsText(file);
     };
 
-    const handleImport = () => {
-        const payloadMainGroups: Record<string, { name: string; subgroupNames: string[]; posterType: string; posterSize: string }> = {};
-        const payloadSubgroups: Record<string, { catalogs?: string[]; imageUrl?: string; renameFrom?: string; overwriteCatalogs?: boolean; overwriteImage?: boolean }> = {};
-        const associatedMetadata: {
-            custom_catalog_names?: Record<string, string>;
-            regex_pattern_image_urls?: Record<string, string>;
-            enabled_patterns?: string[];
-        } = {};
+    const toggleMainGroupSubgroup = (mgUuid: string, subgroupName: string) => {
+        const group = parsedMainGroups.find((mainGroup) => mainGroup.originalUuid === mgUuid);
+        if (!group) return;
 
-        // 1. Mark which catalogs we're importing to fetch their metadata later
-        const importedCatalogIds = new Set<string>();
+        const isGroupSelected = selectedMainGroupUuids.has(mgUuid);
+        const currentSelection = isGroupSelected
+            ? (selectedMainGroupSubgroups[mgUuid] || group.subgroupNames)
+            : [];
+        const updatedSelection = currentSelection.includes(subgroupName)
+            ? currentSelection.filter((name) => name !== subgroupName)
+            : [...currentSelection, subgroupName];
 
-        // 2. Gather Selected Main Groups and their nested subgroups
-        const subgroupsIncludedViaMainGroups = new Set<string>();
+        setSelectedMainGroupSubgroups((previous) => {
+            const next = { ...previous };
+            if (updatedSelection.length === 0 || updatedSelection.length === group.subgroupNames.length) {
+                delete next[mgUuid];
+            } else {
+                next[mgUuid] = updatedSelection;
+            }
+            return next;
+        });
 
-        parsedMainGroups.forEach(mg => {
-            if (selectedMainGroupUuids.has(mg.originalUuid)) {
-                const selectedSubgroups = selectedMainGroupSubgroups[mg.originalUuid] || mg.subgroupNames;
-                if (selectedSubgroups.length === 0) return;
+        setSelectedMainGroupUuids((previous) => {
+            const next = new Set(previous);
+            if (updatedSelection.length === 0) {
+                next.delete(mgUuid);
+            } else {
+                next.add(mgUuid);
+            }
+            return next;
+        });
+    };
 
-                payloadMainGroups[mg.originalUuid] = {
-                    name: mg.name,
-                    subgroupNames: selectedSubgroups,
-                    posterType: mg.posterType,
-                    posterSize: mg.posterSize
-                };
+    const toggleStandaloneSubgroup = (name: string, isDisabled: boolean) => {
+        if (isDisabled) return;
+        setSelectedStandaloneSubgroups((prev) => {
+            const next = new Set(prev);
+            if (next.has(name)) next.delete(name);
+            else next.add(name);
+            return next;
+        });
+    };
 
-                selectedSubgroups.forEach(sgName => {
-                    subgroupsIncludedViaMainGroups.add(sgName);
-                    const parsedSg = parsedSubgroups.find(s => s.name === sgName);
-                    if (parsedSg) {
-                        const shouldOverwriteCatalogs = !parsedSg.isDuplicate || selectedCatalogUpdateSubgroups.has(sgName);
-                        const shouldOverwriteImage = !parsedSg.isDuplicate
-                            ? !!parsedSg.imageUrl
-                            : selectedImageUpdateSubgroups.has(sgName);
-                        const shouldRename = !!parsedSg?.hasRename;
-                        const catalogsToImport = shouldOverwriteCatalogs ? parsedSg.catalogs : undefined;
-                        const imageToImport = shouldOverwriteImage ? parsedSg.imageUrl : undefined;
+    const toggleCatalogUpdate = (name: string) => {
+        setSelectedCatalogUpdateSubgroups((prev) => {
+            const next = new Set(prev);
+            if (next.has(name)) next.delete(name);
+            else next.add(name);
+            return next;
+        });
+    };
 
-                        if (!parsedSg.isDuplicate || shouldOverwriteCatalogs || shouldOverwriteImage || shouldRename) {
-                            payloadSubgroups[sgName] = {
-                                catalogs: catalogsToImport,
-                                imageUrl: imageToImport,
-                                renameFrom: shouldRename ? parsedSg?.matchedExistingName : undefined,
-                                overwriteCatalogs: shouldOverwriteCatalogs,
-                                overwriteImage: shouldOverwriteImage
-                            };
-                        }
+    const toggleImageUpdate = (name: string) => {
+        setSelectedImageUpdateSubgroups((prev) => {
+            const next = new Set(prev);
+            if (next.has(name)) next.delete(name);
+            else next.add(name);
+            return next;
+        });
+    };
 
-                        if (shouldOverwriteCatalogs) {
-                            catalogsToImport?.forEach(cId => importedCatalogIds.add(cId));
-                        }
-                    }
-                });
+    const toggleRenameUpdate = (name: string) => {
+        setSelectedRenameUpdateSubgroups((prev) => {
+            const next = new Set(prev);
+            if (next.has(name)) next.delete(name);
+            else next.add(name);
+            return next;
+        });
+    };
+
+    const isSubgroupIncludedViaSelectedMainGroup = (name: string) => {
+        return Array.from(selectedMainGroupUuids).some(uuid => {
+            const group = parsedMainGroups.find(mg => mg.originalUuid === uuid);
+            if (!group) return false;
+            const subgroups = selectedMainGroupSubgroups[uuid] || group.subgroupNames;
+            return subgroups.includes(name);
+        });
+    };
+
+    const filteredMainGroups = useMemo(() => {
+        if (!deferredReviewSearch) return parsedMainGroups;
+        const low = deferredReviewSearch.toLowerCase();
+        return parsedMainGroups.filter(mg =>
+            mg.name.toLowerCase().includes(low) ||
+            mg.subgroupNames.some(s => s.toLowerCase().includes(low))
+        );
+    }, [parsedMainGroups, deferredReviewSearch]);
+
+    const filteredSubgroups = useMemo(() => {
+        if (!deferredReviewSearch) return parsedSubgroups;
+        const low = deferredReviewSearch.toLowerCase();
+        return parsedSubgroups.filter(sg =>
+            sg.name.toLowerCase().includes(low) ||
+            sg.category?.toLowerCase().includes(low) ||
+            sg.catalogs.some(c => c.toLowerCase().includes(low))
+        );
+    }, [parsedSubgroups, deferredReviewSearch]);
+
+    const parsedSubgroupsByName = useMemo(
+        () => new Map(parsedSubgroups.map((subgroup) => [subgroup.name, subgroup])),
+        [parsedSubgroups]
+    );
+
+    const getBasicVisibleSubgroups = useCallback((group: ParsedMainGroup, filter: "new" | "updates" = activeMainFilter) =>
+        group.subgroupNames.filter((subgroupName) => {
+            const subgroup = parsedSubgroupsByName.get(subgroupName);
+            const isExisting = subgroup?.basicIsExisting ?? false;
+            return filter === "new" ? !isExisting : isExisting;
+        }), [activeMainFilter, parsedSubgroupsByName]);
+
+    const filteredNewMainGroups = useMemo(
+        () => filteredMainGroups.filter((mg) => getBasicVisibleSubgroups(mg, "new").length > 0),
+        [filteredMainGroups, getBasicVisibleSubgroups]
+    );
+    const filteredUpdatedMainGroups = useMemo(
+        () => filteredMainGroups.filter((mg) => getBasicVisibleSubgroups(mg, "updates").length > 0),
+        [filteredMainGroups, getBasicVisibleSubgroups]
+    );
+    const filteredUpdatedSubgroups = useMemo(() => filteredSubgroups.filter(sg => sg.isDuplicate && (sg.hasNewCatalogs || sg.hasNewImage || sg.hasRename)), [filteredSubgroups]);
+    const visibleMainGroups = activeMainFilter === "new" ? filteredNewMainGroups : filteredUpdatedMainGroups;
+    const visibleCatalogUpdateNames = useMemo(
+        () => filteredUpdatedSubgroups.filter((sg) => sg.hasNewCatalogs).map((sg) => sg.name),
+        [filteredUpdatedSubgroups]
+    );
+    const visibleRenameUpdateNames = useMemo(
+        () => filteredUpdatedSubgroups.filter((sg) => sg.hasRename).map((sg) => sg.name),
+        [filteredUpdatedSubgroups]
+    );
+    const visibleImageUpdateNames = useMemo(
+        () => filteredUpdatedSubgroups.filter((sg) => sg.hasNewImage).map((sg) => sg.name),
+        [filteredUpdatedSubgroups]
+    );
+    const filteredNewMainSubgroupCount = useMemo(
+        () => filteredNewMainGroups.reduce((total, group) => total + getBasicVisibleSubgroups(group, "new").length, 0),
+        [filteredNewMainGroups, getBasicVisibleSubgroups]
+    );
+    const filteredUpdatedMainSubgroupCount = useMemo(
+        () => filteredUpdatedMainGroups.reduce((total, group) => total + getBasicVisibleSubgroups(group, "updates").length, 0),
+        [filteredUpdatedMainGroups, getBasicVisibleSubgroups]
+    );
+
+    const toggleVisibleMainGroup = (group: ParsedMainGroup) => {
+        const visibleSubgroups = getBasicVisibleSubgroups(group);
+        if (visibleSubgroups.length === 0) return;
+
+        const currentSelected = selectedMainGroupUuids.has(group.originalUuid)
+            ? (selectedMainGroupSubgroups[group.originalUuid] || group.subgroupNames)
+            : [];
+        const allVisibleSelected = visibleSubgroups.every((subgroupName) => currentSelected.includes(subgroupName));
+        const nextSelected = allVisibleSelected
+            ? currentSelected.filter((subgroupName) => !visibleSubgroups.includes(subgroupName))
+            : Array.from(new Set([...currentSelected, ...visibleSubgroups]));
+
+        setSelectedMainGroupSubgroups((previous) => {
+            const next = { ...previous };
+            if (nextSelected.length === 0 || nextSelected.length === group.subgroupNames.length) {
+                delete next[group.originalUuid];
+            } else {
+                next[group.originalUuid] = nextSelected;
+            }
+            return next;
+        });
+        setSelectedMainGroupUuids((previous) => {
+            const next = new Set(previous);
+            if (nextSelected.length === 0) {
+                next.delete(group.originalUuid);
+            } else {
+                next.add(group.originalUuid);
+            }
+            return next;
+        });
+    };
+
+    const selectVisibleMainGroups = () => {
+        const nextMainGroups = new Set(selectedMainGroupUuids);
+        const nextSubgroupSelections = { ...selectedMainGroupSubgroups };
+
+        visibleMainGroups.forEach((group) => {
+            const visibleSubgroups = getBasicVisibleSubgroups(group);
+            if (visibleSubgroups.length === 0) return;
+
+            const currentSelected = nextMainGroups.has(group.originalUuid)
+                ? (nextSubgroupSelections[group.originalUuid] || group.subgroupNames)
+                : [];
+            const mergedSelection = Array.from(new Set([...currentSelected, ...visibleSubgroups]));
+
+            nextMainGroups.add(group.originalUuid);
+            if (mergedSelection.length === group.subgroupNames.length) {
+                delete nextSubgroupSelections[group.originalUuid];
+            } else {
+                nextSubgroupSelections[group.originalUuid] = mergedSelection;
             }
         });
 
-        // 3. Gather Standalone Subgroups
-        parsedSubgroups.forEach(sg => {
-            const shouldOverwriteCatalogs = sg.isDuplicate
-                ? selectedCatalogUpdateSubgroups.has(sg.name)
-                : selectedStandaloneSubgroups.has(sg.name);
-            const shouldOverwriteImage = sg.isDuplicate
-                ? selectedImageUpdateSubgroups.has(sg.name)
-                : selectedStandaloneSubgroups.has(sg.name) && !!sg.imageUrl;
-            const shouldRename = sg.isDuplicate && !!sg.hasRename && selectedRenameUpdateSubgroups.has(sg.name);
+        setSelectedMainGroupSubgroups(nextSubgroupSelections);
+        setSelectedMainGroupUuids(nextMainGroups);
+    };
+    const deselectVisibleMainGroups = () => {
+        const nextMainGroups = new Set(selectedMainGroupUuids);
+        const nextSubgroupSelections = { ...selectedMainGroupSubgroups };
 
-            if ((shouldOverwriteCatalogs || shouldOverwriteImage || shouldRename) && !subgroupsIncludedViaMainGroups.has(sg.name)) {
-                payloadSubgroups[sg.name] = {
-                    catalogs: shouldOverwriteCatalogs ? sg.catalogs : undefined,
-                    imageUrl: shouldOverwriteImage ? sg.imageUrl : undefined,
-                    renameFrom: shouldRename ? sg.matchedExistingName : undefined,
-                    overwriteCatalogs: shouldOverwriteCatalogs,
-                    overwriteImage: shouldOverwriteImage
-                };
-                if (shouldOverwriteCatalogs) {
-                    sg.catalogs.forEach(cId => importedCatalogIds.add(cId));
+        visibleMainGroups.forEach((group) => {
+            const visibleSubgroups = getBasicVisibleSubgroups(group);
+            if (visibleSubgroups.length === 0) return;
+
+            const currentSelected = nextMainGroups.has(group.originalUuid)
+                ? (nextSubgroupSelections[group.originalUuid] || group.subgroupNames)
+                : [];
+            const remainingSelection = currentSelected.filter((subgroupName) => !visibleSubgroups.includes(subgroupName));
+
+            if (remainingSelection.length === 0) {
+                nextMainGroups.delete(group.originalUuid);
+                delete nextSubgroupSelections[group.originalUuid];
+            } else {
+                nextMainGroups.add(group.originalUuid);
+                if (remainingSelection.length === group.subgroupNames.length) {
+                    delete nextSubgroupSelections[group.originalUuid];
+                } else {
+                    nextSubgroupSelections[group.originalUuid] = remainingSelection;
                 }
             }
         });
 
-        // 4. Capture Associated Metadata (Custom Names, Images, Patterns)
-        if (importedCatalogIds.size > 0) {
-            const customCatalogNames: Record<string, string> = {};
-            const regexPatternImageUrls: Record<string, string> = {};
-            const enabledPatterns = new Set<string>();
+        setSelectedMainGroupSubgroups(nextSubgroupSelections);
+        setSelectedMainGroupUuids(nextMainGroups);
+    };
+    const toggleBulkUpdateSelection = (
+        names: string[],
+        selectedNames: Set<string>,
+        setSelectedNames: React.Dispatch<React.SetStateAction<Set<string>>>
+    ) => {
+        if (names.length === 0) return;
 
-            const inCustomNames = (importedValues.custom_catalog_names || {}) as Record<string, string>;
-            const inImageUrls = (importedValues.regex_pattern_image_urls || {}) as Record<string, string>;
-            const inAutoPlay = Array.isArray(importedValues.auto_play_enabled_patterns)
-                ? (importedValues.auto_play_enabled_patterns as string[])
-                : [];
-            const inTagEnabled = Array.isArray(importedValues.pattern_tag_enabled_patterns)
-                ? (importedValues.pattern_tag_enabled_patterns as string[])
-                : [];
-
-            importedCatalogIds.forEach(id => {
-                if (inCustomNames[id]) customCatalogNames[id] = inCustomNames[id];
-                if (inImageUrls[id]) regexPatternImageUrls[id] = inImageUrls[id];
-
-                // Regex patterns usually target catalog IDs either directly or via substring in their rules
-                // But for simplicity and safety, we also look for patterns named like the catalogs
-                // and check the enabled lists
-                if (inAutoPlay.includes(id)) enabledPatterns.add(id);
-                if (inTagEnabled.includes(id)) enabledPatterns.add(id);
-            });
-
-            // Convert set to array for payload
-            associatedMetadata.custom_catalog_names = customCatalogNames;
-            associatedMetadata.regex_pattern_image_urls = regexPatternImageUrls;
-            associatedMetadata.enabled_patterns = Array.from(enabledPatterns);
-        }
-
-        // 5. Global Settings
-        const globalSettings: Record<string, unknown> = {};
-        selectedGlobalKeys.forEach(key => {
-            if (importedValues[key] !== undefined) {
-                globalSettings[key] = importedValues[key];
+        const allSelected = names.every((name) => selectedNames.has(name));
+        const next = new Set(selectedNames);
+        names.forEach((name) => {
+            if (allSelected) {
+                next.delete(name);
+            } else {
+                next.add(name);
             }
+        });
+        setSelectedNames(next);
+    };
+
+    const selectAllUpdates = () => {
+        const nextCatalogs = new Set(selectedCatalogUpdateSubgroups);
+        const nextImages = new Set(selectedImageUpdateSubgroups);
+        const nextRenames = new Set(selectedRenameUpdateSubgroups);
+        filteredUpdatedSubgroups.forEach((sg) => {
+            if (sg.hasNewCatalogs) nextCatalogs.add(sg.name);
+            if (sg.hasNewImage) nextImages.add(sg.name);
+            if (sg.hasRename) nextRenames.add(sg.name);
+        });
+        setSelectedCatalogUpdateSubgroups(nextCatalogs);
+        setSelectedImageUpdateSubgroups(nextImages);
+        setSelectedRenameUpdateSubgroups(nextRenames);
+    };
+    const clearUpdateSelection = () => {
+        const nextCatalogs = new Set(selectedCatalogUpdateSubgroups);
+        const nextImages = new Set(selectedImageUpdateSubgroups);
+        const nextRenames = new Set(selectedRenameUpdateSubgroups);
+        filteredUpdatedSubgroups.forEach((sg) => {
+            nextCatalogs.delete(sg.name);
+            nextImages.delete(sg.name);
+            nextRenames.delete(sg.name);
+        });
+        setSelectedCatalogUpdateSubgroups(nextCatalogs);
+        setSelectedImageUpdateSubgroups(nextImages);
+        setSelectedRenameUpdateSubgroups(nextRenames);
+    };
+
+    const selectCatalogUpdates = () => {
+        toggleBulkUpdateSelection(visibleCatalogUpdateNames, selectedCatalogUpdateSubgroups, setSelectedCatalogUpdateSubgroups);
+    };
+    const selectRenameUpdates = () => {
+        toggleBulkUpdateSelection(visibleRenameUpdateNames, selectedRenameUpdateSubgroups, setSelectedRenameUpdateSubgroups);
+    };
+    const selectImageUpdates = () => {
+        toggleBulkUpdateSelection(visibleImageUpdateNames, selectedImageUpdateSubgroups, setSelectedImageUpdateSubgroups);
+    };
+
+    const areAllCatalogUpdatesSelected = useMemo(() => {
+        return visibleCatalogUpdateNames.length > 0 && visibleCatalogUpdateNames.every((name) => selectedCatalogUpdateSubgroups.has(name));
+    }, [selectedCatalogUpdateSubgroups, visibleCatalogUpdateNames]);
+    const areAllImageUpdatesSelected = useMemo(() => {
+        return visibleImageUpdateNames.length > 0 && visibleImageUpdateNames.every((name) => selectedImageUpdateSubgroups.has(name));
+    }, [selectedImageUpdateSubgroups, visibleImageUpdateNames]);
+    const areAllRenameUpdatesSelected = useMemo(() => {
+        return visibleRenameUpdateNames.length > 0 && visibleRenameUpdateNames.every((name) => selectedRenameUpdateSubgroups.has(name));
+    }, [selectedRenameUpdateSubgroups, visibleRenameUpdateNames]);
+
+    const handleImport = () => {
+        const finalMainGroups: Record<string, ImportedMainGroupSelection> = {};
+        const finalSubgroups: Record<string, ImportedSubgroupSelection> = {};
+
+        selectedMainGroupUuids.forEach(uuid => {
+            const mg = parsedMainGroups.find(m => m.originalUuid === uuid);
+            if (!mg) return;
+            finalMainGroups[uuid] = {
+                name: mg.name,
+                subgroupNames: selectedMainGroupSubgroups[uuid] || mg.subgroupNames,
+                posterType: mg.posterType,
+                posterSize: mg.posterSize,
+            };
+        });
+
+        const subgroupsToProcess = new Set([
+            ...selectedStandaloneSubgroups,
+            ...selectedCatalogUpdateSubgroups,
+            ...selectedImageUpdateSubgroups,
+            ...selectedRenameUpdateSubgroups,
+        ]);
+
+        subgroupsToProcess.forEach(name => {
+            const sg = parsedSubgroups.find(s => s.name === name);
+            if (!sg) return;
+            finalSubgroups[name] = {
+                catalogs: sg.catalogs,
+                imageUrl: sg.imageUrl,
+                renameFrom: selectedRenameUpdateSubgroups.has(name) ? sg.matchedExistingName : undefined,
+                overwriteCatalogs: selectedCatalogUpdateSubgroups.has(name),
+                overwriteImage: selectedImageUpdateSubgroups.has(name),
+            };
         });
 
         importGroups({
-            mainGroups: payloadMainGroups,
-            subgroups: payloadSubgroups,
-            standaloneAssignments: standaloneAssignments,
-            metadata: associatedMetadata,
-            globalSettings: globalSettings
+            mainGroups: finalMainGroups,
+            subgroups: finalSubgroups,
+            standaloneAssignments: {},
         });
 
         handleClose();
     };
 
-    // Toggle Main Group Selection
-    const toggleMainGroup = (uuid: string) => {
-        const mg = parsedMainGroups.find(m => m.originalUuid === uuid);
-        if (mg && mg.isDuplicate && !mg.hasChanges) return;
-
-        const next = new Set(selectedMainGroupUuids);
-        const isNowSelected = !next.has(uuid);
-
-        if (!isNowSelected) {
-            next.delete(uuid);
-            setSelectedMainGroupSubgroups(prev => {
-                const nextSubgroups = { ...prev };
-                delete nextSubgroups[uuid];
-                return nextSubgroups;
-            });
-        } else {
-            next.add(uuid);
-            if (mg) {
-                setSelectedMainGroupSubgroups(prev => ({
-                    ...prev,
-                    [uuid]: [...mg.subgroupNames]
-                }));
-            }
-        }
-        setSelectedMainGroupUuids(next);
-    };
-
-    const toggleMainGroupSubgroup = (uuid: string, subgroupName: string) => {
-        const mg = parsedMainGroups.find(group => group.originalUuid === uuid);
-        if (!mg) return;
-
-        const isMainSelected = selectedMainGroupUuids.has(uuid);
-        const currentSelection = selectedMainGroupSubgroups[uuid] || mg.subgroupNames;
-
-        if (!isMainSelected) {
-            setSelectedMainGroupUuids(prev => new Set(prev).add(uuid));
-            setSelectedMainGroupSubgroups(prev => ({
-                ...prev,
-                [uuid]: [subgroupName]
-            }));
-            return;
-        }
-
-        const nextSelection = currentSelection.includes(subgroupName)
-            ? currentSelection.filter(name => name !== subgroupName)
-            : [...currentSelection, subgroupName];
-
-        if (nextSelection.length === 0) {
-            setSelectedMainGroupUuids(prev => {
-                const next = new Set(prev);
-                next.delete(uuid);
-                return next;
-            });
-            setSelectedMainGroupSubgroups(prev => {
-                const next = { ...prev };
-                delete next[uuid];
-                return next;
-            });
-            return;
-        }
-
-        setSelectedMainGroupSubgroups(prev => ({
-            ...prev,
-            [uuid]: nextSelection
-        }));
-    };
-
-    const toggleStandaloneSubgroup = (name: string, isDisabled: boolean) => {
-        if (isDisabled) return;
-        const next = new Set(selectedStandaloneSubgroups);
-        if (next.has(name)) {
-            next.delete(name);
-        } else {
-            next.add(name);
-        }
-        setSelectedStandaloneSubgroups(next);
-    };
-
-    const toggleCatalogUpdate = (name: string) => {
-        const next = new Set(selectedCatalogUpdateSubgroups);
-        if (next.has(name)) {
-            next.delete(name);
-        } else {
-            next.add(name);
-        }
-        setSelectedCatalogUpdateSubgroups(next);
-    };
-
-    const toggleImageUpdate = (name: string) => {
-        const next = new Set(selectedImageUpdateSubgroups);
-        if (next.has(name)) {
-            next.delete(name);
-        } else {
-            next.add(name);
-        }
-        setSelectedImageUpdateSubgroups(next);
-    };
-
-    const toggleRenameUpdate = (name: string) => {
-        const next = new Set(selectedRenameUpdateSubgroups);
-        if (next.has(name)) {
-            next.delete(name);
-        } else {
-            next.add(name);
-        }
-        setSelectedRenameUpdateSubgroups(next);
-    };
-
-    // Bulk Actions Main Groups
-    const selectAllMain = () => {
-        const next = new Set<string>();
-        const nextSubgroups: Record<string, string[]> = {};
-        parsedMainGroups.forEach(mg => {
-            if (!mg.isDuplicate || mg.hasChanges) {
-                next.add(mg.originalUuid);
-                nextSubgroups[mg.originalUuid] = [...mg.subgroupNames];
-            }
-        });
-        setSelectedMainGroupUuids(next);
-        setSelectedMainGroupSubgroups(nextSubgroups);
-    };
-
-    const deselectAllMain = () => {
-        setSelectedMainGroupUuids(new Set());
-        setSelectedMainGroupSubgroups({});
-    };
-
-    // Bulk Actions Subgroups
-    const selectAllUpdates = () => {
-        const nextCatalogs = new Set<string>();
-        const nextImages = new Set<string>();
-        parsedSubgroups.forEach(sg => {
-            if (!sg.isDuplicate) return;
-
-            if (sg.hasNewCatalogs) nextCatalogs.add(sg.name);
-            if (sg.hasNewImage) nextImages.add(sg.name);
-        });
-        setSelectedCatalogUpdateSubgroups(nextCatalogs);
-        setSelectedImageUpdateSubgroups(nextImages);
-        setSelectedRenameUpdateSubgroups(new Set(
-            parsedSubgroups
-                .filter((sg) => sg.isDuplicate && sg.hasRename)
-                .map((sg) => sg.name)
-        ));
-    };
-
-    const clearUpdateSelection = () => {
-        setSelectedCatalogUpdateSubgroups(new Set());
-        setSelectedImageUpdateSubgroups(new Set());
-        setSelectedRenameUpdateSubgroups(new Set());
-    };
-
-    const selectAllNewSubgroups = () => {
-        setSelectedStandaloneSubgroups(prev => {
-            const next = new Set(prev);
-            parsedSubgroups.forEach(sg => {
-                if (sg.isDuplicate) return;
-                if (isSubgroupIncludedViaSelectedMainGroup(sg.name)) return;
-                next.add(sg.name);
-            });
-            return next;
-        });
-    };
-
-    const deselectAllNewSubgroups = () => {
-        setSelectedStandaloneSubgroups(prev => {
-            const next = new Set(prev);
-            parsedSubgroups.forEach(sg => {
-                if (!sg.isDuplicate) {
-                    next.delete(sg.name);
-                }
-            });
-            return next;
-        });
-    };
-
-    const selectCatalogUpdates = () => {
-        const next = new Set(selectedCatalogUpdateSubgroups);
-        parsedSubgroups.forEach(sg => {
-            if (sg.isDuplicate && sg.hasNewCatalogs) {
-                next.add(sg.name);
-            }
-        });
-        setSelectedCatalogUpdateSubgroups(next);
-    };
-
-    const selectImageUpdates = () => {
-        const next = new Set(selectedImageUpdateSubgroups);
-        parsedSubgroups.forEach(sg => {
-            if (sg.isDuplicate && sg.hasNewImage) {
-                next.add(sg.name);
-            }
-        });
-        setSelectedImageUpdateSubgroups(next);
-    };
-
-    const selectRenameUpdates = () => {
-        const next = new Set(selectedRenameUpdateSubgroups);
-        parsedSubgroups.forEach(sg => {
-            if (sg.isDuplicate && sg.hasRename) {
-                next.add(sg.name);
-            }
-        });
-        setSelectedRenameUpdateSubgroups(next);
-    };
-
-    const currentMainGroups = currentValues.main_catalog_groups || {};
-    const currentMainGroupOrder = currentValues.main_group_order || [];
-    const isSubgroupIncludedViaSelectedMainGroup = (name: string) =>
-        parsedMainGroups.some(mg => {
-            if (!selectedMainGroupUuids.has(mg.originalUuid)) return false;
-            const selectedSubgroups = selectedMainGroupSubgroups[mg.originalUuid] || mg.subgroupNames;
-            return selectedSubgroups.includes(name);
-        });
-
-    const normalizedReviewSearch = deferredReviewSearch.trim().toLowerCase();
-    const matchesReviewSearch = (...values: Array<string | undefined>) => {
-        if (!normalizedReviewSearch) return true;
-        return values.some(value => value?.toLowerCase().includes(normalizedReviewSearch));
-    };
-
-    const filteredMainGroups = parsedMainGroups.filter(mg =>
-        matchesReviewSearch(
-            mg.name,
-            ...mg.subgroupNames,
-        )
-    );
-
-    const filteredSubgroups = parsedSubgroups.filter(sg =>
-        matchesReviewSearch(
-            sg.name,
-            sg.matchedExistingName,
-            sg.category,
-            ...sg.catalogs,
-        )
-    );
-
-    const filteredNewSubgroups = useMemo(
-        () => filteredSubgroups.filter((sg) => !sg.isDuplicate),
-        [filteredSubgroups]
-    );
-    const filteredUpdatedSubgroups = useMemo(
-        () => filteredSubgroups.filter((sg) => sg.isDuplicate && (sg.hasNewCatalogs || sg.hasNewImage || sg.hasRename)),
-        [filteredSubgroups]
-    );
-    const filteredExistingSubgroups = useMemo(
-        () => filteredSubgroups.filter((sg) => sg.isDuplicate && !sg.hasNewCatalogs && !sg.hasNewImage && !sg.hasRename),
-        [filteredSubgroups]
-    );
-
-    const scrollToSubgroupReviewSection = (section: "updates" | "new" | "existing") => {
-        const container = subgroupReviewContainerRef.current;
-        const target = section === "updates"
-            ? updateSectionRef.current
-            : section === "new"
-                ? newSectionRef.current
-                : existingSectionRef.current;
-
-        if (!container || !target) return;
-
-        const nextTop = Math.max(target.offsetTop - 8, 0);
-        container.scrollTo({ top: nextTop, behavior: "smooth" });
-    };
-
+    const totalSelectedBasicImportSubgroups = new Set(
+        Array.from(selectedMainGroupUuids).flatMap((uuid) => {
+            const group = parsedMainGroups.find((mainGroup) => mainGroup.originalUuid === uuid);
+            if (!group) return [];
+            return selectedMainGroupSubgroups[uuid] || group.subgroupNames;
+        })
+    ).size;
     const totalSelectedSubgroups = new Set([
         ...selectedStandaloneSubgroups,
         ...selectedCatalogUpdateSubgroups,
         ...selectedImageUpdateSubgroups,
         ...selectedRenameUpdateSubgroups,
     ]).size;
-    const totalSelectedToImport = selectedMainGroupUuids.size + totalSelectedSubgroups;
+    const totalSelectedToImport = totalSelectedBasicImportSubgroups + totalSelectedSubgroups;
+
+    const renderSubgroupRow = (sg: ParsedSubgroup) => {
+        const isStandaloneSelected = selectedStandaloneSubgroups.has(sg.name);
+        const isCatalogUpdateSelected = selectedCatalogUpdateSubgroups.has(sg.name);
+        const isImageUpdateSelected = selectedImageUpdateSubgroups.has(sg.name);
+        const isRenameUpdateSelected = selectedRenameUpdateSubgroups.has(sg.name);
+        const includedInMain = isSubgroupIncludedViaSelectedMainGroup(sg.name);
+        const isFullyExisting = sg.isDuplicate && !sg.hasNewCatalogs && !sg.hasNewImage && !sg.hasRename;
+        const isUpdateRow = sg.isDuplicate && (sg.hasNewCatalogs || sg.hasNewImage || sg.hasRename);
+        const isIncludedWithMain = includedInMain && !sg.isDuplicate;
+        const hasAnyDuplicateUpdateSelection = isCatalogUpdateSelected || isImageUpdateSelected || isRenameUpdateSelected;
+        const isCheckboxDisabled = isFullyExisting || isIncludedWithMain;
+        const isChecked = includedInMain ? true : isStandaloneSelected;
+        const isSelected = isUpdateRow ? hasAnyDuplicateUpdateSelection : isChecked;
+
+        if (isUpdateRow) {
+            const selectedUpdateCount = Number(isCatalogUpdateSelected) + Number(isImageUpdateSelected) + Number(isRenameUpdateSelected);
+            const selectionSummary = selectedUpdateCount === 1 ? "1 update selected" : `${selectedUpdateCount} updates selected`;
+
+            return (
+                <div
+                    key={sg.name}
+                    onClick={() => {
+                        const nextValue = !isSelected;
+                        if (sg.hasNewCatalogs && isCatalogUpdateSelected !== nextValue) toggleCatalogUpdate(sg.name);
+                        if (sg.hasNewImage && isImageUpdateSelected !== nextValue) toggleImageUpdate(sg.name);
+                        if (sg.hasRename && isRenameUpdateSelected !== nextValue) toggleRenameUpdate(sg.name);
+                    }}
+                    className={cn(
+                        "mx-4 my-1 rounded-2xl border p-3.5 transition-all duration-200 cursor-pointer",
+                        isSelected
+                            ? "border-primary/40 bg-primary/[0.04] shadow-[0_4px_16px_rgba(59,130,246,0.08)]"
+                            : "border-border/50 bg-card/40 hover:border-border hover:bg-card/60"
+                    )}
+                >
+                    <div className="flex items-start justify-between">
+                        <div className="min-w-0 flex-1">
+                            <div className="truncate text-[15px] font-bold tracking-tight text-foreground/90">
+                                {formatDisplayName(sg.name)}
+                            </div>
+                            {sg.hasRename && sg.matchedExistingName && (
+                                <div className="mt-0.5 text-[12px] font-medium text-sky-600/90 dark:text-sky-400/80">
+                                    Rename from {formatDisplayName(sg.matchedExistingName)}
+                                </div>
+                            )}
+                            <div className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-foreground/45 flex items-center gap-2">
+                                <span>{sg.catalogs.length} {sg.catalogs.length === 1 ? "Catalog" : "Catalogs"}</span>
+                                <span className="w-1 h-1 rounded-full bg-foreground/15" />
+                                <span>{sg.category}</span>
+                                {selectedUpdateCount > 0 && (
+                                    <>
+                                        <span className="w-1 h-1 rounded-full bg-foreground/15" />
+                                        <span className="text-primary font-bold">{selectionSummary}</span>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                            {sg.hasNewCatalogs && (
+                                <Badge
+                                    variant="outline"
+                                    onClick={(e) => { e.stopPropagation(); toggleCatalogUpdate(sg.name); }}
+                                    className={cn("h-7 px-2.5 rounded-lg cursor-pointer text-[11px] font-black uppercase tracking-wider transition-all", isCatalogUpdateSelected ? "bg-violet-500/15 text-violet-700 border-violet-500/40 shadow-sm" : "text-foreground/40 hover:bg-violet-500/5 hover:text-violet-600")}
+                                >
+                                    Catalogs
+                                </Badge>
+                            )}
+                            {sg.hasNewImage && (
+                                <Badge
+                                    variant="outline"
+                                    onClick={(e) => { e.stopPropagation(); toggleImageUpdate(sg.name); }}
+                                    className={cn("h-7 px-2.5 rounded-lg cursor-pointer text-[11px] font-black uppercase tracking-wider transition-all", isImageUpdateSelected ? "bg-emerald-500/15 text-emerald-700 border-emerald-500/40 shadow-sm" : "text-foreground/40 hover:bg-emerald-500/5 hover:text-emerald-600")}
+                                >
+                                    Image
+                                </Badge>
+                            )}
+                            {sg.hasRename && (
+                                <Badge
+                                    variant="outline"
+                                    onClick={(e) => { e.stopPropagation(); toggleRenameUpdate(sg.name); }}
+                                    className={cn("h-7 px-2.5 rounded-lg cursor-pointer text-[11px] font-black uppercase tracking-wider transition-all", isRenameUpdateSelected ? "bg-sky-500/15 text-sky-700 border-sky-500/40 shadow-sm" : "text-foreground/40 hover:bg-sky-500/5 hover:text-sky-600")}
+                                >
+                                    Name
+                                </Badge>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        return (
+            <div
+                key={sg.name}
+                onClick={() => !isCheckboxDisabled && toggleStandaloneSubgroup(sg.name, isCheckboxDisabled)}
+                className={cn(
+                    "flex items-center gap-4 p-4 transition-all duration-200",
+                    isCheckboxDisabled ? "" : "cursor-pointer hover:bg-primary/[0.02] dark:hover:bg-primary/[0.04]",
+                    isSelected ? "bg-primary/[0.03] dark:bg-primary/[0.06]" : isCheckboxDisabled ? "opacity-50" : ""
+                )}
+            >
+                <Checkbox
+                    id={`standalone-${sg.name}`}
+                    disabled={isCheckboxDisabled}
+                    checked={isSelected}
+                    onCheckedChange={() => !isCheckboxDisabled && toggleStandaloneSubgroup(sg.name, isCheckboxDisabled)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="size-5 rounded-md"
+                />
+                <div className="flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                        <label htmlFor={`standalone-${sg.name}`} className={cn("truncate text-[15px] font-bold tracking-tight", isCheckboxDisabled ? "text-foreground/40" : "cursor-pointer text-foreground/90")}>
+                            {formatDisplayName(sg.name)}
+                        </label>
+                        <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-foreground/45">
+                            <span>{sg.catalogs.length} {sg.catalogs.length === 1 ? "Catalog" : "Catalogs"}</span>
+                            <span className="w-1 h-1 rounded-full bg-foreground/15" />
+                            <span>{sg.category}</span>
+                            {isIncludedWithMain && (
+                                <>
+                                    <span className="w-1 h-1 rounded-full bg-foreground/15" />
+                                    <span className="text-primary/70">Linked to Basic Import</span>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
             <DialogContent
                 onOpenAutoFocus={(e) => e.preventDefault()}
-                className={cn(editorLayout.dialogContent, "sm:max-w-2xl sm:max-h-[85vh]")}
+                className={cn(editorLayout.dialogContent, "sm:max-w-3xl sm:max-h-[92vh] sm:h-auto flex flex-col")}
             >
                 <DialogHeader className="shrink-0">
                     <DialogTitle>Update From Existing Setup</DialogTitle>
                     <DialogDescription className="text-foreground/70">
-                        {step === 1 ? "Upload a Omni .json configuration to extract groups." : `Review and select groups from ${fileName}`}
+                        {step === 1 ? "Upload a configuration file to proceed." : `Reviewing ${fileName}`}
                     </DialogDescription>
                 </DialogHeader>
 
                 {step === 1 && (
-                    <div className="space-y-4 flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1">
-                        {/* Hint Box */}
-                        <EditorNotice tone="warning" className="mb-2 w-full">
-                            <div className="flex flex-col items-start gap-y-1 sm:flex-row sm:items-center sm:justify-between sm:gap-x-4 w-full">
-                                <p className="leading-relaxed font-semibold text-inherit opacity-90">
-                                    Updating your setup for the first time?
-                                </p>
+                    <div className="space-y-6 animate-in fade-in duration-300">
+                        <EditorNotice tone="warning" className="w-full">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
+                                <p className="font-semibold opacity-90">First time updating?</p>
                                 {onOpenGuide && (
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => onOpenGuide("update")}
-                                        className="h-8 px-3 text-xs font-bold text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 -ml-2 sm:ml-0 shrink-0"
-                                    >
-                                        <BookOpen className="w-3.5 h-3.5 mr-2 shrink-0" />
+                                    <Button variant="ghost" size="sm" onClick={() => onOpenGuide("update")} className="h-8 px-3 text-xs font-bold text-amber-700 dark:text-amber-400 hover:bg-amber-500/10">
+                                        <BookOpen className="w-3.5 h-3.5 mr-2" />
                                         How to Update
                                     </Button>
                                 )}
                             </div>
                         </EditorNotice>
 
-                        {/* Template Loader */}
                         <div className={cn(editorSurface.card, "p-5")}>
-                            <h3 className="font-semibold text-sm text-foreground mb-3">Load Unified Media Experience Template</h3>
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                                <div className="min-w-0 flex-1">
-                                    <Select value={selectedVersion} onValueChange={setSelectedVersion}>
-                                        <SelectTrigger
-                                            className={cn("w-full h-10 sm:h-9 rounded-md px-2.5 sm:px-3 text-sm text-foreground font-medium overflow-hidden", editorSurface.field)}
-                                            title={selectedVersion || "Select template version"}
-                                            disabled={templates.length === 0}
-                                        >
-                                            <SelectValue className="truncate" placeholder="Select template version" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {templates.map(t => (
-                                                <SelectItem key={t.label} value={t.label} className="text-xs font-mono focus:bg-accent focus:text-accent-foreground">
-                                                    {t.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                            <h3 className="font-semibold text-sm mb-3">Load Template</h3>
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <Select value={selectedVersion} onValueChange={setSelectedVersion}>
+                                    <SelectTrigger className={cn("w-full h-10 rounded-md", editorSurface.field)}>
+                                        <SelectValue placeholder="Select version" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {templates.map(t => <SelectItem key={t.label} value={t.label}>{t.label}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
                                 <Button
                                     onClick={async () => {
-                                        const t = templates.find(t => t.label === selectedVersion);
-                                        if (!t) return;
                                         setTemplateLoading(true);
-                                        setError("");
-                                        try {
-                                            const text = await fetchTextWithLimits(t.url, {
-                                                timeoutMs: 12000,
-                                                maxBytes: 5_000_000,
-                                            });
-                                            setFileName(`Template ${t.label}`);
-                                            processUploadedJson(text);
-                                        } catch (err: unknown) {
-                                            setError(err instanceof Error ? err.message : "Failed to load template.");
-                                        } finally {
-                                            setTemplateLoading(false);
+                                        const t = templates.find(temp => temp.label === selectedVersion);
+                                        if (t) {
+                                            const txt = await fetchTextWithLimits(t.url, { timeoutMs: 15000, maxBytes: 15 * 1024 * 1024 });
+                                            processUploadedJson(txt);
                                         }
+                                        setTemplateLoading(false);
                                     }}
-                                    disabled={templateLoading || templates.length === 0 || !selectedVersion}
-                                    className="h-10 sm:h-9 w-full sm:w-auto px-4 sm:px-5 bg-primary hover:bg-primary/92 text-primary-foreground"
+                                    disabled={!selectedVersion || templateLoading}
+                                    className={cn(editorAction.primary, "h-10 px-6 rounded-xl")}
                                 >
-                                    {templateLoading ? "Loading..." : "Load"}
+                                    {templateLoading ? "Loading..." : "Load Template"}
                                 </Button>
                             </div>
-                            {templates.length === 0 && (
-                                <p className="mt-3 text-xs text-foreground/60">
-                                    No UME templates are available right now. You can still upload a local config file below.
-                                </p>
-                            )}
                         </div>
 
-                        <div className="flex items-center gap-3">
-                            <div className="flex-1 h-px bg-border"></div>
-                            <span className="text-xs text-foreground/70 uppercase font-bold tracking-wider">or upload file</span>
-                            <div className="flex-1 h-px bg-border"></div>
-                        </div>
-
-                        {/* File Upload */}
                         <div
-                            onDragEnter={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setIsFileDropActive(true);
-                            }}
-                            onDragOver={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setIsFileDropActive(true);
-                                if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
-                            }}
-                            onDragLeave={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
-                                setIsFileDropActive(false);
-                            }}
-                            onDrop={handleFileDrop}
                             className={cn(
-                                "flex flex-col items-center justify-center p-8 border-2 rounded-lg transition-[border-color,background-color,box-shadow] text-center",
-                                editorSurface.dropzone,
-                                isFileDropActive
-                                    ? "border-primary/70 bg-primary/10 shadow-[0_0_0_1px_rgba(15,23,42,0.1),inset_0_1px_0_rgba(255,255,255,0.05)]"
-                                    : "hover:border-primary/30 hover:bg-primary/[0.035]"
+                                "relative group flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-10 transition-all text-center",
+                                isFileDropActive ? "border-primary bg-primary/[0.04]" : "border-border/60 bg-muted/[0.04] hover:bg-muted/[0.08]"
                             )}
+                            onDragEnter={(event) => {
+                                event.preventDefault();
+                                dragDepthRef.current += 1;
+                                setIsFileDropActive(true);
+                            }}
+                            onDragOver={(event) => {
+                                event.preventDefault();
+                                if (event.dataTransfer) {
+                                    event.dataTransfer.dropEffect = "copy";
+                                }
+                                if (!isFileDropActive) {
+                                    setIsFileDropActive(true);
+                                }
+                            }}
+                            onDragLeave={(event) => {
+                                event.preventDefault();
+                                dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+                                if (dragDepthRef.current === 0) {
+                                    setIsFileDropActive(false);
+                                }
+                            }}
+                            onDrop={(event) => {
+                                event.preventDefault();
+                                dragDepthRef.current = 0;
+                                setIsFileDropActive(false);
+                                const file = event.dataTransfer?.files?.[0];
+                                handleDroppedFile(file);
+                            }}
                         >
-                            <UploadCloud className={cn("w-10 h-10 mb-3 transition-colors", isFileDropActive ? "text-primary" : "text-foreground/65")} />
-                            <h3 className="font-medium text-sm text-foreground mb-4">Upload JSON file</h3>
-                            <div className={cn("mb-4 text-xs font-semibold transition-colors", isFileDropActive ? "text-primary" : "text-foreground/60")}>
-                                Drop file here
-                            </div>
-                            <Button onClick={() => fileInputRef.current?.click()} variant="outline" className="bg-muted border-border hover:bg-muted/80 text-foreground text-xs font-semibold">
-                                Select file
-                            </Button>
-                            <input
-                                type="file"
-                                accept=".json"
-                                className="hidden"
-                                ref={fileInputRef}
-                                onChange={handleFileUpload}
-                            />
+                            <UploadCloud className="w-10 h-10 mb-4 text-primary/40 group-hover:text-primary/60 transition-colors" />
+                            <h3 className="font-medium text-sm mb-4">Or upload your own JSON</h3>
+                            <Button onClick={() => fileInputRef.current?.click()} variant="outline" className="bg-background">Select File</Button>
+                            <input type="file" accept=".json" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
                         </div>
-
-                        {error && (
-                            <EditorNotice tone="danger" alignCenter>
-                                {error}
-                            </EditorNotice>
-                        )}
+                        {error && <EditorNotice tone="danger">{error}</EditorNotice>}
                     </div>
                 )}
 
                 {step === 2 && (
-                    <Tabs value={activeReviewTab} onValueChange={(value) => setActiveReviewTab(value as "subgroups" | "main")} className="w-full flex-1 min-h-0 flex flex-col">
-                        <TabsList className={cn(editorSurface.toolbar, "grid w-full grid-cols-2 p-1 h-11 rounded-xl shrink-0")}>
-                            <TabsTrigger
-                                value="subgroups"
-                                className="rounded-lg border border-transparent text-xs font-medium transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 ease-out data-[state=active]:border-primary/24 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm dark:data-[state=active]:border-primary/24 dark:data-[state=active]:bg-primary/18"
-                            >
-                                Subgroups ({parsedSubgroups.length})
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="main"
-                                className="rounded-lg border border-transparent text-xs font-medium transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 ease-out data-[state=active]:border-primary/24 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm dark:data-[state=active]:border-primary/24 dark:data-[state=active]:bg-primary/18"
-                            >
-                                Main Groups ({parsedMainGroups.length})
-                            </TabsTrigger>
-                        </TabsList>
+                    <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+                        <Tabs value={activeReviewTab} onValueChange={(v) => {
+                            const tab = v as "subgroups" | "main";
+                            setActiveReviewTab(tab);
+                            if (tab === "main") {
+                                const hasNew = parsedMainGroups.some((group) => group.basicNewSubgroupCount > 0);
+                                setActiveMainFilter(hasNew ? "new" : "updates");
+                            }
+                        }}>
+                            <div className={cn(editorSurface.card, "relative flex flex-col overflow-hidden")}>
+                                <div className="sticky top-0 z-30 bg-white/80 dark:bg-[rgb(13,16,22)]/80 backdrop-blur-md border-b border-border/40 shadow-sm p-4 space-y-4">
+                                    <TabsList className="h-11 p-1 bg-slate-100/50 dark:bg-white/10 rounded-xl grid grid-cols-2 gap-1 border-none">
+                                        <TabsTrigger value="main" className="rounded-lg font-bold data-[state=active]:bg-background shadow-sm">Basic Import</TabsTrigger>
+                                        <TabsTrigger value="subgroups" className="rounded-lg font-bold data-[state=active]:bg-background shadow-sm">Advanced Update</TabsTrigger>
+                                    </TabsList>
 
-                        <div className="mt-4 relative shrink-0">
-                            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/45" />
-                            <Input
-                                value={reviewSearch}
-                                onChange={(e) => startTransition(() => setReviewSearch(e.target.value))}
-                                placeholder={activeReviewTab === "subgroups" ? "Search subgroups, categories or catalog IDs..." : "Search main groups or linked subgroups..."}
-                                className={cn(editorSurface.field, "h-10 pl-9")}
-                            />
-                        </div>
+                                    <div className="relative">
+                                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40" />
+                                        <Input
+                                            value={reviewSearch}
+                                            onChange={(e) => startTransition(() => setReviewSearch(e.target.value))}
+                                            placeholder={activeReviewTab === "subgroups" ? "Search Advanced Update..." : "Search Basic Import..."}
+                                            className={cn(editorSurface.field, "h-11 pl-10 rounded-xl")}
+                                        />
+                                    </div>
 
-                        {activeReviewTab === "subgroups" && [filteredUpdatedSubgroups.length, filteredNewSubgroups.length, filteredExistingSubgroups.length].filter(Boolean).length > 1 ? (
-                            <div className={cn(editorSurface.cardInteractive, "mt-3 flex shrink-0 items-center gap-2 rounded-xl px-3 py-2")}>
-                                {filteredUpdatedSubgroups.length > 0 ? (
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => scrollToSubgroupReviewSection("updates")}
-                                        className={cn(importSetupChipBase, importSetupChipIdle, "px-2.5")}
-                                    >
-                                        Updates ({filteredUpdatedSubgroups.length})
-                                    </Button>
-                                ) : null}
-                                {filteredNewSubgroups.length > 0 ? (
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => scrollToSubgroupReviewSection("new")}
-                                        className={cn(importSetupChipBase, importSetupChipIdle, "px-2.5")}
-                                    >
-                                        New ({filteredNewSubgroups.length})
-                                    </Button>
-                                ) : null}
-                                {filteredExistingSubgroups.length > 0 ? (
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => scrollToSubgroupReviewSection("existing")}
-                                        className={cn(importSetupChipBase, importSetupChipIdle, "px-2.5")}
-                                    >
-                                        Existing ({filteredExistingSubgroups.length})
-                                    </Button>
-                                ) : null}
-                            </div>
-                        ) : null}
+                                    <div className="flex items-center justify-between gap-3">
+                                        {activeReviewTab === "main" ? (
+                                            <Tabs value={activeMainFilter} onValueChange={(v) => setActiveMainFilter(v as "updates" | "new")} className="w-64">
+                                                <TabsList className="h-9 p-1 bg-slate-100/40 dark:bg-white/5 rounded-xl grid grid-cols-2">
+                                                    <TabsTrigger value="new" className="rounded-lg text-xs font-bold">New ({filteredNewMainSubgroupCount})</TabsTrigger>
+                                                    <TabsTrigger value="updates" className="rounded-lg text-xs font-bold">Updates ({filteredUpdatedMainSubgroupCount})</TabsTrigger>
+                                                </TabsList>
+                                            </Tabs>
+                                        ) : activeReviewTab === "subgroups" ? (
+                                            <div className="inline-flex h-9 items-center rounded-xl bg-slate-100/40 p-1 text-xs font-bold dark:bg-white/5">
+                                                <div className="rounded-lg bg-background px-3 py-1.5 shadow-sm">
+                                                    Updates ({filteredUpdatedSubgroups.length})
+                                                </div>
+                                            </div>
+                                        ) : <div></div>}
 
-                        <div
-                            ref={activeReviewTab === "subgroups" ? subgroupReviewContainerRef : undefined}
-                            className={cn(editorSurface.card, "relative mt-4 flex-1 min-h-0 overflow-x-hidden overflow-y-auto custom-scrollbar")}
-                        >
-                            <div className="h-full">
-                                <TabsContent value="main" className="p-0 m-0">
-                                    {parsedMainGroups.length === 0 ? (
-                                        <div className="p-8 text-center text-foreground/70 italic">No Main Groups found in this file.</div>
-                                    ) : filteredMainGroups.length === 0 ? (
-                                        <div className="p-8 text-center text-foreground/70 italic">No main groups match your search.</div>
-                                    ) : (
-                                        <div className="flex flex-col divide-y divide-border/50">
-                                            <div className={cn(importSetupStickySurface, "rounded-none border-x-0 border-t-0 shadow-none flex items-center justify-end gap-2 px-4 py-3")}>
+                                        <div className="flex items-center gap-2">
+                                            <div className="inline-flex h-9 items-center rounded-xl bg-slate-100/40 p-1 dark:bg-white/5">
                                                 <Button
-                                                    variant="outline"
+                                                    variant="ghost"
                                                     size="sm"
-                                                    onClick={selectAllMain}
-                                                    className={cn(importSetupChipBase, importSetupChipIdle, "px-2.5")}
+                                                    onClick={activeReviewTab === "main" ? selectVisibleMainGroups : selectAllUpdates}
+                                                    className="h-7 rounded-lg px-3 text-[11px] font-bold text-foreground/72 shadow-none hover:bg-background hover:text-foreground"
                                                 >
-                                                    All
+                                                    Select All
                                                 </Button>
                                                 <Button
-                                                    variant="outline"
+                                                    variant="ghost"
                                                     size="sm"
-                                                    onClick={deselectAllMain}
-                                                    className={cn(importSetupChipBase, importSetupChipIdle, "px-2.5")}
+                                                    onClick={activeReviewTab === "main" ? deselectVisibleMainGroups : clearUpdateSelection}
+                                                    className="h-7 rounded-lg px-3 text-[11px] font-bold text-foreground/62 shadow-none hover:bg-background hover:text-foreground"
                                                 >
                                                     None
                                                 </Button>
-                                            </div>
-                                            {filteredMainGroups.map(mg => {
-                                                const isFullyImported = mg.isDuplicate && !mg.hasChanges;
-                                                const isSelected = selectedMainGroupUuids.has(mg.originalUuid);
-                                                const selectedSubgroups = isSelected
-                                                    ? (selectedMainGroupSubgroups[mg.originalUuid] || mg.subgroupNames)
-                                                    : [];
-                                                return (
-                                                    <div
-                                                        key={mg.originalUuid}
-                                                        className={cn(
-                                                            "flex items-start p-4 transition-colors",
-                                                            isSelected
-                                                                ? "bg-primary/10 dark:bg-primary/16"
-                                                                : isFullyImported
-                                                                    ? "opacity-55 bg-muted/[0.04]"
-                                                                    : "hover:bg-primary/6 dark:hover:bg-primary/10"
-                                                        )}
-                                                    >
-                                                        <Checkbox
-                                                            id={`mg-${mg.originalUuid}`}
-                                                            checked={isSelected || isFullyImported}
-                                                            disabled={isFullyImported}
-                                                            onCheckedChange={() => !isFullyImported && toggleMainGroup(mg.originalUuid)}
-                                                            className="mt-1"
-                                                        />
-                                                        <div className="ml-3 flex-1 min-w-0">
-                                                            <label htmlFor={`mg-${mg.originalUuid}`} className={`font-semibold block ${isFullyImported ? '' : 'cursor-pointer'}`}>
-                                                                {formatDisplayName(mg.name)}
-                                                                {isFullyImported ? (
-                                                                    <Badge variant="outline" className={cn("ml-2 text-xs uppercase", editorToneBadge.neutral)}>Imported</Badge>
-                                                                ) : mg.isDuplicate ? (
-                                                                    <Badge variant="outline" className={cn("ml-2 text-xs uppercase", importSetupTone.warningBadge)}>Update</Badge>
-                                                                ) : null}
-                                                            </label>
-                                                            {mg.subgroupNames.length > 0 && (
-                                                                <div className="mt-1 text-xs text-foreground/60">
-                                                                    {selectedSubgroups.length} of {mg.subgroupNames.length} subgroups selected
-                                                                </div>
+                                                {activeReviewTab === "subgroups" && (visibleCatalogUpdateNames.length > 0 || visibleRenameUpdateNames.length > 0 || visibleImageUpdateNames.length > 0) && (
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-7 rounded-lg px-3 text-[11px] font-bold text-foreground/68 shadow-none hover:bg-background hover:text-foreground"
+                                                            >
+                                                                Bulk
+                                                                <ChevronDown className="ml-1 w-3.5 h-3.5" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end" className="w-48">
+                                                            <DropdownMenuLabel className="text-[10px] font-black uppercase text-foreground/50">Bulk Update</DropdownMenuLabel>
+                                                            {visibleCatalogUpdateNames.length > 0 && (
+                                                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} onClick={selectCatalogUpdates} className="flex justify-between">Catalogs {areAllCatalogUpdatesSelected && <Check className="w-3.5 h-3.5" />}</DropdownMenuItem>
                                                             )}
+                                                            {visibleRenameUpdateNames.length > 0 && (
+                                                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} onClick={selectRenameUpdates} className="flex justify-between">Names {areAllRenameUpdatesSelected && <Check className="w-3.5 h-3.5" />}</DropdownMenuItem>
+                                                            )}
+                                                            {visibleImageUpdateNames.length > 0 && (
+                                                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} onClick={selectImageUpdates} className="flex justify-between">Images {areAllImageUpdatesSelected && <Check className="w-3.5 h-3.5" />}</DropdownMenuItem>
+                                                            )}
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
 
-                                                            {mg.subgroupNames.length > 0 && (
+                                <div className="flex flex-col">
+                                    <TabsContent value="main" className="m-0 border-none">
+                                        <div className="divide-y divide-border/50">
+                                            {visibleMainGroups.map(mg => {
+                                                const isFullyImported = mg.isDuplicate && !mg.hasChanges;
+                                                const visibleSubgroups = getBasicVisibleSubgroups(mg);
+                                                const isSelected = selectedMainGroupUuids.has(mg.originalUuid);
+                                                const selectedSubgroups = isSelected ? (selectedMainGroupSubgroups[mg.originalUuid] || mg.subgroupNames) : [];
+                                                const selectedVisibleSubgroups = visibleSubgroups.filter((subgroupName) => selectedSubgroups.includes(subgroupName));
+                                                const checkboxChecked = visibleSubgroups.length > 0
+                                                    ? selectedVisibleSubgroups.length === visibleSubgroups.length
+                                                        ? true
+                                                        : selectedVisibleSubgroups.length > 0
+                                                            ? "indeterminate"
+                                                            : false
+                                                    : false;
+
+                                                return (
+                                                    <div key={mg.originalUuid} className={cn("flex items-start p-4 transition-colors", isSelected ? "bg-primary/[0.02]" : isFullyImported ? "opacity-50" : "")}>
+                                                        <Checkbox checked={isFullyImported ? true : checkboxChecked} disabled={isFullyImported || visibleSubgroups.length === 0} onCheckedChange={() => !isFullyImported && toggleVisibleMainGroup(mg)} className="mt-1" />
+                                                        <div className="ml-3 flex-1 min-w-0">
+                                                            <div className="font-semibold flex items-center gap-2">
+                                                                {formatDisplayName(mg.name)}
+                                                                {activeMainFilter === "new" ? (
+                                                                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">NEW</Badge>
+                                                                ) : activeMainFilter === "updates" ? (
+                                                                    <Badge variant="outline" className={editorToneBadge.info}>Update</Badge>
+                                                                ) : isFullyImported ? (
+                                                                    <Badge variant="outline" className="text-[10px] bg-muted/20">Imported</Badge>
+                                                                ) : null}
+                                                            </div>
+                                                            {visibleSubgroups.length > 0 && (
                                                                 <div className="mt-3 pl-3 border-l-2 border-border space-y-2">
-                                                                    {mg.subgroupNames.map(sg => {
+                                                                    {visibleSubgroups.map(sg => {
                                                                         const parsedSg = parsedSubgroups.find(p => p.name === sg);
-                                                                        const isSgDup = parsedSg?.isDuplicate;
-                                                                        const hasSgRename = !!parsedSg?.hasRename;
-                                                                        const hasSgCatalogUpdate = !!parsedSg?.hasNewCatalogs;
-                                                                        const hasSgImageUpdate = !!parsedSg?.hasNewImage;
-                                                                        const hasSgUpdate = hasSgRename || hasSgCatalogUpdate || hasSgImageUpdate;
                                                                         const isSgSelected = isSelected && selectedSubgroups.includes(sg);
+                                                                        const isBasicExisting = parsedSg?.basicIsExisting ?? false;
                                                                         return (
                                                                             <div key={sg} className="flex items-start gap-2 text-xs">
-                                                                                <Checkbox
-                                                                                    checked={isSgSelected}
-                                                                                    disabled={isFullyImported}
-                                                                                    onCheckedChange={() => !isFullyImported && toggleMainGroupSubgroup(mg.originalUuid, sg)}
-                                                                                    className="mt-0.5"
-                                                                                />
-                                                                                <div className="min-w-0 flex-1">
-                                                                                    <div className={cn("truncate text-foreground/80", !isSgSelected && "text-foreground/55")}>
-                                                                                        {formatDisplayName(sg)}
-                                                                                    </div>
-                                                                                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-foreground/55">
-                                                                                        {isSgDup && !hasSgUpdate && <span>Use existing subgroup</span>}
-                                                                                        {isSgDup && hasSgRename && <span className="text-sky-500/90">Name change</span>}
-                                                                                        {isSgDup && hasSgCatalogUpdate && <span className="text-orange-400/90">Catalog changes</span>}
-                                                                                        {isSgDup && hasSgImageUpdate && <span className="text-primary/90">Image changes</span>}
-                                                                                        {!isSgDup && <span>New subgroup</span>}
-                                                                                    </div>
+                                                                                <Checkbox checked={isSgSelected} onCheckedChange={() => toggleMainGroupSubgroup(mg.originalUuid, sg)} className="mt-0.5" />
+                                                                                <div className="flex-1 min-w-0">
+                                                                                    <div className="text-foreground/80">{sg} <span className="ml-2 text-[10px] text-primary/70 font-bold uppercase">{isBasicExisting ? "Update" : "New"}</span></div>
                                                                                 </div>
                                                                             </div>
                                                                         );
@@ -1187,343 +1095,23 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                 );
                                             })}
                                         </div>
-                                    )}
-                                </TabsContent>
+                                    </TabsContent>
 
-                                <TabsContent value="subgroups" className="p-0 m-0">
-                                    {parsedSubgroups.length === 0 ? (
-                                        <div className="p-8 text-center text-foreground/70 italic">No Subgroups found in this file.</div>
-                                    ) : filteredSubgroups.length === 0 ? (
-                                        <div className="p-8 text-center text-foreground/70 italic">No subgroups match your search.</div>
-                                    ) : (
-                                        <div className="flex flex-col">
-                                            {(() => {
-                                                const newSgs = filteredNewSubgroups;
-                                                const mergeSgs = filteredUpdatedSubgroups;
-                                                const existingSgs = filteredExistingSubgroups;
-
-                                                const renderSubgroupRow = (sg: ParsedSubgroup) => {
-                                                    const isStandaloneSelected = selectedStandaloneSubgroups.has(sg.name);
-                                                    const isCatalogUpdateSelected = selectedCatalogUpdateSubgroups.has(sg.name);
-                                                    const isImageUpdateSelected = selectedImageUpdateSubgroups.has(sg.name);
-                                                    const isRenameUpdateSelected = selectedRenameUpdateSubgroups.has(sg.name);
-                                                    const includedInMain = isSubgroupIncludedViaSelectedMainGroup(sg.name);
-                                                    const isFullyExisting = sg.isDuplicate && !sg.hasNewCatalogs && !sg.hasNewImage && !sg.hasRename;
-                                                    const isUpdateRow = sg.isDuplicate && (sg.hasNewCatalogs || sg.hasNewImage || sg.hasRename);
-                                                    const isIncludedWithMain = includedInMain && !sg.isDuplicate;
-                                                    const hasAnyDuplicateUpdateSelection = isCatalogUpdateSelected || isImageUpdateSelected || isRenameUpdateSelected;
-                                                    const isCheckboxDisabled = isFullyExisting || isIncludedWithMain;
-                                                    const isChecked = includedInMain ? true : isStandaloneSelected;
-                                                    const isSelected = isUpdateRow ? hasAnyDuplicateUpdateSelection : isChecked;
-                                                    const showCheckbox = !sg.isDuplicate;
-                                                    const metaBits = [
-                                                        `${sg.catalogs.length} ${sg.catalogs.length === 1 ? "catalog" : "catalogs"}`,
-                                                        sg.category,
-                                                    ].filter(Boolean);
-
-                                                    if (isUpdateRow) {
-                                                        const selectedUpdateCount = Number(isCatalogUpdateSelected) + Number(isImageUpdateSelected) + Number(isRenameUpdateSelected);
-                                                        const selectionSummary = selectedUpdateCount === 0
-                                                            ? "Choose updates"
-                                                            : selectedUpdateCount === 1
-                                                                ? "1 update selected"
-                                                                : `${selectedUpdateCount} updates selected`;
-
-                                                        return (
-                                                            <div
-                                                                key={sg.name}
-                                                                className={cn(
-                                                                    "px-4 py-3 transition-[background-color,box-shadow] duration-150",
-                                                                    isSelected
-                                                                        ? "bg-primary/[0.035] shadow-[inset_3px_0_0_rgba(59,130,246,0.34)]"
-                                                                        : "hover:bg-primary/6 dark:hover:bg-primary/10"
-                                                                )}
-                                                            >
-                                                                <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                                                                    <div className="min-w-0 flex-1">
-                                                                        <div className="truncate text-sm font-semibold text-foreground">
-                                                                            {formatDisplayName(sg.name)}
-                                                                        </div>
-                                                                        {sg.hasRename && sg.matchedExistingName ? (
-                                                                            <div className="mt-0.5 text-xs text-foreground/55">
-                                                                                Rename from {formatDisplayName(sg.matchedExistingName)}
-                                                                            </div>
-                                                                        ) : null}
-                                                                        <div className="mt-0.5 text-xs text-foreground/65">
-                                                                            {[...metaBits, selectionSummary].join(" • ")}
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                                                                        {sg.hasRename && (
-                                                                            <Button
-                                                                                type="button"
-                                                                                variant="outline"
-                                                                                size="sm"
-                                                                                onClick={() => toggleRenameUpdate(sg.name)}
-                                                                                className={cn(
-                                                                                    importSetupChipBase,
-                                                                                    isRenameUpdateSelected
-                                                                                        ? importSetupTone.infoAction
-                                                                                        : importSetupChipIdle,
-                                                                                    isRenameUpdateSelected && importSetupChipSelected
-                                                                                )}
-                                                                                aria-pressed={isRenameUpdateSelected}
-                                                                            >
-                                                                                <Type className="mr-1.5 h-3 w-3" />
-                                                                                Name
-                                                                            </Button>
-                                                                        )}
-                                                                        {sg.hasNewCatalogs && (
-                                                                            <Button
-                                                                                type="button"
-                                                                                variant="outline"
-                                                                                size="sm"
-                                                                                onClick={() => toggleCatalogUpdate(sg.name)}
-                                                                                className={cn(
-                                                                                    importSetupChipBase,
-                                                                                    isCatalogUpdateSelected
-                                                                                        ? importSetupTone.warningAction
-                                                                                        : importSetupChipIdle,
-                                                                                    isCatalogUpdateSelected && importSetupChipSelected
-                                                                                )}
-                                                                                aria-pressed={isCatalogUpdateSelected}
-                                                                            >
-                                                                                <RefreshCw className="mr-1.5 h-3 w-3" />
-                                                                                Catalogs
-                                                                            </Button>
-                                                                        )}
-                                                                        {sg.hasNewImage && (
-                                                                            <Button
-                                                                                type="button"
-                                                                                variant="outline"
-                                                                                size="sm"
-                                                                                onClick={() => toggleImageUpdate(sg.name)}
-                                                                                className={cn(
-                                                                                    importSetupChipBase,
-                                                                                    isImageUpdateSelected
-                                                                                        ? importSetupTone.infoAction
-                                                                                        : importSetupChipIdle,
-                                                                                    isImageUpdateSelected && importSetupChipSelected
-                                                                                )}
-                                                                                aria-pressed={isImageUpdateSelected}
-                                                                            >
-                                                                                <ImageIcon className="mr-1.5 h-3 w-3" />
-                                                                                Image
-                                                                            </Button>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    }
-
-                                                    return (
-                                                        <div
-                                                            key={sg.name}
-                                                            className={cn(
-                                                                "flex items-start p-4 transition-colors",
-                                                                isSelected
-                                                                    ? "bg-primary/[0.055] ring-1 ring-inset ring-primary/15"
-                                                                    : isCheckboxDisabled
-                                                                        ? "opacity-55 bg-muted/[0.04]"
-                                                                        : "hover:bg-primary/6 dark:hover:bg-primary/10"
-                                                            )}
-                                                        >
-                                                            {showCheckbox ? (
-                                                                <Checkbox
-                                                                    id={`sg-${sg.name}`}
-                                                                    checked={isChecked}
-                                                                    disabled={isCheckboxDisabled}
-                                                                    onCheckedChange={() => toggleStandaloneSubgroup(sg.name, isCheckboxDisabled)}
-                                                                    className="mt-1"
-                                                                />
-                                                            ) : null}
-                                                            <div className={cn("flex-1 min-w-0 pr-4", showCheckbox ? "ml-3" : "")}>
-                                                                <label htmlFor={`sg-${sg.name}`} className={`font-semibold text-sm block truncate ${isCheckboxDisabled ? '' : 'cursor-pointer'}`}>
-                                                                    {formatDisplayName(sg.name)}
-                                                                    {includedInMain && !sg.isDuplicate && <Badge variant="outline" className={cn("ml-2 text-xs uppercase", importSetupTone.infoBadge)}>Included w/ Main</Badge>}
-                                                                </label>
-                                                                <div className="mt-0.5 text-xs text-foreground/65">
-                                                                    {metaBits.join(" • ")}
-                                                                </div>
-
-                                                            </div>
-
-                                                            {isStandaloneSelected && !isCheckboxDisabled && !sg.isDuplicate && (
-                                                                <DropdownMenu>
-                                                                    <DropdownMenuTrigger asChild>
-                                                                        <Button variant="outline" size="sm" className="h-7 text-xs bg-muted border-border shrink-0 min-w-[140px] justify-between">
-                                                                            <span className="truncate max-w-[100px]">
-                                                                                {standaloneAssignments[sg.name] ? formatDisplayName(currentMainGroups[standaloneAssignments[sg.name]]?.name || "Unassigned") : "Unassigned"}
-                                                                            </span>
-                                                                            <ChevronDown className="w-3 h-3 ml-2 opacity-50" />
-                                                                        </Button>
-                                                                    </DropdownMenuTrigger>
-                                                                    <DropdownMenuContent>
-                                                                        <DropdownMenuLabel className="text-xs uppercase text-foreground/70 font-bold">Assign to</DropdownMenuLabel>
-                                                                        {currentMainGroupOrder.map((uuid: string) => (
-                                                                            <DropdownMenuItem
-                                                                                key={uuid}
-                                                                                onClick={() => setStandaloneAssignments(prev => ({ ...prev, [sg.name]: uuid }))}
-                                                                                className="text-xs focus:bg-primary/20 focus:text-primary"
-                                                                            >
-                                                                                {formatDisplayName(currentMainGroups[uuid]?.name || "Unnamed")}
-                                                                            </DropdownMenuItem>
-                                                                        ))}
-                                                                        <DropdownMenuItem
-                                                                            onClick={() => setStandaloneAssignments(prev => { const n = { ...prev }; delete n[sg.name]; return n; })}
-                                                                            className="mt-1 text-xs focus:bg-amber-500/20 focus:text-amber-400 font-semibold"
-                                                                        >
-                                                                            None (Unassigned)
-                                                                        </DropdownMenuItem>
-                                                                    </DropdownMenuContent>
-                                                                </DropdownMenu>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                };
-
-                                                return (
-                                                    <div className="flex flex-col">
-                                                        {mergeSgs.length > 0 && (
-                                                            <section ref={updateSectionRef} className="flex flex-col">
-                                                                <div className={cn(importSetupStickySurface, "sticky top-0 z-30 -mx-px rounded-none border-x-0 border-t-0 flex items-center justify-between gap-3 px-4 py-3 shadow-none")}>
-                                                                    <div className="text-xs font-semibold uppercase tracking-wider text-foreground/70">
-                                                                        Updates ({mergeSgs.length})
-                                                                    </div>
-                                                                    <DropdownMenu>
-                                                                        <DropdownMenuTrigger asChild>
-                                                                            <Button
-                                                                                variant="outline"
-                                                                                size="sm"
-                                                                                className={cn(importSetupChipBase, importSetupChipIdle, "h-7 px-2.5 text-[11px] font-medium")}
-                                                                            >
-                                                                                Bulk actions
-                                                                                <ChevronDown className="ml-1.5 h-3 w-3 opacity-60" />
-                                                                            </Button>
-                                                                        </DropdownMenuTrigger>
-                                                                        <DropdownMenuContent align="end" className="w-44">
-                                                                            <DropdownMenuLabel className="text-[11px] uppercase tracking-wider text-foreground/55">
-                                                                                Update selection
-                                                                            </DropdownMenuLabel>
-                                                                            <DropdownMenuItem onClick={selectAllUpdates} className="text-sm">
-                                                                                <Check className="mr-2 h-3.5 w-3.5" />
-                                                                                Select all updates
-                                                                            </DropdownMenuItem>
-                                                                            <DropdownMenuItem onClick={selectCatalogUpdates} className="text-sm">
-                                                                                <RefreshCw className="mr-2 h-3.5 w-3.5" />
-                                                                                Add catalog updates
-                                                                            </DropdownMenuItem>
-                                                                            <DropdownMenuItem onClick={selectRenameUpdates} className="text-sm">
-                                                                                <Type className="mr-2 h-3.5 w-3.5" />
-                                                                                Add name updates
-                                                                            </DropdownMenuItem>
-                                                                            <DropdownMenuItem onClick={selectImageUpdates} className="text-sm">
-                                                                                <ImageIcon className="mr-2 h-3.5 w-3.5" />
-                                                                                Add image updates
-                                                                            </DropdownMenuItem>
-                                                                            <DropdownMenuItem onClick={clearUpdateSelection} className="text-sm">
-                                                                                <X className="mr-2 h-3.5 w-3.5" />
-                                                                                Clear selection
-                                                                            </DropdownMenuItem>
-                                                                        </DropdownMenuContent>
-                                                                    </DropdownMenu>
-                                                                </div>
-                                                                <div className="divide-y divide-border/50">
-                                                                    {mergeSgs.map(renderSubgroupRow)}
-                                                                </div>
-                                                            </section>
-                                                        )}
-                                                        {newSgs.length > 0 && (
-                                                            <section ref={newSectionRef} className="flex flex-col">
-                                                                <div className={cn(importSetupStickySurface, "sticky top-0 z-20 -mx-px rounded-none border-x-0 border-t-0 flex items-center justify-between gap-3 px-4 py-2 shadow-none")}>
-                                                                    <div className="text-xs font-semibold uppercase tracking-wider text-foreground/70">
-                                                                        New Subgroups ({newSgs.length})
-                                                                    </div>
-                                                                    <div className="flex items-center gap-2">
-                                                                        <Button
-                                                                            type="button"
-                                                                            variant="outline"
-                                                                            size="sm"
-                                                                            onClick={selectAllNewSubgroups}
-                                                                            className={cn(importSetupChipBase, importSetupChipIdle, "h-7 px-2.5 text-[11px] font-medium")}
-                                                                        >
-                                                                            All
-                                                                        </Button>
-                                                                        <Button
-                                                                            type="button"
-                                                                            variant="outline"
-                                                                            size="sm"
-                                                                            onClick={deselectAllNewSubgroups}
-                                                                            className={cn(importSetupChipBase, importSetupChipIdle, "h-7 px-2.5 text-[11px] font-medium")}
-                                                                        >
-                                                                            None
-                                                                        </Button>
-                                                                    </div>
-                                                                </div>
-                                                                {(() => {
-                                                                    // Get unique categories present in newSgs
-                                                                    const presentCategories = Array.from(new Set(newSgs.map(sg => sg.category || "Other")));
-
-                                                                    // Sort categories: predefined ones first, then others alphabetically
-                                                                    const predefinedOrder = ["Actors", "Directors", "Genres", "Decades", "Awards", "Discover", "Collections", "Streaming Services", "Other"];
-                                                                    presentCategories.sort((a, b) => {
-                                                                        const idxA = predefinedOrder.indexOf(a);
-                                                                        const idxB = predefinedOrder.indexOf(b);
-                                                                        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-                                                                        if (idxA !== -1) return -1;
-                                                                        if (idxB !== -1) return 1;
-                                                                        return a.localeCompare(b);
-                                                                    });
-
-                                                                    return presentCategories.map(cat => {
-                                                                        const catSgs = newSgs.filter(sg => (sg.category || "Other") === cat);
-                                                                        if (catSgs.length === 0) return null;
-                                                                        return (
-                                                                            <React.Fragment key={cat}>
-                                                                                <div className={cn(importSetupStickySurface, "-mx-px rounded-none border-x-0 border-t-0 flex items-center gap-2 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-foreground/70 shadow-none")}>
-                                                                                    <div className="w-1 h-3 bg-primary/50 rounded-full" />
-                                                                                    {cat}
-                                                                                </div>
-                                                                                {catSgs.map(renderSubgroupRow)}
-                                                                            </React.Fragment>
-                                                                        );
-                                                                    });
-                                                                })()}
-                                                            </section>
-                                                        )}
-                                                        {existingSgs.length > 0 && (
-                                                            <section ref={existingSectionRef} className="flex flex-col">
-                                                                <div className={cn(importSetupStickySurface, "sticky top-0 z-20 -mx-px rounded-none border-x-0 border-t-0 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-foreground/70 shadow-none")}>
-                                                                    Existing ({existingSgs.length})
-                                                                </div>
-                                                                <div className="divide-y divide-border/50">
-                                                                    {existingSgs.map(renderSubgroupRow)}
-                                                                </div>
-                                                            </section>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })()}
+                                    <TabsContent value="subgroups" className="m-0 border-none">
+                                        <div className="flex flex-col divide-y divide-border/40">
+                                            {filteredUpdatedSubgroups.map(renderSubgroupRow)}
                                         </div>
-                                    )}
-                                </TabsContent>
-
+                                    </TabsContent>
+                                </div>
                             </div>
-                        </div>
-                    </Tabs>
+                        </Tabs>
+                    </div>
                 )}
 
-                <DialogFooter className="mt-4 shrink-0 border-t border-border/50 pt-3 pb-[calc(0.5rem+env(safe-area-inset-bottom))] flex-row justify-end gap-2">
-                    <Button variant="outline" onClick={handleClose} className={cn(editorAction.secondary, editorSurface.field, "h-10")}>
-                        Cancel
-                    </Button>
+                <DialogFooter className="mt-4 border-t border-border/40 pt-5 flex-row justify-end gap-3 shrink-0">
+                    <Button variant="outline" onClick={handleClose} className="h-11 px-6 rounded-xl font-bold">Cancel</Button>
                     {step === 2 && (
-                        <Button
-                            onClick={handleImport}
-                            disabled={totalSelectedToImport === 0}
-                            className={cn(editorAction.primary, "font-bold bg-primary hover:bg-primary/92 text-primary-foreground shadow-lg shadow-primary/20")}
-                        >
+                        <Button onClick={handleImport} disabled={totalSelectedToImport === 0} className={cn(editorAction.primary, "h-11 px-8 rounded-xl font-black")}>
                             Import ({totalSelectedToImport})
                         </Button>
                     )}

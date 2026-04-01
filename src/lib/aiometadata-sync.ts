@@ -89,7 +89,7 @@ export const normalizeAIOMetadataCatalogTypeFromId = (catalogId: string): Catalo
 };
 
 export const getAIOMetadataCatalogLookupKeys = (catalogId: string) => {
-    const rawId = catalogId.trim();
+    const rawId = catalogId.trim().toLowerCase();
     const strippedId = stripAIOMetadataCatalogTypePrefix(rawId);
     const normalizedId = normalizeAIOMetadataCatalogId(rawId);
 
@@ -97,7 +97,7 @@ export const getAIOMetadataCatalogLookupKeys = (catalogId: string) => {
 };
 
 export const getAIOMetadataCatalogIdentityKey = (catalog: AIOMetadataCatalogIdentity) => {
-    const normalizedId = normalizeAIOMetadataCatalogId(catalog.id);
+    const normalizedId = normalizeAIOMetadataCatalogId(catalog.id).toLowerCase();
 
     if (catalog.source === "streaming") {
         return `${catalog.type}:${normalizedId}`;
