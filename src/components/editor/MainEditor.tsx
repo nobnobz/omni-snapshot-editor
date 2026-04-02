@@ -1748,7 +1748,7 @@ export function MainEditor() {
                             variant="destructive"
                             className="h-9 border-none bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 font-bold sm:min-w-[11rem]"
                         >
-                            Yes, Discard Changes
+                            Discard Changes
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

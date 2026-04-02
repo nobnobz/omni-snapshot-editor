@@ -56,13 +56,17 @@ function SelectContent({
   children,
   position = "item-aligned",
   align = "center",
+  collisionPadding = 12,
   style,
   ...props
-}: React.ComponentProps<typeof SelectPrimitive.Content>) {
+}: React.ComponentProps<typeof SelectPrimitive.Content> & {
+  collisionPadding?: number
+}) {
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Content
         data-slot="select-content"
+        collisionPadding={collisionPadding}
         className={cn(
           `relative z-50 min-w-[8rem] origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto ${uiChrome.overlaySurface} data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95`,
           position === "popper" &&
@@ -73,7 +77,7 @@ function SelectContent({
         align={align}
         style={{
           width: "var(--radix-select-trigger-width)",
-          maxWidth: "min(calc(100vw - 2rem), 28rem)",
+          maxWidth: "min(calc(100vw - 1.5rem), 28rem)",
           maxHeight: "min(var(--radix-select-content-available-height), 20rem)",
           ...style,
         }}

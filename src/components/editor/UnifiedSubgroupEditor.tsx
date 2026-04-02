@@ -124,19 +124,22 @@ const PosterUrlEditor = React.memo(function PosterUrlEditor({
 
     const hasThumbPreview = /^https?:\/\//i.test(previewUrl.trim()) && !thumbLoadError;
     const thumbFrameClass = thumbAspect === "landscape"
-        ? "h-20 w-32"
+        ? "h-28 w-full max-w-[18rem] sm:h-20 sm:w-32"
         : thumbAspect === "portrait"
-            ? "h-28 w-20"
-            : "h-20 w-20";
+            ? "h-40 w-28 sm:h-28 sm:w-20"
+            : "h-28 w-28 sm:h-20 sm:w-20";
 
     return (
         <div className="space-y-2">
-            <div className={`${editorSurface.panel} flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:gap-6`}>
-                <div className="flex items-center gap-3 sm:block">
+            <div className={`${editorSurface.panel} flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:gap-6 sm:p-5`}>
+                <div className="flex flex-col items-center gap-2 sm:block">
+                    <Label className="self-start text-[10px] uppercase font-bold tracking-[0.16em] text-foreground/50 sm:hidden">
+                        Poster Image URL
+                    </Label>
                     <div
                         className={cn(
                             thumbFrameClass,
-                            "rounded-md shrink-0 overflow-hidden shadow-sm flex items-center justify-center transition-[width,height] duration-200 border border-white/10 p-1 bg-[#020617]"
+                            "mx-auto rounded-md shrink-0 overflow-hidden shadow-sm flex items-center justify-center transition-[width,height] duration-200 border border-white/10 p-1 bg-[#020617]"
                         )}
                     >
                         {hasThumbPreview ? (
@@ -166,12 +169,8 @@ const PosterUrlEditor = React.memo(function PosterUrlEditor({
                             <ImageIcon className="w-4 h-4 text-foreground/70" />
                         )}
                     </div>
-                    {/* On mobile, show the label next to the thumb if desired, or keep it inside the flex-1 area */}
-                    <div className="sm:hidden">
-                        <Label className="text-[10px] uppercase font-bold tracking-[0.16em] text-foreground/50">Poster Image URL</Label>
-                    </div>
                 </div>
-                <div className="flex-1 space-y-1.5 min-w-0">
+                <div className="min-w-0 flex-1 space-y-1.5">
                     <Label className="hidden sm:block text-xs uppercase font-bold tracking-widest text-foreground/70">Poster Image URL</Label>
                     <LockedUrlInput
                         value={imageUrl}

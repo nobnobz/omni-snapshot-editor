@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.6.2] - 2026-04-02
+### Changed
+- Polished the mobile UI across dialogs, popups, guides, and editor panels for cleaner spacing and stronger visual hierarchy.
+- Reworked the **Update From Existing Setup** mobile review flow with clearer stacked controls, cleaner row layouts, and a larger poster-image editor on phones.
+- Smoothed popup positioning and compact dialog actions so small-screen controls feel more centered and less edge-hugging.
+
+### Fixed
+- Fixed false-positive image updates in **Update From Existing Setup** by comparing imported and existing subgroup image URLs correctly.
+- Fixed cramped mobile CTA labels and dialog button wrapping, including the unsaved-changes confirmation flow.
+- Fixed guide/documentation mobile scroll behavior so short guide content no longer shows unnecessary nested vertical scrolling.
+
 ## [0.6.1] - 2026-04-01
 ### Changed
 - Reworked the **Update from Template** flow with a cleaner import review and better duplicate handling.

@@ -83,7 +83,7 @@ export function GuideDialog({ children, className }: GuideDialogProps) {
                     <span className="sr-only">Close</span>
                 </Button>
             </DialogClose>
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-6">
+            <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain custom-scrollbar p-5 sm:p-6">
                 {children}
             </div>
         </DialogContent>

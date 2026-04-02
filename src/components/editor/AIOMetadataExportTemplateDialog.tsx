@@ -128,16 +128,16 @@ export function AIOMetadataExportTemplateDialog({
                     ) : null}
                 </DialogHeader>
 
-                <div className="space-y-4 pt-2">
-                    <div className={cn(editorSurface.panel, "space-y-2 rounded-xl p-4")}>
+                <div className="space-y-4 pt-1 sm:pt-2">
+                    <div className={cn(editorSurface.panel, "space-y-3 rounded-2xl border-slate-200/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.62),rgba(246,249,252,0.48))] p-4 sm:p-5 dark:border-white/8 dark:bg-[linear-gradient(180deg,rgba(22,26,34,0.9),rgba(18,22,29,0.86))]")}>
                         <p className="text-sm font-semibold tracking-tight text-foreground">This will set the following AIOMetadata settings</p>
-                        <div className="space-y-2">
+                        <div className="space-y-2.5">
                             {ruleSummaries.map((rule) => (
                                 <div
                                     key={rule.labels.join("|")}
-                                    className="rounded-lg border border-slate-200/70 px-3 py-3 dark:border-white/8"
+                                    className="rounded-xl border border-slate-200/70 bg-white/42 px-3.5 py-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.58)] dark:border-white/8 dark:bg-white/[0.025] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
                                 >
-                                    <div className="space-y-3 sm:grid sm:grid-cols-[minmax(0,1fr)_15rem] sm:items-start sm:gap-4 sm:space-y-0">
+                                    <div className="space-y-3.5 sm:grid sm:grid-cols-[minmax(0,1fr)_15rem] sm:items-start sm:gap-4 sm:space-y-0">
                                         <div>
                                             <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/42">
                                                 Groups

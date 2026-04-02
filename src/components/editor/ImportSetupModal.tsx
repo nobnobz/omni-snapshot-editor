@@ -29,6 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { editorAction, editorLayout, editorSurface, editorToneBadge } from "@/components/editor/ui/style-contract";
 import { EditorNotice } from "@/components/editor/ui/EditorNotice";
 import { FALLBACK_TEMPLATE_URLS, findTemplateByKind, isTemplateOfKind } from "@/lib/template-manifest";
+import { hasImportSetupCatalogsChanged, hasImportSetupImageChanged, normalizeImportSetupImageUrl } from "@/lib/import-setup-diff";
 import { normalizeMainGroupOrder } from "@/lib/main-group-utils";
 import { fetchTextWithLimits } from "@/lib/remote-fetch";
 
@@ -258,6 +259,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                     .filter((name): name is string => !!name)
             );
             const currentCatalogGroups = (currentValues.catalog_groups || {}) as Record<string, string[]>;
+            const currentCatalogGroupImageUrls = (currentValues.catalog_group_image_urls || {}) as Record<string, unknown>;
             const currentSubgroupsBySignature: Record<string, string[]> = {};
             Object.entries(currentCatalogGroups).forEach(([name, catalogs]) => {
                 if (isIgnoredUpdateManagerSubgroup(name)) return;
@@ -276,6 +278,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
             }>;
             const inMainGroupOrder = normalizeMainGroupOrder(inMainGroups, imported.main_group_order);
             const inCatalogsGroups = (imported.catalog_groups || {}) as Record<string, string[]>;
+            const importedCatalogGroupImageUrls = (imported.catalog_group_image_urls || {}) as Record<string, unknown>;
             const subgroupOrder = (imported.subgroup_order || {}) as Record<string, string[]>;
 
             const parsedMGs: ParsedMainGroup[] = [];
@@ -318,15 +321,28 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                     matchedExistingName = matchedNames[0];
                 }
 
+                const currentMatchName = exactNameMatch || matchedExistingName;
+                const importedImageUrl = normalizeImportSetupImageUrl(importedCatalogGroupImageUrls[name]);
+                const hasCatalogChanges = isDuplicate
+                    ? hasImportSetupCatalogsChanged(currentMatchName ? currentCatalogGroups[currentMatchName] : [], cats)
+                    : cats.length > 0;
+                const hasImageChanges = isDuplicate
+                    ? hasImportSetupImageChanged(
+                        currentMatchName ? currentCatalogGroupImageUrls[currentMatchName] : undefined,
+                        importedImageUrl
+                    )
+                    : importedImageUrl.length > 0;
+
                 parsedSgs.push({
                     name,
                     catalogs: cats,
+                    imageUrl: importedImageUrl || undefined,
                     isDuplicate,
                     basicIsExisting: !!exactNameMatch,
                     hasRename,
                     matchedExistingName,
-                    hasNewCatalogs: !isDuplicate,
-                    hasNewImage: true,
+                    hasNewCatalogs: hasCatalogChanges,
+                    hasNewImage: hasImageChanges,
                     category: getSubgroupCategory(name),
                 });
             });
@@ -738,6 +754,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         if (isUpdateRow) {
             const selectedUpdateCount = Number(isCatalogUpdateSelected) + Number(isImageUpdateSelected) + Number(isRenameUpdateSelected);
             const selectionSummary = selectedUpdateCount === 1 ? "1 update selected" : `${selectedUpdateCount} updates selected`;
+            const catalogLabel = sg.catalogs.length === 1 ? "Catalog" : "Catalogs";
 
             return (
                 <div
@@ -755,57 +772,65 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                             : "border-border/50 bg-card/40 hover:border-border hover:bg-card/60"
                     )}
                 >
-                    <div className="flex items-start justify-between">
-                        <div className="min-w-0 flex-1">
-                            <div className="truncate text-[15px] font-bold tracking-tight text-foreground/90">
-                                {formatDisplayName(sg.name)}
-                            </div>
-                            {sg.hasRename && sg.matchedExistingName && (
-                                <div className="mt-0.5 text-[12px] font-medium text-sky-600/90 dark:text-sky-400/80">
-                                    Rename from {formatDisplayName(sg.matchedExistingName)}
+                    <div className="flex flex-col gap-3">
+                        <div className="flex items-start gap-3">
+                            <div className="min-w-0 flex-1">
+                                <div className="truncate text-[15px] font-bold tracking-tight text-foreground/90">
+                                    {formatDisplayName(sg.name)}
                                 </div>
-                            )}
-                            <div className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-foreground/45 flex items-center gap-2">
-                                <span>{sg.catalogs.length} {sg.catalogs.length === 1 ? "Catalog" : "Catalogs"}</span>
-                                <span className="w-1 h-1 rounded-full bg-foreground/15" />
-                                <span>{sg.category}</span>
-                                {selectedUpdateCount > 0 && (
-                                    <>
-                                        <span className="w-1 h-1 rounded-full bg-foreground/15" />
-                                        <span className="text-primary font-bold">{selectionSummary}</span>
-                                    </>
+                                {sg.hasRename && sg.matchedExistingName && (
+                                    <div className="mt-0.5 text-[12px] font-medium text-sky-600/90 dark:text-sky-400/80">
+                                        Rename from {formatDisplayName(sg.matchedExistingName)}
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex max-w-[42%] shrink-0 flex-wrap justify-end gap-1.5">
+                                {sg.hasNewCatalogs && (
+                                    <Badge
+                                        variant="outline"
+                                        onClick={(e) => { e.stopPropagation(); toggleCatalogUpdate(sg.name); }}
+                                        className={cn("h-7 px-2.5 rounded-lg cursor-pointer text-[11px] font-black uppercase tracking-wider transition-all", isCatalogUpdateSelected ? "bg-violet-500/15 text-violet-700 border-violet-500/40 shadow-sm" : "text-foreground/40 hover:bg-violet-500/5 hover:text-violet-600")}
+                                    >
+                                        Catalogs
+                                    </Badge>
+                                )}
+                                {sg.hasNewImage && (
+                                    <Badge
+                                        variant="outline"
+                                        onClick={(e) => { e.stopPropagation(); toggleImageUpdate(sg.name); }}
+                                        className={cn("h-7 px-2.5 rounded-lg cursor-pointer text-[11px] font-black uppercase tracking-wider transition-all", isImageUpdateSelected ? "bg-emerald-500/15 text-emerald-700 border-emerald-500/40 shadow-sm" : "text-foreground/40 hover:bg-emerald-500/5 hover:text-emerald-600")}
+                                    >
+                                        Image
+                                    </Badge>
+                                )}
+                                {sg.hasRename && (
+                                    <Badge
+                                        variant="outline"
+                                        onClick={(e) => { e.stopPropagation(); toggleRenameUpdate(sg.name); }}
+                                        className={cn("h-7 px-2.5 rounded-lg cursor-pointer text-[11px] font-black uppercase tracking-wider transition-all", isRenameUpdateSelected ? "bg-sky-500/15 text-sky-700 border-sky-500/40 shadow-sm" : "text-foreground/40 hover:bg-sky-500/5 hover:text-sky-600")}
+                                    >
+                                        Name
+                                    </Badge>
                                 )}
                             </div>
                         </div>
-                        <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-                            {sg.hasNewCatalogs && (
-                                <Badge
-                                    variant="outline"
-                                    onClick={(e) => { e.stopPropagation(); toggleCatalogUpdate(sg.name); }}
-                                    className={cn("h-7 px-2.5 rounded-lg cursor-pointer text-[11px] font-black uppercase tracking-wider transition-all", isCatalogUpdateSelected ? "bg-violet-500/15 text-violet-700 border-violet-500/40 shadow-sm" : "text-foreground/40 hover:bg-violet-500/5 hover:text-violet-600")}
-                                >
-                                    Catalogs
-                                </Badge>
-                            )}
-                            {sg.hasNewImage && (
-                                <Badge
-                                    variant="outline"
-                                    onClick={(e) => { e.stopPropagation(); toggleImageUpdate(sg.name); }}
-                                    className={cn("h-7 px-2.5 rounded-lg cursor-pointer text-[11px] font-black uppercase tracking-wider transition-all", isImageUpdateSelected ? "bg-emerald-500/15 text-emerald-700 border-emerald-500/40 shadow-sm" : "text-foreground/40 hover:bg-emerald-500/5 hover:text-emerald-600")}
-                                >
-                                    Image
-                                </Badge>
-                            )}
-                            {sg.hasRename && (
-                                <Badge
-                                    variant="outline"
-                                    onClick={(e) => { e.stopPropagation(); toggleRenameUpdate(sg.name); }}
-                                    className={cn("h-7 px-2.5 rounded-lg cursor-pointer text-[11px] font-black uppercase tracking-wider transition-all", isRenameUpdateSelected ? "bg-sky-500/15 text-sky-700 border-sky-500/40 shadow-sm" : "text-foreground/40 hover:bg-sky-500/5 hover:text-sky-600")}
-                                >
-                                    Name
-                                </Badge>
-                            )}
+
+                        <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-foreground/45">
+                            <span className="inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded-full border border-slate-200/65 bg-slate-100/70 px-1.5 text-[10px] font-semibold leading-none text-foreground/58 shadow-sm dark:border-white/10 dark:bg-white/[0.045] dark:text-foreground/56">
+                                {sg.catalogs.length}
+                            </span>
+                            <span>{catalogLabel}</span>
+                            <span className="h-1 w-1 rounded-full bg-foreground/15" />
+                            <span>{sg.category}</span>
                         </div>
+
+                        {selectedUpdateCount > 0 ? (
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="inline-flex items-center rounded-full border border-primary/26 bg-primary/[0.08] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-primary shadow-sm">
+                                    {selectionSummary}
+                                </span>
+                            </div>
+                        ) : null}
                     </div>
                 </div>
             );
@@ -867,10 +892,15 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                 {step === 1 && (
                     <div className="space-y-6 animate-in fade-in duration-300">
                         <EditorNotice tone="warning" className="w-full">
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
+                            <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <p className="font-semibold opacity-90">First time updating?</p>
                                 {onOpenGuide && (
-                                    <Button variant="ghost" size="sm" onClick={() => onOpenGuide("update")} className="h-8 px-3 text-xs font-bold text-amber-700 dark:text-amber-400 hover:bg-amber-500/10">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => onOpenGuide("update")}
+                                        className="h-10 w-full justify-center rounded-xl px-4 text-sm font-bold text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 sm:h-8 sm:w-auto sm:px-3 sm:text-xs"
+                                    >
                                         <BookOpen className="w-3.5 h-3.5 mr-2" />
                                         How to Update
                                     </Button>
@@ -961,7 +991,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                             }
                         }}>
                             <div className={cn(editorSurface.card, "relative flex flex-col overflow-hidden")}>
-                                <div className="sticky top-0 z-30 bg-white/80 dark:bg-[rgb(13,16,22)]/80 backdrop-blur-md border-b border-border/40 shadow-sm p-4 space-y-4">
+                                <div className="sticky top-0 z-30 bg-white/80 dark:bg-[rgb(13,16,22)]/80 backdrop-blur-md border-b border-border/40 shadow-sm p-4 space-y-3.5">
                                     <TabsList className="h-11 p-1 bg-slate-100/50 dark:bg-white/10 rounded-xl grid grid-cols-2 gap-1 border-none">
                                         <TabsTrigger value="main" className="rounded-lg font-bold data-[state=active]:bg-background shadow-sm">Basic Import</TabsTrigger>
                                         <TabsTrigger value="subgroups" className="rounded-lg font-bold data-[state=active]:bg-background shadow-sm">Advanced Update</TabsTrigger>
@@ -977,29 +1007,44 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                         />
                                     </div>
 
-                                    <div className="flex items-center justify-between gap-3">
+                                    <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
                                         {activeReviewTab === "main" ? (
-                                            <Tabs value={activeMainFilter} onValueChange={(v) => setActiveMainFilter(v as "updates" | "new")} className="w-64">
+                                            <Tabs value={activeMainFilter} onValueChange={(v) => setActiveMainFilter(v as "updates" | "new")} className="w-full sm:w-64">
                                                 <TabsList className="h-9 p-1 bg-slate-100/40 dark:bg-white/5 rounded-xl grid grid-cols-2">
-                                                    <TabsTrigger value="new" className="rounded-lg text-xs font-bold">New ({filteredNewMainSubgroupCount})</TabsTrigger>
-                                                    <TabsTrigger value="updates" className="rounded-lg text-xs font-bold">Updates ({filteredUpdatedMainSubgroupCount})</TabsTrigger>
+                                                    <TabsTrigger value="new" className="rounded-lg text-xs font-bold">
+                                                        <span className="sm:hidden">New</span>
+                                                        <span className="hidden sm:inline">New ({filteredNewMainSubgroupCount})</span>
+                                                        <span className="sm:hidden inline-flex h-5 min-w-[1.35rem] items-center justify-center rounded-full border border-border/60 bg-background/80 px-1.5 text-[10px] font-semibold leading-none text-foreground/62 shadow-sm">
+                                                            {filteredNewMainSubgroupCount}
+                                                        </span>
+                                                    </TabsTrigger>
+                                                    <TabsTrigger value="updates" className="rounded-lg text-xs font-bold">
+                                                        <span className="sm:hidden">Updates</span>
+                                                        <span className="hidden sm:inline">Updates ({filteredUpdatedMainSubgroupCount})</span>
+                                                        <span className="sm:hidden inline-flex h-5 min-w-[1.35rem] items-center justify-center rounded-full border border-border/60 bg-background/80 px-1.5 text-[10px] font-semibold leading-none text-foreground/62 shadow-sm">
+                                                            {filteredUpdatedMainSubgroupCount}
+                                                        </span>
+                                                    </TabsTrigger>
                                                 </TabsList>
                                             </Tabs>
                                         ) : activeReviewTab === "subgroups" ? (
-                                            <div className="inline-flex h-9 items-center rounded-xl bg-slate-100/40 p-1 text-xs font-bold dark:bg-white/5">
-                                                <div className="rounded-lg bg-background px-3 py-1.5 shadow-sm">
-                                                    Updates ({filteredUpdatedSubgroups.length})
+                                            <div className="inline-flex h-9 w-full items-center rounded-xl bg-slate-100/40 p-1 text-xs font-bold dark:bg-white/5 sm:w-auto">
+                                                <div className="flex w-full items-center justify-between gap-2 rounded-lg bg-background px-3 py-1.5 shadow-sm sm:w-auto sm:justify-start">
+                                                    <span>Updates</span>
+                                                    <span className="inline-flex h-5 min-w-[1.35rem] items-center justify-center rounded-full border border-border/60 bg-slate-100/75 px-1.5 text-[10px] font-semibold leading-none text-foreground/62 shadow-sm dark:border-white/10 dark:bg-white/[0.045] dark:text-foreground/58">
+                                                        {filteredUpdatedSubgroups.length}
+                                                    </span>
                                                 </div>
                                             </div>
                                         ) : <div></div>}
 
-                                        <div className="flex items-center gap-2">
-                                            <div className="inline-flex h-9 items-center rounded-xl bg-slate-100/40 p-1 dark:bg-white/5">
+                                        <div className="flex w-full items-center gap-2 sm:w-auto sm:justify-end">
+                                            <div className="inline-flex h-9 flex-1 items-center rounded-xl bg-slate-100/40 p-1 dark:bg-white/5 sm:flex-none">
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={activeReviewTab === "main" ? selectVisibleMainGroups : selectAllUpdates}
-                                                    className="h-7 rounded-lg px-3 text-[11px] font-bold text-foreground/72 shadow-none hover:bg-background hover:text-foreground"
+                                                    className="h-7 flex-1 rounded-lg px-3 text-[11px] font-bold text-foreground/72 shadow-none hover:bg-background hover:text-foreground sm:flex-none"
                                                 >
                                                     Select All
                                                 </Button>
@@ -1007,7 +1052,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={activeReviewTab === "main" ? deselectVisibleMainGroups : clearUpdateSelection}
-                                                    className="h-7 rounded-lg px-3 text-[11px] font-bold text-foreground/62 shadow-none hover:bg-background hover:text-foreground"
+                                                    className="h-7 flex-1 rounded-lg px-3 text-[11px] font-bold text-foreground/62 shadow-none hover:bg-background hover:text-foreground sm:flex-none"
                                                 >
                                                     None
                                                 </Button>
@@ -1023,7 +1068,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                                 <ChevronDown className="ml-1 w-3.5 h-3.5" />
                                                             </Button>
                                                         </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end" className="w-48">
+                                                        <DropdownMenuContent align="end" className="w-[min(15rem,calc(100vw-1.75rem))] sm:w-48">
                                                             <DropdownMenuLabel className="text-[10px] font-black uppercase text-foreground/50">Bulk Update</DropdownMenuLabel>
                                                             {visibleCatalogUpdateNames.length > 0 && (
                                                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()} onClick={selectCatalogUpdates} className="flex justify-between">Catalogs {areAllCatalogUpdatesSelected && <Check className="w-3.5 h-3.5" />}</DropdownMenuItem>

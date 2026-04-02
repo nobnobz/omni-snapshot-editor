@@ -663,7 +663,7 @@ export function MdblistRatingsEditor() {
                                     Add source
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="center" sideOffset={8} className="w-56">
+                            <DropdownMenuContent align="center" sideOffset={8} className="w-[min(16rem,calc(100vw-1.75rem))] sm:w-56">
                                 {inactiveDefinitions.map((definition) => (
                                     <DropdownMenuItem key={definition.key} onSelect={() => handleAdd(definition.key)}>
                                         {definition.label}

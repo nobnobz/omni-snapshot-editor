@@ -147,7 +147,7 @@ function MenuGuideCard({
 
 function Menu({ onSelect }: { onSelect: (id: GuideId) => void }) {
     return (
-        <GuideDialog className="relative h-auto max-h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] overflow-y-auto overflow-x-hidden p-0 sm:max-w-[56rem]">
+        <GuideDialog className="relative h-auto max-h-[calc(100dvh-1rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] p-0 sm:max-w-[56rem]">
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(17,24,39,0.94)_0%,rgba(17,24,39,0.94)_42%,rgba(17,24,39,0.86)_58%,rgba(17,24,39,0.78)_100%)]" />
             <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(circle_at_top_left,color-mix(in_oklab,var(--color-primary)_18%,transparent),transparent_58%),radial-gradient(circle_at_top_right,color-mix(in_oklab,var(--color-primary)_24%,transparent),transparent_46%)] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
             <div className="relative px-4 py-4 sm:px-6 sm:py-6">
