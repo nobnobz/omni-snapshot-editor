@@ -2227,7 +2227,7 @@ export function UnifiedSubgroupEditor({
                     <div className="grid grid-cols-3 gap-2 xl:order-2 xl:ml-auto xl:flex xl:flex-none xl:flex-wrap xl:justify-end xl:gap-2">
                         <Button
                             onClick={() => setIsCreateModalOpen(true)}
-                            className="bg-primary hover:bg-primary/92 text-primary-foreground font-semibold h-10 sm:h-9 text-base sm:text-sm px-2.5 rounded-lg min-w-0 justify-center xl:order-3 xl:px-5 xl:justify-start transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out active:scale-[0.985]"
+                            className="bg-primary hover:bg-primary/92 text-primary-foreground font-semibold h-10 sm:h-9 text-base sm:text-sm px-2.5 rounded-lg min-w-0 justify-center xl:order-1 xl:px-5 xl:justify-start transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out active:scale-[0.985]"
                         >
                             <Plus className="w-4 h-4 shrink-0 xl:mr-1.5" />
                             <span className="sm:hidden">New</span>
@@ -2237,7 +2237,7 @@ export function UnifiedSubgroupEditor({
                         <Button
                             onClick={() => setIsAddToGroupModalOpen(true)}
                             variant="outline"
-                            className="h-10 sm:h-9 text-base sm:text-sm border-border/60 hover:bg-muted/60 dark:hover:bg-muted/40 text-foreground/80 hover:text-foreground transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out px-2.5 rounded-lg font-medium min-w-0 justify-center xl:order-1 xl:px-5 xl:justify-start"
+                            className="h-10 sm:h-9 text-base sm:text-sm border-border/60 hover:bg-muted/60 dark:hover:bg-muted/40 text-foreground/80 hover:text-foreground transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out px-2.5 rounded-lg font-medium min-w-0 justify-center xl:order-2 xl:px-5 xl:justify-start"
                         >
                             <FolderPlus className="w-4 h-4 shrink-0 xl:mr-1.5" />
                             <span className="sm:hidden">Add</span>
@@ -2247,7 +2247,7 @@ export function UnifiedSubgroupEditor({
                         <Button
                             onClick={() => setIsImportModalOpen(true)}
                             variant="outline"
-                            className="h-10 sm:h-9 text-base sm:text-sm border-border/60 hover:bg-muted/60 dark:hover:bg-muted/40 text-foreground/80 hover:text-foreground transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out px-2.5 rounded-lg font-medium min-w-0 justify-center xl:order-2 xl:px-5 xl:justify-start"
+                            className="h-10 sm:h-9 text-base sm:text-sm border-border/60 hover:bg-muted/60 dark:hover:bg-muted/40 text-foreground/80 hover:text-foreground transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out px-2.5 rounded-lg font-medium min-w-0 justify-center xl:order-3 xl:px-5 xl:justify-start"
                         >
                             <UploadCloud className="w-4 h-4 shrink-0 xl:mr-1.5" />
                             <span className="sm:hidden">Update</span>

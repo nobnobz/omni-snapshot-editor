@@ -723,7 +723,7 @@ export function UnifiedPatternEditor() {
                                     className={cn(
                                         editorSurface.field,
                                         patternFieldSurface,
-                                        "min-h-[5.75rem] w-full min-w-0 flex-1 rounded-xl px-4 py-3 text-[15px] leading-[1.4] font-medium transition-colors resize-y sm:min-h-[6.25rem] sm:px-5 sm:py-3.5 sm:text-base lg:min-h-[5.25rem] lg:px-4 lg:py-3 lg:text-sm"
+                                        "min-h-[5.75rem] w-full min-w-0 flex-1 rounded-xl px-4 py-3 text-[15px] leading-[1.4] font-medium transition-colors resize-y sm:min-h-[6.25rem] sm:px-5 sm:py-3.5 sm:text-base lg:min-h-[4rem] lg:px-4 lg:py-2.5 lg:text-sm"
                                     )}
                                 />
                                 <div className="flex items-center gap-2 lg:shrink-0">
@@ -735,18 +735,17 @@ export function UnifiedPatternEditor() {
                                     </Button>
                                     {!confirmDeleteAll && (
                                         <Button
-                                            variant="ghost"
+                                            variant="outline"
                                             onClick={() => setConfirmDeleteAll(true)}
                                             className={cn(
-                                                "h-12 shrink-0 gap-2 rounded-[1.15rem] border border-transparent px-3",
-                                                "lg:h-10 lg:w-10 lg:gap-0 lg:px-0",
-                                                editorHover.iconDanger
+                                                editorAction.secondary,
+                                                "h-10 shrink-0 gap-2 rounded-lg px-3.5 sm:h-9 sm:px-4 text-red-500 hover:text-red-600 hover:bg-red-500/10 border-red-500/16 hover:border-red-500/30 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-500/15"
                                             )}
                                             aria-label="Delete all patterns"
                                             title="Delete All"
                                         >
                                             <Trash2 className="w-4 h-4" />
-                                            <span className="text-xs font-bold lg:hidden">Delete All</span>
+                                            <span className="text-xs font-semibold">Delete All</span>
                                         </Button>
                                     )}
                                 </div>
