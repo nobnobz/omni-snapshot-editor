@@ -49,6 +49,14 @@ import {
     AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
 import { RenameGroupModal } from "./RenameGroupModal";
 import { CreateGroupModal } from "./CreateGroupModal";
 import { AddToGroupModal } from "./AddToGroupModal";
@@ -76,6 +84,7 @@ const reconcileOrderedNames = (snapshot: string[], currentNames: string[]) => {
 const EMPTY_STRING_ARRAY: string[] = [];
 const EMPTY_RECORD: Record<string, never> = {};
 type ThumbnailAspect = "portrait" | "landscape" | "square";
+type CatalogOption = { id: string; name: string };
 
 // Catalog reorder is vertical-only; locking X prevents visible sideways jumps while dragging.
 const restrictVerticalDrag: Modifier = ({ transform }) => ({
@@ -225,6 +234,152 @@ const focusSearchInput = (input: HTMLInputElement | null) => {
         // Some browsers may reject selection updates for specific input modes.
     }
 };
+
+const groupCatalogOptions = (options: CatalogOption[]) => {
+    const groups: Record<string, CatalogOption[]> = { Other: [] };
+
+    options.forEach((catalog) => {
+        const match = catalog.name.match(/^\[(.*?)\]\s*(.*)$/);
+        if (match) {
+            const category = match[1];
+            const cleanName = match[2];
+            if (!groups[category]) groups[category] = [];
+            groups[category].push({ ...catalog, name: cleanName });
+            return;
+        }
+
+        groups.Other.push(catalog);
+    });
+
+    const sortedCategories = Object.keys(groups)
+        .filter((category) => category !== "Other")
+        .sort((a, b) => a.localeCompare(b));
+
+    if (groups.Other.length > 0) {
+        sortedCategories.push("Other");
+    }
+
+    return sortedCategories.map((category) => ({
+        category,
+        options: groups[category],
+    }));
+};
+
+const SubgroupCatalogPickerDialog = React.memo(function SubgroupCatalogPickerDialog({
+    open,
+    onOpenChange,
+    catalogSearch,
+    onCatalogSearchChange,
+    filteredCatalogs,
+    inputRef,
+    onSelectCatalog,
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    catalogSearch: string;
+    onCatalogSearchChange: (value: string) => void;
+    filteredCatalogs: CatalogOption[];
+    inputRef: React.RefObject<HTMLInputElement | null>;
+    onSelectCatalog: (catalogId: string) => void;
+}) {
+    const groupedCatalogs = React.useMemo(
+        () => groupCatalogOptions(filteredCatalogs),
+        [filteredCatalogs]
+    );
+
+    return (
+        <Dialog
+            open={open}
+            onOpenChange={(nextOpen) => {
+                onOpenChange(nextOpen);
+                if (!nextOpen) onCatalogSearchChange("");
+            }}
+        >
+            <DialogTrigger asChild>
+                <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className={cn(editorSurface.dropzone, "w-full justify-start text-xs text-foreground/75 hover:text-foreground hover:border-primary/45 hover:bg-primary/5 transition-all active:scale-[0.995]")}
+                >
+                    <Plus className="w-3.5 h-3.5 mr-2" /> Add Catalog...
+                </Button>
+            </DialogTrigger>
+            <DialogContent
+                className={cn(editorSurface.card, "w-[min(92vw,32rem)] gap-0 overflow-hidden border p-0")}
+                onOpenAutoFocus={(event) => {
+                    event.preventDefault();
+                }}
+                onCloseAutoFocus={(event) => {
+                    event.preventDefault();
+                }}
+            >
+                <DialogHeader className={cn(editorSurface.overlaySection, "space-y-2 border-b border-primary/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.66),rgba(239,246,255,0.5))] p-4 dark:border-primary/14 dark:bg-[linear-gradient(180deg,rgba(18,24,35,0.95),rgba(14,20,31,0.92))]")}>
+                    <div className="pr-8">
+                        <DialogTitle className="text-sm font-semibold tracking-tight">Select Catalog</DialogTitle>
+                        <DialogDescription className="mt-1 text-xs text-foreground/62">
+                            Add another catalog to this subgroup.
+                        </DialogDescription>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                        <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-foreground/58">
+                            Catalogs
+                        </span>
+                        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary/78 dark:text-primary/70">
+                            {filteredCatalogs.length} available
+                        </span>
+                    </div>
+                    <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-foreground/60" />
+                        <Input
+                            ref={inputRef}
+                            placeholder="Search by name or ID..."
+                            value={catalogSearch}
+                            onChange={(event) => onCatalogSearchChange(event.target.value)}
+                            className={cn(editorSurface.field, "h-10 sm:h-9 pl-8 text-base sm:text-sm focus-visible:ring-ring/50")}
+                        />
+                    </div>
+                </DialogHeader>
+                <div className={cn(editorSurface.overlayList, "max-h-[min(60vh,22rem)] overflow-y-auto p-2 custom-scrollbar")}>
+                    {filteredCatalogs.length === 0 ? (
+                        <p className="p-4 text-center text-xs text-foreground/70">No catalogs found.</p>
+                    ) : (
+                        groupedCatalogs.map(({ category, options }) => (
+                            <div key={category} className="mb-2 last:mb-0">
+                                <div className={cn(editorSurface.sticky, "sticky top-0 z-[60] mb-1 px-2.5 py-2")}>
+                                    <h5 className="text-xs font-bold uppercase tracking-[0.18em] text-foreground/52">{category}</h5>
+                                </div>
+                                <div className="flex flex-col gap-0.5">
+                                    {options.map((catalog) => (
+                                        <button
+                                            key={catalog.id}
+                                            type="button"
+                                            onClick={() => {
+                                                onSelectCatalog(catalog.id);
+                                                onOpenChange(false);
+                                            }}
+                                            className="group flex items-center gap-3 rounded-md border border-transparent px-2.5 py-2 text-left transition-colors hover:border-primary/20 hover:bg-primary/10 dark:hover:border-primary/22 dark:hover:bg-primary/20"
+                                        >
+                                            <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground transition-colors group-hover:text-primary">
+                                                {catalog.name}
+                                            </p>
+                                            <p
+                                                className="max-w-[40%] shrink-0 truncate text-right text-xs font-mono text-foreground/42 transition-colors dark:text-foreground/50 group-hover:text-primary/72 dark:group-hover:text-primary/70"
+                                                title={catalog.id}
+                                            >
+                                                {catalog.id}
+                                            </p>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+});
 
 // ----------------------------------------------------------------------
 // 1. Sortable Catalog Node (Inside a Subgroup)
@@ -415,10 +570,10 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
     }, [isAddMenuOpen]);
 
     const customNames: Record<string, string> = React.useMemo(() => rawCustomNames || {}, [rawCustomNames]);
-    const catalogOptions = React.useMemo(() => {
+    const catalogOptions = React.useMemo<CatalogOption[]>(() => {
         if (!isAddMenuOpen) return [];
 
-        const options: { id: string, name: string }[] = [];
+        const options: CatalogOption[] = [];
 
         // 1. All existing catalogs not already in subgroupCatalogs
         const existingBaseIds = new Set<string>();
@@ -515,8 +670,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
         toggleExpanded();
     };
 
-    const handleAddCatalog = (e: Event, catalogId: string) => {
-        e.preventDefault();
+    const handleAddCatalog = (catalogId: string) => {
         if (!catalogId.trim()) return;
         const name = resolveCatalogName(catalogId.trim(), customNames);
         const normalizedId = ensureCatalogPrefix(catalogId.trim(), name);
@@ -524,6 +678,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
         const updated = [...subgroupCatalogs, normalizedId];
         setSubgroupCatalogs(updated);
         updateValue(["catalog_groups", subgroupName], updated);
+        setIsAddMenuOpen(false);
     };
 
     return (
@@ -784,98 +939,17 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                             </div>
                         )}
 
-                        {/* Add New Catalog Dropdown Menu */}
+                        {/* Add New Catalog Dialog */}
                         <div className="pt-1 sm:pt-0">
-                            <DropdownMenu modal={false} open={isAddMenuOpen} onOpenChange={open => {
-                                setIsAddMenuOpen(open);
-                                if (!open) setCatalogSearch("");
-                            }}>
-                                <DropdownMenuTrigger asChild>
-                                    <Button type="button" size="sm" variant="outline" className={cn(editorSurface.dropzone, "w-full justify-start text-xs text-foreground/75 hover:text-foreground hover:border-primary/45 hover:bg-primary/5 transition-all active:scale-[0.995]")}>
-                                        <Plus className="w-3.5 h-3.5 mr-2" /> Add Catalog...
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent
-                                    align="center"
-                                    sideOffset={8}
-                                    className={cn(editorSurface.overlay, "w-[30rem] max-w-[92vw] p-0 overflow-hidden")}
-                                    onCloseAutoFocus={(event) => {
-                                        event.preventDefault();
-                                    }}
-                                >
-                                    <div className={cn(editorSurface.overlaySection, "space-y-2 border-b border-primary/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.66),rgba(239,246,255,0.5))] p-3 dark:border-primary/14 dark:bg-[linear-gradient(180deg,rgba(18,24,35,0.95),rgba(14,20,31,0.92))]")}>
-                                        <h4 className="flex justify-between text-[11px] font-bold uppercase tracking-[0.18em] text-foreground/58">
-                                            <span>Select Catalog</span>
-                                            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary/78 dark:text-primary/70">{filteredCatalogs.length} available</span>
-                                        </h4>
-                                        <div className="relative">
-                                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-foreground/60" />
-                                            <Input
-                                                ref={addCatalogSearchInputRef}
-                                                placeholder="Search by name or ID..."
-                                                value={catalogSearch}
-                                                onChange={e => setCatalogSearch(e.target.value)}
-                                                className={cn(editorSurface.field, "h-10 sm:h-9 text-base sm:text-sm pl-8 focus-visible:ring-ring/50")}
-                                                onKeyDown={e => e.stopPropagation()}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className={cn(editorSurface.overlayList, "max-h-[340px] overflow-y-auto p-2 pt-0 custom-scrollbar")}>
-                                        {filteredCatalogs.length === 0 ? (
-                                            <p className="text-xs text-foreground/70 p-4 text-center">No catalogs found.</p>
-                                        ) : (
-                                            (() => {
-                                                const groups: Record<string, typeof filteredCatalogs> = {
-                                                    "Other": []
-                                                };
-                                                filteredCatalogs.forEach(c => {
-                                                    const match = c.name.match(/^\[(.*?)\]\s*(.*)$/);
-                                                    if (match) {
-                                                        const category = match[1];
-                                                        const cleanName = match[2];
-                                                        if (!groups[category]) groups[category] = [];
-                                                        groups[category].push({ ...c, name: cleanName });
-                                                    } else {
-                                                        groups["Other"].push(c);
-                                                    }
-                                                });
-
-                                                const sortedCategories = Object.keys(groups)
-                                                    .filter(k => k !== "Other")
-                                                    .sort((a, b) => a.localeCompare(b));
-
-                                                if (groups["Other"].length > 0) {
-                                                    sortedCategories.push("Other");
-                                                }
-
-                                                return sortedCategories.map(category => (
-                                                    <div key={category} className="mb-2 last:mb-0">
-                                                        <div className={`${editorSurface.sticky} sticky top-0 py-2 px-2.5 z-[60] mb-1`}>
-                                                            <h5 className="text-xs font-bold text-foreground/52 uppercase tracking-[0.18em]">{category}</h5>
-                                                        </div>
-                                                        <div className="flex flex-col gap-0.5">
-                                                            {groups[category].map(c => (
-                                                                <DropdownMenuItem
-                                                                    key={c.id}
-                                                                    onSelect={(e) => handleAddCatalog(e, c.id)}
-                                                                    className="group flex cursor-pointer items-center gap-3 rounded-md border border-transparent px-2.5 py-2 hover:bg-primary/10 hover:text-foreground data-[highlighted]:border-primary/20 data-[highlighted]:bg-primary/12 data-[highlighted]:text-foreground dark:hover:bg-primary/16 dark:data-[highlighted]:border-primary/22 dark:data-[highlighted]:bg-primary/20"
-                                                                >
-                                                                    <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground transition-colors group-data-[highlighted]:text-primary">
-                                                                        {c.name}
-                                                                    </p>
-                                                                    <p className="max-w-[40%] shrink-0 truncate text-right text-xs font-mono text-foreground/42 transition-colors dark:text-foreground/50 group-data-[highlighted]:text-primary/72 dark:group-data-[highlighted]:text-primary/70" title={c.id}>
-                                                                        {c.id}
-                                                                    </p>
-                                                                </DropdownMenuItem>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                ));
-                                            })()
-                                        )}
-                                    </div>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                            <SubgroupCatalogPickerDialog
+                                open={isAddMenuOpen}
+                                onOpenChange={setIsAddMenuOpen}
+                                catalogSearch={catalogSearch}
+                                onCatalogSearchChange={setCatalogSearch}
+                                filteredCatalogs={filteredCatalogs}
+                                inputRef={addCatalogSearchInputRef}
+                                onSelectCatalog={handleAddCatalog}
+                            />
                         </div>
                     </div>
                 </div>
@@ -1360,10 +1434,10 @@ const UnassignedSubgroupRow = React.memo(function UnassignedSubgroupRow({
     }, [isAddMenuOpen]);
 
     const customNames: Record<string, string> = React.useMemo(() => rawCustomNames || {}, [rawCustomNames]);
-    const catalogOptions = React.useMemo(() => {
+    const catalogOptions = React.useMemo<CatalogOption[]>(() => {
         if (!isAddMenuOpen) return [];
 
-        const options: { id: string, name: string }[] = [];
+        const options: CatalogOption[] = [];
 
         const existingBaseIds = new Set<string>();
         for (const c of fullCatalogs) {
@@ -1404,14 +1478,14 @@ const UnassignedSubgroupRow = React.memo(function UnassignedSubgroupRow({
         );
     }, [catalogOptions, catalogSearch]);
 
-    const handleAddCatalog = (e: Event, catalogId: string) => {
-        e.preventDefault();
+    const handleAddCatalog = (catalogId: string) => {
         if (!catalogId.trim()) return;
         const name = resolveCatalogName(catalogId.trim(), customNames);
         const normalizedId = ensureCatalogPrefix(catalogId.trim(), name);
 
         const updated = [...subgroupCatalogsProp, normalizedId];
         updateValue(["catalog_groups", groupName], updated);
+        setIsAddMenuOpen(false);
     };
 
     const handleRemoveCatalog = (catalogId: string) => {
@@ -1708,98 +1782,17 @@ const UnassignedSubgroupRow = React.memo(function UnassignedSubgroupRow({
                             </DndContext>
                         </div>
 
-                        {/* Add New Catalog Dropdown Menu */}
+                        {/* Add New Catalog Dialog */}
                         <div className="pt-1 sm:pt-0">
-                            <DropdownMenu modal={false} open={isAddMenuOpen} onOpenChange={open => {
-                                setIsAddMenuOpen(open);
-                                if (!open) setCatalogSearch("");
-                            }}>
-                                <DropdownMenuTrigger asChild>
-                                    <Button type="button" size="sm" variant="outline" className={cn(editorSurface.dropzone, "w-full justify-start text-xs text-foreground/75 hover:text-foreground hover:border-primary/45 hover:bg-primary/5 transition-all active:scale-[0.995]")}>
-                                        <Plus className="w-3.5 h-3.5 mr-2" /> Add Catalog...
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent
-                                    align="center"
-                                    sideOffset={8}
-                                    className={cn(editorSurface.overlay, "w-[30rem] max-w-[92vw] p-0 overflow-hidden")}
-                                    onCloseAutoFocus={(event) => {
-                                        event.preventDefault();
-                                    }}
-                                >
-                                    <div className={cn(editorSurface.overlaySection, "space-y-2 border-b border-primary/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.66),rgba(239,246,255,0.5))] p-3 dark:border-primary/14 dark:bg-[linear-gradient(180deg,rgba(18,24,35,0.95),rgba(14,20,31,0.92))]")}>
-                                        <h4 className="flex justify-between text-[11px] font-bold uppercase tracking-[0.18em] text-foreground/58">
-                                            <span>Select Catalog</span>
-                                            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary/78 dark:text-primary/70">{filteredCatalogs.length} available</span>
-                                        </h4>
-                                        <div className="relative">
-                                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-foreground/60" />
-                                            <Input
-                                                ref={addCatalogSearchInputRef}
-                                                placeholder="Search by name or ID..."
-                                                value={catalogSearch}
-                                                onChange={e => setCatalogSearch(e.target.value)}
-                                                className={cn(editorSurface.field, "h-10 sm:h-9 text-base sm:text-sm pl-8 focus-visible:ring-ring/50")}
-                                                onKeyDown={e => e.stopPropagation()}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className={cn(editorSurface.overlayList, "max-h-[340px] overflow-y-auto p-2 pt-0 custom-scrollbar")}>
-                                        {filteredCatalogs.length === 0 ? (
-                                            <p className="text-xs text-foreground/70 p-4 text-center">No catalogs found.</p>
-                                        ) : (
-                                            (() => {
-                                                const groups: Record<string, typeof filteredCatalogs> = {
-                                                    "Other": []
-                                                };
-                                                filteredCatalogs.forEach(c => {
-                                                    const match = c.name.match(/^\[(.*?)\]\s*(.*)$/);
-                                                    if (match) {
-                                                        const category = match[1];
-                                                        const cleanName = match[2];
-                                                        if (!groups[category]) groups[category] = [];
-                                                        groups[category].push({ ...c, name: cleanName });
-                                                    } else {
-                                                        groups["Other"].push(c);
-                                                    }
-                                                });
-
-                                                const sortedCategories = Object.keys(groups)
-                                                    .filter(k => k !== "Other")
-                                                    .sort((a, b) => a.localeCompare(b));
-
-                                                if (groups["Other"].length > 0) {
-                                                    sortedCategories.push("Other");
-                                                }
-
-                                                return sortedCategories.map(category => (
-                                                    <div key={category} className="mb-2 last:mb-0">
-                                                        <div className={`${editorSurface.sticky} sticky top-0 py-2 px-2.5 z-[60] mb-1`}>
-                                                            <h5 className="text-xs font-bold text-foreground/52 uppercase tracking-[0.18em]">{category}</h5>
-                                                        </div>
-                                                        <div className="flex flex-col gap-0.5">
-                                                            {groups[category].map(c => (
-                                                                <DropdownMenuItem
-                                                                    key={c.id}
-                                                                    onSelect={(e) => handleAddCatalog(e, c.id)}
-                                                                    className="group flex cursor-pointer items-center gap-3 rounded-md border border-transparent px-2.5 py-2 hover:bg-primary/10 hover:text-foreground data-[highlighted]:border-primary/20 data-[highlighted]:bg-primary/12 data-[highlighted]:text-foreground dark:hover:bg-primary/16 dark:data-[highlighted]:border-primary/22 dark:data-[highlighted]:bg-primary/20"
-                                                                >
-                                                                    <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground transition-colors group-data-[highlighted]:text-primary">
-                                                                        {c.name}
-                                                                    </p>
-                                                                    <p className="max-w-[40%] shrink-0 truncate text-right text-xs font-mono text-foreground/42 transition-colors dark:text-foreground/50 group-data-[highlighted]:text-primary/72 dark:group-data-[highlighted]:text-primary/70" title={c.id}>
-                                                                        {c.id}
-                                                                    </p>
-                                                                </DropdownMenuItem>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                ));
-                                            })()
-                                        )}
-                                    </div>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                            <SubgroupCatalogPickerDialog
+                                open={isAddMenuOpen}
+                                onOpenChange={setIsAddMenuOpen}
+                                catalogSearch={catalogSearch}
+                                onCatalogSearchChange={setCatalogSearch}
+                                filteredCatalogs={filteredCatalogs}
+                                inputRef={addCatalogSearchInputRef}
+                                onSelectCatalog={handleAddCatalog}
+                            />
                         </div>
                     </div>
 
