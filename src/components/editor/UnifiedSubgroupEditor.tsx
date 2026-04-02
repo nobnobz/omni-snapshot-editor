@@ -250,6 +250,29 @@ const preventTouchDropdownAutoOpen = (event: React.PointerEvent<HTMLButtonElemen
     }
 };
 
+const scrollMainGroupIntoView = (uuid: string) => {
+    if (typeof document === "undefined" || typeof window === "undefined") return;
+
+    const container = document.getElementById(`main-group-${uuid}`);
+    if (!container) return;
+
+    const trigger = container.querySelector<HTMLElement>('[data-slot="accordion-trigger"]') ?? container;
+    const rect = trigger.getBoundingClientRect();
+    const topOffset = window.matchMedia("(min-width: 640px)").matches ? 96 : 84;
+    const bottomOffset = 112;
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+
+    if (rect.top >= topOffset && rect.bottom <= viewportHeight - bottomOffset) {
+        return;
+    }
+
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    trigger.scrollIntoView({
+        block: "start",
+        behavior: prefersReducedMotion ? "auto" : "smooth",
+    });
+};
+
 const groupCatalogOptions = (options: CatalogOption[]) => {
     const groups: Record<string, CatalogOption[]> = { Other: [] };
 
@@ -342,7 +365,7 @@ const SubgroupCatalogPickerDialog = React.memo(function SubgroupCatalogPickerDia
                     event.preventDefault();
                 }}
             >
-                <DialogHeader className={cn(editorSurface.overlaySection, "space-y-2 border-b border-primary/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.66),rgba(239,246,255,0.5))] p-4 dark:border-primary/14 dark:bg-[linear-gradient(180deg,rgba(18,24,35,0.95),rgba(14,20,31,0.92))]")}>
+                <DialogHeader className={cn(editorSurface.overlaySection, "space-y-2 border-b border-primary/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.66),rgba(239,246,255,0.5))] p-4 sm:space-y-1.5 sm:p-3.5 dark:border-primary/14 dark:bg-[linear-gradient(180deg,rgba(18,24,35,0.95),rgba(14,20,31,0.92))]")}>
                     <div className="pr-8">
                         <DialogTitle className="text-sm font-semibold tracking-tight">Select Catalog</DialogTitle>
                         <DialogDescription className="mt-1 text-xs text-foreground/62">
@@ -357,7 +380,7 @@ const SubgroupCatalogPickerDialog = React.memo(function SubgroupCatalogPickerDia
                             {filteredCatalogs.length} available
                         </span>
                     </div>
-                    <div className="relative">
+                    <div className="relative sm:max-w-[28rem]">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-foreground/60" />
                         <Input
                             ref={inputRef}
@@ -365,7 +388,7 @@ const SubgroupCatalogPickerDialog = React.memo(function SubgroupCatalogPickerDia
                             placeholder="Search by name or ID..."
                             value={catalogSearch}
                             onChange={(event) => onCatalogSearchChange(event.target.value)}
-                            className={cn(editorSurface.field, "h-10 sm:h-9 pl-8 text-base sm:text-sm focus-visible:ring-ring/50")}
+                            className={cn(editorSurface.field, "h-10 sm:h-9 pl-8 text-base sm:text-sm focus-visible:ring-2 focus-visible:ring-primary/25 focus-visible:ring-offset-0")}
                         />
                     </div>
                 </DialogHeader>
@@ -1220,7 +1243,7 @@ const MainGroupNode = React.memo(function MainGroupNode({
             id={`main-group-${uuid}`}
             ref={setNodeRef}
             style={style}
-            className={`${editorSurface.card} touch-drag-surface mb-2 overflow-hidden backdrop-blur-[10px] transition-[border-color,background-color,box-shadow] ${isDragging ? "opacity-50 border-primary shadow-xl scale-[1.01] z-50" : ""} group/main`}
+            className={`${editorSurface.card} touch-drag-surface mb-2 overflow-hidden scroll-mt-24 sm:scroll-mt-28 backdrop-blur-[10px] transition-[border-color,background-color,box-shadow] ${isDragging ? "opacity-50 border-primary shadow-xl scale-[1.01] z-50" : ""} group/main`}
         >
             <AccordionItem value={uuid} className="border-none">
                 <div className="flex items-center">
@@ -2088,6 +2111,7 @@ export function UnifiedSubgroupEditor({
     const [searchTerm, setSearchTerm] = useState("");
     const deferredSearchTerm = useDeferredValue(searchTerm);
     const searchInputRef = useRef<HTMLInputElement>(null);
+    const mainGroupScrollTimeoutRef = useRef<number | null>(null);
 
     const handleUnassignSubgroup = (subgroupName: string, parentUuid: string) => {
         setRecentUnassigns(prev => ({ ...prev, [subgroupName]: parentUuid }));
@@ -2150,6 +2174,25 @@ export function UnifiedSubgroupEditor({
         if (filteredMainGroupOrder.includes(expandedMainGroup)) return;
         setExpandedMainGroup(undefined);
     }, [expandedMainGroup, filteredMainGroupOrder]);
+
+    React.useEffect(() => {
+        if (!expandedMainGroup) return;
+
+        const frameId = window.requestAnimationFrame(() => {
+            scrollMainGroupIntoView(expandedMainGroup);
+            mainGroupScrollTimeoutRef.current = window.setTimeout(() => {
+                scrollMainGroupIntoView(expandedMainGroup);
+            }, 220);
+        });
+
+        return () => {
+            window.cancelAnimationFrame(frameId);
+            if (mainGroupScrollTimeoutRef.current !== null) {
+                window.clearTimeout(mainGroupScrollTimeoutRef.current);
+                mainGroupScrollTimeoutRef.current = null;
+            }
+        };
+    }, [expandedMainGroup]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
