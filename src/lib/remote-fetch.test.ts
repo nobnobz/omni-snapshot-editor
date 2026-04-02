@@ -53,4 +53,30 @@ describe("remote-fetch", () => {
             maxBytes: 1024,
         })).rejects.toBeInstanceOf(RemoteFormatError);
     });
+
+    it("forwards custom request options for non-GET fetches", async () => {
+        mockFetch.mockResolvedValueOnce({
+            ok: true,
+            headers: { get: () => null },
+            text: async () => '{"ok":true}',
+        } as unknown as Response);
+
+        await expect(fetchTextWithLimits("https://example.com/data", {
+            timeoutMs: 1000,
+            maxBytes: 1024,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: "{}",
+        })).resolves.toBe('{"ok":true}');
+
+        expect(mockFetch).toHaveBeenCalledWith("https://example.com/data", expect.objectContaining({
+            method: "POST",
+            body: "{}",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        }));
+    });
 });

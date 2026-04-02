@@ -106,6 +106,7 @@ type ProcessAIOMetadataOptions = {
 
 type SyncAIOMetadataFromUrlOptions = {
     showSuccessNotice?: boolean;
+    showErrorNotice?: boolean;
     preserveScroll?: boolean;
     errorPlacement?: UiNotice["placement"];
     errorMessage?: string;
@@ -120,6 +121,8 @@ const EDITOR_SECTIONS = [
 ];
 
 const AIOMETADATA_SYNC_STORAGE_KEY = "omni_aiometadata_sync_v1";
+const AIOMETADATA_MANIFEST_TIMEOUT_MS = 20_000;
+const AIOMETADATA_CONFIG_LOAD_TIMEOUT_MS = 8_000;
 
 export function MainEditor() {
     const {
@@ -716,12 +719,13 @@ export function MainEditor() {
 
         const shouldPreserveScroll = options.preserveScroll ?? true;
         const shouldShowSuccessNotice = options.showSuccessNotice ?? true;
+        const shouldShowErrorNotice = options.showErrorNotice ?? true;
 
         setIsImportingUrl(true);
         const request = measureAsync("aiometadataImportUrl", async () => {
             try {
                 const manifestText = await fetchTextWithLimits(sourceValue, {
-                    timeoutMs: 12000,
+                    timeoutMs: AIOMETADATA_MANIFEST_TIMEOUT_MS,
                     maxBytes: 5_000_000,
                 });
                 let importText = manifestText;
@@ -729,7 +733,9 @@ export function MainEditor() {
 
                 if (configLoadUrl) {
                     try {
-                        const response = await fetch(configLoadUrl, {
+                        const configText = await fetchTextWithLimits(configLoadUrl, {
+                            timeoutMs: AIOMETADATA_CONFIG_LOAD_TIMEOUT_MS,
+                            maxBytes: 5_000_000,
                             method: "POST",
                             headers: {
                                 Accept: "application/json",
@@ -737,11 +743,7 @@ export function MainEditor() {
                             },
                             body: "{}",
                         });
-
-                        if (response.ok) {
-                            const configText = await response.text();
-                            importText = pickRicherAIOMetadataPayload(manifestText, configText);
-                        }
+                        importText = pickRicherAIOMetadataPayload(manifestText, configText);
                     } catch (configLoadError) {
                         console.warn("Failed to load richer AIOMetadata config payload, falling back to manifest.", configLoadError);
                     }
@@ -763,12 +765,16 @@ export function MainEditor() {
                     importWork();
                 }
             } catch (err: unknown) {
-                console.error(err);
-                showNotice(
-                    "error",
-                    options.errorMessage ?? (err instanceof Error ? err.message : "Failed to fetch AIOMetadata manifest."),
-                    options.errorPlacement ?? "aiometadata"
-                );
+                if (shouldShowErrorNotice) {
+                    console.error(err);
+                    showNotice(
+                        "error",
+                        options.errorMessage ?? (err instanceof Error ? err.message : "Failed to fetch AIOMetadata manifest."),
+                        options.errorPlacement ?? "aiometadata"
+                    );
+                } else {
+                    console.warn("AIOMetadata background refresh failed.", err);
+                }
             } finally {
                 setIsImportingUrl(false);
                 activeAioImportRequestRef.current = null;
@@ -929,6 +935,7 @@ export function MainEditor() {
         hasAutoResyncedAioRef.current = true;
         void syncAIOMetadataFromUrl(aioSyncState.sourceValue, {
             showSuccessNotice: false,
+            showErrorNotice: false,
             preserveScroll: false,
             errorPlacement: "aiometadata",
             errorMessage: "Failed to refresh synced AIOMetadata from the saved manifest URL.",

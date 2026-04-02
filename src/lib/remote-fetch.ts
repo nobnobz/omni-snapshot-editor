@@ -31,6 +31,8 @@ type FetchWithLimitsOptions = {
     maxBytes: number;
     signal?: AbortSignal;
     headers?: HeadersInit;
+    method?: string;
+    body?: BodyInit | null;
 };
 
 const mergeAbortSignals = (signals: Array<AbortSignal | undefined>) => {
@@ -104,7 +106,7 @@ const decodeTextResponse = async (response: Response, maxBytes: number) => {
 
 export const fetchTextWithLimits = async (
     url: string,
-    { timeoutMs, maxBytes, signal, headers }: FetchWithLimitsOptions,
+    { timeoutMs, maxBytes, signal, headers, method, body }: FetchWithLimitsOptions,
 ) => {
     const timeoutController = new AbortController();
     const timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs);
@@ -114,6 +116,8 @@ export const fetchTextWithLimits = async (
         const response = await fetch(url, {
             signal: merged.signal,
             headers,
+            method,
+            body,
         });
 
         if (!response.ok) {
@@ -134,7 +138,7 @@ export const fetchTextWithLimits = async (
 
 export const fetchJsonWithLimits = async <T = unknown>(
     url: string,
-    { timeoutMs, maxBytes, signal, headers }: FetchWithLimitsOptions,
+    { timeoutMs, maxBytes, signal, headers, method, body }: FetchWithLimitsOptions,
 ): Promise<T> => {
     const timeoutController = new AbortController();
     const timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs);
@@ -144,6 +148,8 @@ export const fetchJsonWithLimits = async <T = unknown>(
         const response = await fetch(url, {
             signal: merged.signal,
             headers,
+            method,
+            body,
         });
 
         if (!response.ok) {
