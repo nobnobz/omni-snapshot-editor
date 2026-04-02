@@ -320,7 +320,7 @@ function SortableCatalogItem({
             </div>
 
             {/* Settings */}
-            <DropdownMenu open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+            <DropdownMenu open={isSettingsOpen} onOpenChange={setIsSettingsOpen} modal={false}>
                 <DropdownMenuTrigger asChild>
                     <Button
                         variant="ghost"
@@ -336,7 +336,16 @@ function SortableCatalogItem({
                         <Settings2 className="w-4 h-4" />
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="center" sideOffset={8} className="w-64 max-w-[calc(100vw-2rem)]">
+                <DropdownMenuContent
+                    align="center"
+                    sideOffset={8}
+                    className="w-64 max-w-[calc(100vw-2rem)]"
+                    onCloseAutoFocus={(event) => {
+                        // Restoring focus to the trigger inside the scrollable catalog list
+                        // can yank the viewport back to the item on touch devices.
+                        event.preventDefault();
+                    }}
+                >
 
                     <DropdownMenuLabel className="text-xs uppercase text-foreground/70 font-bold">Visibility</DropdownMenuLabel>
 
