@@ -203,7 +203,7 @@ export function Documentation({ headerAction, onOpenInstallGuide }: Documentatio
     return (
         <GuideDialog>
             <GuideHeader
-                badge="How To"
+                badge="How to Use"
                 title="Omni Snapshot Manager"
                 icon={BookOpen}
                 action={headerAction}

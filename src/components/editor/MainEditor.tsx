@@ -1038,7 +1038,7 @@ export function MainEditor() {
                                         >
                                             <span className="flex items-center gap-3">
                                                 <BookOpen className="w-4 h-4" />
-                                                <span>How To</span>
+                                                <span>How to Use</span>
                                             </span>
                                             <ChevronDown
                                                 className={cn(
@@ -1231,7 +1231,7 @@ export function MainEditor() {
                                                 className="h-7 rounded-full px-2 text-[11px] font-medium text-foreground/70 hover:bg-primary/10 hover:text-foreground"
                                             >
                                                 <BookOpen className="h-3.5 w-3.5 text-primary" />
-                                                <span className="ml-1 hidden min-[430px]:inline">How To</span>
+                                                <span className="ml-1 hidden min-[430px]:inline">How to Use</span>
                                                 <ChevronDown
                                                     className={cn(
                                                         "ml-1 h-3 w-3 text-primary/80 transition-transform duration-200",
