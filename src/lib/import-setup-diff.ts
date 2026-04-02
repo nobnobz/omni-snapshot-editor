@@ -3,6 +3,11 @@ const normalizeCatalogList = (value: unknown): string[] =>
         ? value.filter((entry): entry is string => typeof entry === "string").map((entry) => entry.trim()).filter(Boolean)
         : [];
 
+const normalizeStringList = (value: unknown): string[] =>
+    Array.isArray(value)
+        ? value.filter((entry): entry is string => typeof entry === "string").map((entry) => entry.trim()).filter(Boolean)
+        : [];
+
 export const normalizeImportSetupImageUrl = (value: unknown) =>
     typeof value === "string" ? value.trim() : "";
 
@@ -18,4 +23,42 @@ export const hasImportSetupCatalogsChanged = (currentValue: unknown, importedVal
     }
 
     return currentCatalogs.some((catalogId, index) => catalogId !== importedCatalogs[index]);
+};
+
+export const classifyImportSetupMainGroupSubgroups = ({
+    currentCatalogGroups,
+    currentMainGroupSubgroupNames,
+    importedSubgroupNames,
+}: {
+    currentCatalogGroups: Record<string, unknown>;
+    currentMainGroupSubgroupNames?: unknown;
+    importedSubgroupNames: string[];
+}) => {
+    const currentMainGroupSubgroupSet = new Set(normalizeStringList(currentMainGroupSubgroupNames));
+    const hasCurrentMainGroup = currentMainGroupSubgroupNames !== undefined;
+    const newSubgroupNames: string[] = [];
+    const updatedSubgroupNames: string[] = [];
+    const unchangedSubgroupNames: string[] = [];
+
+    importedSubgroupNames.forEach((subgroupName) => {
+        const existsByName = Object.prototype.hasOwnProperty.call(currentCatalogGroups, subgroupName);
+
+        if (!existsByName) {
+            newSubgroupNames.push(subgroupName);
+            return;
+        }
+
+        if (!hasCurrentMainGroup || !currentMainGroupSubgroupSet.has(subgroupName)) {
+            updatedSubgroupNames.push(subgroupName);
+            return;
+        }
+
+        unchangedSubgroupNames.push(subgroupName);
+    });
+
+    return {
+        newSubgroupNames,
+        updatedSubgroupNames,
+        unchangedSubgroupNames,
+    };
 };

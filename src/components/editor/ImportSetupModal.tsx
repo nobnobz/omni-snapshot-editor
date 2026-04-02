@@ -29,7 +29,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { editorAction, editorLayout, editorSurface, editorToneBadge } from "@/components/editor/ui/style-contract";
 import { EditorNotice } from "@/components/editor/ui/EditorNotice";
 import { FALLBACK_TEMPLATE_URLS, findTemplateByKind, isTemplateOfKind } from "@/lib/template-manifest";
-import { hasImportSetupCatalogsChanged, hasImportSetupImageChanged, normalizeImportSetupImageUrl } from "@/lib/import-setup-diff";
+import {
+    classifyImportSetupMainGroupSubgroups,
+    hasImportSetupCatalogsChanged,
+    hasImportSetupImageChanged,
+    normalizeImportSetupImageUrl,
+} from "@/lib/import-setup-diff";
 import { normalizeMainGroupOrder } from "@/lib/main-group-utils";
 import { fetchTextWithLimits } from "@/lib/remote-fetch";
 
@@ -43,6 +48,8 @@ interface ParsedMainGroup {
     originalUuid: string;
     name: string;
     subgroupNames: string[];
+    basicNewSubgroupNames: string[];
+    basicUpdatedSubgroupNames: string[];
     posterType: string;
     posterSize: string;
     isDuplicate: boolean;
@@ -258,6 +265,21 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                     })
                     .filter((name): name is string => !!name)
             );
+            const currentMainGroupsByName = new Map(
+                Object.entries(currentValues.main_catalog_groups || {}).flatMap(([uuid, group]) => {
+                    if (!group || typeof group !== "object") return [];
+                    const maybeName = (group as { name?: unknown }).name;
+                    const subgroupNames = (group as { subgroupNames?: unknown }).subgroupNames;
+                    if (typeof maybeName !== "string" || !maybeName) return [];
+
+                    return [[maybeName, {
+                        uuid,
+                        subgroupNames: Array.isArray(subgroupNames)
+                            ? subgroupNames.filter((entry): entry is string => typeof entry === "string")
+                            : [],
+                    }]];
+                })
+            );
             const currentCatalogGroups = (currentValues.catalog_groups || {}) as Record<string, string[]>;
             const currentCatalogGroupImageUrls = (currentValues.catalog_group_image_urls || {}) as Record<string, unknown>;
             const currentSubgroupsBySignature: Record<string, string[]> = {};
@@ -287,18 +309,29 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                 if (!group) continue;
                 const groupName = group.name || "Unnamed Group";
                 const subgroupNames = (subgroupOrder[uuid] || group.subgroupNames || []).filter((sg: string) => !isPlaceholderSg(sg, inCatalogsGroups[sg]));
-                const basicUpdatedSubgroupCount = subgroupNames.filter((sg) => Boolean(currentCatalogGroups[sg])).length;
-                const basicNewSubgroupCount = subgroupNames.length - basicUpdatedSubgroupCount;
+                const existingMainGroup = currentMainGroupsByName.get(groupName);
+                const {
+                    newSubgroupNames: basicNewSubgroupNames,
+                    updatedSubgroupNames: basicUpdatedSubgroupNames,
+                } = classifyImportSetupMainGroupSubgroups({
+                    currentCatalogGroups,
+                    currentMainGroupSubgroupNames: existingMainGroup?.subgroupNames,
+                    importedSubgroupNames: subgroupNames,
+                });
+                const basicUpdatedSubgroupCount = basicUpdatedSubgroupNames.length;
+                const basicNewSubgroupCount = basicNewSubgroupNames.length;
                 parsedMGs.push({
                     originalUuid: uuid,
                     name: groupName,
                     subgroupNames,
+                    basicNewSubgroupNames,
+                    basicUpdatedSubgroupNames,
                     posterType: group.posterType || "movie",
                     posterSize: group.posterSize || "normal",
                     isDuplicate: currentMainGroupNames.has(groupName),
                     basicNewSubgroupCount,
                     basicUpdatedSubgroupCount,
-                    hasChanges: true,
+                    hasChanges: basicNewSubgroupCount > 0 || basicUpdatedSubgroupCount > 0,
                 });
             }
 
@@ -485,17 +518,11 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         );
     }, [parsedSubgroups, deferredReviewSearch]);
 
-    const parsedSubgroupsByName = useMemo(
-        () => new Map(parsedSubgroups.map((subgroup) => [subgroup.name, subgroup])),
-        [parsedSubgroups]
+    const getBasicVisibleSubgroups = useCallback(
+        (group: ParsedMainGroup, filter: "new" | "updates" = activeMainFilter) =>
+            filter === "new" ? group.basicNewSubgroupNames : group.basicUpdatedSubgroupNames,
+        [activeMainFilter]
     );
-
-    const getBasicVisibleSubgroups = useCallback((group: ParsedMainGroup, filter: "new" | "updates" = activeMainFilter) =>
-        group.subgroupNames.filter((subgroupName) => {
-            const subgroup = parsedSubgroupsByName.get(subgroupName);
-            const isExisting = subgroup?.basicIsExisting ?? false;
-            return filter === "new" ? !isExisting : isExisting;
-        }), [activeMainFilter, parsedSubgroupsByName]);
 
     const filteredNewMainGroups = useMemo(
         () => filteredMainGroups.filter((mg) => getBasicVisibleSubgroups(mg, "new").length > 0),
@@ -686,12 +713,24 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         selectedMainGroupUuids.forEach(uuid => {
             const mg = parsedMainGroups.find(m => m.originalUuid === uuid);
             if (!mg) return;
+            const selectedSubgroupNames = selectedMainGroupSubgroups[uuid] || mg.subgroupNames;
             finalMainGroups[uuid] = {
                 name: mg.name,
-                subgroupNames: selectedMainGroupSubgroups[uuid] || mg.subgroupNames,
+                subgroupNames: selectedSubgroupNames,
                 posterType: mg.posterType,
                 posterSize: mg.posterSize,
             };
+
+            selectedSubgroupNames.forEach((name) => {
+                const sg = parsedSubgroups.find((subgroup) => subgroup.name === name);
+                if (!sg || finalSubgroups[name]) return;
+                finalSubgroups[name] = {
+                    catalogs: sg.catalogs,
+                    imageUrl: sg.imageUrl,
+                    overwriteCatalogs: !sg.basicIsExisting,
+                    overwriteImage: !sg.basicIsExisting && !!sg.imageUrl,
+                };
+            });
         });
 
         const subgroupsToProcess = new Set([
@@ -892,14 +931,14 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                 {step === 1 && (
                     <div className="space-y-6 animate-in fade-in duration-300">
                         <EditorNotice tone="warning" className="w-full">
-                            <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex w-full flex-col items-start gap-2 text-left">
                                 <p className="font-semibold opacity-90">First time updating?</p>
                                 {onOpenGuide && (
                                     <Button
-                                        variant="ghost"
+                                        variant="outline"
                                         size="sm"
                                         onClick={() => onOpenGuide("update")}
-                                        className="h-10 w-full justify-center rounded-xl px-4 text-sm font-bold text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 sm:h-8 sm:w-auto sm:px-3 sm:text-xs"
+                                        className="h-9 self-start justify-start rounded-lg border-amber-500/18 bg-white/30 px-2.5 text-xs font-semibold text-amber-700 shadow-none hover:bg-white/55 hover:text-amber-800 dark:border-amber-400/16 dark:bg-white/[0.025] dark:text-amber-300 dark:hover:bg-white/[0.05] dark:hover:text-amber-200"
                                     >
                                         <BookOpen className="w-3.5 h-3.5 mr-2" />
                                         How to Update
@@ -1039,12 +1078,12 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                         ) : <div></div>}
 
                                         <div className="flex w-full items-center gap-2 sm:w-auto sm:justify-end">
-                                            <div className="inline-flex h-9 flex-1 items-center rounded-xl bg-slate-100/40 p-1 dark:bg-white/5 sm:flex-none">
+                                            <div className="inline-flex h-9 w-auto items-center self-start rounded-xl bg-slate-100/40 p-1 dark:bg-white/5 sm:flex-none">
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={activeReviewTab === "main" ? selectVisibleMainGroups : selectAllUpdates}
-                                                    className="h-7 flex-1 rounded-lg px-3 text-[11px] font-bold text-foreground/72 shadow-none hover:bg-background hover:text-foreground sm:flex-none"
+                                                    className="h-7 rounded-lg px-2.5 text-[11px] font-bold text-foreground/72 shadow-none hover:bg-background hover:text-foreground sm:px-3"
                                                 >
                                                     Select All
                                                 </Button>
@@ -1052,7 +1091,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={activeReviewTab === "main" ? deselectVisibleMainGroups : clearUpdateSelection}
-                                                    className="h-7 flex-1 rounded-lg px-3 text-[11px] font-bold text-foreground/62 shadow-none hover:bg-background hover:text-foreground sm:flex-none"
+                                                    className="h-7 rounded-lg px-2.5 text-[11px] font-bold text-foreground/62 shadow-none hover:bg-background hover:text-foreground sm:px-3"
                                                 >
                                                     None
                                                 </Button>
@@ -1123,12 +1162,16 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                                     {visibleSubgroups.map(sg => {
                                                                         const parsedSg = parsedSubgroups.find(p => p.name === sg);
                                                                         const isSgSelected = isSelected && selectedSubgroups.includes(sg);
-                                                                        const isBasicExisting = parsedSg?.basicIsExisting ?? false;
+                                                                        const subgroupStatusLabel = activeMainFilter === "updates"
+                                                                            ? "Update"
+                                                                            : parsedSg?.basicIsExisting
+                                                                                ? "Update"
+                                                                                : "New";
                                                                         return (
                                                                             <div key={sg} className="flex items-start gap-2 text-xs">
                                                                                 <Checkbox checked={isSgSelected} onCheckedChange={() => toggleMainGroupSubgroup(mg.originalUuid, sg)} className="mt-0.5" />
                                                                                 <div className="flex-1 min-w-0">
-                                                                                    <div className="text-foreground/80">{sg} <span className="ml-2 text-[10px] text-primary/70 font-bold uppercase">{isBasicExisting ? "Update" : "New"}</span></div>
+                                                                                    <div className="text-foreground/80">{sg} <span className="ml-2 text-[10px] text-primary/70 font-bold uppercase">{subgroupStatusLabel}</span></div>
                                                                                 </div>
                                                                             </div>
                                                                         );

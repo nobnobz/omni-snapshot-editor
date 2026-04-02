@@ -131,7 +131,13 @@ const PosterUrlEditor = React.memo(function PosterUrlEditor({
 
     return (
         <div className="space-y-2">
-            <div className={`${editorSurface.panel} flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:gap-6 sm:p-5`}>
+            <div
+                className={cn(
+                    "flex flex-col gap-4 p-0 sm:flex-row sm:items-center sm:gap-6 sm:rounded-lg sm:border sm:p-5",
+                    "sm:border-slate-200/80 sm:bg-[linear-gradient(180deg,rgba(255,255,255,0.56),rgba(241,245,249,0.46))] sm:shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] sm:backdrop-blur-sm",
+                    "dark:sm:border-white/8 dark:sm:bg-[linear-gradient(180deg,rgba(20,23,29,0.9),rgba(18,21,27,0.88))] dark:sm:shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]"
+                )}
+            >
                 <div className="flex flex-col items-center gap-2 sm:block">
                     <Label className="self-start text-[10px] uppercase font-bold tracking-[0.16em] text-foreground/50 sm:hidden">
                         Poster Image URL
@@ -297,13 +303,13 @@ const SortableCatalogNode = React.memo(function SortableCatalogNode({ id, onRemo
         <div
             ref={setNodeRef}
             style={style}
-            className={`flex items-center gap-4 p-3.5 border rounded-xl mb-2.5 group/cat transition-[background-color,border-color,opacity,box-shadow] duration-150
+            className={`flex items-center gap-3 p-3 sm:gap-4 sm:p-3.5 border rounded-xl mb-2.5 group/cat transition-[background-color,border-color,opacity,box-shadow] duration-150
                 ${isDragging ? "opacity-15 border-border/70 bg-muted/45 border-dashed shadow-none" : `${editorSurface.field} hover:border-slate-300/85 dark:hover:border-white/12 shadow-[0_8px_20px_rgba(15,23,42,0.05)] dark:shadow-[0_10px_22px_rgba(2,6,23,0.18)]`}`}
         >
             <button
                 {...attributes}
                 {...listeners}
-                className={`cursor-grab shrink-0 p-2 rounded-lg transition-colors select-none ${isDragging ? "text-foreground/75" : "text-foreground/55 hover:text-foreground hover:bg-muted/60 dark:hover:bg-muted/40"}`}
+                className={`cursor-grab shrink-0 p-1.5 sm:p-2 rounded-lg transition-colors select-none ${isDragging ? "text-foreground/75" : "text-foreground/55 hover:text-foreground hover:bg-muted/60 dark:hover:bg-muted/40"}`}
                 style={{ touchAction: 'none' }}
             >
                 <GripVertical className="h-5 w-5" />
@@ -337,7 +343,7 @@ const SortableCatalogNode = React.memo(function SortableCatalogNode({ id, onRemo
                         variant="ghost"
                         size="icon"
                         onClick={(e) => { e.stopPropagation(); onRemove(); }}
-                        className={`h-9 w-9 ${editorHover.iconDanger} rounded-md`}
+                        className={`h-8 w-8 sm:h-9 sm:w-9 ${editorHover.iconDanger} rounded-md`}
                         aria-label="Remove catalog from subgroup"
                     >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -704,8 +710,14 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                     </div>
 
                     {/* Inner Sortable Catalogs */}
-                    <div className={`${editorSurface.panel} p-5 sm:p-6`}>
-                        <div className="mb-3 flex items-center justify-between rounded-lg border border-slate-200/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.34),rgba(248,250,252,0.2))] px-3 py-2 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))]">
+                    <div
+                        className={cn(
+                            "space-y-3 sm:rounded-lg sm:border sm:p-6",
+                            "sm:border-slate-200/80 sm:bg-[linear-gradient(180deg,rgba(255,255,255,0.56),rgba(241,245,249,0.46))] sm:shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] sm:backdrop-blur-sm",
+                            "dark:sm:border-white/8 dark:sm:bg-[linear-gradient(180deg,rgba(20,23,29,0.9),rgba(18,21,27,0.88))] dark:sm:shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]"
+                        )}
+                    >
+                        <div className="flex items-center justify-between gap-3">
                             <h5 className="inline-flex items-center gap-2 text-xs font-bold text-foreground/80 uppercase tracking-widest">
                                 <LinkIcon className="h-3.5 w-3.5 text-foreground/60" />
                                 Linked Catalogs
@@ -773,7 +785,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                         )}
 
                         {/* Add New Catalog Dropdown Menu */}
-                        <div className="mt-3">
+                        <div className="pt-1 sm:pt-0">
                             <DropdownMenu open={isAddMenuOpen} onOpenChange={open => {
                                 setIsAddMenuOpen(open);
                                 if (!open) setCatalogSearch("");
@@ -1637,8 +1649,14 @@ const UnassignedSubgroupRow = React.memo(function UnassignedSubgroupRow({
                         </div>
                     </div>
 
-                    <div className={`${editorSurface.panel} mb-4 p-3 sm:p-3.5`}>
-                        <div className="mb-3 flex items-center justify-between rounded-lg border border-slate-200/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.34),rgba(248,250,252,0.2))] px-3 py-2 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))]">
+                    <div
+                        className={cn(
+                            "mb-4 space-y-3 sm:rounded-lg sm:border sm:p-3.5",
+                            "sm:border-slate-200/80 sm:bg-[linear-gradient(180deg,rgba(255,255,255,0.56),rgba(241,245,249,0.46))] sm:shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] sm:backdrop-blur-sm",
+                            "dark:sm:border-white/8 dark:sm:bg-[linear-gradient(180deg,rgba(20,23,29,0.9),rgba(18,21,27,0.88))] dark:sm:shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]"
+                        )}
+                    >
+                        <div className="flex items-center justify-between gap-3">
                             <h5 className="inline-flex items-center gap-2 text-xs font-bold text-foreground/80 uppercase tracking-widest">
                                 <LinkIcon className="h-3.5 w-3.5 text-foreground/60" />
                                 Linked Catalogs
@@ -1695,7 +1713,7 @@ const UnassignedSubgroupRow = React.memo(function UnassignedSubgroupRow({
                         </div>
 
                         {/* Add New Catalog Dropdown Menu */}
-                        <div className="mt-3">
+                        <div className="pt-1 sm:pt-0">
                             <DropdownMenu open={isAddMenuOpen} onOpenChange={open => {
                                 setIsAddMenuOpen(open);
                                 if (!open) setCatalogSearch("");

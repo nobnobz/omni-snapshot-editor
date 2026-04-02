@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+    classifyImportSetupMainGroupSubgroups,
     hasImportSetupCatalogsChanged,
     hasImportSetupImageChanged,
     normalizeImportSetupImageUrl,
@@ -37,5 +38,60 @@ describe("import setup catalog diff", () => {
 
     it("flags changed catalogs", () => {
         expect(hasImportSetupCatalogsChanged(["a"], ["a", "b"])).toBe(true);
+    });
+});
+
+describe("import setup basic main-group diff", () => {
+    it("does not mark already-linked existing subgroups as updates", () => {
+        expect(classifyImportSetupMainGroupSubgroups({
+            currentCatalogGroups: {
+                Existing: ["movie:a"],
+            },
+            currentMainGroupSubgroupNames: ["Existing"],
+            importedSubgroupNames: ["Existing"],
+        })).toEqual({
+            newSubgroupNames: [],
+            updatedSubgroupNames: [],
+            unchangedSubgroupNames: ["Existing"],
+        });
+    });
+
+    it("marks existing subgroups as updates when they are not linked to the current main group yet", () => {
+        expect(classifyImportSetupMainGroupSubgroups({
+            currentCatalogGroups: {
+                Existing: ["movie:a"],
+            },
+            currentMainGroupSubgroupNames: [],
+            importedSubgroupNames: ["Existing"],
+        })).toEqual({
+            newSubgroupNames: [],
+            updatedSubgroupNames: ["Existing"],
+            unchangedSubgroupNames: [],
+        });
+    });
+
+    it("marks existing subgroups as updates when the main group is new", () => {
+        expect(classifyImportSetupMainGroupSubgroups({
+            currentCatalogGroups: {
+                Existing: ["movie:a"],
+            },
+            importedSubgroupNames: ["Existing"],
+        })).toEqual({
+            newSubgroupNames: [],
+            updatedSubgroupNames: ["Existing"],
+            unchangedSubgroupNames: [],
+        });
+    });
+
+    it("keeps new subgroup names in the new bucket", () => {
+        expect(classifyImportSetupMainGroupSubgroups({
+            currentCatalogGroups: {},
+            currentMainGroupSubgroupNames: [],
+            importedSubgroupNames: ["Fresh"],
+        })).toEqual({
+            newSubgroupNames: ["Fresh"],
+            updatedSubgroupNames: [],
+            unchangedSubgroupNames: [],
+        });
     });
 });

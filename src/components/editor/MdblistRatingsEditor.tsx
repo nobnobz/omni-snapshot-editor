@@ -650,13 +650,13 @@ export function MdblistRatingsEditor() {
                         </p>
                     </div>
 
-                    <div className={cn(editorSurface.panel, "inline-flex items-center gap-1 rounded-xl p-1.5")}>
+                    <div className={cn(editorSurface.panel, "inline-flex items-center gap-2 rounded-xl p-1.5")}>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="h-9 gap-2 rounded-lg px-3.5 text-foreground/82 hover:bg-muted/70 hover:text-foreground"
+                                    className="h-9 gap-2 rounded-lg border border-border/60 bg-background/72 px-3.5 text-foreground/78 shadow-sm hover:bg-background hover:text-foreground"
                                     disabled={inactiveDefinitions.length === 0}
                                 >
                                     <Plus className="h-3.5 w-3.5" />
@@ -676,7 +676,7 @@ export function MdblistRatingsEditor() {
                             variant="ghost"
                             size="sm"
                             onClick={resetToDefaults}
-                            className="h-9 gap-2 rounded-lg px-3.5 text-foreground/72 hover:bg-muted/70 hover:text-foreground"
+                            className="h-9 gap-2 rounded-lg border border-border/60 bg-background/72 px-3.5 text-foreground/78 shadow-sm hover:bg-background hover:text-foreground"
                         >
                             <RotateCcw className="h-3.5 w-3.5" />
                             Reset

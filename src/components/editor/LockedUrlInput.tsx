@@ -208,7 +208,7 @@ export const LockedUrlInput = React.forwardRef<HTMLInputElement | HTMLTextAreaEl
                     onMouseDown={handleEditableFieldMouseDown}
                     onClick={handleEditableFieldClick}
                     className={cn(
-                        "w-full !pr-[116px] font-mono leading-[1.35] read-only:cursor-default read-only:border-slate-200/95 read-only:bg-slate-100/90 read-only:text-foreground/58 read-only:shadow-none read-only:hover:border-slate-200/95 read-only:hover:bg-slate-100/90 read-only:focus-visible:border-slate-200/95 read-only:focus-visible:ring-0 read-only:selection:bg-primary/15 dark:read-only:border-white/10 dark:read-only:bg-white/[0.05] dark:read-only:text-foreground/58 dark:read-only:hover:border-white/10 dark:read-only:hover:bg-white/[0.05] sm:!pr-[104px]",
+                        "w-full !pr-[116px] [field-sizing:fixed] font-mono leading-[1.35] read-only:cursor-default read-only:border-slate-200/95 read-only:bg-slate-100/90 read-only:text-foreground/58 read-only:shadow-none read-only:hover:border-slate-200/95 read-only:hover:bg-slate-100/90 read-only:focus-visible:border-slate-200/95 read-only:focus-visible:ring-0 read-only:selection:bg-primary/15 dark:read-only:border-white/10 dark:read-only:bg-white/[0.05] dark:read-only:text-foreground/58 dark:read-only:hover:border-white/10 dark:read-only:hover:bg-white/[0.05] sm:!pr-[104px]",
                         inputClassName
                     )}
                 />

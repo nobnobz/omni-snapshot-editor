@@ -1440,7 +1440,7 @@ export function MainEditor() {
                                                                     rows={2}
                                                                     inputClassName={cn(
                                                                         editorSurface.field,
-                                                                        "min-h-[4.5rem] rounded-xl py-3 text-sm leading-[1.35] resize-none overflow-y-auto"
+                                                                        "min-h-[4.5rem] max-h-[4.5rem] rounded-xl py-3 text-sm leading-[1.35] resize-none overflow-y-auto"
                                                                     )}
                                                                     iconButtonClassName="h-8 w-8 shrink-0 rounded-lg text-foreground/52"
                                                                     copyTitle="Copy AIOMetadata URL"
@@ -1734,9 +1734,9 @@ export function MainEditor() {
             <AlertDialog open={isExitConfirmOpen} onOpenChange={setIsExitConfirmOpen}>
                 <AlertDialogContent size="sm">
                     <AlertDialogHeader>
-                        <AlertDialogTitle className="text-xl font-bold">Unsaved Changes?</AlertDialogTitle>
+                        <AlertDialogTitle className="text-xl font-bold">Return to Start?</AlertDialogTitle>
                         <AlertDialogDescription className="text-foreground/70">
-                            Are you sure you want to return to the start screen? Any unsaved modifications to your configuration will be lost.
+                            Your current changes have not been exported yet. If you go back now, they will be lost.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter className="mt-2 sm:mt-3">
