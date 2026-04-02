@@ -713,12 +713,12 @@ export function UnifiedPatternEditor() {
                                     onChange={e => setNewPattern(e.target.value)}
                                     onKeyDown={e => e.key === 'Enter' && handleAddPattern()}
                                     placeholder="Enter new Regex string (e.g. (?i)uhd|4k)"
-                                    className={cn(editorSurface.field, patternFieldSurface, "h-12 sm:h-10 px-4 text-base sm:text-sm font-medium focus-visible:ring-[3px] focus-visible:ring-ring/50 transition-colors flex-1")}
+                                    className={cn(editorSurface.field, patternFieldSurface, "h-13 sm:h-10 rounded-xl px-4 text-[15px] sm:text-sm font-medium focus-visible:ring-[3px] focus-visible:ring-ring/50 transition-colors flex-1")}
                                 />
                                 <div className="flex items-center gap-2 sm:shrink-0">
                                     <Button
                                         onClick={handleAddPattern}
-                                        className={cn(editorAction.premium, "h-11 sm:h-10 px-4 sm:px-6")}
+                                        className={cn(editorAction.premium, "h-12 sm:h-10 px-4 sm:px-6")}
                                     >
                                         <Plus className="w-4 h-4 mr-2" strokeWidth={2.5} /> Add Pattern
                                     </Button>
@@ -727,7 +727,7 @@ export function UnifiedPatternEditor() {
                                             variant="ghost"
                                             onClick={() => setConfirmDeleteAll(true)}
                                             className={cn(
-                                                "h-11 w-11 sm:h-10 sm:w-10 shrink-0 rounded-[1.15rem] border border-transparent px-0",
+                                                "h-12 w-12 sm:h-10 sm:w-10 shrink-0 rounded-[1.15rem] border border-transparent px-0",
                                                 editorHover.iconDanger
                                             )}
                                             aria-label="Delete all patterns"

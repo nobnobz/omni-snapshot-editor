@@ -233,8 +233,8 @@ export const LockedUrlInput = React.forwardRef<HTMLInputElement | HTMLTextAreaEl
                 />
             )}
             {copied && (
-                <div className="pointer-events-none absolute right-0 top-0 -translate-y-[calc(100%+0.35rem)]">
-                    <div className="inline-flex items-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-500/12 px-2 py-1 text-[11px] font-medium text-emerald-700 shadow-sm backdrop-blur-sm dark:border-emerald-400/25 dark:bg-emerald-400/12 dark:text-emerald-200">
+                <div className="pointer-events-none absolute right-0 top-0 hidden -translate-y-[calc(100%+0.4rem)] sm:block">
+                    <div className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background/96 px-2.5 py-1 text-[11px] font-semibold text-foreground/76 shadow-sm">
                         <Check className="h-3.5 w-3.5" />
                         <span>Copied</span>
                     </div>

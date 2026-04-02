@@ -68,6 +68,7 @@ interface ParsedSubgroup {
     hasRename?: boolean;
     hasNewImage?: boolean;
     hasNewCatalogs?: boolean;
+    parentGroupNames?: string[];
     category?: string;
 }
 
@@ -89,6 +90,21 @@ const getSubgroupCategory = (name: string) => {
     if (name.includes("[Collections]")) return "Collections";
     if (name.includes("[Streaming Services]")) return "Streaming Services";
     return "Other";
+};
+
+const getSubgroupContextLabel = (subgroup: ParsedSubgroup) => {
+    if (subgroup.parentGroupNames && subgroup.parentGroupNames.length > 0) {
+        const [firstGroupName, ...remainingGroupNames] = subgroup.parentGroupNames;
+        return remainingGroupNames.length > 0
+            ? `${formatDisplayName(firstGroupName)} +${remainingGroupNames.length}`
+            : formatDisplayName(firstGroupName);
+    }
+
+    if (subgroup.category && subgroup.category !== "Other") {
+        return subgroup.category;
+    }
+
+    return undefined;
 };
 
 const normalizeUpdateManagerSubgroupName = (name: string) =>
@@ -302,6 +318,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
             const inCatalogsGroups = (imported.catalog_groups || {}) as Record<string, string[]>;
             const importedCatalogGroupImageUrls = (imported.catalog_group_image_urls || {}) as Record<string, unknown>;
             const subgroupOrder = (imported.subgroup_order || {}) as Record<string, string[]>;
+            const subgroupParentGroupNames = new Map<string, Set<string>>();
 
             const parsedMGs: ParsedMainGroup[] = [];
             for (const uuid of inMainGroupOrder) {
@@ -309,6 +326,12 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                 if (!group) continue;
                 const groupName = group.name || "Unnamed Group";
                 const subgroupNames = (subgroupOrder[uuid] || group.subgroupNames || []).filter((sg: string) => !isPlaceholderSg(sg, inCatalogsGroups[sg]));
+                subgroupNames.forEach((subgroupName) => {
+                    if (!subgroupParentGroupNames.has(subgroupName)) {
+                        subgroupParentGroupNames.set(subgroupName, new Set());
+                    }
+                    subgroupParentGroupNames.get(subgroupName)?.add(groupName);
+                });
                 const existingMainGroup = currentMainGroupsByName.get(groupName);
                 const {
                     newSubgroupNames: basicNewSubgroupNames,
@@ -376,6 +399,9 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                     matchedExistingName,
                     hasNewCatalogs: hasCatalogChanges,
                     hasNewImage: hasImageChanges,
+                    parentGroupNames: subgroupParentGroupNames.has(name)
+                        ? Array.from(subgroupParentGroupNames.get(name) || [])
+                        : undefined,
                     category: getSubgroupCategory(name),
                 });
             });
@@ -794,6 +820,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
             const selectedUpdateCount = Number(isCatalogUpdateSelected) + Number(isImageUpdateSelected) + Number(isRenameUpdateSelected);
             const selectionSummary = selectedUpdateCount === 1 ? "1 update selected" : `${selectedUpdateCount} updates selected`;
             const catalogLabel = sg.catalogs.length === 1 ? "Catalog" : "Catalogs";
+            const subgroupContextLabel = getSubgroupContextLabel(sg);
 
             return (
                 <div
@@ -855,12 +882,13 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-foreground/45">
-                            <span className="inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded-full border border-slate-200/65 bg-slate-100/70 px-1.5 text-[10px] font-semibold leading-none text-foreground/58 shadow-sm dark:border-white/10 dark:bg-white/[0.045] dark:text-foreground/56">
-                                {sg.catalogs.length}
-                            </span>
-                            <span>{catalogLabel}</span>
-                            <span className="h-1 w-1 rounded-full bg-foreground/15" />
-                            <span>{sg.category}</span>
+                            <span>{sg.catalogs.length} {catalogLabel}</span>
+                            {subgroupContextLabel ? (
+                                <>
+                                    <span className="h-1 w-1 rounded-full bg-foreground/15" />
+                                    <span>{subgroupContextLabel}</span>
+                                </>
+                            ) : null}
                         </div>
 
                         {selectedUpdateCount > 0 ? (
@@ -900,8 +928,12 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                         </label>
                         <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-foreground/45">
                             <span>{sg.catalogs.length} {sg.catalogs.length === 1 ? "Catalog" : "Catalogs"}</span>
-                            <span className="w-1 h-1 rounded-full bg-foreground/15" />
-                            <span>{sg.category}</span>
+                            {getSubgroupContextLabel(sg) ? (
+                                <>
+                                    <span className="w-1 h-1 rounded-full bg-foreground/15" />
+                                    <span>{getSubgroupContextLabel(sg)}</span>
+                                </>
+                            ) : null}
                             {isIncludedWithMain && (
                                 <>
                                     <span className="w-1 h-1 rounded-full bg-foreground/15" />

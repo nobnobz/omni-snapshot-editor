@@ -124,10 +124,10 @@ const PosterUrlEditor = React.memo(function PosterUrlEditor({
 
     const hasThumbPreview = /^https?:\/\//i.test(previewUrl.trim()) && !thumbLoadError;
     const thumbFrameClass = thumbAspect === "landscape"
-        ? "h-28 w-full max-w-[18rem] sm:h-20 sm:w-32"
+        ? "aspect-[16/9] w-full max-w-[15rem] sm:h-20 sm:w-32 sm:aspect-auto"
         : thumbAspect === "portrait"
-            ? "h-40 w-28 sm:h-28 sm:w-20"
-            : "h-28 w-28 sm:h-20 sm:w-20";
+            ? "aspect-[2/3] w-28 sm:h-28 sm:w-20 sm:aspect-auto"
+            : "aspect-square w-28 sm:h-20 sm:w-20 sm:aspect-auto";
 
     return (
         <div className="space-y-2">
@@ -145,7 +145,7 @@ const PosterUrlEditor = React.memo(function PosterUrlEditor({
                     <div
                         className={cn(
                             thumbFrameClass,
-                            "mx-auto rounded-md shrink-0 overflow-hidden shadow-sm flex items-center justify-center transition-[width,height] duration-200 border border-white/10 p-1 bg-[#020617]"
+                            "mx-auto rounded-md shrink-0 overflow-hidden shadow-sm flex items-center justify-center transition-[width,height] duration-200 border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.78),rgba(241,245,249,0.56))] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(22,27,36,0.94),rgba(15,19,27,0.92))]"
                         )}
                     >
                         {hasThumbPreview ? (
@@ -154,7 +154,7 @@ const PosterUrlEditor = React.memo(function PosterUrlEditor({
                                 <img
                                     src={previewUrl}
                                     alt="Thumb"
-                                    className="h-full w-full object-contain"
+                                    className="h-full w-full object-cover"
                                     onLoad={(e) => {
                                         const { naturalWidth, naturalHeight } = e.currentTarget;
                                         if (!naturalWidth || !naturalHeight) {
@@ -1021,16 +1021,6 @@ const MainGroupNode = React.memo(function MainGroupNode({
     const handleToggleSubgroup = (subgroupName: string) => {
         const nextExpanded = expandedSubgroup === subgroupName ? null : subgroupName;
         setExpandedSubgroup(nextExpanded);
-
-        if (!nextExpanded) return;
-
-        const targetId = buildSubgroupAnchorId(uuid, subgroupName);
-        window.requestAnimationFrame(() => {
-            window.requestAnimationFrame(() => {
-                const target = document.getElementById(targetId);
-                target?.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
-            });
-        });
     };
 
     return (
@@ -2154,7 +2144,6 @@ export function UnifiedSubgroupEditor({
                 isOpen={isImportModalOpen}
                 onClose={() => setIsImportModalOpen(false)}
                 onOpenGuide={(guide) => {
-                    setIsImportModalOpen(false);
                     if (onOpenGuide) onOpenGuide(guide);
                 }}
             />
