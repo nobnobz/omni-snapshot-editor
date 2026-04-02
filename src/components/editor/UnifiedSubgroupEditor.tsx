@@ -1271,16 +1271,23 @@ const MainGroupNode = React.memo(function MainGroupNode({
                     </AccordionTrigger>
                 </div>
 
-                <AccordionContent className="border-t border-slate-200/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.18),rgba(248,250,252,0.11))] p-5 dark:border-white/8 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.008))]">
-                    <div className="flex flex-col gap-4 mb-6">
-                        <div className={`${editorSurface.toolbar} flex w-full flex-col gap-2 p-1.5 sm:w-auto sm:flex-row sm:items-center sm:gap-2 sm:p-1`}>
+                <AccordionContent className="border-t border-slate-200/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.18),rgba(248,250,252,0.11))] px-4 pb-5 pt-3 dark:border-white/8 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.008))] sm:p-5">
+                    <div className="mb-5 flex flex-col gap-3 sm:mb-6 sm:gap-4">
+                        <div className="flex w-full flex-col gap-2 rounded-none border-0 bg-transparent p-0 shadow-none backdrop-blur-0 sm:w-auto sm:flex-row sm:items-center sm:gap-2 sm:rounded-lg sm:border sm:border-slate-200/80 sm:bg-[linear-gradient(180deg,rgba(255,255,255,0.62),rgba(248,250,252,0.52))] sm:p-1 sm:shadow-[0_6px_16px_rgba(15,23,42,0.04)] sm:backdrop-blur-md dark:sm:border-white/10 dark:sm:bg-[linear-gradient(180deg,rgba(20,23,29,0.9),rgba(17,20,26,0.88))] dark:sm:shadow-[0_7px_16px_rgba(2,6,23,0.1)]">
                             <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center sm:gap-2">
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-9 min-w-0 w-full justify-start text-xs sm:h-8 sm:w-auto sm:max-w-none sm:text-sm text-foreground/70 hover:text-foreground hover:bg-muted/60 dark:hover:bg-muted/40 font-medium tracking-tight px-2.5">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className={cn(
+                                            editorSurface.field,
+                                            "h-10 min-w-0 w-full justify-start rounded-xl border px-3 text-xs font-medium tracking-tight text-foreground/72 hover:text-foreground hover:bg-muted/60 dark:hover:bg-muted/40 sm:h-8 sm:w-auto sm:max-w-none sm:border-0 sm:bg-transparent sm:px-2.5 sm:text-sm sm:shadow-none"
+                                        )}
+                                    >
                                         <span className="hidden sm:inline">Layout:</span>
-                                        <span className="text-foreground sm:ml-1 font-bold min-w-0 truncate">
-                                            <span className="hidden sm:inline">{posterType} / {posterSize}</span>
+                                        <span className="text-foreground sm:ml-1 min-w-0 truncate">
+                                            <span className="hidden sm:inline font-bold">{posterType} / {posterSize}</span>
                                             <span className="sm:hidden">Layout: {posterType} · {posterSize}</span>
                                         </span>
                                         <ChevronDown className="w-3.5 h-3.5 ml-1 opacity-50 shrink-0" />
@@ -1319,7 +1326,10 @@ const MainGroupNode = React.memo(function MainGroupNode({
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="h-9 min-w-0 w-full justify-start gap-1 px-2.5 text-xs text-foreground/70 hover:text-foreground hover:bg-muted/60 dark:hover:bg-muted/40 sm:h-8 sm:w-auto sm:px-2 sm:justify-center sm:text-sm"
+                                        className={cn(
+                                            editorSurface.field,
+                                            "h-10 min-w-0 w-full justify-start gap-1 rounded-xl border px-3 text-xs text-foreground/72 hover:text-foreground hover:bg-muted/60 dark:hover:bg-muted/40 sm:h-8 sm:w-auto sm:max-w-none sm:justify-start sm:border-0 sm:bg-transparent sm:px-2.5 sm:text-sm sm:shadow-none"
+                                        )}
                                         title="Sort subgroups"
                                         aria-label="Sort subgroups"
                                     >
@@ -1334,6 +1344,8 @@ const MainGroupNode = React.memo(function MainGroupNode({
                                         <span className="font-bold text-foreground sm:hidden">
                                             {sortLabel}
                                         </span>
+                                        <span className="hidden sm:inline text-foreground/70">Sort:</span>
+                                        <span className="hidden sm:inline font-bold text-foreground">{sortLabel}</span>
                                         <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
                                     </Button>
                                 </DropdownMenuTrigger>
@@ -1406,12 +1418,16 @@ const MainGroupNode = React.memo(function MainGroupNode({
                                 <div className="hidden sm:block w-px h-4 bg-border mx-1 shrink-0" />
 
                                 <Button
+                                    variant="outline"
                                     size="sm"
                                     onClick={() => onAddSubgroup?.(uuid)}
-                                    className={cn(editorAction.primary, "h-8 shrink-0 rounded-lg px-2.5 text-xs sm:text-sm font-bold flex items-center gap-1.5")}
+                                    className={cn(
+                                        editorSurface.field,
+                                        "h-8 shrink-0 rounded-lg border-primary/18 bg-primary/[0.08] px-2.5 text-xs font-semibold text-primary shadow-[0_4px_10px_rgba(37,99,235,0.06)] hover:border-primary/26 hover:bg-primary/[0.12] hover:text-primary dark:border-primary/24 dark:bg-primary/[0.12] dark:hover:bg-primary/[0.16] sm:text-sm"
+                                    )}
                                 >
                                     <Plus className="w-4 h-4" />
-                                    <span className="hidden sm:inline">New</span>
+                                    <span className="hidden sm:inline">New Subgroup</span>
                                 </Button>
                             </div>
                             </div>
@@ -2201,8 +2217,8 @@ export function UnifiedSubgroupEditor({
                         >
                             <Plus className="w-4 h-4 shrink-0 xl:mr-1.5" />
                             <span className="sm:hidden">New</span>
-                            <span className="hidden sm:inline xl:hidden">Create New</span>
-                            <span className="hidden xl:inline">Create New Group</span>
+                            <span className="hidden sm:inline xl:hidden">New Group</span>
+                            <span className="hidden xl:inline">New Group</span>
                         </Button>
                         <Button
                             onClick={() => setIsAddToGroupModalOpen(true)}
