@@ -1213,7 +1213,7 @@ export function MainEditor() {
                         <div className="rounded-lg border border-slate-200/72 bg-[linear-gradient(180deg,rgba(255,255,255,0.56),rgba(248,250,252,0.44))] p-3.5 shadow-[0_18px_38px_rgba(15,23,42,0.065)] backdrop-blur-md dark:border-white/8 dark:bg-[linear-gradient(180deg,rgba(21,24,31,0.92),rgba(13,16,22,0.9))] dark:shadow-[0_18px_38px_rgba(2,6,23,0.14)]">
                             <div className="flex items-start gap-2.5">
                                 <h1 className="min-w-0 flex flex-1 items-center gap-2 text-base font-black tracking-tight text-primary-foreground">
-                                    <div className="relative flex shrink-0 items-center justify-center group" style={{ width: '44px', height: '36px' }}>
+                                    <div className="relative flex shrink-0 items-center justify-center group" style={{ width: '48px', height: '40px' }}>
                                         {/* eslint-disable-next-line @next/next/no-img-element -- Static local logo. */}
                                         <img src="/omni-snapshot-editor/clown.png" alt="Logo" className="relative z-10 h-full w-full object-contain scale-[1.24]" />
                                     </div>

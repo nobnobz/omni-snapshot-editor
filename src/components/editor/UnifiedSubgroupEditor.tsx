@@ -243,6 +243,13 @@ const stopTouchDropdownTrigger = (event: React.PointerEvent<HTMLButtonElement>) 
     }
 };
 
+const preventTouchDropdownAutoOpen = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (event.pointerType === "touch") {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+};
+
 const groupCatalogOptions = (options: CatalogOption[]) => {
     const groups: Record<string, CatalogOption[]> = { Other: [] };
 
@@ -1117,6 +1124,8 @@ const MainGroupNode = React.memo(function MainGroupNode({
     const [activeSubgroupId, setActiveSubgroupId] = useState<string | null>(null);
     const [expandedSubgroup, setExpandedSubgroup] = useState<string | null>(null);
     const [subgroupSortMode, setSubgroupSortMode] = useState<"manual" | "asc" | "desc">("manual");
+    const [isLayoutMenuOpen, setIsLayoutMenuOpen] = useState(false);
+    const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
     const effectiveManualSubgroupOrder = React.useMemo(
         () => reconcileOrderedNames(manualSubgroupOrderSnapshot ?? subgroupNames, subgroupNames),
         [manualSubgroupOrderSnapshot, subgroupNames]
@@ -1275,11 +1284,13 @@ const MainGroupNode = React.memo(function MainGroupNode({
                     <div className="mb-5 flex flex-col gap-3 sm:mb-6 sm:gap-4">
                         <div className="flex w-full flex-col gap-2 rounded-none border-0 bg-transparent p-0 shadow-none backdrop-blur-0 sm:w-auto sm:flex-row sm:items-center sm:gap-2 sm:rounded-lg sm:border sm:border-slate-200/80 sm:bg-[linear-gradient(180deg,rgba(255,255,255,0.62),rgba(248,250,252,0.52))] sm:p-1 sm:shadow-[0_6px_16px_rgba(15,23,42,0.04)] sm:backdrop-blur-md dark:sm:border-white/10 dark:sm:bg-[linear-gradient(180deg,rgba(20,23,29,0.9),rgba(17,20,26,0.88))] dark:sm:shadow-[0_7px_16px_rgba(2,6,23,0.1)]">
                             <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center sm:gap-2">
-                            <DropdownMenu>
+                            <DropdownMenu open={isLayoutMenuOpen} onOpenChange={setIsLayoutMenuOpen}>
                                 <DropdownMenuTrigger asChild>
                                     <Button
                                         variant="ghost"
                                         size="sm"
+                                        onPointerDown={preventTouchDropdownAutoOpen}
+                                        onClick={() => setIsLayoutMenuOpen((previous) => !previous)}
                                         className={cn(
                                             editorSurface.field,
                                             "h-10 min-w-0 w-full justify-start rounded-xl border px-3 text-xs font-medium tracking-tight text-foreground/72 hover:text-foreground hover:bg-muted/60 dark:hover:bg-muted/40 sm:h-8 sm:w-auto sm:max-w-none sm:border-0 sm:bg-transparent sm:px-2.5 sm:text-sm sm:shadow-none"
@@ -1321,11 +1332,13 @@ const MainGroupNode = React.memo(function MainGroupNode({
                                 </DropdownMenuContent>
                             </DropdownMenu>
 
-                            <DropdownMenu>
+                            <DropdownMenu open={isSortMenuOpen} onOpenChange={setIsSortMenuOpen}>
                                 <DropdownMenuTrigger asChild>
                                     <Button
                                         variant="ghost"
                                         size="sm"
+                                        onPointerDown={preventTouchDropdownAutoOpen}
+                                        onClick={() => setIsSortMenuOpen((previous) => !previous)}
                                         className={cn(
                                             editorSurface.field,
                                             "h-10 min-w-0 w-full justify-start gap-1 rounded-xl border px-3 text-xs text-foreground/72 hover:text-foreground hover:bg-muted/60 dark:hover:bg-muted/40 sm:h-8 sm:w-auto sm:max-w-none sm:justify-start sm:border-0 sm:bg-transparent sm:px-2.5 sm:text-sm sm:shadow-none"
@@ -1434,6 +1447,15 @@ const MainGroupNode = React.memo(function MainGroupNode({
 
                             <div className="grid grid-cols-3 gap-2 sm:hidden">
                                 <Button
+                                    size="sm"
+                                    onClick={() => onAddSubgroup?.(uuid)}
+                                    className={cn(editorAction.primary, "h-9 justify-center text-xs font-semibold")}
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    <span>New</span>
+                                </Button>
+
+                                <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={() => setIsRenaming(true)}
@@ -1475,14 +1497,6 @@ const MainGroupNode = React.memo(function MainGroupNode({
                                     </AlertDialogContent>
                                 </AlertDialog>
 
-                                <Button
-                                    size="sm"
-                                    onClick={() => onAddSubgroup?.(uuid)}
-                                    className={cn(editorAction.primary, "h-9 justify-center text-xs font-semibold")}
-                                >
-                                    <Plus className="w-4 h-4" />
-                                    <span>New</span>
-                                </Button>
                             </div>
                         </div>
                     </div>

@@ -733,13 +733,6 @@ export function CatalogEditor() {
                 {/* Unified Toolbar */}
                 <div className={cn(editorSurface.toolbar, "sticky top-0 z-20 flex items-center rounded-none border-x-0 border-t-0 p-4 sm:p-5")}>
                     <div className="flex flex-1 items-center justify-end gap-1.5 sm:gap-2 sm:ml-auto">
-                        <Button variant="outline" onClick={handleSortAZ} className={cn(editorAction.secondary, "rounded-lg px-2.5 sm:px-3.5 text-[10px] sm:text-xs")}>
-                            <ArrowDownAZ className="w-4 h-4 mr-2" strokeWidth={2.2} /> A-Z
-                        </Button>
-                        <Button variant="outline" onClick={handleSortZA} className={cn(editorAction.secondary, "rounded-lg px-2.5 sm:px-3.5 text-[10px] sm:text-xs")}>
-                            <ArrowUpZA className="w-4 h-4 mr-2" strokeWidth={2.2} /> Z-A
-                        </Button>
-
                         <Dialog
                             open={isAddDialogOpen}
                             onOpenChange={(open) => {
@@ -966,6 +959,13 @@ export function CatalogEditor() {
                                 </div>
                             </DialogContent>
                         </Dialog>
+
+                        <Button variant="outline" onClick={handleSortAZ} className={cn(editorAction.secondary, "rounded-lg px-2.5 sm:px-3.5 text-[10px] sm:text-xs")}>
+                            <ArrowDownAZ className="w-4 h-4 mr-2" strokeWidth={2.2} /> A-Z
+                        </Button>
+                        <Button variant="outline" onClick={handleSortZA} className={cn(editorAction.secondary, "rounded-lg px-2.5 sm:px-3.5 text-[10px] sm:text-xs")}>
+                            <ArrowUpZA className="w-4 h-4 mr-2" strokeWidth={2.2} /> Z-A
+                        </Button>
                     </div>
                     {showDisabled && (
                         <div className="p-3 space-y-1 max-h-[400px] overflow-y-auto custom-scrollbar">
