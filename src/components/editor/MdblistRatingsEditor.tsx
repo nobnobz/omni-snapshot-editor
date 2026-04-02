@@ -649,7 +649,7 @@ export function MdblistRatingsEditor() {
                         </p>
                     </div>
 
-                    <div className={cn(editorSurface.toolbar, "inline-flex items-center gap-2 rounded-xl p-1.5")}>
+                    <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button
