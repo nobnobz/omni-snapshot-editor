@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.6.4] - 2026-04-02
+### Changed
+- bug fixes and improvements
+
 ## [0.6.3] - 2026-04-02
 ### Changed
 - Polished mobile dialog hierarchy across subgroup catalog picking, AIOMetadata export controls, and the import review flow for a calmer, more consistent UI.
