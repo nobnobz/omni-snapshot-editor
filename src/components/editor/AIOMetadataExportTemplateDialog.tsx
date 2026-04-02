@@ -145,7 +145,7 @@ export function AIOMetadataExportTemplateDialog({
                                     <div className="space-y-3.5 sm:grid sm:grid-cols-[minmax(0,1fr)_15rem] sm:items-start sm:gap-4 sm:space-y-0">
                                         <div>
                                             <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/42">
-                                                Targets
+                                                Groups
                                             </p>
                                             <div className="mt-2 flex flex-wrap gap-2">
                                                 {rule.labels.map((label) => (

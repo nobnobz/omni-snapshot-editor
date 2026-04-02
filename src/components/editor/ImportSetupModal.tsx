@@ -1099,13 +1099,13 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                 </TabsList>
                                             </Tabs>
                                         ) : activeReviewTab === "subgroups" ? (
-                                            <div className="inline-flex h-9 w-full items-center rounded-xl bg-slate-100/40 p-1 text-xs font-bold dark:bg-white/5 sm:w-auto">
-                                                <div className="flex w-full items-center justify-between gap-2 rounded-lg bg-white/88 px-3 py-1.5 shadow-sm sm:w-auto sm:justify-start dark:bg-[linear-gradient(180deg,rgba(33,38,47,0.94),rgba(25,29,37,0.92))]">
-                                                    <span>Updates</span>
-                                                    <span className="inline-flex h-5 min-w-[1.35rem] items-center justify-center rounded-full border border-border/60 bg-slate-100/75 px-1.5 text-[10px] font-semibold leading-none text-foreground/62 shadow-sm dark:border-white/10 dark:bg-white/[0.08] dark:text-foreground/58">
-                                                        {filteredUpdatedSubgroups.length}
-                                                    </span>
-                                                </div>
+                                            <div className="flex items-baseline gap-2 px-1">
+                                                <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-foreground/44">
+                                                    Updates
+                                                </span>
+                                                <span className="text-sm font-semibold tracking-tight text-foreground/74">
+                                                    {filteredUpdatedSubgroups.length}
+                                                </span>
                                             </div>
                                         ) : <div></div>}
 

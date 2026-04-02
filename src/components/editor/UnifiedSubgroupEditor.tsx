@@ -340,40 +340,42 @@ const SubgroupCatalogPickerDialog = React.memo(function SubgroupCatalogPickerDia
                         />
                     </div>
                 </DialogHeader>
-                <div className={cn(editorSurface.overlayList, "max-h-[min(60vh,22rem)] overflow-y-auto p-2 custom-scrollbar")}>
+                <div className={cn(editorSurface.overlayList, "max-h-[min(60vh,22rem)] overflow-y-auto px-4 pb-4 custom-scrollbar")}>
                     {filteredCatalogs.length === 0 ? (
                         <p className="p-4 text-center text-xs text-foreground/70">No catalogs found.</p>
                     ) : (
-                        groupedCatalogs.map(({ category, options }) => (
-                            <div key={category} className="mb-2 last:mb-0">
-                                <div className={cn(editorSurface.sticky, "sticky top-0 z-[60] mb-1 px-2.5 py-2")}>
-                                    <h5 className="text-xs font-bold uppercase tracking-[0.18em] text-foreground/52">{category}</h5>
-                                </div>
-                                <div className="flex flex-col gap-0.5">
-                                    {options.map((catalog) => (
-                                        <button
-                                            key={catalog.id}
-                                            type="button"
-                                            onClick={() => {
-                                                onSelectCatalog(catalog.id);
-                                                onOpenChange(false);
-                                            }}
-                                            className="group flex items-center gap-3 rounded-md border border-transparent px-2.5 py-2 text-left transition-colors hover:border-primary/20 hover:bg-primary/10 dark:hover:border-primary/22 dark:hover:bg-primary/20"
-                                        >
-                                            <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground transition-colors group-hover:text-primary">
-                                                {catalog.name}
-                                            </p>
-                                            <p
-                                                className="max-w-[40%] shrink-0 truncate text-right text-xs font-mono text-foreground/42 transition-colors dark:text-foreground/50 group-hover:text-primary/72 dark:group-hover:text-primary/70"
-                                                title={catalog.id}
+                        <div className="space-y-1 pb-2 pt-4">
+                            {groupedCatalogs.map(({ category, options }) => (
+                                <div key={category}>
+                                    <div className={cn(editorSurface.sticky, "sticky top-0 z-[60] mb-2 ml-[-1rem] w-[calc(100%+2rem)] px-4 py-2.5")}>
+                                        <h5 className="text-xs font-bold uppercase tracking-[0.18em] text-foreground/52">{category}</h5>
+                                    </div>
+                                    <div className="flex flex-col gap-0.5">
+                                        {options.map((catalog) => (
+                                            <button
+                                                key={catalog.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    onSelectCatalog(catalog.id);
+                                                    onOpenChange(false);
+                                                }}
+                                                className="group flex items-center gap-3 rounded-md border border-transparent px-2.5 py-2 text-left transition-colors hover:border-primary/20 hover:bg-primary/10 dark:hover:border-primary/22 dark:hover:bg-primary/20"
                                             >
-                                                {catalog.id}
-                                            </p>
-                                        </button>
-                                    ))}
+                                                <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground transition-colors group-hover:text-primary">
+                                                    {catalog.name}
+                                                </p>
+                                                <p
+                                                    className="max-w-[40%] shrink-0 truncate text-right text-xs font-mono text-foreground/42 transition-colors dark:text-foreground/50 group-hover:text-primary/72 dark:group-hover:text-primary/70"
+                                                    title={catalog.id}
+                                                >
+                                                    {catalog.id}
+                                                </p>
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        ))
+                            ))}
+                        </div>
                     )}
                 </div>
             </DialogContent>

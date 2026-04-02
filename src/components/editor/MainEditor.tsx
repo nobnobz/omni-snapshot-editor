@@ -1337,13 +1337,16 @@ export function MainEditor() {
                                                                         type="button"
                                                                         variant="outline"
                                                                         size="icon-sm"
-                                                                        className="size-8 rounded-xl border-emerald-500/18 bg-emerald-500/[0.06] text-emerald-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] hover:border-emerald-500/28 hover:bg-emerald-500/[0.1] hover:text-emerald-700 dark:bg-emerald-500/[0.08] dark:text-emerald-400 md:size-9"
+                                                                        className={cn(
+                                                                            "size-8 rounded-xl border-emerald-500/18 bg-emerald-500/[0.06] text-emerald-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] hover:border-emerald-500/28 hover:bg-emerald-500/[0.1] hover:text-emerald-700 dark:bg-emerald-500/[0.08] dark:text-emerald-400 md:size-9",
+                                                                            isResyncingAiom && "border-emerald-500/32 bg-emerald-500/[0.12] shadow-[0_0_0_1px_rgba(16,185,129,0.12),0_0_0_6px_rgba(16,185,129,0.08)]"
+                                                                        )}
                                                                         onClick={() => void handleResyncAIOMetadata()}
                                                                         disabled={isImportingUrl || isResyncingAiom}
                                                                         aria-label={isResyncingAiom ? "Syncing AIOMetadata" : "Sync AIOMetadata again"}
                                                                         title={isResyncingAiom ? "Syncing..." : "Sync Again"}
                                                                     >
-                                                                        <RotateCcw className={cn("w-4 h-4", isResyncingAiom && "animate-spin")} />
+                                                                        <RotateCcw className={cn("w-4 h-4", isResyncingAiom && "animate-aiom-sync-sweep")} />
                                                                     </Button>
                                                                 )}
                                                                 <Button
@@ -1461,7 +1464,7 @@ export function MainEditor() {
                                                                     >
                                                                         {isImportingUrl ? (
                                                                             <span className="flex items-center gap-2">
-                                                                                <RotateCcw className="w-4 h-4 animate-spin" />
+                                                                                <RotateCcw className="w-4 h-4 animate-aiom-sync-sweep" />
                                                                                 Syncing...
                                                                             </span>
                                                                         ) : (

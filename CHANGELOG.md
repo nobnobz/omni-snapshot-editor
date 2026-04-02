@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.6.3] - 2026-04-02
+### Changed
+- Polished mobile dialog hierarchy across subgroup catalog picking, AIOMetadata export controls, and the import review flow for a calmer, more consistent UI.
+- Simplified the **Advanced Update** review header by replacing the oversized updates bar with a compact count label.
+- Refined AIOMetadata quick-select chips and restored the UME Sorting info copy from `Targets` back to `Groups`.
+
+### Fixed
+- Fixed the sticky subgroup catalog headers in the mobile `Select Catalog` popup so list rows no longer bleed through while scrolling.
+- Fixed the AIOMetadata refresh/loading motion by replacing the broken generic spinner with a dedicated sync animation.
+
 ## [0.6.2] - 2026-04-02
 ### Changed
 - Polished the mobile UI across dialogs, popups, guides, and editor panels for cleaner spacing and stronger visual hierarchy.

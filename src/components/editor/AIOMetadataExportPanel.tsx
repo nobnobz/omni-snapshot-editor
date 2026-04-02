@@ -54,6 +54,9 @@ const sourceLabels = {
     trakt: "Trakt",
 } as const;
 
+const quickSelectChipClass =
+    "h-8 rounded-full border-border/55 bg-background/55 px-3 text-xs font-semibold tracking-[0.01em] text-foreground/72 shadow-none hover:border-border/70 hover:bg-background/82 hover:text-foreground dark:bg-white/[0.03] dark:text-foreground/68 dark:hover:bg-white/[0.06]";
+
 const triggerDownload = (jsonText: string, filename: string) => {
     const blob = new Blob([jsonText], { type: "application/json;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -888,7 +891,7 @@ export function AIOMetadataExportPanel({
                                         type="button"
                                         variant="outline"
                                         size="sm"
-                                        className="rounded-full"
+                                        className={quickSelectChipClass}
                                         onClick={() => replaceSelection(inventory.exportableComparisonKeys)}
                                         disabled={inventory.exportableComparisonKeys.length === 0}
                                     >
@@ -899,7 +902,7 @@ export function AIOMetadataExportPanel({
                                             type="button"
                                             variant="outline"
                                             size="sm"
-                                            className="rounded-full"
+                                            className={quickSelectChipClass}
                                             onClick={() => replaceSelection(
                                                 Array.from(new Set(
                                                     inventory.occurrences
@@ -916,7 +919,7 @@ export function AIOMetadataExportPanel({
                                             type="button"
                                             variant="outline"
                                             size="sm"
-                                            className="rounded-full"
+                                            className={quickSelectChipClass}
                                             onClick={() => replaceSelection(
                                                 Array.from(new Set(
                                                     inventory.occurrences
@@ -933,7 +936,7 @@ export function AIOMetadataExportPanel({
                                             type="button"
                                             variant="outline"
                                             size="sm"
-                                            className="rounded-full"
+                                            className={quickSelectChipClass}
                                             onClick={() => replaceSelection(
                                                 Array.from(new Set(
                                                     inventory.occurrences
@@ -949,7 +952,7 @@ export function AIOMetadataExportPanel({
                                         type="button"
                                         variant="outline"
                                         size="sm"
-                                        className="rounded-full"
+                                        className={quickSelectChipClass}
                                         onClick={() => replaceSelection([])}
                                     >
                                         Clear
