@@ -116,6 +116,12 @@ const isIgnoredUpdateManagerSubgroup = (name: string) =>
 const buildCatalogSignature = (catalogs: string[]) =>
     JSON.stringify([...catalogs].sort((a, b) => a.localeCompare(b)));
 
+const secondaryFilterRailClass =
+    "inline-flex items-center gap-1.5 self-start rounded-full border border-border/60 bg-background/55 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:bg-white/[0.035] dark:border-white/10";
+
+const secondaryFilterButtonClass =
+    "h-8 rounded-full px-3 text-[11px] font-semibold tracking-tight transition-colors";
+
 type ImportedMainGroupSelection = {
     name: string;
     subgroupNames: string[];
@@ -1080,29 +1086,59 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
 
                                     <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
                                         {activeReviewTab === "main" ? (
-                                            <Tabs value={activeMainFilter} onValueChange={(v) => setActiveMainFilter(v as "updates" | "new")} className="w-full sm:w-64">
-                                                <TabsList className="h-9 p-1 bg-slate-100/40 dark:bg-white/5 rounded-xl grid grid-cols-2">
-                                                    <TabsTrigger value="new" className="rounded-lg text-xs font-bold">
-                                                        <span className="sm:hidden">New</span>
-                                                        <span className="hidden sm:inline">New ({filteredNewMainSubgroupCount})</span>
-                                                        <span className="sm:hidden inline-flex h-5 min-w-[1.35rem] items-center justify-center rounded-full border border-border/60 bg-background/80 px-1.5 text-[10px] font-semibold leading-none text-foreground/62 shadow-sm">
-                                                            {filteredNewMainSubgroupCount}
-                                                        </span>
-                                                    </TabsTrigger>
-                                                    <TabsTrigger value="updates" className="rounded-lg text-xs font-bold">
-                                                        <span className="sm:hidden">Updates</span>
-                                                        <span className="hidden sm:inline">Updates ({filteredUpdatedMainSubgroupCount})</span>
-                                                        <span className="sm:hidden inline-flex h-5 min-w-[1.35rem] items-center justify-center rounded-full border border-border/60 bg-background/80 px-1.5 text-[10px] font-semibold leading-none text-foreground/62 shadow-sm">
-                                                            {filteredUpdatedMainSubgroupCount}
-                                                        </span>
-                                                    </TabsTrigger>
-                                                </TabsList>
-                                            </Tabs>
-                                        ) : activeReviewTab === "subgroups" ? (
-                                            <div className="inline-flex h-9 w-full items-center rounded-xl bg-slate-100/40 p-1 text-xs font-bold dark:bg-white/5 sm:w-auto">
-                                                <div className="flex w-full items-center justify-between gap-2 rounded-lg bg-background px-3 py-1.5 shadow-sm sm:w-auto sm:justify-start">
+                                            <div className={cn(secondaryFilterRailClass, "w-full sm:w-auto")}>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    aria-pressed={activeMainFilter === "new"}
+                                                    onClick={() => setActiveMainFilter("new")}
+                                                    className={cn(
+                                                        secondaryFilterButtonClass,
+                                                        activeMainFilter === "new"
+                                                            ? "bg-foreground text-background shadow-sm hover:bg-foreground/92 hover:text-background dark:bg-background dark:text-foreground dark:hover:bg-background/92"
+                                                            : "text-foreground/66 shadow-none hover:bg-background hover:text-foreground dark:hover:bg-white/[0.06]"
+                                                    )}
+                                                >
+                                                    <span>New</span>
+                                                    <span className={cn(
+                                                        "inline-flex h-5 min-w-[1.35rem] items-center justify-center rounded-full border px-1.5 text-[10px] font-semibold leading-none",
+                                                        activeMainFilter === "new"
+                                                            ? "border-black/10 bg-black/10 text-inherit dark:border-white/10 dark:bg-white/10"
+                                                            : "border-border/60 bg-background/80 text-foreground/58 dark:border-white/10 dark:bg-white/[0.045] dark:text-foreground/54"
+                                                    )}>
+                                                        {filteredNewMainSubgroupCount}
+                                                    </span>
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    aria-pressed={activeMainFilter === "updates"}
+                                                    onClick={() => setActiveMainFilter("updates")}
+                                                    className={cn(
+                                                        secondaryFilterButtonClass,
+                                                        activeMainFilter === "updates"
+                                                            ? "bg-foreground text-background shadow-sm hover:bg-foreground/92 hover:text-background dark:bg-background dark:text-foreground dark:hover:bg-background/92"
+                                                            : "text-foreground/66 shadow-none hover:bg-background hover:text-foreground dark:hover:bg-white/[0.06]"
+                                                    )}
+                                                >
                                                     <span>Updates</span>
-                                                    <span className="inline-flex h-5 min-w-[1.35rem] items-center justify-center rounded-full border border-border/60 bg-slate-100/75 px-1.5 text-[10px] font-semibold leading-none text-foreground/62 shadow-sm dark:border-white/10 dark:bg-white/[0.045] dark:text-foreground/58">
+                                                    <span className={cn(
+                                                        "inline-flex h-5 min-w-[1.35rem] items-center justify-center rounded-full border px-1.5 text-[10px] font-semibold leading-none",
+                                                        activeMainFilter === "updates"
+                                                            ? "border-black/10 bg-black/10 text-inherit dark:border-white/10 dark:bg-white/10"
+                                                            : "border-border/60 bg-background/80 text-foreground/58 dark:border-white/10 dark:bg-white/[0.045] dark:text-foreground/54"
+                                                    )}>
+                                                        {filteredUpdatedMainSubgroupCount}
+                                                    </span>
+                                                </Button>
+                                            </div>
+                                        ) : activeReviewTab === "subgroups" ? (
+                                            <div className={secondaryFilterRailClass}>
+                                                <div className="inline-flex h-8 items-center gap-2 rounded-full bg-foreground px-3 text-[11px] font-semibold tracking-tight text-background shadow-sm dark:bg-background dark:text-foreground">
+                                                    <span>Updates</span>
+                                                    <span className="inline-flex h-5 min-w-[1.35rem] items-center justify-center rounded-full border border-black/10 bg-black/10 px-1.5 text-[10px] font-semibold leading-none text-inherit dark:border-white/10 dark:bg-white/10">
                                                         {filteredUpdatedSubgroups.length}
                                                     </span>
                                                 </div>
