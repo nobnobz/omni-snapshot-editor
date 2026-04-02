@@ -162,6 +162,7 @@ export function MainEditor() {
     const [isExitConfirmOpen, setIsExitConfirmOpen] = useState(false);
     const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
     const [isImportingUrl, setIsImportingUrl] = useState(false);
+    const [isResyncingAiom, setIsResyncingAiom] = useState(false);
     const [aioSyncState, setAioSyncState] = useState<AIOMetadataSyncState | null>(null);
     const [isAioImportEditorOpen, setIsAioImportEditorOpen] = useState(true);
 
@@ -854,13 +855,18 @@ export function MainEditor() {
 
     const handleResyncAIOMetadata = async () => {
         if (aioSyncState?.sourceType === "url" && aioSyncState.sourceValue) {
+            setIsResyncingAiom(true);
             setAioManifestUrlInput(aioSyncState.sourceValue);
             setAioManifestUrlDraft(aioSyncState.sourceValue);
-            await syncAIOMetadataFromUrl(aioSyncState.sourceValue, {
-                showSuccessNotice: true,
-                preserveScroll: true,
-                errorPlacement: "aiometadata",
-            });
+            try {
+                await syncAIOMetadataFromUrl(aioSyncState.sourceValue, {
+                    showSuccessNotice: true,
+                    preserveScroll: true,
+                    errorPlacement: "aiometadata",
+                });
+            } finally {
+                setIsResyncingAiom(false);
+            }
             return;
         }
 
@@ -1333,11 +1339,11 @@ export function MainEditor() {
                                                                         size="icon-sm"
                                                                         className="size-8 rounded-xl border-emerald-500/18 bg-emerald-500/[0.06] text-emerald-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] hover:border-emerald-500/28 hover:bg-emerald-500/[0.1] hover:text-emerald-700 dark:bg-emerald-500/[0.08] dark:text-emerald-400 md:size-9"
                                                                         onClick={() => void handleResyncAIOMetadata()}
-                                                                        disabled={isImportingUrl}
-                                                                        aria-label={isImportingUrl ? "Syncing AIOMetadata" : "Sync AIOMetadata again"}
-                                                                        title={isImportingUrl ? "Syncing..." : "Sync Again"}
+                                                                        disabled={isImportingUrl || isResyncingAiom}
+                                                                        aria-label={isResyncingAiom ? "Syncing AIOMetadata" : "Sync AIOMetadata again"}
+                                                                        title={isResyncingAiom ? "Syncing..." : "Sync Again"}
                                                                     >
-                                                                        <RotateCcw className={cn("w-4 h-4", isImportingUrl && "animate-spin")} />
+                                                                        <RotateCcw className={cn("w-4 h-4", isResyncingAiom && "animate-spin")} />
                                                                     </Button>
                                                                 )}
                                                                 <Button

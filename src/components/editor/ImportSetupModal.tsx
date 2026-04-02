@@ -1064,8 +1064,8 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                             <div className={cn(editorSurface.card, "relative flex flex-col overflow-hidden")}>
                                 <div className="sticky top-0 z-30 bg-white/80 dark:bg-[rgb(13,16,22)]/80 backdrop-blur-md border-b border-border/40 shadow-sm p-4 space-y-3.5">
                                     <TabsList className="h-11 p-1 bg-slate-100/50 dark:bg-white/10 rounded-xl grid grid-cols-2 gap-1 border-none">
-                                        <TabsTrigger value="main" className="rounded-lg font-bold data-[state=active]:bg-background shadow-sm">Basic Import</TabsTrigger>
-                                        <TabsTrigger value="subgroups" className="rounded-lg font-bold data-[state=active]:bg-background shadow-sm">Advanced Update</TabsTrigger>
+                                        <TabsTrigger value="main" className="rounded-lg font-bold shadow-sm data-[state=active]:bg-white/88 data-[state=active]:text-foreground dark:data-[state=active]:bg-[linear-gradient(180deg,rgba(33,38,47,0.94),rgba(25,29,37,0.92))] dark:data-[state=active]:text-foreground">Basic Import</TabsTrigger>
+                                        <TabsTrigger value="subgroups" className="rounded-lg font-bold shadow-sm data-[state=active]:bg-white/88 data-[state=active]:text-foreground dark:data-[state=active]:bg-[linear-gradient(180deg,rgba(33,38,47,0.94),rgba(25,29,37,0.92))] dark:data-[state=active]:text-foreground">Advanced Update</TabsTrigger>
                                     </TabsList>
 
                                     <div className="relative">
@@ -1082,14 +1082,14 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                         {activeReviewTab === "main" ? (
                                             <Tabs value={activeMainFilter} onValueChange={(v) => setActiveMainFilter(v as "updates" | "new")} className="w-full sm:w-64">
                                                 <TabsList className="h-9 p-1 bg-slate-100/40 dark:bg-white/5 rounded-xl grid grid-cols-2">
-                                                    <TabsTrigger value="new" className="rounded-lg text-xs font-bold">
+                                                    <TabsTrigger value="new" className="rounded-lg text-xs font-bold data-[state=active]:bg-white/88 data-[state=active]:text-foreground dark:data-[state=active]:bg-[linear-gradient(180deg,rgba(33,38,47,0.94),rgba(25,29,37,0.92))] dark:data-[state=active]:text-foreground">
                                                         <span className="sm:hidden">New</span>
                                                         <span className="hidden sm:inline">New ({filteredNewMainSubgroupCount})</span>
                                                         <span className="sm:hidden inline-flex h-5 min-w-[1.35rem] items-center justify-center rounded-full border border-border/60 bg-background/80 px-1.5 text-[10px] font-semibold leading-none text-foreground/62 shadow-sm">
                                                             {filteredNewMainSubgroupCount}
                                                         </span>
                                                     </TabsTrigger>
-                                                    <TabsTrigger value="updates" className="rounded-lg text-xs font-bold">
+                                                    <TabsTrigger value="updates" className="rounded-lg text-xs font-bold data-[state=active]:bg-white/88 data-[state=active]:text-foreground dark:data-[state=active]:bg-[linear-gradient(180deg,rgba(33,38,47,0.94),rgba(25,29,37,0.92))] dark:data-[state=active]:text-foreground">
                                                         <span className="sm:hidden">Updates</span>
                                                         <span className="hidden sm:inline">Updates ({filteredUpdatedMainSubgroupCount})</span>
                                                         <span className="sm:hidden inline-flex h-5 min-w-[1.35rem] items-center justify-center rounded-full border border-border/60 bg-background/80 px-1.5 text-[10px] font-semibold leading-none text-foreground/62 shadow-sm">
@@ -1100,9 +1100,9 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                             </Tabs>
                                         ) : activeReviewTab === "subgroups" ? (
                                             <div className="inline-flex h-9 w-full items-center rounded-xl bg-slate-100/40 p-1 text-xs font-bold dark:bg-white/5 sm:w-auto">
-                                                <div className="flex w-full items-center justify-between gap-2 rounded-lg bg-background px-3 py-1.5 shadow-sm sm:w-auto sm:justify-start">
+                                                <div className="flex w-full items-center justify-between gap-2 rounded-lg bg-white/88 px-3 py-1.5 shadow-sm sm:w-auto sm:justify-start dark:bg-[linear-gradient(180deg,rgba(33,38,47,0.94),rgba(25,29,37,0.92))]">
                                                     <span>Updates</span>
-                                                    <span className="inline-flex h-5 min-w-[1.35rem] items-center justify-center rounded-full border border-border/60 bg-slate-100/75 px-1.5 text-[10px] font-semibold leading-none text-foreground/62 shadow-sm dark:border-white/10 dark:bg-white/[0.045] dark:text-foreground/58">
+                                                    <span className="inline-flex h-5 min-w-[1.35rem] items-center justify-center rounded-full border border-border/60 bg-slate-100/75 px-1.5 text-[10px] font-semibold leading-none text-foreground/62 shadow-sm dark:border-white/10 dark:bg-white/[0.08] dark:text-foreground/58">
                                                         {filteredUpdatedSubgroups.length}
                                                     </span>
                                                 </div>

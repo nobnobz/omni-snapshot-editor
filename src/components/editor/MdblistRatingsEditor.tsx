@@ -656,7 +656,11 @@ export function MdblistRatingsEditor() {
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="h-9 gap-2 rounded-lg border border-border/60 bg-background/72 px-3.5 text-foreground/78 shadow-sm hover:bg-background hover:text-foreground"
+                                    className={cn(
+                                        "h-9 gap-2 rounded-lg px-3.5 text-foreground/78 shadow-sm hover:text-foreground",
+                                        editorSurface.field,
+                                        "border-border/60 bg-white/60 hover:bg-white/78 dark:bg-[linear-gradient(180deg,rgba(28,32,40,0.92),rgba(22,26,34,0.9))] dark:hover:bg-[linear-gradient(180deg,rgba(33,38,47,0.94),rgba(25,29,37,0.92))]"
+                                    )}
                                     disabled={inactiveDefinitions.length === 0}
                                 >
                                     <Plus className="h-3.5 w-3.5" />
@@ -676,7 +680,11 @@ export function MdblistRatingsEditor() {
                             variant="ghost"
                             size="sm"
                             onClick={resetToDefaults}
-                            className="h-9 gap-2 rounded-lg border border-border/60 bg-background/72 px-3.5 text-foreground/78 shadow-sm hover:bg-background hover:text-foreground"
+                            className={cn(
+                                "h-9 gap-2 rounded-lg px-3.5 text-foreground/78 shadow-sm hover:text-foreground",
+                                editorSurface.field,
+                                "border-border/60 bg-white/60 hover:bg-white/78 dark:bg-[linear-gradient(180deg,rgba(28,32,40,0.92),rgba(22,26,34,0.9))] dark:hover:bg-[linear-gradient(180deg,rgba(33,38,47,0.94),rgba(25,29,37,0.92))]"
+                            )}
                         >
                             <RotateCcw className="h-3.5 w-3.5" />
                             Reset

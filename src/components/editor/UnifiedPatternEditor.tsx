@@ -713,7 +713,7 @@ export function UnifiedPatternEditor() {
                                     onChange={e => setNewPattern(e.target.value)}
                                     onKeyDown={e => e.key === 'Enter' && handleAddPattern()}
                                     placeholder="Enter new Regex string (e.g. (?i)uhd|4k)"
-                                    className={cn(editorSurface.field, patternFieldSurface, "h-13 sm:h-10 rounded-xl px-4 text-[15px] sm:text-sm font-medium focus-visible:ring-[3px] focus-visible:ring-ring/50 transition-colors flex-1")}
+                                    className={cn(editorSurface.field, patternFieldSurface, "h-13 sm:h-10 rounded-lg px-4 text-[15px] sm:text-sm font-medium focus-visible:ring-[3px] focus-visible:ring-ring/50 transition-colors flex-1")}
                                 />
                                 <div className="flex items-center gap-2 sm:shrink-0">
                                     <Button

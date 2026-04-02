@@ -786,16 +786,23 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
 
                         {/* Add New Catalog Dropdown Menu */}
                         <div className="pt-1 sm:pt-0">
-                            <DropdownMenu open={isAddMenuOpen} onOpenChange={open => {
+                            <DropdownMenu modal={false} open={isAddMenuOpen} onOpenChange={open => {
                                 setIsAddMenuOpen(open);
                                 if (!open) setCatalogSearch("");
                             }}>
                                 <DropdownMenuTrigger asChild>
-                                    <Button size="sm" variant="outline" className={cn(editorSurface.dropzone, "w-full justify-start text-xs text-foreground/75 hover:text-foreground hover:border-primary/45 hover:bg-primary/5 transition-all active:scale-[0.995]")}>
+                                    <Button type="button" size="sm" variant="outline" className={cn(editorSurface.dropzone, "w-full justify-start text-xs text-foreground/75 hover:text-foreground hover:border-primary/45 hover:bg-primary/5 transition-all active:scale-[0.995]")}>
                                         <Plus className="w-3.5 h-3.5 mr-2" /> Add Catalog...
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="center" sideOffset={8} className={cn(editorSurface.overlay, "w-[30rem] max-w-[92vw] p-0 overflow-hidden")}>
+                                <DropdownMenuContent
+                                    align="center"
+                                    sideOffset={8}
+                                    className={cn(editorSurface.overlay, "w-[30rem] max-w-[92vw] p-0 overflow-hidden")}
+                                    onCloseAutoFocus={(event) => {
+                                        event.preventDefault();
+                                    }}
+                                >
                                     <div className={cn(editorSurface.overlaySection, "space-y-2 border-b border-primary/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.66),rgba(239,246,255,0.5))] p-3 dark:border-primary/14 dark:bg-[linear-gradient(180deg,rgba(18,24,35,0.95),rgba(14,20,31,0.92))]")}>
                                         <h4 className="flex justify-between text-[11px] font-bold uppercase tracking-[0.18em] text-foreground/58">
                                             <span>Select Catalog</span>
@@ -805,7 +812,6 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-foreground/60" />
                                             <Input
                                                 ref={addCatalogSearchInputRef}
-                                                autoFocus
                                                 placeholder="Search by name or ID..."
                                                 value={catalogSearch}
                                                 onChange={e => setCatalogSearch(e.target.value)}
@@ -1704,16 +1710,23 @@ const UnassignedSubgroupRow = React.memo(function UnassignedSubgroupRow({
 
                         {/* Add New Catalog Dropdown Menu */}
                         <div className="pt-1 sm:pt-0">
-                            <DropdownMenu open={isAddMenuOpen} onOpenChange={open => {
+                            <DropdownMenu modal={false} open={isAddMenuOpen} onOpenChange={open => {
                                 setIsAddMenuOpen(open);
                                 if (!open) setCatalogSearch("");
                             }}>
                                 <DropdownMenuTrigger asChild>
-                                    <Button size="sm" variant="outline" className={cn(editorSurface.dropzone, "w-full justify-start text-xs text-foreground/75 hover:text-foreground hover:border-primary/45 hover:bg-primary/5 transition-all active:scale-[0.995]")}>
+                                    <Button type="button" size="sm" variant="outline" className={cn(editorSurface.dropzone, "w-full justify-start text-xs text-foreground/75 hover:text-foreground hover:border-primary/45 hover:bg-primary/5 transition-all active:scale-[0.995]")}>
                                         <Plus className="w-3.5 h-3.5 mr-2" /> Add Catalog...
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="center" sideOffset={8} className={cn(editorSurface.overlay, "w-[30rem] max-w-[92vw] p-0 overflow-hidden")}>
+                                <DropdownMenuContent
+                                    align="center"
+                                    sideOffset={8}
+                                    className={cn(editorSurface.overlay, "w-[30rem] max-w-[92vw] p-0 overflow-hidden")}
+                                    onCloseAutoFocus={(event) => {
+                                        event.preventDefault();
+                                    }}
+                                >
                                     <div className={cn(editorSurface.overlaySection, "space-y-2 border-b border-primary/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.66),rgba(239,246,255,0.5))] p-3 dark:border-primary/14 dark:bg-[linear-gradient(180deg,rgba(18,24,35,0.95),rgba(14,20,31,0.92))]")}>
                                         <h4 className="flex justify-between text-[11px] font-bold uppercase tracking-[0.18em] text-foreground/58">
                                             <span>Select Catalog</span>
@@ -1723,7 +1736,6 @@ const UnassignedSubgroupRow = React.memo(function UnassignedSubgroupRow({
                                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-foreground/60" />
                                             <Input
                                                 ref={addCatalogSearchInputRef}
-                                                autoFocus
                                                 placeholder="Search by name or ID..."
                                                 value={catalogSearch}
                                                 onChange={e => setCatalogSearch(e.target.value)}

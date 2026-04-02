@@ -66,7 +66,7 @@ export function AIOMetadataExportTemplateDialog({
 }) {
     const ruleSummaries = useMemo(() => {
         const groupedRules = new Map<string, {
-            labels: string[];
+            labels: Set<string>;
             summary: string;
             detail?: string;
         }>();
@@ -74,43 +74,48 @@ export function AIOMetadataExportTemplateDialog({
         template.rules.forEach((rule) => {
             if (rule.kind === "trakt-group" || rule.kind === "streaming-group" || rule.kind === "trakt-catalog") return;
 
+            let labels: string[] = [];
+            let summary = "";
+            let detail: string | undefined;
+
             if (rule.kind === "mdblist-group") {
                 const groupNames = (rule.match.widgetNames || []).filter((label) =>
                     !["Service", "Services", "Year", "Years", "Genre", "Director", "Actor", "Collection"].includes(label)
                 );
-                const labels = groupNames.length > 0 ? groupNames : ["MDBList groups"];
-                const key = labels.join("|");
-
-                if (!groupedRules.has(key)) {
-                    groupedRules.set(key, {
-                        labels,
-                        summary: formatSortSummary(rule.values.sort, rule.values.order),
-                        detail: formatRefreshSummary(rule.values.cacheTTL),
-                    });
+                labels = groupNames.length > 0 ? groupNames : ["MDBList groups"];
+                summary = formatSortSummary(rule.values.sort, rule.values.order);
+                detail = formatRefreshSummary(rule.values.cacheTTL);
+            } else if (rule.kind === "mdblist-catalog") {
+                labels = formatCatalogRuleLabels(rule.match.namePrefixes, rule.match.names);
+                if (labels.length === 0) {
+                    labels = ["Named catalogs"];
                 }
-                return;
+                summary = formatSortSummary(rule.values.sort, rule.values.order);
+                detail = formatRefreshSummary(rule.values.cacheTTL);
+            } else {
+                labels = ["Watchlist"];
+                summary = formatSortSummary(rule.values.sort, rule.values.sortDirection);
+                detail = formatRefreshSummary(rule.values.cacheTTL);
             }
 
-            if (rule.kind === "mdblist-catalog") {
-                const labels = formatCatalogRuleLabels(rule.match.namePrefixes, rule.match.names);
-                const key = labels.join("|") || "Named catalogs";
+            const key = `${summary}__${detail ?? ""}`;
+            const existing = groupedRules.get(key);
 
+            if (existing) {
+                labels.forEach((label) => existing.labels.add(label));
+            } else {
                 groupedRules.set(key, {
-                    labels: labels.length > 0 ? labels : ["Named catalogs"],
-                    summary: formatSortSummary(rule.values.sort, rule.values.order),
-                    detail: formatRefreshSummary(rule.values.cacheTTL),
+                    labels: new Set(labels),
+                    summary,
+                    detail,
                 });
-                return;
             }
-
-            groupedRules.set("Watchlist", {
-                labels: ["Watchlist"],
-                summary: formatSortSummary(rule.values.sort, rule.values.sortDirection),
-                detail: formatRefreshSummary(rule.values.cacheTTL),
-            });
         });
 
-        return Array.from(groupedRules.values());
+        return Array.from(groupedRules.values()).map((rule) => ({
+            ...rule,
+            labels: Array.from(rule.labels),
+        }));
     }, [template]);
 
     return (
@@ -140,7 +145,7 @@ export function AIOMetadataExportTemplateDialog({
                                     <div className="space-y-3.5 sm:grid sm:grid-cols-[minmax(0,1fr)_15rem] sm:items-start sm:gap-4 sm:space-y-0">
                                         <div>
                                             <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/42">
-                                                Groups
+                                                Targets
                                             </p>
                                             <div className="mt-2 flex flex-wrap gap-2">
                                                 {rule.labels.map((label) => (
