@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
     classifyImportSetupMainGroupSubgroups,
     hasImportSetupCatalogsChanged,
+    hasImportSetupGroupPlacementChanged,
     hasImportSetupImageChanged,
     normalizeImportSetupImageUrl,
 } from "./import-setup-diff";
@@ -38,6 +39,25 @@ describe("import setup catalog diff", () => {
 
     it("flags changed catalogs", () => {
         expect(hasImportSetupCatalogsChanged(["a"], ["a", "b"])).toBe(true);
+    });
+});
+
+describe("import setup group placement diff", () => {
+    it("does not flag identical group placement", () => {
+        expect(hasImportSetupGroupPlacementChanged(["Collections"], ["Collections"])).toBe(false);
+    });
+
+    it("ignores order and duplicates when comparing group placement", () => {
+        expect(hasImportSetupGroupPlacementChanged(["Lists", "Collections", "Lists"], ["Collections", "Lists"])).toBe(false);
+    });
+
+    it("flags subgroup moves between groups", () => {
+        expect(hasImportSetupGroupPlacementChanged(["Collections"], ["Lists"])).toBe(true);
+    });
+
+    it("flags moves between grouped and unassigned states", () => {
+        expect(hasImportSetupGroupPlacementChanged(["Collections"], [])).toBe(true);
+        expect(hasImportSetupGroupPlacementChanged([], ["Collections"])).toBe(true);
     });
 });
 

@@ -48,7 +48,7 @@ type DeletedMainGroup = {
 type ImportGroupsPayload = {
     mainGroups: Record<string, LooseAny>;
     subgroups: Record<string, { catalogs?: string[]; imageUrl?: string; renameFrom?: string; overwriteCatalogs?: boolean; overwriteImage?: boolean }>;
-    standaloneAssignments: Record<string, string>;
+    standaloneAssignments: Record<string, string | null>;
     metadata?: {
         custom_catalog_names?: Record<string, string>;
         regex_pattern_image_urls?: Record<string, string>;

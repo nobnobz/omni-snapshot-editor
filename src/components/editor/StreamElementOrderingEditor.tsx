@@ -58,7 +58,7 @@ function SortableElementItem({
             ref={setNodeRef}
             style={style}
             className={cn(
-                "group flex items-center gap-3 p-3 rounded-lg border mb-2 relative",
+                "group touch-drag-surface flex items-center gap-3 p-3 rounded-lg border mb-2 relative",
                 !isDragging && editorHover.transition,
                 editorSurface.cardInteractive,
                 isDragging ? "opacity-50 border-primary" : "border-slate-200/60 dark:border-white/5",
@@ -68,8 +68,7 @@ function SortableElementItem({
             <button
                 {...attributes}
                 {...listeners}
-                className={cn("cursor-grab select-none p-1 rounded hover:bg-muted/50", editorHover.softAction)}
-                style={{ touchAction: 'none' }}
+                className={cn("touch-drag-handle cursor-grab select-none p-1 rounded hover:bg-muted/50", editorHover.softAction)}
                 aria-label="Drag handle"
             >
                 <GripVertical className="h-4 w-4 text-muted-foreground" />

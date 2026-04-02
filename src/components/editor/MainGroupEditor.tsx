@@ -94,7 +94,7 @@ function SortableSubgroupItem({
         <div
             ref={setNodeRef}
             style={style}
-            className={`group flex items-center gap-3 p-3 bg-card border rounded-lg mb-2 ${editorHover.transition}
+            className={`group touch-drag-surface flex items-center gap-3 p-3 bg-card border rounded-lg mb-2 ${editorHover.transition}
                 ${isDragging ? "opacity-50 border-primary shadow-xl" : `border-border ${editorHover.row}`}
                 ${!isEnabled ? "opacity-60 border-dashed border-border/50 bg-card/60" : ""}
             `}
@@ -102,8 +102,7 @@ function SortableSubgroupItem({
             <button 
                 {...attributes} 
                 {...listeners} 
-                className={`cursor-grab shrink-0 p-2 rounded-md transition-colors ${isEnabled ? editorHover.softAction : "text-foreground pointer-events-none"}`}
-                style={{ touchAction: 'none' }} 
+                className={`touch-drag-handle cursor-grab shrink-0 p-2 rounded-md transition-colors ${isEnabled ? editorHover.softAction : "text-foreground pointer-events-none"}`}
                 aria-label="Drag handle"
             >
                 <GripVertical className="h-5 w-5" />
@@ -328,7 +327,7 @@ function SortableMainGroupItem({
             ref={setNodeRef}
             style={style}
             value={groupId} 
-            className={`${editorSurface.cardInteractive} transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out overflow-hidden group/accordion mb-2
+            className={`${editorSurface.cardInteractive} touch-drag-surface transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out overflow-hidden group/accordion mb-2
                 ${isDragging ? "opacity-50 border-primary shadow-2xl z-50 relative" : ""}
             `}
         >
@@ -337,7 +336,7 @@ function SortableMainGroupItem({
                     <button 
                         {...attributes} 
                         {...listeners}
-                        className={`p-3 cursor-grab active:cursor-grabbing shrink-0 transition-colors ${editorHover.softAction}`}
+                        className={`touch-drag-handle p-3 cursor-grab active:cursor-grabbing shrink-0 transition-colors ${editorHover.softAction}`}
                     >
                         <GripVertical className="w-5 h-5" />
                     </button>

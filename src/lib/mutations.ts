@@ -506,7 +506,7 @@ export function importGroups(
     payload: {
         mainGroups: Record<string, LooseAny>;
         subgroups: Record<string, { catalogs?: string[]; imageUrl?: string; renameFrom?: string; overwriteCatalogs?: boolean; overwriteImage?: boolean }>;
-        standaloneAssignments: Record<string, string>;
+        standaloneAssignments: Record<string, string | null>;
         metadata?: {
             custom_catalog_names?: Record<string, string>;
             regex_pattern_image_urls?: Record<string, string>;
@@ -541,6 +541,7 @@ export function importGroups(
                 existingMgByName[maybeName] = uid;
             }
         });
+        const resolvedMainGroupUuids: Record<string, string> = {};
 
         Object.keys(payload.mainGroups).forEach((uuid) => {
             const incomingMainGroup = payload.mainGroups[uuid];
@@ -548,22 +549,17 @@ export function importGroups(
             const existingUuid = existingMgByName[incomingMainGroup.name];
 
             if (existingUuid) {
-                if (!draft.main_catalog_groups[existingUuid].subgroupNames) {
-                    draft.main_catalog_groups[existingUuid].subgroupNames = [];
-                }
-                incomingSubgroups.forEach((subgroupName) => {
-                    if (!draft.main_catalog_groups[existingUuid].subgroupNames.includes(subgroupName)) {
-                        draft.main_catalog_groups[existingUuid].subgroupNames.push(subgroupName);
-                    }
-                });
+                resolvedMainGroupUuids[uuid] = existingUuid;
 
-                if (!draft.subgroup_order[existingUuid]) {
-                    draft.subgroup_order[existingUuid] = [];
+                if (incomingMainGroup.posterType) {
+                    draft.main_catalog_groups[existingUuid].posterType = incomingMainGroup.posterType;
                 }
+                if (incomingMainGroup.posterSize) {
+                    draft.main_catalog_groups[existingUuid].posterSize = incomingMainGroup.posterSize;
+                }
+
                 incomingSubgroups.forEach((subgroupName) => {
-                    if (!draft.subgroup_order[existingUuid].includes(subgroupName)) {
-                        draft.subgroup_order[existingUuid].push(subgroupName);
-                    }
+                    mutateAssignSubgroup(draft, subgroupName, existingUuid);
                 });
                 return;
             }
@@ -575,12 +571,17 @@ export function importGroups(
 
             draft.main_catalog_groups[targetUuid] = {
                 name: incomingMainGroup.name,
-                subgroupNames: incomingSubgroups,
+                subgroupNames: [],
                 posterType: incomingMainGroup.posterType,
                 posterSize: incomingMainGroup.posterSize,
             };
             draft.main_group_order.push(targetUuid);
-            draft.subgroup_order[targetUuid] = incomingSubgroups;
+            draft.subgroup_order[targetUuid] = [];
+            resolvedMainGroupUuids[uuid] = targetUuid;
+
+            incomingSubgroups.forEach((subgroupName) => {
+                mutateAssignSubgroup(draft, subgroupName, targetUuid);
+            });
         });
 
         Object.keys(payload.subgroups).forEach((name) => {
@@ -604,20 +605,17 @@ export function importGroups(
                 draft.catalog_group_image_urls[name] = subgroup.imageUrl;
             }
 
-            const targetMainUuid = payload.standaloneAssignments[name];
-            if (targetMainUuid && draft.main_catalog_groups[targetMainUuid]) {
-                if (!draft.main_catalog_groups[targetMainUuid].subgroupNames) {
-                    draft.main_catalog_groups[targetMainUuid].subgroupNames = [];
-                }
-                if (!draft.main_catalog_groups[targetMainUuid].subgroupNames.includes(name)) {
-                    draft.main_catalog_groups[targetMainUuid].subgroupNames.push(name);
+            if (Object.prototype.hasOwnProperty.call(payload.standaloneAssignments, name)) {
+                const rawTargetMainUuid = payload.standaloneAssignments[name];
+
+                if (rawTargetMainUuid === null) {
+                    mutateUnassignSubgroup(draft, name);
+                    return;
                 }
 
-                if (!draft.subgroup_order[targetMainUuid]) {
-                    draft.subgroup_order[targetMainUuid] = [];
-                }
-                if (!draft.subgroup_order[targetMainUuid].includes(name)) {
-                    draft.subgroup_order[targetMainUuid].push(name);
+                const resolvedTargetMainUuid = resolvedMainGroupUuids[rawTargetMainUuid] || rawTargetMainUuid;
+                if (resolvedTargetMainUuid && draft.main_catalog_groups[resolvedTargetMainUuid]) {
+                    mutateAssignSubgroup(draft, name, resolvedTargetMainUuid);
                 }
             }
         });

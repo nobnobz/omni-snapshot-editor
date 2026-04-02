@@ -224,7 +224,7 @@ function SortableCatalogItem({
         <div
             ref={setNodeRef}
             style={style}
-            className={`group flex items-center gap-3 p-3 rounded-lg mb-2 ${editorHover.transition} ${editorSurface.cardInteractive}
+            className={`group touch-drag-surface flex items-center gap-3 p-3 rounded-lg mb-2 ${editorHover.transition} ${editorSurface.cardInteractive}
                 ${isDragging ? "opacity-50 border-primary shadow-xl" : ""}
                 ${!isActive ? "opacity-60 border-dashed border-slate-200/60 bg-white/42 dark:border-white/8 dark:bg-white/[0.025]" : ""}
             `}
@@ -233,8 +233,7 @@ function SortableCatalogItem({
             <button
                 {...attributes}
                 {...listeners}
-                className={`cursor-grab shrink-0 p-2 rounded-md transition-colors ${isActive ? editorHover.softAction : "text-foreground pointer-events-none"}`}
-                style={{ touchAction: 'none' }}
+                className={`touch-drag-handle cursor-grab shrink-0 p-2 rounded-md transition-colors ${isActive ? editorHover.softAction : "text-foreground pointer-events-none"}`}
             >
                 <GripVertical className="h-5 w-5" />
             </button>

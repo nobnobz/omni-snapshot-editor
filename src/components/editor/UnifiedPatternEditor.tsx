@@ -207,7 +207,7 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
             style={style}
             value={regex}
             className={cn(
-                "mb-2 overflow-hidden rounded-xl group/item transition-[border-color,background-color,box-shadow,transform]",
+                "mb-2 overflow-hidden rounded-xl group/item touch-drag-surface transition-[border-color,background-color,box-shadow,transform]",
                 editorSurface.card,
                 !isTagEnabled && "opacity-65",
                 isDragging && "border-primary shadow-xl scale-[1.01]"
@@ -228,12 +228,11 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                         {...attributes}
                         {...listeners}
                         className={cn(
-                            "cursor-grab shrink-0 p-4 -ml-2 rounded-md transition-colors",
+                            "touch-drag-handle cursor-grab shrink-0 p-4 -ml-2 rounded-md transition-colors",
                             isTagEnabled
                                 ? "text-foreground/65 hover:text-foreground hover:bg-muted/38 dark:hover:bg-muted/24"
                                 : "text-foreground/40 hover:text-foreground/70 hover:bg-muted/22 dark:hover:bg-muted/14"
                         )}
-                        style={{ touchAction: 'none' }}
                     >
                         <GripVertical className="h-5 w-5" />
                     </button>
@@ -317,7 +316,7 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                     ) : (
                         <div 
                             onClick={handleStartEdit}
-                            className={cn(editorSurface.field, patternFieldSurface, patternRegexFrameSurface, "flex items-center gap-3 p-2.5 group/regex cursor-text hover:border-primary/50 transition-colors")}
+                            className={cn(editorSurface.field, patternFieldSurface, patternRegexFrameSurface, "flex min-w-0 items-center gap-3 p-2.5 group/regex cursor-text hover:border-primary/50 transition-colors")}
                             role="button"
                             tabIndex={0}
                             onKeyDown={(e) => {
@@ -327,7 +326,9 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                                 }
                             }}
                         >
-                            <code className="text-xs sm:text-sm font-mono text-primary flex-1 break-all tracking-tight">{regex}</code>
+                            <code className="min-w-0 flex-1 truncate overflow-hidden whitespace-nowrap text-xs sm:text-sm font-mono text-primary tracking-tight">
+                                {regex}
+                            </code>
                             <Button tabIndex={-1} size="icon" variant="ghost" className="h-7 w-7 text-foreground/70 group-hover/regex:text-primary group-hover/regex:bg-primary/10 rounded-md opacity-100 sm:opacity-0 sm:group-hover/regex:opacity-100 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out shrink-0">
                                 <Pencil className="w-3.5 h-3.5 flex-shrink-0" />
                             </Button>

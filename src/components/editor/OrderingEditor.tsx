@@ -100,13 +100,12 @@ function SortableItem({
         <div
             ref={setNodeRef}
             style={style}
-            className={`group flex items-center gap-3 p-3 rounded-lg mb-2 ${editorHover.transition} ${editorSurface.cardInteractive} ${isDragging ? "opacity-50 border-primary" : ""}`}
+            className={`group touch-drag-surface flex items-center gap-3 p-3 rounded-lg mb-2 ${editorHover.transition} ${editorSurface.cardInteractive} ${isDragging ? "opacity-50 border-primary" : ""}`}
         >
             <button
                 {...attributes}
                 {...listeners}
-                className={`cursor-grab select-none ${editorHover.softAction}`}
-                style={{ touchAction: 'none' }}
+                className={`touch-drag-handle cursor-grab select-none ${editorHover.softAction}`}
                 aria-label="Drag handle"
             >
                 <GripVertical className="h-4 w-4" />

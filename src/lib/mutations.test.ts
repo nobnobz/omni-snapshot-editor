@@ -399,4 +399,138 @@ describe('Mutations Library', () => {
         expect(newState.subgroup_order["main-1"]).toEqual(["New Name", "Second"]);
         expect(newState.main_catalog_groups["main-1"].subgroupNames).toEqual(["New Name", "Second"]);
     });
+
+    it('importGroups moves an existing subgroup into another existing main group instead of duplicating it', () => {
+        const initialState = {
+            main_catalog_groups: {
+                "collections-uuid": {
+                    name: "Collections",
+                    subgroupNames: ["Seasonal Picks"]
+                },
+                "lists-uuid": {
+                    name: "Lists",
+                    subgroupNames: ["Top Rated"]
+                }
+            },
+            main_group_order: ["collections-uuid", "lists-uuid"],
+            subgroup_order: {
+                "collections-uuid": ["Seasonal Picks"],
+                "lists-uuid": ["Top Rated"]
+            },
+            catalog_groups: {
+                "Seasonal Picks": ["movie:one"],
+                "Top Rated": ["movie:two"]
+            },
+            catalog_group_order: ["Seasonal Picks", "Top Rated"],
+            catalog_group_image_urls: {},
+            custom_catalog_names: {}
+        };
+
+        const newState = importGroups({
+            mainGroups: {
+                "incoming-lists": {
+                    name: "Lists",
+                    subgroupNames: ["Seasonal Picks", "Top Rated"],
+                    posterType: "Poster",
+                    posterSize: "Default"
+                }
+            },
+            subgroups: {
+                "Seasonal Picks": {
+                    overwriteCatalogs: false,
+                    overwriteImage: false
+                }
+            },
+            standaloneAssignments: {},
+        }, initialState);
+
+        expect(newState.main_catalog_groups["collections-uuid"].subgroupNames).toEqual([]);
+        expect(newState.subgroup_order["collections-uuid"]).toBeUndefined();
+        expect(newState.main_catalog_groups["lists-uuid"].subgroupNames).toEqual(["Seasonal Picks", "Top Rated"]);
+        expect(newState.subgroup_order["lists-uuid"]).toEqual(["Seasonal Picks", "Top Rated"]);
+    });
+
+    it('importGroups creates a missing main group and reassigns moved subgroups into it', () => {
+        const initialState = {
+            main_catalog_groups: {
+                "collections-uuid": {
+                    name: "Collections",
+                    subgroupNames: ["Seasonal Picks"]
+                }
+            },
+            main_group_order: ["collections-uuid"],
+            subgroup_order: {
+                "collections-uuid": ["Seasonal Picks"]
+            },
+            catalog_groups: {
+                "Seasonal Picks": ["movie:one"]
+            },
+            catalog_group_order: ["Seasonal Picks"],
+            catalog_group_image_urls: {},
+            custom_catalog_names: {}
+        };
+
+        const newState = importGroups({
+            mainGroups: {
+                "incoming-lists": {
+                    name: "Lists",
+                    subgroupNames: ["Seasonal Picks"],
+                    posterType: "Poster",
+                    posterSize: "Default"
+                }
+            },
+            subgroups: {
+                "Seasonal Picks": {
+                    overwriteCatalogs: false,
+                    overwriteImage: false
+                }
+            },
+            standaloneAssignments: {},
+        }, initialState);
+
+        const createdUuid = Object.keys(newState.main_catalog_groups).find((uuid) => newState.main_catalog_groups[uuid].name === "Lists");
+        expect(createdUuid).toBeDefined();
+        expect(newState.main_group_order).toContain(createdUuid);
+        expect(newState.main_catalog_groups["collections-uuid"].subgroupNames).toEqual([]);
+        expect(newState.subgroup_order["collections-uuid"]).toBeUndefined();
+        expect(newState.main_catalog_groups[createdUuid!].subgroupNames).toEqual(["Seasonal Picks"]);
+        expect(newState.subgroup_order[createdUuid!]).toEqual(["Seasonal Picks"]);
+    });
+
+    it('importGroups can unassign a subgroup when an advanced update removes its parent group', () => {
+        const initialState = {
+            main_catalog_groups: {
+                "collections-uuid": {
+                    name: "Collections",
+                    subgroupNames: ["Seasonal Picks"]
+                }
+            },
+            main_group_order: ["collections-uuid"],
+            subgroup_order: {
+                "collections-uuid": ["Seasonal Picks"]
+            },
+            catalog_groups: {
+                "Seasonal Picks": ["movie:one"]
+            },
+            catalog_group_order: ["Seasonal Picks"],
+            catalog_group_image_urls: {},
+            custom_catalog_names: {}
+        };
+
+        const newState = importGroups({
+            mainGroups: {},
+            subgroups: {
+                "Seasonal Picks": {
+                    overwriteCatalogs: false,
+                    overwriteImage: false
+                }
+            },
+            standaloneAssignments: {
+                "Seasonal Picks": null,
+            },
+        }, initialState);
+
+        expect(newState.main_catalog_groups["collections-uuid"].subgroupNames).toEqual([]);
+        expect(newState.subgroup_order["collections-uuid"]).toBeUndefined();
+    });
 });

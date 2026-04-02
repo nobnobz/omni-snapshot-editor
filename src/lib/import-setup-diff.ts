@@ -25,6 +25,17 @@ export const hasImportSetupCatalogsChanged = (currentValue: unknown, importedVal
     return currentCatalogs.some((catalogId, index) => catalogId !== importedCatalogs[index]);
 };
 
+export const hasImportSetupGroupPlacementChanged = (currentValue: unknown, importedValue: unknown) => {
+    const currentGroups = Array.from(new Set(normalizeStringList(currentValue))).sort((left, right) => left.localeCompare(right));
+    const importedGroups = Array.from(new Set(normalizeStringList(importedValue))).sort((left, right) => left.localeCompare(right));
+
+    if (currentGroups.length !== importedGroups.length) {
+        return true;
+    }
+
+    return currentGroups.some((groupName, index) => groupName !== importedGroups[index]);
+};
+
 export const classifyImportSetupMainGroupSubgroups = ({
     currentCatalogGroups,
     currentMainGroupSubgroupNames,

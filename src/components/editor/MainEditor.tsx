@@ -163,6 +163,7 @@ export function MainEditor() {
     const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
     const [isImportingUrl, setIsImportingUrl] = useState(false);
     const [isResyncingAiom, setIsResyncingAiom] = useState(false);
+    const [hasAiomResyncSucceeded, setHasAiomResyncSucceeded] = useState(false);
     const [aioSyncState, setAioSyncState] = useState<AIOMetadataSyncState | null>(null);
     const [isAioImportEditorOpen, setIsAioImportEditorOpen] = useState(true);
 
@@ -171,12 +172,21 @@ export function MainEditor() {
     const [uiNotice, setUiNotice] = useState<UiNotice | null>(null);
     const [isFallbackDropActive, setIsFallbackDropActive] = useState(false);
     const [isIosDevice, setIsIosDevice] = useState(false);
-    const activeAioImportRequestRef = useRef<Promise<void> | null>(null);
+    const activeAioImportRequestRef = useRef<Promise<boolean> | null>(null);
     const hasAutoResyncedAioRef = useRef(false);
+    const aiomResyncSuccessTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const { theme, setTheme } = useTheme();
 
     useEffect(() => {
         setIsIosDevice(isIos());
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            if (aiomResyncSuccessTimeoutRef.current !== null) {
+                clearTimeout(aiomResyncSuccessTimeoutRef.current);
+            }
+        };
     }, []);
     const scrollContainerRef = useRef<HTMLElement>(null);
     const scrollSnapshotRef = useRef<ScrollSnapshot | null>(null);
@@ -664,6 +674,23 @@ export function MainEditor() {
     };
 
 
+    const clearAiomResyncSuccessState = useCallback(() => {
+        if (aiomResyncSuccessTimeoutRef.current !== null) {
+            clearTimeout(aiomResyncSuccessTimeoutRef.current);
+            aiomResyncSuccessTimeoutRef.current = null;
+        }
+        setHasAiomResyncSucceeded(false);
+    }, []);
+
+    const flashAiomResyncSuccessState = useCallback(() => {
+        clearAiomResyncSuccessState();
+        setHasAiomResyncSucceeded(true);
+        aiomResyncSuccessTimeoutRef.current = setTimeout(() => {
+            setHasAiomResyncSucceeded(false);
+            aiomResyncSuccessTimeoutRef.current = null;
+        }, 1400);
+    }, [clearAiomResyncSuccessState]);
+
     const processAIOMetadata = useCallback((
         jsonText: string,
         syncSource: Omit<AIOMetadataSyncState, "syncedAt"> = {
@@ -697,12 +724,14 @@ export function MainEditor() {
                 setAioManifestUrlDraft("");
                 setAioJsonInput("");
             }
+            return true;
         } catch (err: unknown) {
             console.error(err);
             const message = err instanceof Error && err.message === "Invalid AIOMetadata format. Could not find catalogs array."
                 ? err.message
                 : "Failed to parse JSON. Please ensure it is valid JSON.";
             showNotice("error", message, "aiometadata");
+            return false;
         }
     }, [aioSyncState?.catalogs, persistAIOMetadataSyncState, setCustomFallbacks, showNotice]);
 
@@ -712,7 +741,7 @@ export function MainEditor() {
     ) => {
         if (activeAioImportRequestRef.current) {
             await activeAioImportRequestRef.current;
-            return;
+            return false;
         }
 
         const shouldPreserveScroll = options.preserveScroll ?? true;
@@ -748,8 +777,9 @@ export function MainEditor() {
                     }
                 }
 
+                let didImportSucceed = false;
                 const importWork = () => {
-                    processAIOMetadata(importText, {
+                    didImportSucceed = processAIOMetadata(importText, {
                         sourceType: "url",
                         sourceLabel: "Manifest URL",
                         sourceValue,
@@ -763,6 +793,7 @@ export function MainEditor() {
                 } else {
                     importWork();
                 }
+                return didImportSucceed;
             } catch (err: unknown) {
                 console.error(err);
                 showNotice(
@@ -770,6 +801,7 @@ export function MainEditor() {
                     options.errorMessage ?? (err instanceof Error ? err.message : "Failed to fetch AIOMetadata manifest."),
                     options.errorPlacement ?? "aiometadata"
                 );
+                return false;
             } finally {
                 setIsImportingUrl(false);
                 activeAioImportRequestRef.current = null;
@@ -777,7 +809,7 @@ export function MainEditor() {
         }, { sourceType: "url" });
 
         activeAioImportRequestRef.current = request;
-        await request;
+        return await request;
     }, [preserveScrollPosition, processAIOMetadata, showNotice]);
 
     const isJsonFile = (file: File) => file.name.toLowerCase().endsWith(".json") || file.type === "application/json";
@@ -855,15 +887,19 @@ export function MainEditor() {
 
     const handleResyncAIOMetadata = async () => {
         if (aioSyncState?.sourceType === "url" && aioSyncState.sourceValue) {
+            clearAiomResyncSuccessState();
             setIsResyncingAiom(true);
             setAioManifestUrlInput(aioSyncState.sourceValue);
             setAioManifestUrlDraft(aioSyncState.sourceValue);
             try {
-                await syncAIOMetadataFromUrl(aioSyncState.sourceValue, {
+                const didResyncSucceed = await syncAIOMetadataFromUrl(aioSyncState.sourceValue, {
                     showSuccessNotice: true,
                     preserveScroll: true,
                     errorPlacement: "aiometadata",
                 });
+                if (didResyncSucceed) {
+                    flashAiomResyncSuccessState();
+                }
             } finally {
                 setIsResyncingAiom(false);
             }
@@ -874,6 +910,7 @@ export function MainEditor() {
     };
 
     const handleEditAIOMetadataSource = () => {
+        clearAiomResyncSuccessState();
         if (aioSyncState?.sourceType === "url" && aioSyncState.sourceValue) {
             setAioManifestUrlInput(aioSyncState.sourceValue);
             setAioManifestUrlDraft(aioSyncState.sourceValue);
@@ -886,6 +923,7 @@ export function MainEditor() {
     };
 
     const confirmResetCatalogNames = () => {
+        clearAiomResyncSuccessState();
         setCustomFallbacks({});
         localStorage.removeItem("omni_custom_fallbacks");
         clearAIOMetadataSyncState();
@@ -1337,16 +1375,25 @@ export function MainEditor() {
                                                                         type="button"
                                                                         variant="outline"
                                                                         size="icon-sm"
-                                                                        className={cn(
-                                                                            "size-8 rounded-xl border-emerald-500/18 bg-emerald-500/[0.06] text-emerald-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] hover:border-emerald-500/28 hover:bg-emerald-500/[0.1] hover:text-emerald-700 dark:bg-emerald-500/[0.08] dark:text-emerald-400 md:size-9",
-                                                                            isResyncingAiom && "border-emerald-500/32 bg-emerald-500/[0.12] shadow-[0_0_0_1px_rgba(16,185,129,0.12),0_0_0_6px_rgba(16,185,129,0.08)]"
-                                                                        )}
+                                                                        className="size-8 rounded-xl border-emerald-500/18 bg-emerald-500/[0.06] text-emerald-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] hover:border-emerald-500/28 hover:bg-emerald-500/[0.1] hover:text-emerald-700 transition-none dark:bg-emerald-500/[0.08] dark:text-emerald-400 md:size-9"
                                                                         onClick={() => void handleResyncAIOMetadata()}
                                                                         disabled={isImportingUrl || isResyncingAiom}
-                                                                        aria-label={isResyncingAiom ? "Syncing AIOMetadata" : "Sync AIOMetadata again"}
-                                                                        title={isResyncingAiom ? "Syncing..." : "Sync Again"}
+                                                                        aria-label={
+                                                                            isResyncingAiom
+                                                                                ? "Syncing AIOMetadata"
+                                                                                : hasAiomResyncSucceeded
+                                                                                    ? "AIOMetadata synced successfully"
+                                                                                    : "Sync AIOMetadata again"
+                                                                        }
+                                                                        title={
+                                                                            isResyncingAiom
+                                                                                ? "Syncing..."
+                                                                                : hasAiomResyncSucceeded
+                                                                                    ? "Synced"
+                                                                                    : "Sync Again"
+                                                                        }
                                                                     >
-                                                                        <RotateCcw className={cn("w-4 h-4", isResyncingAiom && "animate-aiom-sync-sweep")} />
+                                                                        {hasAiomResyncSucceeded ? <Check className="w-4 h-4" /> : <RotateCcw className="w-4 h-4" />}
                                                                     </Button>
                                                                 )}
                                                                 <Button

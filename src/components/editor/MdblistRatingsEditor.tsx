@@ -241,7 +241,7 @@ function SortableMdblistRow({
                 ref={setNodeRef}
                 style={style}
                 className={cn(
-                    "rounded-xl border p-3 h-full",
+                    "touch-drag-surface rounded-xl border p-3 h-full",
                     editorSurface.cardInteractive,
                     isDragging ? "border-primary opacity-55" : ""
                 )}
@@ -252,10 +252,9 @@ function SortableMdblistRow({
                             {...attributes}
                             {...listeners}
                             className={cn(
-                                "rounded-md p-1 text-muted-foreground",
+                                "touch-drag-handle rounded-md p-1 text-muted-foreground",
                                 editorHover.softAction
                             )}
-                            style={{ touchAction: "none" }}
                             aria-label={`Reorder ${definition.label}`}
                         >
                             <GripVertical className="h-4 w-4" />

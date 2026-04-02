@@ -58,7 +58,7 @@ function SortableShelfItem({
             ref={setNodeRef}
             style={style}
             className={cn(
-                "group flex items-center gap-3 p-3 rounded-lg mb-2 relative",
+                "group touch-drag-surface flex items-center gap-3 p-3 rounded-lg mb-2 relative",
                 !isDragging && editorHover.transition,
                 editorSurface.cardInteractive,
                 isDragging ? "opacity-50 border-primary" : "",
@@ -68,8 +68,7 @@ function SortableShelfItem({
             <button
                 {...attributes}
                 {...listeners}
-                className={cn("cursor-grab select-none", editorHover.softAction)}
-                style={{ touchAction: 'none' }}
+                className={cn("touch-drag-handle cursor-grab select-none", editorHover.softAction)}
                 aria-label="Drag handle"
             >
                 <GripVertical className="h-4 w-4" />

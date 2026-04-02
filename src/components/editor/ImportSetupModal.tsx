@@ -32,6 +32,7 @@ import { FALLBACK_TEMPLATE_URLS, findTemplateByKind, isTemplateOfKind } from "@/
 import {
     classifyImportSetupMainGroupSubgroups,
     hasImportSetupCatalogsChanged,
+    hasImportSetupGroupPlacementChanged,
     hasImportSetupImageChanged,
     normalizeImportSetupImageUrl,
 } from "@/lib/import-setup-diff";
@@ -68,7 +69,10 @@ interface ParsedSubgroup {
     hasRename?: boolean;
     hasNewImage?: boolean;
     hasNewCatalogs?: boolean;
+    hasGroupChange?: boolean;
     parentGroupNames?: string[];
+    parentGroupUuids?: string[];
+    currentGroupNames?: string[];
     category?: string;
 }
 
@@ -105,6 +109,21 @@ const getSubgroupContextLabel = (subgroup: ParsedSubgroup) => {
     }
 
     return undefined;
+};
+
+const getSubgroupMoveSummary = (subgroup: ParsedSubgroup) => {
+    if (!subgroup.hasGroupChange) return undefined;
+
+    const currentGroups = subgroup.currentGroupNames || [];
+    const nextGroups = subgroup.parentGroupNames || [];
+    const currentLabel = currentGroups.length > 0
+        ? formatDisplayName(currentGroups[0]) + (currentGroups.length > 1 ? ` +${currentGroups.length - 1}` : "")
+        : "Unassigned";
+    const nextLabel = nextGroups.length > 0
+        ? formatDisplayName(nextGroups[0]) + (nextGroups.length > 1 ? ` +${nextGroups.length - 1}` : "")
+        : "Unassigned";
+
+    return `${currentLabel} -> ${nextLabel}`;
 };
 
 const normalizeUpdateManagerSubgroupName = (name: string) =>
@@ -222,6 +241,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
     const [selectedCatalogUpdateSubgroups, setSelectedCatalogUpdateSubgroups] = useState<Set<string>>(new Set());
     const [selectedImageUpdateSubgroups, setSelectedImageUpdateSubgroups] = useState<Set<string>>(new Set());
     const [selectedRenameUpdateSubgroups, setSelectedRenameUpdateSubgroups] = useState<Set<string>>(new Set());
+    const [selectedGroupUpdateSubgroups, setSelectedGroupUpdateSubgroups] = useState<Set<string>>(new Set());
     const [activeReviewTab, setActiveReviewTab] = useState<"subgroups" | "main">("main");
     const [activeMainFilter, setActiveMainFilter] = useState<"updates" | "new">("new");
     const [reviewSearch, setReviewSearch] = useState("");
@@ -239,6 +259,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         setSelectedCatalogUpdateSubgroups(new Set());
         setSelectedImageUpdateSubgroups(new Set());
         setSelectedRenameUpdateSubgroups(new Set());
+        setSelectedGroupUpdateSubgroups(new Set());
         setActiveReviewTab("main");
         setActiveMainFilter("new");
         setReviewSearch("");
@@ -298,6 +319,26 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
             );
             const currentCatalogGroups = (currentValues.catalog_groups || {}) as Record<string, string[]>;
             const currentCatalogGroupImageUrls = (currentValues.catalog_group_image_urls || {}) as Record<string, unknown>;
+            const currentSubgroupParentGroupNames = new Map<string, Set<string>>();
+            const currentMainGroups = (currentValues.main_catalog_groups || {}) as Record<string, {
+                name?: string;
+                subgroupNames?: string[];
+            }>;
+            const currentMainGroupOrder = normalizeMainGroupOrder(currentMainGroups, currentValues.main_group_order);
+            currentMainGroupOrder.forEach((uuid) => {
+                const group = currentMainGroups[uuid];
+                if (!group) return;
+                const groupName = group.name || "Unnamed Group";
+                const subgroupNames = (currentValues.subgroup_order?.[uuid] || group.subgroupNames || []).filter(
+                    (entry: unknown): entry is string => typeof entry === "string"
+                );
+                subgroupNames.forEach((subgroupName: string) => {
+                    if (!currentSubgroupParentGroupNames.has(subgroupName)) {
+                        currentSubgroupParentGroupNames.set(subgroupName, new Set());
+                    }
+                    currentSubgroupParentGroupNames.get(subgroupName)?.add(groupName);
+                });
+            });
             const currentSubgroupsBySignature: Record<string, string[]> = {};
             Object.entries(currentCatalogGroups).forEach(([name, catalogs]) => {
                 if (isIgnoredUpdateManagerSubgroup(name)) return;
@@ -319,6 +360,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
             const importedCatalogGroupImageUrls = (imported.catalog_group_image_urls || {}) as Record<string, unknown>;
             const subgroupOrder = (imported.subgroup_order || {}) as Record<string, string[]>;
             const subgroupParentGroupNames = new Map<string, Set<string>>();
+            const subgroupParentGroupUuids = new Map<string, string[]>();
 
             const parsedMGs: ParsedMainGroup[] = [];
             for (const uuid of inMainGroupOrder) {
@@ -331,6 +373,12 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                         subgroupParentGroupNames.set(subgroupName, new Set());
                     }
                     subgroupParentGroupNames.get(subgroupName)?.add(groupName);
+                    if (!subgroupParentGroupUuids.has(subgroupName)) {
+                        subgroupParentGroupUuids.set(subgroupName, []);
+                    }
+                    if (!subgroupParentGroupUuids.get(subgroupName)?.includes(uuid)) {
+                        subgroupParentGroupUuids.get(subgroupName)?.push(uuid);
+                    }
                 });
                 const existingMainGroup = currentMainGroupsByName.get(groupName);
                 const {
@@ -379,6 +427,12 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
 
                 const currentMatchName = exactNameMatch || matchedExistingName;
                 const importedImageUrl = normalizeImportSetupImageUrl(importedCatalogGroupImageUrls[name]);
+                const importedParentGroupNames = subgroupParentGroupNames.has(name)
+                    ? Array.from(subgroupParentGroupNames.get(name) || [])
+                    : [];
+                const currentParentGroupNames = currentMatchName && currentSubgroupParentGroupNames.has(currentMatchName)
+                    ? Array.from(currentSubgroupParentGroupNames.get(currentMatchName) || [])
+                    : [];
                 const hasCatalogChanges = isDuplicate
                     ? hasImportSetupCatalogsChanged(currentMatchName ? currentCatalogGroups[currentMatchName] : [], cats)
                     : cats.length > 0;
@@ -388,6 +442,9 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                         importedImageUrl
                     )
                     : importedImageUrl.length > 0;
+                const hasGroupChanges = isDuplicate
+                    ? hasImportSetupGroupPlacementChanged(currentParentGroupNames, importedParentGroupNames)
+                    : importedParentGroupNames.length > 0;
 
                 parsedSgs.push({
                     name,
@@ -399,9 +456,10 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                     matchedExistingName,
                     hasNewCatalogs: hasCatalogChanges,
                     hasNewImage: hasImageChanges,
-                    parentGroupNames: subgroupParentGroupNames.has(name)
-                        ? Array.from(subgroupParentGroupNames.get(name) || [])
-                        : undefined,
+                    hasGroupChange: hasGroupChanges,
+                    parentGroupNames: importedParentGroupNames.length > 0 ? importedParentGroupNames : undefined,
+                    parentGroupUuids: subgroupParentGroupUuids.get(name),
+                    currentGroupNames: currentParentGroupNames.length > 0 ? currentParentGroupNames : undefined,
                     category: getSubgroupCategory(name),
                 });
             });
@@ -516,6 +574,15 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         });
     };
 
+    const toggleGroupUpdate = (name: string) => {
+        setSelectedGroupUpdateSubgroups((prev) => {
+            const next = new Set(prev);
+            if (next.has(name)) next.delete(name);
+            else next.add(name);
+            return next;
+        });
+    };
+
     const isSubgroupIncludedViaSelectedMainGroup = (name: string) => {
         return Array.from(selectedMainGroupUuids).some(uuid => {
             const group = parsedMainGroups.find(mg => mg.originalUuid === uuid);
@@ -558,7 +625,10 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         () => filteredMainGroups.filter((mg) => getBasicVisibleSubgroups(mg, "updates").length > 0),
         [filteredMainGroups, getBasicVisibleSubgroups]
     );
-    const filteredUpdatedSubgroups = useMemo(() => filteredSubgroups.filter(sg => sg.isDuplicate && (sg.hasNewCatalogs || sg.hasNewImage || sg.hasRename)), [filteredSubgroups]);
+    const filteredUpdatedSubgroups = useMemo(
+        () => filteredSubgroups.filter(sg => sg.isDuplicate && (sg.hasNewCatalogs || sg.hasNewImage || sg.hasRename || sg.hasGroupChange)),
+        [filteredSubgroups]
+    );
     const visibleMainGroups = activeMainFilter === "new" ? filteredNewMainGroups : filteredUpdatedMainGroups;
     const visibleCatalogUpdateNames = useMemo(
         () => filteredUpdatedSubgroups.filter((sg) => sg.hasNewCatalogs).map((sg) => sg.name),
@@ -570,6 +640,10 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
     );
     const visibleImageUpdateNames = useMemo(
         () => filteredUpdatedSubgroups.filter((sg) => sg.hasNewImage).map((sg) => sg.name),
+        [filteredUpdatedSubgroups]
+    );
+    const visibleGroupUpdateNames = useMemo(
+        () => filteredUpdatedSubgroups.filter((sg) => sg.hasGroupChange).map((sg) => sg.name),
         [filteredUpdatedSubgroups]
     );
     const filteredNewMainSubgroupCount = useMemo(
@@ -689,27 +763,33 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         const nextCatalogs = new Set(selectedCatalogUpdateSubgroups);
         const nextImages = new Set(selectedImageUpdateSubgroups);
         const nextRenames = new Set(selectedRenameUpdateSubgroups);
+        const nextGroups = new Set(selectedGroupUpdateSubgroups);
         filteredUpdatedSubgroups.forEach((sg) => {
             if (sg.hasNewCatalogs) nextCatalogs.add(sg.name);
             if (sg.hasNewImage) nextImages.add(sg.name);
             if (sg.hasRename) nextRenames.add(sg.name);
+            if (sg.hasGroupChange) nextGroups.add(sg.name);
         });
         setSelectedCatalogUpdateSubgroups(nextCatalogs);
         setSelectedImageUpdateSubgroups(nextImages);
         setSelectedRenameUpdateSubgroups(nextRenames);
+        setSelectedGroupUpdateSubgroups(nextGroups);
     };
     const clearUpdateSelection = () => {
         const nextCatalogs = new Set(selectedCatalogUpdateSubgroups);
         const nextImages = new Set(selectedImageUpdateSubgroups);
         const nextRenames = new Set(selectedRenameUpdateSubgroups);
+        const nextGroups = new Set(selectedGroupUpdateSubgroups);
         filteredUpdatedSubgroups.forEach((sg) => {
             nextCatalogs.delete(sg.name);
             nextImages.delete(sg.name);
             nextRenames.delete(sg.name);
+            nextGroups.delete(sg.name);
         });
         setSelectedCatalogUpdateSubgroups(nextCatalogs);
         setSelectedImageUpdateSubgroups(nextImages);
         setSelectedRenameUpdateSubgroups(nextRenames);
+        setSelectedGroupUpdateSubgroups(nextGroups);
     };
 
     const selectCatalogUpdates = () => {
@@ -721,6 +801,9 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
     const selectImageUpdates = () => {
         toggleBulkUpdateSelection(visibleImageUpdateNames, selectedImageUpdateSubgroups, setSelectedImageUpdateSubgroups);
     };
+    const selectGroupUpdates = () => {
+        toggleBulkUpdateSelection(visibleGroupUpdateNames, selectedGroupUpdateSubgroups, setSelectedGroupUpdateSubgroups);
+    };
 
     const areAllCatalogUpdatesSelected = useMemo(() => {
         return visibleCatalogUpdateNames.length > 0 && visibleCatalogUpdateNames.every((name) => selectedCatalogUpdateSubgroups.has(name));
@@ -731,10 +814,14 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
     const areAllRenameUpdatesSelected = useMemo(() => {
         return visibleRenameUpdateNames.length > 0 && visibleRenameUpdateNames.every((name) => selectedRenameUpdateSubgroups.has(name));
     }, [selectedRenameUpdateSubgroups, visibleRenameUpdateNames]);
+    const areAllGroupUpdatesSelected = useMemo(() => {
+        return visibleGroupUpdateNames.length > 0 && visibleGroupUpdateNames.every((name) => selectedGroupUpdateSubgroups.has(name));
+    }, [selectedGroupUpdateSubgroups, visibleGroupUpdateNames]);
 
     const handleImport = () => {
         const finalMainGroups: Record<string, ImportedMainGroupSelection> = {};
         const finalSubgroups: Record<string, ImportedSubgroupSelection> = {};
+        const standaloneAssignments: Record<string, string | null> = {};
 
         selectedMainGroupUuids.forEach(uuid => {
             const mg = parsedMainGroups.find(m => m.originalUuid === uuid);
@@ -764,6 +851,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
             ...selectedCatalogUpdateSubgroups,
             ...selectedImageUpdateSubgroups,
             ...selectedRenameUpdateSubgroups,
+            ...selectedGroupUpdateSubgroups,
         ]);
 
         subgroupsToProcess.forEach(name => {
@@ -776,12 +864,16 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                 overwriteCatalogs: selectedCatalogUpdateSubgroups.has(name),
                 overwriteImage: selectedImageUpdateSubgroups.has(name),
             };
+
+            if (selectedGroupUpdateSubgroups.has(name)) {
+                standaloneAssignments[name] = sg.parentGroupUuids?.[0] ?? null;
+            }
         });
 
         importGroups({
             mainGroups: finalMainGroups,
             subgroups: finalSubgroups,
-            standaloneAssignments: {},
+            standaloneAssignments,
         });
 
         handleClose();
@@ -799,6 +891,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         ...selectedCatalogUpdateSubgroups,
         ...selectedImageUpdateSubgroups,
         ...selectedRenameUpdateSubgroups,
+        ...selectedGroupUpdateSubgroups,
     ]).size;
     const totalSelectedToImport = totalSelectedBasicImportSubgroups + totalSelectedSubgroups;
 
@@ -807,20 +900,22 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         const isCatalogUpdateSelected = selectedCatalogUpdateSubgroups.has(sg.name);
         const isImageUpdateSelected = selectedImageUpdateSubgroups.has(sg.name);
         const isRenameUpdateSelected = selectedRenameUpdateSubgroups.has(sg.name);
+        const isGroupUpdateSelected = selectedGroupUpdateSubgroups.has(sg.name);
         const includedInMain = isSubgroupIncludedViaSelectedMainGroup(sg.name);
-        const isFullyExisting = sg.isDuplicate && !sg.hasNewCatalogs && !sg.hasNewImage && !sg.hasRename;
-        const isUpdateRow = sg.isDuplicate && (sg.hasNewCatalogs || sg.hasNewImage || sg.hasRename);
+        const isFullyExisting = sg.isDuplicate && !sg.hasNewCatalogs && !sg.hasNewImage && !sg.hasRename && !sg.hasGroupChange;
+        const isUpdateRow = sg.isDuplicate && (sg.hasNewCatalogs || sg.hasNewImage || sg.hasRename || sg.hasGroupChange);
         const isIncludedWithMain = includedInMain && !sg.isDuplicate;
-        const hasAnyDuplicateUpdateSelection = isCatalogUpdateSelected || isImageUpdateSelected || isRenameUpdateSelected;
+        const hasAnyDuplicateUpdateSelection = isCatalogUpdateSelected || isImageUpdateSelected || isRenameUpdateSelected || isGroupUpdateSelected;
         const isCheckboxDisabled = isFullyExisting || isIncludedWithMain;
         const isChecked = includedInMain ? true : isStandaloneSelected;
         const isSelected = isUpdateRow ? hasAnyDuplicateUpdateSelection : isChecked;
 
         if (isUpdateRow) {
-            const selectedUpdateCount = Number(isCatalogUpdateSelected) + Number(isImageUpdateSelected) + Number(isRenameUpdateSelected);
+            const selectedUpdateCount = Number(isCatalogUpdateSelected) + Number(isImageUpdateSelected) + Number(isRenameUpdateSelected) + Number(isGroupUpdateSelected);
             const selectionSummary = selectedUpdateCount === 1 ? "1 update selected" : `${selectedUpdateCount} updates selected`;
             const catalogLabel = sg.catalogs.length === 1 ? "Catalog" : "Catalogs";
             const subgroupContextLabel = getSubgroupContextLabel(sg);
+            const subgroupMoveSummary = getSubgroupMoveSummary(sg);
 
             return (
                 <div
@@ -830,6 +925,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                         if (sg.hasNewCatalogs && isCatalogUpdateSelected !== nextValue) toggleCatalogUpdate(sg.name);
                         if (sg.hasNewImage && isImageUpdateSelected !== nextValue) toggleImageUpdate(sg.name);
                         if (sg.hasRename && isRenameUpdateSelected !== nextValue) toggleRenameUpdate(sg.name);
+                        if (sg.hasGroupChange && isGroupUpdateSelected !== nextValue) toggleGroupUpdate(sg.name);
                     }}
                     className={cn(
                         "mx-4 my-1 rounded-2xl border p-3.5 transition-all duration-200 cursor-pointer",
@@ -849,6 +945,11 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                         Rename from {formatDisplayName(sg.matchedExistingName)}
                                     </div>
                                 )}
+                                {sg.hasGroupChange && subgroupMoveSummary ? (
+                                    <div className="mt-0.5 text-[12px] font-medium text-amber-600/90 dark:text-amber-300/85">
+                                        Move {subgroupMoveSummary}
+                                    </div>
+                                ) : null}
                             </div>
                             <div className="flex max-w-[42%] shrink-0 flex-wrap justify-end gap-1.5">
                                 {sg.hasNewCatalogs && (
@@ -876,6 +977,15 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                         className={cn("h-7 px-2.5 rounded-lg cursor-pointer text-[11px] font-black uppercase tracking-wider transition-all", isRenameUpdateSelected ? "bg-sky-500/15 text-sky-700 border-sky-500/40 shadow-sm" : "text-foreground/40 hover:bg-sky-500/5 hover:text-sky-600")}
                                     >
                                         Name
+                                    </Badge>
+                                )}
+                                {sg.hasGroupChange && (
+                                    <Badge
+                                        variant="outline"
+                                        onClick={(e) => { e.stopPropagation(); toggleGroupUpdate(sg.name); }}
+                                        className={cn("h-7 px-2.5 rounded-lg cursor-pointer text-[11px] font-black uppercase tracking-wider transition-all", isGroupUpdateSelected ? "bg-amber-500/15 text-amber-700 border-amber-500/40 shadow-sm dark:text-amber-200" : "text-foreground/40 hover:bg-amber-500/5 hover:text-amber-600")}
+                                    >
+                                        Group
                                     </Badge>
                                 )}
                             </div>
@@ -1127,7 +1237,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                 >
                                                     None
                                                 </Button>
-                                                {activeReviewTab === "subgroups" && (visibleCatalogUpdateNames.length > 0 || visibleRenameUpdateNames.length > 0 || visibleImageUpdateNames.length > 0) && (
+                                                {activeReviewTab === "subgroups" && (visibleCatalogUpdateNames.length > 0 || visibleRenameUpdateNames.length > 0 || visibleImageUpdateNames.length > 0 || visibleGroupUpdateNames.length > 0) && (
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
                                                             <Button
@@ -1149,6 +1259,9 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                             )}
                                                             {visibleImageUpdateNames.length > 0 && (
                                                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()} onClick={selectImageUpdates} className="flex justify-between">Images {areAllImageUpdatesSelected && <Check className="w-3.5 h-3.5" />}</DropdownMenuItem>
+                                                            )}
+                                                            {visibleGroupUpdateNames.length > 0 && (
+                                                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} onClick={selectGroupUpdates} className="flex justify-between">Groups {areAllGroupUpdatesSelected && <Check className="w-3.5 h-3.5" />}</DropdownMenuItem>
                                                             )}
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
@@ -1195,7 +1308,9 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                                         const parsedSg = parsedSubgroups.find(p => p.name === sg);
                                                                         const isSgSelected = isSelected && selectedSubgroups.includes(sg);
                                                                         const subgroupStatusLabel = activeMainFilter === "updates"
-                                                                            ? "Update"
+                                                                            ? parsedSg?.hasGroupChange
+                                                                                ? "Move"
+                                                                                : "Update"
                                                                             : parsedSg?.basicIsExisting
                                                                                 ? "Update"
                                                                                 : "New";

@@ -36,6 +36,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Button } from "@/components/ui/button";
 import { GripVertical, ImageIcon, LinkIcon, ChevronRight, ChevronDown, RotateCcw, Search, X, Plus, Pencil, Trash2, FolderPlus, FolderInput, UploadCloud, AlertTriangle, Check, ArrowUpAZ, ArrowDownAZ } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
     AlertDialog,
@@ -53,6 +54,7 @@ import {
     Dialog,
     DialogContent,
     DialogDescription,
+    DialogFooter,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
@@ -192,7 +194,7 @@ const PosterUrlEditor = React.memo(function PosterUrlEditor({
                         onCommit={(nextUrl) => commitUrl(nextUrl ?? "")}
                         placeholder="https://..."
                         stopPropagation
-                        inputClassName={`${editorSurface.field} h-10 sm:h-8 text-base sm:text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 transition-colors`}
+                        inputClassName={`${editorSurface.field} h-10 sm:h-8 text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 transition-colors`}
                         iconButtonClassName="h-8 w-8 shrink-0 rounded-md text-foreground/56 sm:h-7 sm:w-7"
                         copyTitle="Copy image URL"
                         clearTitle="Delete image URL"
@@ -272,7 +274,11 @@ const SubgroupCatalogPickerDialog = React.memo(function SubgroupCatalogPickerDia
     onCatalogSearchChange,
     filteredCatalogs,
     inputRef,
-    onSelectCatalog,
+    pendingSelectionCount,
+    isCatalogSelected,
+    onToggleCatalog,
+    onApplySelection,
+    onResetSelection,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -280,7 +286,11 @@ const SubgroupCatalogPickerDialog = React.memo(function SubgroupCatalogPickerDia
     onCatalogSearchChange: (value: string) => void;
     filteredCatalogs: CatalogOption[];
     inputRef: React.RefObject<HTMLInputElement | null>;
-    onSelectCatalog: (catalogId: string) => void;
+    pendingSelectionCount: number;
+    isCatalogSelected: (catalogId: string) => boolean;
+    onToggleCatalog: (catalogId: string) => void;
+    onApplySelection: () => void;
+    onResetSelection: () => void;
 }) {
     const groupedCatalogs = React.useMemo(
         () => groupCatalogOptions(filteredCatalogs),
@@ -292,7 +302,10 @@ const SubgroupCatalogPickerDialog = React.memo(function SubgroupCatalogPickerDia
             open={open}
             onOpenChange={(nextOpen) => {
                 onOpenChange(nextOpen);
-                if (!nextOpen) onCatalogSearchChange("");
+                if (!nextOpen) {
+                    onCatalogSearchChange("");
+                    onResetSelection();
+                }
             }}
         >
             <DialogTrigger asChild>
@@ -306,7 +319,7 @@ const SubgroupCatalogPickerDialog = React.memo(function SubgroupCatalogPickerDia
                 </Button>
             </DialogTrigger>
             <DialogContent
-                className={cn(editorSurface.card, "w-[min(92vw,32rem)] gap-0 overflow-hidden border p-0")}
+                className={cn(editorSurface.card, "w-[min(92vw,32rem)] max-h-[min(86dvh,38rem)] gap-0 overflow-hidden border p-0 flex flex-col")}
                 onOpenAutoFocus={(event) => {
                     event.preventDefault();
                 }}
@@ -340,7 +353,7 @@ const SubgroupCatalogPickerDialog = React.memo(function SubgroupCatalogPickerDia
                         />
                     </div>
                 </DialogHeader>
-                <div className={cn(editorSurface.overlayList, "max-h-[min(60vh,22rem)] overflow-y-auto px-4 pb-4 custom-scrollbar")}>
+                <div className={cn(editorSurface.overlayList, "min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 custom-scrollbar [touch-action:pan-y]")}>
                     {filteredCatalogs.length === 0 ? (
                         <p className="p-4 text-center text-xs text-foreground/70">No catalogs found.</p>
                     ) : (
@@ -352,25 +365,37 @@ const SubgroupCatalogPickerDialog = React.memo(function SubgroupCatalogPickerDia
                                     </div>
                                     <div className="flex flex-col gap-0.5">
                                         {options.map((catalog) => (
-                                            <button
+                                            <div
                                                 key={catalog.id}
-                                                type="button"
-                                                onClick={() => {
-                                                    onSelectCatalog(catalog.id);
-                                                    onOpenChange(false);
-                                                }}
-                                                className="group flex items-center gap-3 rounded-md border border-transparent px-2.5 py-2 text-left transition-colors hover:border-primary/20 hover:bg-primary/10 dark:hover:border-primary/22 dark:hover:bg-primary/20"
+                                                className={cn(
+                                                    "group flex items-start gap-2.5 rounded-md border border-transparent px-2 py-2 transition-colors",
+                                                    isCatalogSelected(catalog.id)
+                                                        ? "border-primary/28 bg-primary/10 dark:border-primary/32 dark:bg-primary/18"
+                                                        : "hover:border-primary/20 hover:bg-primary/10 dark:hover:border-primary/22 dark:hover:bg-primary/20"
+                                                )}
                                             >
-                                                <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground transition-colors group-hover:text-primary">
-                                                    {catalog.name}
-                                                </p>
-                                                <p
-                                                    className="max-w-[40%] shrink-0 truncate text-right text-xs font-mono text-foreground/42 transition-colors dark:text-foreground/50 group-hover:text-primary/72 dark:group-hover:text-primary/70"
-                                                    title={catalog.id}
+                                                <Checkbox
+                                                    checked={isCatalogSelected(catalog.id)}
+                                                    onCheckedChange={() => onToggleCatalog(catalog.id)}
+                                                    className="mt-0.5 shrink-0 border-border data-[state=unchecked]:hover:border-primary/70 data-[state=unchecked]:hover:bg-primary/10 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                                    aria-label={isCatalogSelected(catalog.id) ? `Deselect ${catalog.name}` : `Select ${catalog.name}`}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onToggleCatalog(catalog.id)}
+                                                    className="min-w-0 flex-1 text-left"
                                                 >
-                                                    {catalog.id}
-                                                </p>
-                                            </button>
+                                                    <p className="min-w-0 truncate text-sm font-medium text-foreground transition-colors group-hover:text-primary">
+                                                        {catalog.name}
+                                                    </p>
+                                                    <p
+                                                        className="mt-0.5 truncate text-xs font-mono text-foreground/42 transition-colors dark:text-foreground/50 group-hover:text-primary/72 dark:group-hover:text-primary/70"
+                                                        title={catalog.id}
+                                                    >
+                                                        {catalog.id}
+                                                    </p>
+                                                </button>
+                                            </div>
                                         ))}
                                     </div>
                                 </div>
@@ -378,6 +403,29 @@ const SubgroupCatalogPickerDialog = React.memo(function SubgroupCatalogPickerDia
                         </div>
                     )}
                 </div>
+                <DialogFooter className="mt-0 shrink-0 flex flex-col gap-4 border-t border-border/50 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-xs text-foreground/70">
+                        {pendingSelectionCount} selected
+                    </p>
+                    <div className="flex w-full gap-2 sm:w-auto">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => onOpenChange(false)}
+                            className="flex-1 sm:flex-none"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={onApplySelection}
+                            disabled={pendingSelectionCount === 0}
+                            className="flex-1 sm:flex-none"
+                        >
+                            Add Selected ({pendingSelectionCount})
+                        </Button>
+                    </div>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     );
@@ -460,14 +508,13 @@ const SortableCatalogNode = React.memo(function SortableCatalogNode({ id, onRemo
         <div
             ref={setNodeRef}
             style={style}
-            className={`flex items-center gap-3 p-3 sm:gap-4 sm:p-3.5 border rounded-xl mb-2.5 group/cat transition-[background-color,border-color,opacity,box-shadow] duration-150
+            className={`touch-drag-surface flex items-center gap-3 p-3 sm:gap-4 sm:p-3.5 border rounded-xl mb-2.5 group/cat transition-[background-color,border-color,opacity,box-shadow] duration-150
                 ${isDragging ? "opacity-15 border-border/70 bg-muted/45 border-dashed shadow-none" : `${editorSurface.field} hover:border-slate-300/85 dark:hover:border-white/12 shadow-[0_8px_20px_rgba(15,23,42,0.05)] dark:shadow-[0_10px_22px_rgba(2,6,23,0.18)]`}`}
         >
             <button
                 {...attributes}
                 {...listeners}
-                className={`cursor-grab shrink-0 p-1.5 sm:p-2 rounded-lg transition-colors select-none ${isDragging ? "text-foreground/75" : "text-foreground/55 hover:text-foreground hover:bg-muted/60 dark:hover:bg-muted/40"}`}
-                style={{ touchAction: 'none' }}
+                className={`touch-drag-handle cursor-grab shrink-0 p-1.5 sm:p-2 rounded-lg transition-colors select-none ${isDragging ? "text-foreground/75" : "text-foreground/55 hover:text-foreground hover:bg-muted/60 dark:hover:bg-muted/40"}`}
             >
                 <GripVertical className="h-5 w-5" />
             </button>
@@ -557,6 +604,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
     const [isRenaming, setIsRenaming] = useState(false);
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
     const [catalogSearch, setCatalogSearch] = useState("");
+    const [pendingCatalogSelections, setPendingCatalogSelections] = useState<Set<string>>(new Set());
     const [activeCatalogId, setActiveCatalogId] = useState<string | null>(null);
     const addCatalogSearchInputRef = useRef<HTMLInputElement>(null);
 
@@ -672,19 +720,41 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
         toggleExpanded();
     };
 
-    const handleAddCatalog = (catalogId: string) => {
-        if (!catalogId.trim()) return;
-        const name = resolveCatalogName(catalogId.trim(), customNames);
-        const normalizedId = ensureCatalogPrefix(catalogId.trim(), name);
+    const resetAddCatalogUi = () => {
+        setCatalogSearch("");
+        setPendingCatalogSelections(new Set());
+    };
 
-        const updated = [...subgroupCatalogs, normalizedId];
-        setSubgroupCatalogs(updated);
-        updateValue(["catalog_groups", subgroupName], updated);
+    const togglePendingCatalogSelection = (catalogId: string) => {
+        setPendingCatalogSelections((prev) => {
+            const next = new Set(prev);
+            if (next.has(catalogId)) next.delete(catalogId);
+            else next.add(catalogId);
+            return next;
+        });
+    };
+
+    const handleAddSelectedCatalogs = () => {
+        if (pendingCatalogSelections.size === 0) return;
+
+        const nextCatalogs = [...subgroupCatalogs];
+        pendingCatalogSelections.forEach((catalogId) => {
+            if (!catalogId.trim()) return;
+            const name = resolveCatalogName(catalogId.trim(), customNames);
+            const normalizedId = ensureCatalogPrefix(catalogId.trim(), name);
+            if (!nextCatalogs.includes(normalizedId)) {
+                nextCatalogs.push(normalizedId);
+            }
+        });
+
+        setSubgroupCatalogs(nextCatalogs);
+        updateValue(["catalog_groups", subgroupName], nextCatalogs);
         setIsAddMenuOpen(false);
+        resetAddCatalogUi();
     };
 
     return (
-        <div id={rowAnchorId} ref={setNodeRef} style={style} className={`${editorSurface.card} rounded-xl overflow-hidden mb-3 ${isDragging ? "opacity-50 border-primary scale-[1.01] shadow-2xl" : ""}`}>
+        <div id={rowAnchorId} ref={setNodeRef} style={style} className={`${editorSurface.card} touch-drag-surface rounded-xl overflow-hidden mb-3 ${isDragging ? "opacity-50 border-primary scale-[1.01] shadow-2xl" : ""}`}>
             {/* Header: Drag Handle + Subgroup Name */}
             <div
                 onClick={handleHeaderClick}
@@ -695,8 +765,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                     {...listeners}
                     data-subgroup-no-toggle="true"
                     onClick={(e) => e.stopPropagation()}
-                    className={`cursor-grab text-foreground/65 p-1.5 rounded-lg transition-colors select-none ${editorHover.softAction}`}
-                    style={{ touchAction: 'none' }}
+                    className={`touch-drag-handle cursor-grab text-foreground/65 p-1.5 rounded-lg transition-colors select-none ${editorHover.softAction}`}
                 >
                     <GripVertical className="h-5 w-5" />
                 </button>
@@ -945,12 +1014,21 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                         <div className="pt-1 sm:pt-0">
                             <SubgroupCatalogPickerDialog
                                 open={isAddMenuOpen}
-                                onOpenChange={setIsAddMenuOpen}
+                                onOpenChange={(nextOpen) => {
+                                    setIsAddMenuOpen(nextOpen);
+                                    if (!nextOpen) {
+                                        resetAddCatalogUi();
+                                    }
+                                }}
                                 catalogSearch={catalogSearch}
                                 onCatalogSearchChange={setCatalogSearch}
                                 filteredCatalogs={filteredCatalogs}
                                 inputRef={addCatalogSearchInputRef}
-                                onSelectCatalog={handleAddCatalog}
+                                pendingSelectionCount={pendingCatalogSelections.size}
+                                isCatalogSelected={(catalogId) => pendingCatalogSelections.has(catalogId)}
+                                onToggleCatalog={togglePendingCatalogSelection}
+                                onApplySelection={handleAddSelectedCatalogs}
+                                onResetSelection={resetAddCatalogUi}
                             />
                         </div>
                     </div>
@@ -1105,12 +1183,18 @@ const MainGroupNode = React.memo(function MainGroupNode({
         setExpandedSubgroup(nextExpanded);
     };
 
+    const sortLabel = subgroupSortMode === "desc"
+        ? "Z-A"
+        : subgroupSortMode === "manual"
+            ? "Default"
+            : "A-Z";
+
     return (
         <div
             id={`main-group-${uuid}`}
             ref={setNodeRef}
             style={style}
-            className={`${editorSurface.card} mb-2 overflow-hidden backdrop-blur-[10px] transition-[border-color,background-color,box-shadow] ${isDragging ? "opacity-50 border-primary shadow-xl scale-[1.01] z-50" : ""} group/main`}
+            className={`${editorSurface.card} touch-drag-surface mb-2 overflow-hidden backdrop-blur-[10px] transition-[border-color,background-color,box-shadow] ${isDragging ? "opacity-50 border-primary shadow-xl scale-[1.01] z-50" : ""} group/main`}
         >
             <AccordionItem value={uuid} className="border-none">
                 <div className="flex items-center">
@@ -1118,8 +1202,7 @@ const MainGroupNode = React.memo(function MainGroupNode({
                     <div
                         {...attributes}
                         {...listeners}
-                        className="cursor-grab text-foreground/40 hover:text-foreground/80 shrink-0 p-3 transition-colors select-none"
-                        style={{ touchAction: 'none' }}
+                        className="touch-drag-handle cursor-grab text-foreground/40 hover:text-foreground/80 shrink-0 p-3 transition-colors select-none"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <GripVertical className="h-5 w-5" />
@@ -1172,15 +1255,16 @@ const MainGroupNode = React.memo(function MainGroupNode({
                 </div>
 
                 <AccordionContent className="border-t border-slate-200/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.18),rgba(248,250,252,0.11))] p-5 dark:border-white/8 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.008))]">
-                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
-                        <div className={`${editorSurface.toolbar} flex w-full sm:w-auto items-center gap-1.5 sm:gap-2 p-1.5 sm:p-1`}>
+                    <div className="flex flex-col gap-4 mb-6">
+                        <div className={`${editorSurface.toolbar} flex w-full flex-col gap-2 p-1.5 sm:w-auto sm:flex-row sm:items-center sm:gap-2 sm:p-1`}>
+                            <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center sm:gap-2">
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-8 min-w-0 max-w-[48vw] sm:max-w-none text-xs sm:text-sm text-foreground/70 hover:text-foreground hover:bg-muted/60 dark:hover:bg-muted/40 font-medium tracking-tight px-2">
+                                    <Button variant="ghost" size="sm" className="h-9 min-w-0 w-full justify-start text-xs sm:h-8 sm:w-auto sm:max-w-none sm:text-sm text-foreground/70 hover:text-foreground hover:bg-muted/60 dark:hover:bg-muted/40 font-medium tracking-tight px-2.5">
                                         <span className="hidden sm:inline">Layout:</span>
                                         <span className="text-foreground sm:ml-1 font-bold min-w-0 truncate">
                                             <span className="hidden sm:inline">{posterType} / {posterSize}</span>
-                                            <span className="sm:hidden">{posterType} · {posterSize}</span>
+                                            <span className="sm:hidden">Layout: {posterType} · {posterSize}</span>
                                         </span>
                                         <ChevronDown className="w-3.5 h-3.5 ml-1 opacity-50 shrink-0" />
                                     </Button>
@@ -1217,16 +1301,22 @@ const MainGroupNode = React.memo(function MainGroupNode({
                                 <DropdownMenuTrigger asChild>
                                     <Button
                                         variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 shrink-0 text-foreground/70 hover:text-foreground hover:bg-muted/60 dark:hover:bg-muted/40"
+                                        size="sm"
+                                        className="h-9 min-w-0 w-full justify-start px-2.5 text-xs text-foreground/70 hover:text-foreground hover:bg-muted/60 dark:hover:bg-muted/40 sm:h-8 sm:w-8 sm:px-0 sm:justify-center sm:text-sm"
                                         title="Sort subgroups"
                                         aria-label="Sort subgroups"
                                     >
+                                        <span className="sm:hidden">Sort:</span>
                                         {subgroupSortMode === "desc" ? (
-                                            <ArrowDownAZ className="w-4 h-4" />
+                                            <ArrowDownAZ className="hidden w-4 h-4 sm:block" />
+                                        ) : subgroupSortMode === "manual" ? (
+                                            <RotateCcw className="hidden w-4 h-4 sm:block" />
                                         ) : (
-                                            <ArrowUpAZ className="w-4 h-4" />
+                                            <ArrowUpAZ className="hidden w-4 h-4 sm:block" />
                                         )}
+                                        <span className="font-bold text-foreground sm:hidden">
+                                            {sortLabel}
+                                        </span>
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent className={cn(editorSurface.overlay, "min-w-[11rem]")}>
@@ -1255,7 +1345,7 @@ const MainGroupNode = React.memo(function MainGroupNode({
 
                             <div className="hidden sm:block w-px h-4 bg-border mx-1 shrink-0" />
 
-                            <div className="ml-auto flex items-center justify-end gap-1.5 sm:gap-2 shrink-0">
+                            <div className="ml-auto hidden items-center justify-end gap-1.5 shrink-0 sm:flex sm:gap-2">
                                 <Button
                                     variant="ghost"
                                     size="icon"
@@ -1305,6 +1395,61 @@ const MainGroupNode = React.memo(function MainGroupNode({
                                 >
                                     <Plus className="w-4 h-4" />
                                     <span className="hidden sm:inline">New</span>
+                                </Button>
+                            </div>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-2 sm:hidden">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setIsRenaming(true)}
+                                    className={`${editorSurface.field} h-9 justify-center text-xs text-foreground/70 hover:text-foreground`}
+                                    aria-label="Rename group"
+                                >
+                                    <Pencil className="w-4 h-4" />
+                                    <span>Rename</span>
+                                </Button>
+
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className={cn(editorSurface.field, "h-9 justify-center text-xs text-red-500 hover:text-red-600 hover:bg-red-500/10 border-red-500/20 hover:border-red-500/30 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-500/15")}
+                                            aria-label="Delete group"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                            <span>Delete</span>
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent size="sm">
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Delete Main Group?</AlertDialogTitle>
+                                            <AlertDialogDescription className="text-foreground/70">
+                                                This will remove the group <span className="text-foreground font-bold">&quot;{formatDisplayName(name)}&quot;</span> and all its subgroups. You can restore them anytime from the Recycle Bin at the bottom.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter className="mt-2 sm:mt-3">
+                                            <AlertDialogCancel className="bg-muted border-border text-foreground/70 hover:bg-accent hover:text-accent-foreground sm:min-w-[9rem]">Cancel</AlertDialogCancel>
+                                            <AlertDialogAction
+                                                onClick={() => removeMainCatalogGroup(uuid)}
+                                                className="bg-red-600 text-white hover:bg-red-700 font-bold sm:min-w-[11rem]"
+                                            >
+                                                Delete Group
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => onAddSubgroup?.(uuid)}
+                                    className="h-9 justify-center border-primary/25 bg-primary/8 text-xs font-semibold text-primary hover:bg-primary/12"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    <span>New</span>
                                 </Button>
                             </div>
                         </div>
@@ -1421,6 +1566,7 @@ const UnassignedSubgroupRow = React.memo(function UnassignedSubgroupRow({
     const [isRenaming, setIsRenaming] = useState(false);
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
     const [catalogSearch, setCatalogSearch] = useState("");
+    const [pendingCatalogSelections, setPendingCatalogSelections] = useState<Set<string>>(new Set());
     const [activeCatalogId, setActiveCatalogId] = useState<string | null>(null);
     const addCatalogSearchInputRef = useRef<HTMLInputElement>(null);
 
@@ -1480,14 +1626,36 @@ const UnassignedSubgroupRow = React.memo(function UnassignedSubgroupRow({
         );
     }, [catalogOptions, catalogSearch]);
 
-    const handleAddCatalog = (catalogId: string) => {
-        if (!catalogId.trim()) return;
-        const name = resolveCatalogName(catalogId.trim(), customNames);
-        const normalizedId = ensureCatalogPrefix(catalogId.trim(), name);
+    const resetAddCatalogUi = () => {
+        setCatalogSearch("");
+        setPendingCatalogSelections(new Set<string>());
+    };
 
-        const updated = [...subgroupCatalogsProp, normalizedId];
-        updateValue(["catalog_groups", groupName], updated);
+    const togglePendingCatalogSelection = (catalogId: string) => {
+        setPendingCatalogSelections(prev => {
+            const next = new Set(prev);
+            if (next.has(catalogId)) next.delete(catalogId);
+            else next.add(catalogId);
+            return next;
+        });
+    };
+
+    const handleAddSelectedCatalogs = () => {
+        if (pendingCatalogSelections.size === 0) return;
+
+        const nextCatalogs = [...subgroupCatalogsProp];
+        pendingCatalogSelections.forEach((catalogId) => {
+            if (!catalogId.trim()) return;
+            const name = resolveCatalogName(catalogId.trim(), customNames);
+            const normalizedId = ensureCatalogPrefix(catalogId.trim(), name);
+            if (!nextCatalogs.includes(normalizedId)) {
+                nextCatalogs.push(normalizedId);
+            }
+        });
+
+        updateValue(["catalog_groups", groupName], nextCatalogs);
         setIsAddMenuOpen(false);
+        resetAddCatalogUi();
     };
 
     const handleRemoveCatalog = (catalogId: string) => {
@@ -1788,12 +1956,21 @@ const UnassignedSubgroupRow = React.memo(function UnassignedSubgroupRow({
                         <div className="pt-1 sm:pt-0">
                             <SubgroupCatalogPickerDialog
                                 open={isAddMenuOpen}
-                                onOpenChange={setIsAddMenuOpen}
+                                onOpenChange={(nextOpen) => {
+                                    setIsAddMenuOpen(nextOpen);
+                                    if (!nextOpen) {
+                                        resetAddCatalogUi();
+                                    }
+                                }}
                                 catalogSearch={catalogSearch}
                                 onCatalogSearchChange={setCatalogSearch}
                                 filteredCatalogs={filteredCatalogs}
                                 inputRef={addCatalogSearchInputRef}
-                                onSelectCatalog={handleAddCatalog}
+                                pendingSelectionCount={pendingCatalogSelections.size}
+                                isCatalogSelected={(catalogId) => pendingCatalogSelections.has(catalogId)}
+                                onToggleCatalog={togglePendingCatalogSelection}
+                                onApplySelection={handleAddSelectedCatalogs}
+                                onResetSelection={resetAddCatalogUi}
                             />
                         </div>
                     </div>
