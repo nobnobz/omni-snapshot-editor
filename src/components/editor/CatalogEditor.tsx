@@ -843,6 +843,13 @@ export function CatalogEditor() {
                                 </DialogFooter>
                             </DialogContent>
                         </Dialog>
+
+                        <Button variant="outline" onClick={handleSortAZ} className={cn(editorAction.secondary, "rounded-lg px-2.5 sm:px-3.5 text-[10px] sm:text-xs")}>
+                            <ArrowDownAZ className="w-4 h-4 mr-2" strokeWidth={2.2} /> A-Z
+                        </Button>
+                        <Button variant="outline" onClick={handleSortZA} className={cn(editorAction.secondary, "rounded-lg px-2.5 sm:px-3.5 text-[10px] sm:text-xs")}>
+                            <ArrowUpZA className="w-4 h-4 mr-2" strokeWidth={2.2} /> Z-A
+                        </Button>
                     </div>
                 </div>
 
@@ -960,12 +967,6 @@ export function CatalogEditor() {
                             </DialogContent>
                         </Dialog>
 
-                        <Button variant="outline" onClick={handleSortAZ} className={cn(editorAction.secondary, "rounded-lg px-2.5 sm:px-3.5 text-[10px] sm:text-xs")}>
-                            <ArrowDownAZ className="w-4 h-4 mr-2" strokeWidth={2.2} /> A-Z
-                        </Button>
-                        <Button variant="outline" onClick={handleSortZA} className={cn(editorAction.secondary, "rounded-lg px-2.5 sm:px-3.5 text-[10px] sm:text-xs")}>
-                            <ArrowUpZA className="w-4 h-4 mr-2" strokeWidth={2.2} /> Z-A
-                        </Button>
                     </div>
                     {showDisabled && (
                         <div className="p-3 space-y-1 max-h-[400px] overflow-y-auto custom-scrollbar">
