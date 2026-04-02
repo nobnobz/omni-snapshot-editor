@@ -14,6 +14,7 @@ import { APP_VERSION } from "@/lib/constants";
 import { referenceOrShallowEqual } from "@/lib/equality";
 import { measureSync } from "@/lib/perf";
 import { updateValueAtPath } from "@/lib/state-update";
+import { applyConfigDefaults } from "@/lib/config-defaults";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Omni configs are user-defined dynamic JSON blobs.
 type LooseAny = any;
@@ -547,6 +548,8 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         if (decodedValues.hide_addon_info_in_catalog_names === undefined) {
             decodedValues.hide_addon_info_in_catalog_names = true;
         }
+
+        Object.assign(decodedValues, applyConfigDefaults(decodedValues));
 
         const rawCustomNames = isRecord(decodedValues.custom_catalog_names)
             ? (decodedValues.custom_catalog_names as Record<string, string>)

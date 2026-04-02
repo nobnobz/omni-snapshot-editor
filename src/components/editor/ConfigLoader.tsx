@@ -46,6 +46,7 @@ import type { OmniConfig } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { downloadTemplateFile, shouldOfferTemplateUrlChoice } from "@/lib/template-download";
 import { getTemplateDisplay } from "@/lib/template-display";
+import { DEFAULT_METADATA_PROVIDER } from "@/lib/config-defaults";
 import { editorHover, editorLoader, editorSurface } from "@/components/editor/ui/style-contract";
 import { EditorNotice } from "@/components/editor/ui/EditorNotice";
 import { AppMeta } from "@/components/editor/AppMeta";
@@ -460,7 +461,7 @@ export function ConfigLoader() {
                 preferred_subtitle_language: "eng",
                 catalog_cache_duration: 2,
                 bottom_align_logo: false,
-                default_metadata_provider: "aio-metadata",
+                default_metadata_provider: DEFAULT_METADATA_PROVIDER,
                 subtitle_font_size: 8,
                 isASSUseImageRender: false,
                 isSRTUseImageRender: false,
