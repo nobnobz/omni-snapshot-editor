@@ -1077,15 +1077,15 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                 type="button"
                                 variant="outline"
                                 onClick={() => onOpenGuide("update")}
-                                className="h-auto w-full justify-start rounded-2xl border-amber-500/18 bg-amber-500/[0.08] px-4 py-3 text-left text-amber-800 shadow-none hover:bg-amber-500/[0.12] dark:border-amber-400/16 dark:bg-amber-500/[0.08] dark:text-amber-200 dark:hover:bg-amber-500/[0.12]"
+                                className="h-auto w-full justify-start whitespace-normal rounded-2xl border-amber-500/18 bg-amber-500/[0.08] px-3 py-3 text-left text-amber-800 shadow-none hover:bg-amber-500/[0.12] sm:px-4 dark:border-amber-400/16 dark:bg-amber-500/[0.08] dark:text-amber-200 dark:hover:bg-amber-500/[0.12]"
                             >
-                                <div className="flex items-center gap-3">
+                                <div className="flex w-full items-start gap-3">
                                     <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-amber-500/18 bg-white/55 dark:border-amber-400/18 dark:bg-white/[0.05]">
                                         <BookOpen className="h-4 w-4" />
                                     </div>
-                                    <div className="min-w-0">
+                                    <div className="min-w-0 flex-1">
                                         <div className="text-sm font-semibold tracking-tight">How to Update</div>
-                                        <div className="text-xs text-amber-800/75 dark:text-amber-200/70">
+                                        <div className="mt-0.5 text-xs leading-relaxed text-amber-800/75 dark:text-amber-200/70">
                                             Open the update guide before importing an existing setup.
                                         </div>
                                     </div>

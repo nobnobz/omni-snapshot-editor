@@ -738,14 +738,15 @@ export function UnifiedPatternEditor() {
                                             variant="ghost"
                                             onClick={() => setConfirmDeleteAll(true)}
                                             className={cn(
-                                                "h-12 w-12 shrink-0 rounded-[1.15rem] border border-transparent px-0",
-                                                "lg:h-10 lg:w-10",
+                                                "h-12 shrink-0 gap-2 rounded-[1.15rem] border border-transparent px-3",
+                                                "lg:h-10 lg:w-10 lg:gap-0 lg:px-0",
                                                 editorHover.iconDanger
                                             )}
                                             aria-label="Delete all patterns"
                                             title="Delete All"
                                         >
                                             <Trash2 className="w-4 h-4" />
+                                            <span className="text-xs font-bold lg:hidden">Delete All</span>
                                         </Button>
                                     )}
                                 </div>

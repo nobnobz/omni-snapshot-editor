@@ -1319,7 +1319,7 @@ const MainGroupNode = React.memo(function MainGroupNode({
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="h-9 min-w-0 w-full justify-start px-2.5 text-xs text-foreground/70 hover:text-foreground hover:bg-muted/60 dark:hover:bg-muted/40 sm:h-8 sm:w-8 sm:px-0 sm:justify-center sm:text-sm"
+                                        className="h-9 min-w-0 w-full justify-start gap-1 px-2.5 text-xs text-foreground/70 hover:text-foreground hover:bg-muted/60 dark:hover:bg-muted/40 sm:h-8 sm:w-auto sm:px-2 sm:justify-center sm:text-sm"
                                         title="Sort subgroups"
                                         aria-label="Sort subgroups"
                                     >
@@ -1334,6 +1334,7 @@ const MainGroupNode = React.memo(function MainGroupNode({
                                         <span className="font-bold text-foreground sm:hidden">
                                             {sortLabel}
                                         </span>
+                                        <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent className={cn(editorSurface.overlay, "min-w-[11rem]")}>
