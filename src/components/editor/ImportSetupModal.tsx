@@ -985,7 +985,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                         onClick={(e) => { e.stopPropagation(); toggleGroupUpdate(sg.name); }}
                                         className={cn("h-7 px-2.5 rounded-lg cursor-pointer text-[11px] font-black uppercase tracking-wider transition-all", isGroupUpdateSelected ? "bg-amber-500/15 text-amber-700 border-amber-500/40 shadow-sm dark:text-amber-200" : "text-foreground/40 hover:bg-amber-500/5 hover:text-amber-600")}
                                     >
-                                        Group
+                                        Move
                                     </Badge>
                                 )}
                             </div>
@@ -1072,22 +1072,26 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
 
                 {step === 1 && (
                     <div className="space-y-6 animate-in fade-in duration-300">
-                        <EditorNotice tone="warning" className="w-full">
-                            <div className="flex w-full flex-col items-start gap-2 text-left">
-                                <p className="font-semibold opacity-90">First time updating?</p>
-                                {onOpenGuide && (
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => onOpenGuide("update")}
-                                        className="h-9 self-start justify-start rounded-lg border-amber-500/18 bg-white/30 px-2.5 text-xs font-semibold text-amber-700 shadow-none hover:bg-white/55 hover:text-amber-800 dark:border-amber-400/16 dark:bg-white/[0.025] dark:text-amber-300 dark:hover:bg-white/[0.05] dark:hover:text-amber-200"
-                                    >
-                                        <BookOpen className="w-3.5 h-3.5 mr-2" />
-                                        How to Update
-                                    </Button>
-                                )}
-                            </div>
-                        </EditorNotice>
+                        {onOpenGuide ? (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => onOpenGuide("update")}
+                                className="h-auto w-full justify-start rounded-2xl border-amber-500/18 bg-amber-500/[0.08] px-4 py-3 text-left text-amber-800 shadow-none hover:bg-amber-500/[0.12] dark:border-amber-400/16 dark:bg-amber-500/[0.08] dark:text-amber-200 dark:hover:bg-amber-500/[0.12]"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-amber-500/18 bg-white/55 dark:border-amber-400/18 dark:bg-white/[0.05]">
+                                        <BookOpen className="h-4 w-4" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <div className="text-sm font-semibold tracking-tight">How to Update</div>
+                                        <div className="text-xs text-amber-800/75 dark:text-amber-200/70">
+                                            Open the update guide before importing an existing setup.
+                                        </div>
+                                    </div>
+                                </div>
+                            </Button>
+                        ) : null}
 
                         <div className={cn(editorSurface.card, "p-5")}>
                             <h3 className="font-semibold text-sm mb-3">Load Template</h3>
@@ -1261,7 +1265,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()} onClick={selectImageUpdates} className="flex justify-between">Images {areAllImageUpdatesSelected && <Check className="w-3.5 h-3.5" />}</DropdownMenuItem>
                                                             )}
                                                             {visibleGroupUpdateNames.length > 0 && (
-                                                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} onClick={selectGroupUpdates} className="flex justify-between">Groups {areAllGroupUpdatesSelected && <Check className="w-3.5 h-3.5" />}</DropdownMenuItem>
+                                                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} onClick={selectGroupUpdates} className="flex justify-between">Moves {areAllGroupUpdatesSelected && <Check className="w-3.5 h-3.5" />}</DropdownMenuItem>
                                                             )}
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
@@ -1307,9 +1311,12 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                                     {visibleSubgroups.map(sg => {
                                                                         const parsedSg = parsedSubgroups.find(p => p.name === sg);
                                                                         const isSgSelected = isSelected && selectedSubgroups.includes(sg);
+                                                                        const hasSupplementalUpdates = !!parsedSg && (parsedSg.hasNewCatalogs || parsedSg.hasNewImage || parsedSg.hasRename);
                                                                         const subgroupStatusLabel = activeMainFilter === "updates"
                                                                             ? parsedSg?.hasGroupChange
-                                                                                ? "Move"
+                                                                                ? hasSupplementalUpdates
+                                                                                    ? "Move + Update"
+                                                                                    : "Move"
                                                                                 : "Update"
                                                                             : parsedSg?.basicIsExisting
                                                                                 ? "Update"

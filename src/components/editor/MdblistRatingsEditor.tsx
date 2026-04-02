@@ -56,7 +56,7 @@ import {
     normalizeMdblistEnabledRatings,
     normalizeMdblistRatingOrder,
 } from "@/lib/mdblist-ratings";
-import { editorHover, editorSurface } from "@/components/editor/ui/style-contract";
+import { editorAction, editorHover, editorSurface } from "@/components/editor/ui/style-contract";
 import { EditorNotice } from "@/components/editor/ui/EditorNotice";
 
 const isHexColor = (value: string) => /^#[0-9A-Fa-f]{6}$/.test(value);
@@ -649,16 +649,14 @@ export function MdblistRatingsEditor() {
                         </p>
                     </div>
 
-                    <div className={cn(editorSurface.panel, "inline-flex items-center gap-2 rounded-xl p-1.5")}>
+                    <div className={cn(editorSurface.toolbar, "inline-flex items-center gap-2 rounded-xl p-1.5")}>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button
-                                    variant="ghost"
                                     size="sm"
                                     className={cn(
-                                        "h-9 gap-2 rounded-lg px-3.5 text-foreground/78 shadow-sm hover:text-foreground",
-                                        editorSurface.field,
-                                        "border-border/60 bg-white/60 hover:bg-white/78 dark:bg-[linear-gradient(180deg,rgba(28,32,40,0.92),rgba(22,26,34,0.9))] dark:hover:bg-[linear-gradient(180deg,rgba(33,38,47,0.94),rgba(25,29,37,0.92))]"
+                                        editorAction.primary,
+                                        "h-9 gap-2 rounded-lg px-3.5 font-semibold shadow-sm"
                                     )}
                                     disabled={inactiveDefinitions.length === 0}
                                 >
@@ -676,13 +674,12 @@ export function MdblistRatingsEditor() {
                         </DropdownMenu>
 
                         <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
                             onClick={resetToDefaults}
                             className={cn(
-                                "h-9 gap-2 rounded-lg px-3.5 text-foreground/78 shadow-sm hover:text-foreground",
-                                editorSurface.field,
-                                "border-border/60 bg-white/60 hover:bg-white/78 dark:bg-[linear-gradient(180deg,rgba(28,32,40,0.92),rgba(22,26,34,0.9))] dark:hover:bg-[linear-gradient(180deg,rgba(33,38,47,0.94),rgba(25,29,37,0.92))]"
+                                editorAction.secondary,
+                                "h-9 gap-2 rounded-lg px-3.5 font-semibold shadow-none"
                             )}
                         >
                             <RotateCcw className="h-3.5 w-3.5" />

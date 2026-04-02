@@ -708,18 +708,28 @@ export function UnifiedPatternEditor() {
                 <AccordionContent className="rounded-b-xl border-t border-border/30 p-5 pb-6 pt-5">
                     <div className="space-y-6">
                         <div className={`${editorSurface.panel} flex flex-col gap-3 p-4`}>
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                                <Input
+                            <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+                                <Textarea
                                     value={newPattern}
                                     onChange={e => setNewPattern(e.target.value)}
-                                    onKeyDown={e => e.key === 'Enter' && handleAddPattern()}
+                                    onKeyDown={e => {
+                                        if (e.key === "Enter" && !e.shiftKey) {
+                                            e.preventDefault();
+                                            handleAddPattern();
+                                        }
+                                    }}
                                     placeholder="Enter new Regex string (e.g. (?i)uhd|4k)"
-                                    className={cn(editorSurface.field, patternFieldSurface, "h-13 sm:h-10 rounded-lg px-4 text-[15px] sm:text-sm font-medium focus-visible:ring-[3px] focus-visible:ring-ring/50 transition-colors flex-1")}
+                                    rows={3}
+                                    className={cn(
+                                        editorSurface.field,
+                                        patternFieldSurface,
+                                        "min-h-[5.75rem] w-full min-w-0 flex-1 rounded-xl px-4 py-3 text-[15px] leading-[1.4] font-medium transition-colors resize-y sm:min-h-[6.25rem] sm:px-5 sm:py-3.5 sm:text-base lg:min-h-[5.25rem] lg:px-4 lg:py-3 lg:text-sm"
+                                    )}
                                 />
-                                <div className="flex items-center gap-2 sm:shrink-0">
+                                <div className="flex items-center gap-2 lg:shrink-0">
                                     <Button
                                         onClick={handleAddPattern}
-                                        className={cn(editorAction.premium, "h-12 sm:h-10 px-4 sm:px-6")}
+                                        className={cn(editorAction.premium, "h-12 px-4 sm:px-6 lg:h-10")}
                                     >
                                         <Plus className="w-4 h-4 mr-2" strokeWidth={2.5} /> Add Pattern
                                     </Button>
@@ -728,7 +738,8 @@ export function UnifiedPatternEditor() {
                                             variant="ghost"
                                             onClick={() => setConfirmDeleteAll(true)}
                                             className={cn(
-                                                "h-12 w-12 sm:h-10 sm:w-10 shrink-0 rounded-[1.15rem] border border-transparent px-0",
+                                                "h-12 w-12 shrink-0 rounded-[1.15rem] border border-transparent px-0",
+                                                "lg:h-10 lg:w-10",
                                                 editorHover.iconDanger
                                             )}
                                             aria-label="Delete all patterns"

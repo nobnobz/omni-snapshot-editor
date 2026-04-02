@@ -67,7 +67,7 @@ import { LockedUrlInput } from "./LockedUrlInput";
 import { TrashBin } from "./TrashBin";
 import { hasAIOMetadataCatalogMatch, type AIOMetadataMismatchAnalysis } from "@/lib/aiometadata-mismatch";
 import { cn, formatDisplayName, resolveCatalogName, ensureCatalogPrefix } from "@/lib/utils";
-import { editorCompactBadge, editorHover, editorSurface } from "@/components/editor/ui/style-contract";
+import { editorAction, editorCompactBadge, editorHover, editorSurface } from "@/components/editor/ui/style-contract";
 import { CATALOG_FALLBACKS, CatalogFallback } from "@/lib/catalog-fallbacks";
 import { Label } from "@/components/ui/label";
 import { normalizeSubgroupNames } from "@/lib/main-group-utils";
@@ -237,6 +237,12 @@ const focusSearchInput = (input: HTMLInputElement | null) => {
     }
 };
 
+const stopTouchDropdownTrigger = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (event.pointerType === "touch") {
+        event.stopPropagation();
+    }
+};
+
 const groupCatalogOptions = (options: CatalogOption[]) => {
     const groups: Record<string, CatalogOption[]> = { Other: [] };
 
@@ -322,6 +328,8 @@ const SubgroupCatalogPickerDialog = React.memo(function SubgroupCatalogPickerDia
                 className={cn(editorSurface.card, "w-[min(92vw,32rem)] max-h-[min(86dvh,38rem)] gap-0 overflow-hidden border p-0 flex flex-col")}
                 onOpenAutoFocus={(event) => {
                     event.preventDefault();
+                    focusSearchInput(inputRef.current);
+                    requestAnimationFrame(() => focusSearchInput(inputRef.current));
                 }}
                 onCloseAutoFocus={(event) => {
                     event.preventDefault();
@@ -346,6 +354,7 @@ const SubgroupCatalogPickerDialog = React.memo(function SubgroupCatalogPickerDia
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-foreground/60" />
                         <Input
                             ref={inputRef}
+                            autoFocus
                             placeholder="Search by name or ID..."
                             value={catalogSearch}
                             onChange={(event) => onCatalogSearchChange(event.target.value)}
@@ -603,6 +612,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
     const [subgroupCatalogs, setSubgroupCatalogs] = useState<string[]>(catalogsList);
     const [isRenaming, setIsRenaming] = useState(false);
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+    const [isMobileMoveMenuOpen, setIsMobileMoveMenuOpen] = useState(false);
     const [catalogSearch, setCatalogSearch] = useState("");
     const [pendingCatalogSelections, setPendingCatalogSelections] = useState<Set<string>>(new Set());
     const [activeCatalogId, setActiveCatalogId] = useState<string | null>(null);
@@ -880,11 +890,14 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
 
                         {/* Mobile Action Buttons: Move here under layout */}
                         <div className="sm:hidden grid grid-cols-3 gap-2 pt-1">
-                            <DropdownMenu>
+                            <DropdownMenu open={isMobileMoveMenuOpen} onOpenChange={setIsMobileMoveMenuOpen}>
                                 <DropdownMenuTrigger asChild>
                                     <Button
                                         variant="outline"
-                                        size="sm" aria-label="Move subgroup"
+                                        size="sm"
+                                        aria-label="Move subgroup"
+                                        onPointerDownCapture={stopTouchDropdownTrigger}
+                                        onClick={() => setIsMobileMoveMenuOpen((previous) => !previous)}
                                         className={`${editorSurface.field} h-9 text-xs text-foreground/70 hover:text-foreground flex items-center justify-center`}
                                     >
                                         <FolderInput className="w-4 h-4 sm:w-3.5 sm:h-3.5 sm:mr-2" />
@@ -898,7 +911,10 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                         <DropdownMenuItem
                                             key={uuid}
                                             disabled={uuid === parentUUID}
-                                            onSelect={() => assignCatalogGroup(subgroupName, uuid)}
+                                            onSelect={() => {
+                                                assignCatalogGroup(subgroupName, uuid);
+                                                setIsMobileMoveMenuOpen(false);
+                                            }}
                                             className="cursor-pointer py-3"
                                         >
                                             <span className={cn("flex-1 truncate", uuid === parentUUID && "text-primary font-bold")}>
@@ -913,6 +929,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                             <Button
                                 variant="outline"
                                 size="sm"
+                                onClick={() => setIsRenaming(true)}
                                 aria-label="Rename subgroup"
                                 className={`${editorSurface.field} h-9 text-xs text-foreground/70 hover:text-foreground flex items-center justify-center`}
                             >
@@ -1388,10 +1405,9 @@ const MainGroupNode = React.memo(function MainGroupNode({
                                 <div className="hidden sm:block w-px h-4 bg-border mx-1 shrink-0" />
 
                                 <Button
-                                    variant="ghost"
                                     size="sm"
                                     onClick={() => onAddSubgroup?.(uuid)}
-                                    className="h-8 shrink-0 text-xs sm:text-sm text-primary hover:text-primary hover:bg-primary/10 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out flex items-center gap-1.5 px-2.5 rounded-lg font-bold"
+                                    className={cn(editorAction.primary, "h-8 shrink-0 rounded-lg px-2.5 text-xs sm:text-sm font-bold flex items-center gap-1.5")}
                                 >
                                     <Plus className="w-4 h-4" />
                                     <span className="hidden sm:inline">New</span>
@@ -1443,10 +1459,9 @@ const MainGroupNode = React.memo(function MainGroupNode({
                                 </AlertDialog>
 
                                 <Button
-                                    variant="outline"
                                     size="sm"
                                     onClick={() => onAddSubgroup?.(uuid)}
-                                    className="h-9 justify-center border-primary/25 bg-primary/8 text-xs font-semibold text-primary hover:bg-primary/12"
+                                    className={cn(editorAction.primary, "h-9 justify-center text-xs font-semibold")}
                                 >
                                     <Plus className="w-4 h-4" />
                                     <span>New</span>
@@ -1565,6 +1580,7 @@ const UnassignedSubgroupRow = React.memo(function UnassignedSubgroupRow({
 
     const [isRenaming, setIsRenaming] = useState(false);
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+    const [isMobileAssignMenuOpen, setIsMobileAssignMenuOpen] = useState(false);
     const [catalogSearch, setCatalogSearch] = useState("");
     const [pendingCatalogSelections, setPendingCatalogSelections] = useState<Set<string>>(new Set());
     const [activeCatalogId, setActiveCatalogId] = useState<string | null>(null);
@@ -1819,11 +1835,14 @@ const UnassignedSubgroupRow = React.memo(function UnassignedSubgroupRow({
                         />
 
                         <div className="sm:hidden grid grid-cols-3 gap-2 pt-1">
-                            <DropdownMenu>
+                            <DropdownMenu open={isMobileAssignMenuOpen} onOpenChange={setIsMobileAssignMenuOpen}>
                                 <DropdownMenuTrigger asChild>
                                     <Button
                                         variant="outline"
-                                        size="sm" aria-label="Move subgroup"
+                                        size="sm"
+                                        aria-label="Move subgroup"
+                                        onPointerDownCapture={stopTouchDropdownTrigger}
+                                        onClick={() => setIsMobileAssignMenuOpen((previous) => !previous)}
                                         className={`${editorSurface.field} h-9 text-xs text-foreground/70 hover:text-foreground flex items-center justify-center`}
                                     >
                                         <FolderInput className="w-4 h-4 sm:w-3.5 sm:h-3.5 sm:mr-2" />
@@ -1834,7 +1853,10 @@ const UnassignedSubgroupRow = React.memo(function UnassignedSubgroupRow({
                                     {onRestore && restoreParentName && (
                                         <>
                                             <DropdownMenuItem
-                                                onClick={onRestore}
+                                                onClick={() => {
+                                                    onRestore();
+                                                    setIsMobileAssignMenuOpen(false);
+                                                }}
                                                 className="cursor-pointer py-3 text-amber-500 focus:bg-amber-500/20 focus:text-amber-400 font-semibold"
                                             >
                                                 <RotateCcw className="w-3.5 h-3.5 mr-2" />
@@ -1855,7 +1877,10 @@ const UnassignedSubgroupRow = React.memo(function UnassignedSubgroupRow({
                                             return (
                                                 <DropdownMenuItem
                                                     key={uuid}
-                                                    onSelect={() => assignCatalogGroup(groupName, uuid)}
+                                                    onSelect={() => {
+                                                        assignCatalogGroup(groupName, uuid);
+                                                        setIsMobileAssignMenuOpen(false);
+                                                    }}
                                                     className="cursor-pointer py-3"
                                                 >
                                                     {formatDisplayName(name)}
