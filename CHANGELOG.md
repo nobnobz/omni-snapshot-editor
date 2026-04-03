@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.5] - 2026-04-03
+### Added
+- Added support for Letterbox catalogs in AIOMetadata export.
+
+### Changed
+- Optimized the **Update From Existing Setup** UI to only display the "NEW" badge on main groups that are actually new, excluding existing groups with new content for better clarity.
+
 ## [0.6.4] - 2026-04-02
 ### Changed
 - bug fixes and improvements

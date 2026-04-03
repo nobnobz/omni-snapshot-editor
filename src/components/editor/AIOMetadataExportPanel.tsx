@@ -52,6 +52,7 @@ const sourceLabels = {
     mdblist: "MDBList",
     streaming: "Streaming",
     trakt: "Trakt",
+    letterboxd: "Letterboxd",
 } as const;
 
 const quickSelectChipClass =
@@ -165,7 +166,7 @@ function CatalogRow({
                 </p>
             </button>
             <div className="flex shrink-0 items-center gap-2">
-                {onEditSettings && ["mdblist", "trakt", "streaming"].includes(occurrence.source) && (
+                {onEditSettings && ["mdblist", "trakt", "streaming", "letterboxd"].includes(occurrence.source) && (
                     <Button
                         type="button"
                         variant="ghost"
@@ -555,7 +556,7 @@ export function AIOMetadataExportPanel({
     const canonicalEditableWidgetIds = useMemo(
         () => new Set(
             Array.from(canonicalOccurrences.values())
-                .filter((occurrence) => ["mdblist", "trakt", "streaming"].includes(occurrence.source))
+                .filter((occurrence) => ["mdblist", "trakt", "streaming", "letterboxd"].includes(occurrence.source))
                 .map((occurrence) => occurrence.widgetId)
         ),
         [canonicalOccurrences]
@@ -563,7 +564,7 @@ export function AIOMetadataExportPanel({
     const canonicalEditableItemIds = useMemo(
         () => new Set(
             Array.from(canonicalOccurrences.values())
-                .filter((occurrence) => ["mdblist", "trakt", "streaming"].includes(occurrence.source))
+                .filter((occurrence) => ["mdblist", "trakt", "streaming", "letterboxd"].includes(occurrence.source))
                 .map((occurrence) => occurrence.itemId)
         ),
         [canonicalOccurrences]
@@ -946,6 +947,23 @@ export function AIOMetadataExportPanel({
                                             )}
                                         >
                                             Streaming
+                                        </Button>
+                                    )}
+                                    {inventory.exportableSources.includes("letterboxd") && (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            className={quickSelectChipClass}
+                                            onClick={() => replaceSelection(
+                                                Array.from(new Set(
+                                                    inventory.occurrences
+                                                        .filter((occurrence) => occurrence.isExportable && occurrence.source === "letterboxd")
+                                                        .map((occurrence) => occurrence.comparisonKey)
+                                                ))
+                                            )}
+                                        >
+                                            Letterboxd
                                         </Button>
                                     )}
                                     <Button

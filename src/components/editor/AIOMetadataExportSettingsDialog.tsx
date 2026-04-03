@@ -38,6 +38,7 @@ import {
     getCanonicalOccurrencesByComparisonKey,
     type AIOMetadataCanonicalOccurrence,
     type AIOMetadataExportInventory,
+    type AIOMetadataResolvedLetterboxdExportFields,
     type AIOMetadataResolvedMDBListExportFields,
     type AIOMetadataResolvedStreamingExportFields,
     type AIOMetadataResolvedTraktExportFields,
@@ -54,6 +55,7 @@ import {
     type AIOMetadataCacheTtlPreset,
     type AIOMetadataCatalogExportOverride,
     type AIOMetadataExportOverrideState,
+    type AIOMetadataLetterboxdExportOverride,
     type AIOMetadataMDBListExportOverride,
     type AIOMetadataMDBListSort,
     type AIOMetadataSourceScopedOverrideMap,
@@ -93,16 +95,18 @@ type EditableScopePath = {
 };
 
 type ScopeSelectionKey = `widget:${string}` | `item:${string}` | `catalog:${string}`;
-type EditableSource = Extract<AIOMetadataCatalogSource, "mdblist" | "trakt" | "streaming">;
+type EditableSource = Extract<AIOMetadataCatalogSource, "mdblist" | "trakt" | "streaming" | "letterboxd">;
 type SourceCurrentValues = {
     mdblist: Partial<AIOMetadataResolvedMDBListExportFields>;
     trakt: Partial<AIOMetadataResolvedTraktExportFields>;
     streaming: Partial<AIOMetadataResolvedStreamingExportFields>;
+    letterboxd: Partial<AIOMetadataResolvedLetterboxdExportFields>;
 };
 type SourceOverrideBySource = {
     mdblist: AIOMetadataMDBListExportOverride;
     trakt: AIOMetadataTraktExportOverride;
     streaming: AIOMetadataStreamingExportOverride;
+    letterboxd: AIOMetadataLetterboxdExportOverride;
 };
 type MDBListSourceSection = {
     source: "mdblist";
@@ -118,13 +122,21 @@ type DirectionalSourceSection = {
     overridePresence: Partial<Record<"sort" | "sortDirection" | "cacheTTL", boolean>>;
     currentValues: Partial<AIOMetadataResolvedTraktExportFields> | Partial<AIOMetadataResolvedStreamingExportFields>;
 };
-type SourceSection = MDBListSourceSection | DirectionalSourceSection;
+type CacheOnlySourceSection = {
+    source: "letterboxd";
+    occurrences: AIOMetadataCanonicalOccurrence[];
+    override?: AIOMetadataLetterboxdExportOverride;
+    overridePresence: Partial<Record<"cacheTTL", boolean>>;
+    currentValues: Partial<AIOMetadataResolvedLetterboxdExportFields>;
+};
+type SourceSection = MDBListSourceSection | DirectionalSourceSection | CacheOnlySourceSection;
 
-const EDITABLE_SOURCES: EditableSource[] = ["mdblist", "trakt", "streaming"];
+const EDITABLE_SOURCES: EditableSource[] = ["mdblist", "trakt", "streaming", "letterboxd"];
 const SOURCE_LABELS: Record<EditableSource, string> = {
     mdblist: "MDBList Catalogs",
     trakt: "Trakt Catalogs",
     streaming: "Streaming Catalogs",
+    letterboxd: "Letterboxd Catalogs",
 };
 
 const getScopeLabel = (target: AIOMetadataExportSettingsDialogTarget) => {
@@ -301,11 +313,24 @@ const getScopeCurrentValues = (
         } as Partial<AIOMetadataResolvedStreamingExportFields>;
     }
 
+    if (occurrence.source === "letterboxd") {
+        const current = result.letterboxd;
+        const nextCacheValues = hasNumericCacheTTL(effectiveCatalog)
+            ? [...((current as { __cacheValues?: number[] }).__cacheValues || []), effectiveCatalog.cacheTTL]
+            : ((current as { __cacheValues?: number[] }).__cacheValues || []);
+
+        result.letterboxd = {
+            cacheTTL: getUniformValue(nextCacheValues),
+            __cacheValues: nextCacheValues,
+        } as Partial<AIOMetadataResolvedLetterboxdExportFields>;
+    }
+
     return result;
 }, {
     mdblist: {},
     trakt: {},
     streaming: {},
+    letterboxd: {},
 });
 
 const isSortDirectionValue = (value: unknown): value is "asc" | "desc" =>
@@ -625,6 +650,65 @@ function DirectionalOverrideForm<TSort extends string>({
                     </Select>
                 </div>
             ) : null}
+        </div>
+    );
+}
+
+function CacheTTLOverrideForm({
+    title,
+    override,
+    overridePresence,
+    currentValues,
+    onChangeField,
+}: {
+    title?: string;
+    override?: AIOMetadataLetterboxdExportOverride;
+    overridePresence: Partial<Record<"cacheTTL", boolean>>;
+    currentValues: Partial<AIOMetadataResolvedLetterboxdExportFields>;
+    onChangeField: (key: "cacheTTL", value: number | undefined) => void;
+}) {
+    const effectiveCacheTTL = override?.cacheTTL ?? currentValues.cacheTTL;
+    const cachePreset = typeof effectiveCacheTTL === "number"
+        ? detectCacheTtlPreset(effectiveCacheTTL)
+        : undefined;
+    const cachePresetValue = cachePreset === "custom" ? undefined : cachePreset;
+    const cachePlaceholder = typeof effectiveCacheTTL === "number"
+        ? `${effectiveCacheTTL}s`
+        : "Select cache TTL";
+
+    return (
+        <div className="space-y-6">
+            {title ? (
+                <div className="flex items-center justify-between gap-4 mb-1">
+                    <p className="text-sm font-semibold tracking-tight text-foreground">{title}</p>
+                </div>
+            ) : null}
+
+            <div className="space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                    <Label className="text-foreground">Cache TTL</Label>
+                    <OverrideFieldResetButton
+                        visible={overridePresence.cacheTTL === true}
+                        onClick={() => onChangeField("cacheTTL", undefined)}
+                    />
+                </div>
+                <Select
+                    value={cachePresetValue}
+                    onValueChange={(value) => {
+                        const nextValue = value as AIOMetadataCacheTtlPreset;
+                        onChangeField("cacheTTL", cacheTtlSecondsFromPreset(nextValue));
+                    }}
+                >
+                    <SelectTrigger className={cn("w-full", editorSurface.field)}>
+                        <SelectValue placeholder={cachePlaceholder} />
+                    </SelectTrigger>
+                    <SelectContent className={editorSurface.overlay}>
+                        {CACHE_TTL_PRESET_OPTIONS.filter((option) => option.value !== "custom").map((option) => (
+                            <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
         </div>
     );
 }
@@ -963,7 +1047,7 @@ function AIOMetadataExportSettingsDialogBody({
         () => (
             selectedTargetOccurrences.length > 0
                 ? getScopeCurrentValues(selectedTargetOccurrences, effectiveDraftOverrides)
-                : { mdblist: {}, trakt: {}, streaming: {} }
+                : { mdblist: {}, trakt: {}, streaming: {}, letterboxd: {} }
         ),
         [effectiveDraftOverrides, selectedTargetOccurrences]
     );
@@ -1018,6 +1102,32 @@ function AIOMetadataExportSettingsDialogBody({
                     cacheTTL: selectedOverridesForSource.some((entry) => entry?.cacheTTL !== undefined),
                 },
                 currentValues: selectedScopeCurrentValues.mdblist,
+            });
+            return sections;
+        }
+
+        if (source === "letterboxd") {
+            const selectedOverridesForSource = selectedTargets.map((scope) =>
+                getTargetScopeOverride<AIOMetadataLetterboxdExportOverride>(scope, draftOverrides, source)
+            );
+            const override = selectedTargets.length === 1
+                ? selectedOverridesForSource[0]
+                : {
+                    cacheTTL: getUniformValue(
+                        selectedOverridesForSource
+                            .map((entry) => entry?.cacheTTL)
+                            .filter((value): value is number => typeof value === "number")
+                    ),
+                };
+
+            sections.push({
+                source,
+                occurrences,
+                override,
+                overridePresence: {
+                    cacheTTL: selectedOverridesForSource.some((entry) => entry?.cacheTTL !== undefined),
+                },
+                currentValues: selectedScopeCurrentValues.letterboxd,
             });
             return sections;
         }
@@ -1180,7 +1290,9 @@ function AIOMetadataExportSettingsDialogBody({
                         ? ["sort", "order", "cacheTTL"]
                         : currentSource === "trakt"
                             ? ["sort", "sortDirection", "cacheTTL"]
-                            : ["sort", "sortDirection"];
+                            : currentSource === "letterboxd"
+                                ? ["cacheTTL"]
+                                : ["sort", "sortDirection"];
                     keysToDelete.forEach((field) => {
                         delete currentScopeValue[field as keyof AIOMetadataCatalogExportOverride];
                     });
@@ -1558,6 +1670,14 @@ function AIOMetadataExportSettingsDialogBody({
                                                         currentValues={section.currentValues as Partial<AIOMetadataResolvedTraktExportFields>}
                                                         supportsCacheTTL
                                                         onChangeField={(key, value) => handleScopeFieldChange("trakt", key as keyof AIOMetadataTraktExportOverride, value as AIOMetadataTraktExportOverride[typeof key])}
+                                                    />
+                                                ) : section.source === "letterboxd" ? (
+                                                    <CacheTTLOverrideForm
+                                                        title={selectedSourceSections.length > 1 ? SOURCE_LABELS[section.source] : undefined}
+                                                        override={section.override as AIOMetadataLetterboxdExportOverride | undefined}
+                                                        overridePresence={section.overridePresence as Partial<Record<"cacheTTL", boolean>>}
+                                                        currentValues={section.currentValues as Partial<AIOMetadataResolvedLetterboxdExportFields>}
+                                                        onChangeField={(key, value) => handleScopeFieldChange("letterboxd", key, value)}
                                                     />
                                                 ) : (
                                                     <DirectionalOverrideForm

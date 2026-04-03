@@ -12,7 +12,7 @@ type LooseCatalog = Record<string, unknown> & {
 };
 
 export type AIOMetadataFallbackMap = Record<string, string | CatalogFallback>;
-export type AIOMetadataCatalogSource = "mdblist" | "streaming" | "trakt";
+export type AIOMetadataCatalogSource = "mdblist" | "streaming" | "trakt" | "letterboxd";
 export type AIOMetadataCatalogType = CatalogFallback["type"];
 
 export type AIOMetadataNormalizedCatalog = {
@@ -67,6 +67,7 @@ const normalizeCatalogSource = (catalogId: string): AIOMetadataCatalogSource | u
     if (strippedId.startsWith("mdblist.")) return "mdblist";
     if (strippedId.startsWith("streaming.")) return "streaming";
     if (strippedId.startsWith("trakt.")) return "trakt";
+    if (strippedId.startsWith("letterboxd.")) return "letterboxd";
 
     return undefined;
 };

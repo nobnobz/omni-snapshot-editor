@@ -1299,7 +1299,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                             <div className="font-semibold flex items-center gap-2">
                                                                 {formatDisplayName(mg.name)}
                                                                 {activeMainFilter === "new" ? (
-                                                                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">NEW</Badge>
+                                                                    !mg.isDuplicate && <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">NEW</Badge>
                                                                 ) : activeMainFilter === "updates" ? (
                                                                     <Badge variant="outline" className={editorToneBadge.info}>Update</Badge>
                                                                 ) : isFullyImported ? (

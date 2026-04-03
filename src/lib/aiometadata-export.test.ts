@@ -359,7 +359,7 @@ describe("aiometadata export helpers", () => {
                 exportable: true,
             },
             {
-                name: "[Discover] Trending (All)   ",
+                name: "[Discover] Trending",
                 exportable: false,
             },
             {
@@ -506,9 +506,9 @@ describe("aiometadata export helpers", () => {
             "Catalog",
             "Unassigned",
         ]);
-        expect(inventory.widgets[2].items[0].occurrences[0].exportCatalog.name).toBe("[Header] Hero Movies (Movies) ");
-        expect(inventory.widgets[3].items[0].occurrences[0].exportCatalog.name).toBe("[Top Row] Top Shelf Shows (Shows)");
-        expect(inventory.widgets[4].items[0].occurrences[0].exportCatalog.name).toBe("[Catalog] Library Movies (Movies) ");
+        expect(inventory.widgets[2].items[0].occurrences[0].exportCatalog.name).toBe("[Header] Hero Movies");
+        expect(inventory.widgets[3].items[0].occurrences[0].exportCatalog.name).toBe("[Top Row] Top Shelf Shows");
+        expect(inventory.widgets[4].items[0].occurrences[0].exportCatalog.name).toBe("[Catalog] Library Movies");
     });
 
     it("uses catalog custom names for catalog manager widgets without duplicating suffixes", () => {
@@ -535,8 +535,8 @@ describe("aiometadata export helpers", () => {
         });
 
         expect(inventory.widgets[2].items[0].occurrences[0].exportCatalog.name).toBe("[Header] Header Spotlight (Movies) ");
-        expect(inventory.widgets[3].items[0].occurrences[0].exportCatalog.name).toBe("[Top Row] Top Shelf Shows (Shows)");
-        expect(inventory.widgets[4].items[0].occurrences[0].exportCatalog.name).toBe("[Catalog] Library Movies (Movies) ");
+        expect(inventory.widgets[3].items[0].occurrences[0].exportCatalog.name).toBe("[Top Row] Top Shelf Shows");
+        expect(inventory.widgets[4].items[0].occurrences[0].exportCatalog.name).toBe("[Catalog] Library Movies");
     });
 
     it("uses subgroup names for all catalogs and appends the All suffix", () => {
@@ -559,7 +559,7 @@ describe("aiometadata export helpers", () => {
             },
         });
 
-        expect(inventory.occurrences[0].exportCatalog.name).toBe("[Discover] Watchlist (All)   ");
+        expect(inventory.occurrences[0].exportCatalog.name).toBe("[Discover] Watchlist");
     });
 
     it("numbers duplicate subgroup-derived names after canonical dedupe", () => {
@@ -615,9 +615,134 @@ describe("aiometadata export helpers", () => {
         });
 
         expect(inventory.occurrences.map((occurrence) => occurrence.exportCatalog.name)).toEqual([
-            "[Discover] Watchlist All (All)   ",
-            "[Discover] Netflix Movies (Movies) ",
+            "[Discover] Watchlist All",
+            "[Discover] Netflix Movies",
         ]);
+    });
+
+    it("restores a Movies suffix for synced Trakt catalogs when the synced display type is movie", () => {
+        const inventory = buildAIOMetadataExportInventory({
+            currentValues: {
+                main_group_order: ["discover-group"],
+                main_catalog_groups: {
+                    "discover-group": {
+                        name: "Discover",
+                        subgroupNames: ["Latest"],
+                    },
+                },
+                catalog_groups: {
+                    Latest: ["all:trakt.list.55"],
+                },
+            },
+            importedCatalogs: [
+                {
+                    id: "trakt.list.55",
+                    name: "Latest Movies Trakt",
+                    type: "all",
+                    source: "trakt",
+                    displayType: "movie",
+                },
+            ],
+            customFallbacks: {
+                "trakt.list.55": { name: "Latest Movies Trakt", type: "all" },
+            },
+        });
+
+        expect(inventory.occurrences[0].exportCatalog.name).toBe("[Discover] Latest (Movies) ");
+        expect(inventory.occurrences[0].exportCatalog.type).toBe("all");
+        expect(inventory.occurrences[0].exportCatalog.displayType).toBe("movie");
+    });
+
+    it("restores a Shows suffix for synced Letterboxd catalogs while keeping the exported type movie", () => {
+        const inventory = buildAIOMetadataExportInventory({
+            currentValues: {
+                main_group_order: ["discover-group"],
+                main_catalog_groups: {
+                    "discover-group": {
+                        name: "Discover",
+                        subgroupNames: ["Lists"],
+                    },
+                },
+                catalog_groups: {
+                    Lists: ["movie:letterboxd.watchlist"],
+                },
+            },
+            importedCatalogs: [
+                {
+                    id: "letterboxd.watchlist",
+                    name: "Letterboxd Watchlist",
+                    type: "series",
+                    source: "letterboxd",
+                    displayType: "series",
+                },
+            ],
+            customFallbacks: {
+                "letterboxd.watchlist": { name: "Letterboxd Watchlist", type: "movie" },
+            },
+        });
+
+        expect(inventory.occurrences[0].exportCatalog.name).toBe("[Discover] Lists (Shows)");
+        expect(inventory.occurrences[0].exportCatalog.type).toBe("movie");
+        expect(inventory.occurrences[0].exportCatalog.displayType).toBe("movie");
+    });
+
+    it("exports letterboxd catalogs with a default cache TTL and cache-only overrides", () => {
+        const inventory = buildAIOMetadataExportInventory({
+            currentValues: {
+                main_group_order: ["discover-group"],
+                main_catalog_groups: {
+                    "discover-group": {
+                        name: "Discover",
+                        subgroupNames: ["Lists"],
+                    },
+                },
+                catalog_groups: {
+                    Lists: ["movie:letterboxd.watchlist"],
+                },
+            },
+            importedCatalogs: [],
+            customFallbacks: {
+                "letterboxd.watchlist": { name: "Letterboxd Watchlist", type: "movie" },
+            },
+        });
+
+        expect(inventory.exportableSources).toEqual(["letterboxd"]);
+        expect(buildAIOMetadataCatalogExport({
+            inventory,
+            includeAll: true,
+        }).catalogs).toEqual([
+            {
+                id: "letterboxd.watchlist",
+                type: "movie",
+                name: "[Discover] Lists",
+                enabled: true,
+                source: "letterboxd",
+                displayType: "movie",
+                cacheTTL: 86400,
+            },
+        ]);
+
+        expect(buildAIOMetadataCatalogExport({
+            inventory,
+            includeAll: true,
+            exportSettingsOverrides: {
+                widgets: {},
+                items: {},
+                catalogs: {
+                    "letterboxd.watchlist": {
+                        cacheTTL: 1800,
+                    },
+                },
+            },
+        }).catalogs[0]).toEqual({
+            id: "letterboxd.watchlist",
+            type: "movie",
+            name: "[Discover] Lists",
+            enabled: true,
+            source: "letterboxd",
+            displayType: "movie",
+            cacheTTL: 1800,
+        });
     });
 
     it("builds new-catalog and full-catalog exports in widget order and alphabetical group order", () => {
@@ -727,7 +852,7 @@ describe("aiometadata export helpers", () => {
         expect(fullExport.catalogs.map((catalog) => catalog.name)).toEqual([
             "[Discover] Streaming (Movies) ",
             "[Discover] Streaming (Shows)",
-            "[Discover] Trending (All)   ",
+            "[Discover] Trending",
             "[Discover] Trending (Movies) ",
             "[Discover] Trending (Movies) 2",
             "[Unassigned] Loose (Movies) ",

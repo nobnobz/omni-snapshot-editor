@@ -85,10 +85,15 @@ export type AIOMetadataStreamingExportOverride = {
     sortDirection?: "asc" | "desc";
 };
 
+export type AIOMetadataLetterboxdExportOverride = {
+    cacheTTL?: number;
+};
+
 export type AIOMetadataCatalogExportOverride = (
     AIOMetadataMDBListExportOverride
     | AIOMetadataTraktExportOverride
     | AIOMetadataStreamingExportOverride
+    | AIOMetadataLetterboxdExportOverride
 ) & {
     sortDirection?: "asc" | "desc";
 };
@@ -97,6 +102,7 @@ export type AIOMetadataSourceScopedOverrideMap = Partial<{
     mdblist: AIOMetadataMDBListExportOverride;
     trakt: AIOMetadataTraktExportOverride;
     streaming: AIOMetadataStreamingExportOverride;
+    letterboxd: AIOMetadataLetterboxdExportOverride;
 }>;
 
 export type AIOMetadataExportOverrideState = {
@@ -499,6 +505,9 @@ export const DEFAULT_AIOMETADATA_EXPORT_TEMPLATE: AIOMetadataExportTemplateDefin
                     "[Discover] Latest Shows (Shows)",
                     "[Discover] Latest (Movies)",
                     "[Discover] Latest (Shows)",
+                    "[Discover] Latest Movies",
+                    "[Discover] Latest Shows",
+                    "[Discover] Latest",
                 ],
             },
             values: {
@@ -515,6 +524,9 @@ export const DEFAULT_AIOMETADATA_EXPORT_TEMPLATE: AIOMetadataExportTemplateDefin
                     "[Discover] Latest Shows (Shows)",
                     "[Discover] Latest (Movies)",
                     "[Discover] Latest (Shows)",
+                    "[Discover] Latest Movies",
+                    "[Discover] Latest Shows",
+                    "[Discover] Latest",
                 ],
             },
             values: {
@@ -531,6 +543,9 @@ export const DEFAULT_AIOMETADATA_EXPORT_TEMPLATE: AIOMetadataExportTemplateDefin
                     "[Discover] Trending Shows (Shows)",
                     "[Discover] Trending (Movies)",
                     "[Discover] Trending (Shows)",
+                    "[Discover] Trending Movies",
+                    "[Discover] Trending Shows",
+                    "[Discover] Trending",
                 ],
             },
             values: {
@@ -547,6 +562,9 @@ export const DEFAULT_AIOMETADATA_EXPORT_TEMPLATE: AIOMetadataExportTemplateDefin
                     "[Discover] Trending Shows (Shows)",
                     "[Discover] Trending (Movies)",
                     "[Discover] Trending (Shows)",
+                    "[Discover] Trending Movies",
+                    "[Discover] Trending Shows",
+                    "[Discover] Trending",
                 ],
             },
             values: {

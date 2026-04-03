@@ -5,6 +5,7 @@ import type {
     AIOMetadataExportOverrideState,
     AIOMetadataTemplateApplyMode,
     AIOMetadataTemplateTargetRule,
+    AIOMetadataLetterboxdExportOverride,
     AIOMetadataMDBListExportOverride,
     AIOMetadataMDBListSort,
     AIOMetadataSourceScopedOverrideMap,
@@ -33,6 +34,8 @@ import {
 } from "./aiometadata-sync";
 import { ensureCatalogPrefix, formatDisplayName } from "./utils";
 import { normalizeMainGroupOrder, normalizeSubgroupNames } from "./main-group-utils";
+
+const LETTERBOXD_DEFAULT_CACHE_TTL = 86400;
 
 type ConfigValues = Record<string, unknown>;
 
@@ -129,6 +132,10 @@ export type AIOMetadataResolvedStreamingExportFields = {
     sortDirection?: "asc" | "desc";
 };
 
+export type AIOMetadataResolvedLetterboxdExportFields = {
+    cacheTTL: number;
+};
+
 const GENERAL_WIDGET_ID = "__unassigned__";
 const GENERAL_WIDGET_NAME = "Unassigned";
 const HEADER_WIDGET_ID = "__catalog_manager_header__";
@@ -151,6 +158,7 @@ const getCatalogSource = (catalogId: string): AIOMetadataCatalogSource | undefin
     if (strippedId.startsWith("mdblist.")) return "mdblist";
     if (strippedId.startsWith("streaming.")) return "streaming";
     if (strippedId.startsWith("trakt.")) return "trakt";
+    if (strippedId.startsWith("letterboxd.")) return "letterboxd";
 
     return undefined;
 };
@@ -195,6 +203,10 @@ const resolveCatalogType = (
     rawName: string,
     importedFallbacks: AIOMetadataFallbackMap
 ): AIOMetadataCatalogType => {
+    if (getCatalogSource(omniCatalogId) === "letterboxd") {
+        return "movie";
+    }
+
     const idType = normalizeAIOMetadataCatalogTypeFromId(omniCatalogId);
     if (idType) return idType;
 
@@ -212,6 +224,22 @@ const resolveCatalogType = (
     }
 
     return getCatalogTypePrefix(ensureCatalogPrefix(stripAIOMetadataCatalogTypePrefix(omniCatalogId), rawName)) || "movie";
+};
+
+const getSyncedDecoratedCatalogType = (
+    source: AIOMetadataCatalogSource,
+    importedCatalog?: AIOMetadataNormalizedCatalog
+): AIOMetadataCatalogType | null => {
+    if (source !== "trakt" && source !== "letterboxd") {
+        return importedCatalog?.displayType || importedCatalog?.type || null;
+    }
+
+    const syncedType = importedCatalog?.displayType || importedCatalog?.type;
+    if (syncedType === "movie" || syncedType === "series") {
+        return syncedType;
+    }
+
+    return null;
 };
 
 const resolveCatalogName = (
@@ -265,9 +293,24 @@ const stripDuplicatedWidgetPrefix = (widgetName: string, itemName: string) => {
     return normalizedItemName.replace(widgetPrefixPattern, "").trim();
 };
 
-const appendCatalogTypeLabel = (baseLabel: string, type: AIOMetadataCatalogType) => {
+const appendCatalogTypeLabel = (baseLabel: string, type: AIOMetadataCatalogType | null) => {
+    if (!type) return baseLabel.trim();
+
     const suffix = getCatalogTypeLabel(type);
     if (!suffix) return baseLabel;
+
+    const normalizedBase = baseLabel.trim().toLowerCase();
+    const normalizedSuffix = suffix.toLowerCase();
+    const hasTypeSuffix =
+        (normalizedSuffix === "movies" && /\b(movie|movies)\b/u.test(normalizedBase))
+        || (normalizedSuffix === "shows" && /\b(show|shows|series)\b/u.test(normalizedBase))
+        || (normalizedSuffix === "all" && /\ball\b/u.test(normalizedBase))
+        || (normalizedSuffix === "anime" && /\banime\b/u.test(normalizedBase))
+        || normalizedBase.endsWith(normalizedSuffix);
+
+    if (hasTypeSuffix) {
+        return baseLabel.trim();
+    }
 
     return `${baseLabel} (${suffix})${getCatalogTypeTrailingWhitespace(type)}`;
 };
@@ -275,7 +318,7 @@ const appendCatalogTypeLabel = (baseLabel: string, type: AIOMetadataCatalogType)
 const buildSubgroupCatalogExportName = (
     widgetName: string,
     itemName: string,
-    type: AIOMetadataCatalogType
+    type: AIOMetadataCatalogType | null
 ) => {
     const baseLabel = stripDuplicatedWidgetPrefix(widgetName, itemName) || itemName.trim();
     const subgroupLabelWithType = appendCatalogTypeLabel(baseLabel, type);
@@ -289,7 +332,7 @@ const isCatalogManagerWidget = (widgetId: string, itemName: string) =>
 const buildCatalogManagerExportName = (
     widgetName: string,
     catalogName: string,
-    type: AIOMetadataCatalogType
+    type: AIOMetadataCatalogType | null
 ) => {
     const baseLabel = stripDuplicatedWidgetPrefix(widgetName, normalizeNamePrefix(catalogName)) || normalizeNamePrefix(catalogName);
     const labelWithType = appendCatalogTypeLabel(baseLabel, type);
@@ -457,8 +500,11 @@ export function normalizeExportableCatalogOccurrence(
         type,
         source,
     }));
-    const displayType = importedCatalog?.displayType || type;
-    const namingType = getCatalogTypePrefix(linkedCatalog.omniCatalogId) === "anime" ? "anime" : type;
+    const namingType = getCatalogTypePrefix(linkedCatalog.omniCatalogId) === "anime"
+        ? "anime"
+        : source === "trakt" || source === "letterboxd"
+            ? getSyncedDecoratedCatalogType(source, importedCatalog)
+            : type;
     const exportName = isCatalogManagerWidget(linkedCatalog.widgetId, linkedCatalog.itemName)
         ? buildCatalogManagerExportName(widgetName, resolvedCatalogName, namingType)
         : buildSubgroupCatalogExportName(widgetName, linkedCatalog.itemName, namingType);
@@ -468,7 +514,7 @@ export function normalizeExportableCatalogOccurrence(
         name: exportName,
         enabled: true,
         source,
-        displayType,
+        displayType: source === "letterboxd" ? "movie" : importedCatalog?.displayType || type,
     };
     const comparisonKey = getComparisonKey(provisionalExportCatalog);
     const authoritativeImportedCatalog = importedCatalogsByComparisonKey.get(comparisonKey) || importedCatalog;
@@ -483,11 +529,11 @@ export function normalizeExportableCatalogOccurrence(
     const exportCatalog: AIOMetadataCatalogExportEntry = {
         ...extraExportFields,
         id: authoritativeImportedCatalog?.id || normalizedCatalogId,
-        type: authoritativeImportedCatalog?.type || type,
+        type: source === "letterboxd" ? "movie" : authoritativeImportedCatalog?.type || type,
         name: exportName,
         enabled: true,
         source,
-        displayType: authoritativeImportedCatalog?.displayType || type,
+        displayType: source === "letterboxd" ? "movie" : authoritativeImportedCatalog?.displayType || type,
     };
     const isSynced = hasAuthoritativeCatalogInventory && !!authoritativeImportedCatalog;
 
@@ -758,6 +804,14 @@ const getMDBListBaseExportFields = (
     };
 };
 
+const getLetterboxdBaseExportFields = (
+    occurrence: AIOMetadataCatalogOccurrence
+): AIOMetadataResolvedLetterboxdExportFields => ({
+    cacheTTL: isValidCacheTTL(occurrence.exportCatalog.cacheTTL)
+        ? occurrence.exportCatalog.cacheTTL as number
+        : LETTERBOXD_DEFAULT_CACHE_TTL,
+});
+
 const getSourceScopedOverride = <
     TOverride extends Record<string, unknown>,
 >(
@@ -954,6 +1008,44 @@ export function resolveStreamingExportOverrideForOccurrence(
     };
 }
 
+export function resolveLetterboxdExportOverrideForOccurrence(
+    occurrence: AIOMetadataCatalogOccurrence,
+    overrides?: AIOMetadataExportOverrideState
+): AIOMetadataResolvedLetterboxdExportFields | null {
+    if (occurrence.source !== "letterboxd") return null;
+
+    const base = getLetterboxdBaseExportFields(occurrence);
+    const widgetOverride = getSourceScopedOverride<AIOMetadataLetterboxdExportOverride>(
+        overrides?.widgets[occurrence.widgetId],
+        "letterboxd"
+    );
+    const itemOverride = getSourceScopedOverride<AIOMetadataLetterboxdExportOverride>(
+        overrides?.items[occurrence.itemId],
+        "letterboxd"
+    );
+    const catalogOverride = overrides?.catalogs[occurrence.comparisonKey] as AIOMetadataLetterboxdExportOverride | undefined;
+
+    const resolveField = <T,>(
+        key: keyof AIOMetadataLetterboxdExportOverride,
+        fallback: T
+    ) => {
+        const catalogValue = catalogOverride?.[key];
+        if (catalogValue !== undefined) return catalogValue as T;
+
+        const itemValue = itemOverride?.[key];
+        if (itemValue !== undefined) return itemValue as T;
+
+        const widgetValue = widgetOverride?.[key];
+        if (widgetValue !== undefined) return widgetValue as T;
+
+        return fallback;
+    };
+
+    return {
+        cacheTTL: resolveField("cacheTTL", base.cacheTTL),
+    };
+}
+
 export function applyExportOverrideToCatalog(
     occurrence: AIOMetadataCatalogOccurrence,
     overrides?: AIOMetadataExportOverrideState
@@ -998,6 +1090,22 @@ export function applyExportOverrideToCatalog(
             ...streamingCatalog,
             ...(resolved.sort !== undefined ? { sort: resolved.sort } : {}),
             ...(resolved.sortDirection !== undefined ? { sortDirection: resolved.sortDirection } : {}),
+        };
+    }
+
+    if (occurrence.source === "letterboxd") {
+        const resolved = resolveLetterboxdExportOverrideForOccurrence(occurrence, overrides);
+        const letterboxdCatalog = { ...occurrence.exportCatalog };
+        delete (letterboxdCatalog as { sort?: unknown }).sort;
+        delete (letterboxdCatalog as { order?: unknown }).order;
+        delete (letterboxdCatalog as { sortDirection?: unknown }).sortDirection;
+        if (!resolved) {
+            return letterboxdCatalog;
+        }
+
+        return {
+            ...letterboxdCatalog,
+            cacheTTL: resolved.cacheTTL,
         };
     }
 
@@ -1231,7 +1339,7 @@ export function applyAIOMetadataExportTemplate({
 
                         const nextCatalogOverride = removeOverrideFields(
                             nextOverrides.catalogs[occurrence.comparisonKey],
-                            widgetFieldNames as (keyof AIOMetadataCatalogExportOverride)[]
+                            widgetFieldNames as unknown as (keyof AIOMetadataCatalogExportOverride)[]
                         );
                         if (nextCatalogOverride) {
                             nextOverrides.catalogs[occurrence.comparisonKey] = nextCatalogOverride;
@@ -1291,7 +1399,7 @@ export function applyAIOMetadataExportTemplate({
 
                         const nextCatalogOverride = removeOverrideFields(
                             nextOverrides.catalogs[occurrence.comparisonKey],
-                            widgetFieldNames as (keyof AIOMetadataCatalogExportOverride)[]
+                            widgetFieldNames as unknown as (keyof AIOMetadataCatalogExportOverride)[]
                         );
                         if (nextCatalogOverride) {
                             nextOverrides.catalogs[occurrence.comparisonKey] = nextCatalogOverride;
@@ -1351,7 +1459,7 @@ export function applyAIOMetadataExportTemplate({
 
                         const nextCatalogOverride = removeOverrideFields(
                             nextOverrides.catalogs[occurrence.comparisonKey],
-                            widgetFieldNames as (keyof AIOMetadataCatalogExportOverride)[]
+                            widgetFieldNames as unknown as (keyof AIOMetadataCatalogExportOverride)[]
                         );
                         if (nextCatalogOverride) {
                             nextOverrides.catalogs[occurrence.comparisonKey] = nextCatalogOverride;
