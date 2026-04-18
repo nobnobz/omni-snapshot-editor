@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.6] - 2026-04-18
+### Added
+- Prepared the UME v3.0 release notes and refreshed the template guidance in the editor docs.
+
+### Changed
+- Bumped the in-app version display to `v0.6.6`.
+- Promoted the latest pattern editor polish, including the colored regex tags, to `main`.
+
 ## [0.6.5] - 2026-04-03
 ### Added
 - Added support for Letterbox catalogs in AIOMetadata export.
