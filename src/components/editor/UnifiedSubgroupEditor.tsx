@@ -36,6 +36,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Button } from "@/components/ui/button";
 import { GripVertical, ImageIcon, LinkIcon, ChevronRight, ChevronDown, RotateCcw, Search, X, Plus, Pencil, Trash2, FolderPlus, FolderInput, UploadCloud, AlertTriangle, Check, ArrowUpAZ, ArrowDownAZ } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
@@ -72,6 +73,7 @@ import { CATALOG_FALLBACKS, CatalogFallback } from "@/lib/catalog-fallbacks";
 import { Label } from "@/components/ui/label";
 import { normalizeSubgroupNames } from "@/lib/main-group-utils";
 import { shallowEqualObject } from "@/lib/equality";
+import type { AIOMetadataNormalizedCatalog } from "@/lib/aiometadata-sync";
 
 const stringArraysEqual = (a: string[], b: string[]) => (
     a.length === b.length && a.every((item, idx) => item === b[idx])
@@ -103,8 +105,15 @@ const subgroupCountInlineClass =
 const aiomMismatchBadgeClass =
     "inline-flex h-5 items-center justify-center gap-1 rounded-full border border-amber-300/45 bg-amber-500/12 px-1.5 text-[10px] font-semibold leading-none text-amber-700 shadow-sm dark:border-amber-400/25 dark:bg-amber-400/12 dark:text-amber-200";
 
+const missingImageBadgeClass =
+    "inline-flex h-5 items-center justify-center gap-1 rounded-full border border-amber-300/45 bg-amber-500/12 px-1.5 text-[10px] font-semibold leading-none text-amber-700 shadow-sm dark:border-amber-400/25 dark:bg-amber-400/12 dark:text-amber-200";
+
 const buildSubgroupAnchorId = (parentUUID: string, subgroupName: string) =>
     `subgroup-node-${parentUUID}-${subgroupName.toLowerCase().replace(/[^a-z0-9_-]+/g, "-")}`;
+
+const isMissingPosterImageUrl = (imageUrl: unknown) => (
+    typeof imageUrl !== "string" || imageUrl.trim().length === 0
+);
 
 const PosterUrlEditor = React.memo(function PosterUrlEditor({
     imageUrl,
@@ -134,6 +143,7 @@ const PosterUrlEditor = React.memo(function PosterUrlEditor({
     };
 
     const hasThumbPreview = /^https?:\/\//i.test(previewUrl.trim()) && !thumbLoadError;
+    const isPosterImageMissing = isMissingPosterImageUrl(imageUrl);
     const thumbFrameClass = thumbAspect === "landscape"
         ? "aspect-[16/9] w-full max-w-[15rem] sm:h-20 sm:w-32 sm:aspect-auto"
         : thumbAspect === "portrait"
@@ -150,9 +160,12 @@ const PosterUrlEditor = React.memo(function PosterUrlEditor({
                 )}
             >
                 <div className="flex flex-col items-center gap-2 sm:block">
-                    <Label className="self-start text-[10px] uppercase font-bold tracking-[0.16em] text-foreground/50 sm:hidden">
-                        Poster Image URL
-                    </Label>
+                    <div className="flex w-full items-center justify-between gap-2 sm:hidden">
+                        <Label className="text-[10px] uppercase font-bold tracking-[0.16em] text-foreground/50">
+                            Poster Image URL
+                        </Label>
+                        {isPosterImageMissing && <MissingImageBadge className="shrink-0" />}
+                    </div>
                     <div
                         className={cn(
                             thumbFrameClass,
@@ -188,7 +201,10 @@ const PosterUrlEditor = React.memo(function PosterUrlEditor({
                     </div>
                 </div>
                 <div className="min-w-0 flex-1 space-y-1.5">
-                    <Label className="hidden sm:block text-xs uppercase font-bold tracking-widest text-foreground/70">Poster Image URL</Label>
+                    <div className="hidden items-center gap-2 sm:flex">
+                        <Label className="text-xs uppercase font-bold tracking-widest text-foreground/70">Poster Image URL</Label>
+                        {isPosterImageMissing && <MissingImageBadge className="shrink-0" />}
+                    </div>
                     <LockedUrlInput
                         value={imageUrl}
                         onCommit={(nextUrl) => commitUrl(nextUrl ?? "")}
@@ -199,6 +215,11 @@ const PosterUrlEditor = React.memo(function PosterUrlEditor({
                         copyTitle="Copy image URL"
                         clearTitle="Delete image URL"
                     />
+                    {isPosterImageMissing && (
+                        <p className="text-xs font-medium text-amber-700 dark:text-amber-200">
+                            Missing poster image URL.
+                        </p>
+                    )}
                 </div>
             </div>
         </div>
@@ -226,6 +247,34 @@ function AIOMismatchBadge({
     );
 }
 
+function MissingImageBadge({
+    count = 1,
+    className,
+    showCount = false,
+}: {
+    count?: number;
+    className?: string;
+    showCount?: boolean;
+}) {
+    if (count <= 0) return null;
+
+    const title = count === 1
+        ? showCount ? "1 missing poster image URL" : "Missing poster image URL"
+        : `${count} missing poster image URLs`;
+
+    return (
+        <Badge
+            variant="outline"
+            className={cn(missingImageBadgeClass, className)}
+            title={title}
+            aria-label={title}
+        >
+            <AlertTriangle className="h-3 w-3" />
+            {(showCount || count > 1) && <span>{count}</span>}
+        </Badge>
+    );
+}
+
 const focusSearchInput = (input: HTMLInputElement | null) => {
     if (!input) return;
     input.focus({ preventScroll: true });
@@ -247,6 +296,56 @@ const preventTouchDropdownAutoOpen = (event: React.PointerEvent<HTMLButtonElemen
     if (event.pointerType === "touch") {
         event.preventDefault();
         event.stopPropagation();
+    }
+};
+
+const isPostimagesGalleryUrl = (value: string) => {
+    try {
+        const url = new URL(value);
+        return url.protocol === "https:"
+            && url.hostname.toLowerCase() === "postimg.cc"
+            && url.pathname.startsWith("/gallery/");
+    } catch {
+        return false;
+    }
+};
+
+const fetchGalleryText = async (galleryUrl: string) => {
+    try {
+        const response = await fetch(galleryUrl, { cache: "no-store" });
+        if (!response.ok) {
+            throw new Error(`Postimages returned ${response.status}`);
+        }
+        return {
+            text: await response.text(),
+            source: "direct" as const,
+        };
+    } catch (directError) {
+        if (!isPostimagesGalleryUrl(galleryUrl)) {
+            throw directError;
+        }
+
+        try {
+            const rawFallbackUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(galleryUrl)}`;
+            const response = await fetch(rawFallbackUrl, { cache: "no-store" });
+            if (!response.ok) {
+                throw new Error(`Postimages raw fallback returned ${response.status}`);
+            }
+            return {
+                text: await response.text(),
+                source: "raw-fallback" as const,
+            };
+        } catch {
+            const readerFallbackUrl = `https://r.jina.ai/${galleryUrl}`;
+            const response = await fetch(readerFallbackUrl, { cache: "no-store" });
+            if (!response.ok) {
+                throw new Error(`Postimages reader fallback returned ${response.status}`);
+            }
+            return {
+                text: await response.text(),
+                source: "reader-fallback" as const,
+            };
+        }
     }
 };
 
@@ -753,6 +852,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
     const activeCatalogName = activeCatalogId
         ? resolveCatalogName(activeCatalogId, customNames)
         : "";
+    const isPosterImageMissing = isMissingPosterImageUrl(imageUrl);
 
     const handleHeaderClick = (event: React.MouseEvent<HTMLDivElement>) => {
         const target = event.target as HTMLElement;
@@ -825,6 +925,7 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                         <span className="truncate font-bold text-sm text-foreground transition-colors group-hover/subgroup:text-primary dark:group-hover/subgroup:text-primary">{formatDisplayName(subgroupName)}</span>
                         <div className="ml-2 flex shrink-0 items-center gap-1.5">
                             <AIOMismatchBadge count={mismatchCount} />
+                            {isPosterImageMissing && <MissingImageBadge />}
                             <Badge
                                 variant="outline"
                                 className={cn(subgroupCountBadgeClass, "shrink-0")}
@@ -1058,10 +1159,10 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                         )}
 
                         {/* Add New Catalog Dialog */}
-                        <div className="pt-1 sm:pt-0">
-                            <SubgroupCatalogPickerDialog
-                                open={isAddMenuOpen}
-                                onOpenChange={(nextOpen) => {
+	                        <div className="pt-1 sm:pt-0">
+	                            <SubgroupCatalogPickerDialog
+	                                open={isAddMenuOpen}
+	                                onOpenChange={(nextOpen) => {
                                     setIsAddMenuOpen(nextOpen);
                                     if (!nextOpen) {
                                         resetAddCatalogUi();
@@ -1075,14 +1176,14 @@ function SortableSubgroupNode({ subgroupName, parentUUID, onUnassign, isExpanded
                                 isCatalogSelected={(catalogId) => pendingCatalogSelections.has(catalogId)}
                                 onToggleCatalog={togglePendingCatalogSelection}
                                 onApplySelection={handleAddSelectedCatalogs}
-                                onResetSelection={resetAddCatalogUi}
-                            />
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
+	                                onResetSelection={resetAddCatalogUi}
+	                            />
+	                        </div>
+	                    </div>
+	                </div>
+	            )}
+	        </div>
+	    );
 }
 
 // ----------------------------------------------------------------------
@@ -1111,14 +1212,19 @@ const MainGroupNode = React.memo(function MainGroupNode({
     manualSubgroupOrderSnapshot?: string[],
     onManualSubgroupOrderSnapshotChange?: (uuid: string, order: string[]) => void,
 }) {
-    const { mainGroupData } = useConfigSelector((state) => ({
+    const { mainGroupData, catalogGroupImageUrls } = useConfigSelector((state) => ({
         mainGroupData: state.currentValues.main_catalog_groups?.[uuid] || {},
+        catalogGroupImageUrls: state.currentValues.catalog_group_image_urls || {},
     }), shallowEqualObject);
     const { updateValue, renameMainCatalogGroup, removeMainCatalogGroup } = useConfigActions();
     const [isRenaming, setIsRenaming] = useState(false);
 
     const posterType = mainGroupData.posterType || "Poster";
     const posterSize = mainGroupData.posterSize || "Default";
+    const missingImageCount = React.useMemo(
+        () => subgroupNames.filter((subgroupName) => isMissingPosterImageUrl(catalogGroupImageUrls[subgroupName])).length,
+        [catalogGroupImageUrls, subgroupNames]
+    );
 
     // Sortable Hook for the Main Group itself
     const {
@@ -1295,6 +1401,7 @@ const MainGroupNode = React.memo(function MainGroupNode({
                                     {subgroupNames.length} {subgroupNames.length === 1 ? "Group" : "Groups"}
                                 </Badge>
                                 <AIOMismatchBadge count={mismatchCount} />
+                                <MissingImageBadge count={missingImageCount} showCount />
                                 {subgroupNames.length === 0 && (
                                     <span className="text-[10px] text-foreground/30 font-bold uppercase tracking-wider">Empty Group</span>
                                 )}
@@ -1305,8 +1412,8 @@ const MainGroupNode = React.memo(function MainGroupNode({
 
                 <AccordionContent className="border-t border-slate-200/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.18),rgba(248,250,252,0.11))] px-4 pb-5 pt-3 dark:border-white/8 dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.008))] sm:p-5">
                     <div className="mb-5 flex flex-col gap-3 sm:mb-6 sm:gap-4">
-                        <div className="flex w-full flex-col gap-2 rounded-none border-0 bg-transparent p-0 shadow-none backdrop-blur-0 sm:w-auto sm:flex-row sm:items-center sm:gap-2 sm:rounded-lg sm:border sm:border-slate-200/80 sm:bg-[linear-gradient(180deg,rgba(255,255,255,0.62),rgba(248,250,252,0.52))] sm:p-1 sm:shadow-[0_6px_16px_rgba(15,23,42,0.04)] sm:backdrop-blur-md dark:sm:border-white/10 dark:sm:bg-[linear-gradient(180deg,rgba(20,23,29,0.9),rgba(17,20,26,0.88))] dark:sm:shadow-[0_7px_16px_rgba(2,6,23,0.1)]">
-                            <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center sm:gap-2">
+                        <div className="flex w-full flex-col gap-2 rounded-none border-0 bg-transparent p-0 shadow-none backdrop-blur-0 sm:rounded-lg sm:border sm:border-slate-200/80 sm:bg-[linear-gradient(180deg,rgba(255,255,255,0.62),rgba(248,250,252,0.52))] sm:p-1 sm:shadow-[0_6px_16px_rgba(15,23,42,0.04)] sm:backdrop-blur-md dark:sm:border-white/10 dark:sm:bg-[linear-gradient(180deg,rgba(20,23,29,0.9),rgba(17,20,26,0.88))] dark:sm:shadow-[0_7px_16px_rgba(2,6,23,0.1)] lg:w-auto lg:flex-row lg:items-center lg:gap-2">
+                            <div className="grid w-full grid-cols-2 gap-2 lg:flex lg:w-auto lg:items-center lg:gap-2">
                             <DropdownMenu open={isLayoutMenuOpen} onOpenChange={setIsLayoutMenuOpen}>
                                 <DropdownMenuTrigger asChild>
                                     <Button
@@ -1316,13 +1423,13 @@ const MainGroupNode = React.memo(function MainGroupNode({
                                         onClick={() => setIsLayoutMenuOpen((previous) => !previous)}
                                         className={cn(
                                             editorSurface.field,
-                                            "h-10 min-w-0 w-full justify-start rounded-xl border px-3 text-xs font-medium tracking-tight text-foreground/72 hover:text-foreground hover:bg-muted/60 dark:hover:bg-muted/40 sm:h-8 sm:w-auto sm:max-w-none sm:border-0 sm:bg-transparent sm:px-2.5 sm:text-sm sm:shadow-none"
+                                            "h-10 min-w-0 w-full justify-start rounded-xl border px-3 text-xs font-medium tracking-tight text-foreground/72 hover:text-foreground hover:bg-muted/60 dark:hover:bg-muted/40 lg:h-8 lg:w-auto lg:max-w-none lg:border-0 lg:bg-transparent lg:px-2.5 lg:text-sm lg:shadow-none"
                                         )}
                                     >
-                                        <span className="hidden sm:inline">Layout:</span>
-                                        <span className="text-foreground sm:ml-1 min-w-0 truncate">
-                                            <span className="hidden sm:inline font-bold">{posterType} / {posterSize}</span>
-                                            <span className="sm:hidden">Layout: {posterType} · {posterSize}</span>
+                                        <span className="hidden lg:inline">Layout:</span>
+                                        <span className="text-foreground lg:ml-1 min-w-0 truncate">
+                                            <span className="hidden lg:inline font-bold">{posterType} / {posterSize}</span>
+                                            <span className="lg:hidden">Layout: {posterType} · {posterSize}</span>
                                         </span>
                                         <ChevronDown className="w-3.5 h-3.5 ml-1 opacity-50 shrink-0" />
                                     </Button>
@@ -1364,24 +1471,24 @@ const MainGroupNode = React.memo(function MainGroupNode({
                                         onClick={() => setIsSortMenuOpen((previous) => !previous)}
                                         className={cn(
                                             editorSurface.field,
-                                            "h-10 min-w-0 w-full justify-start gap-1 rounded-xl border px-3 text-xs text-foreground/72 hover:text-foreground hover:bg-muted/60 dark:hover:bg-muted/40 sm:h-8 sm:w-auto sm:max-w-none sm:justify-start sm:border-0 sm:bg-transparent sm:px-2.5 sm:text-sm sm:shadow-none"
+                                            "h-10 min-w-0 w-full justify-start gap-1 rounded-xl border px-3 text-xs text-foreground/72 hover:text-foreground hover:bg-muted/60 dark:hover:bg-muted/40 lg:h-8 lg:w-auto lg:max-w-none lg:justify-start lg:border-0 lg:bg-transparent lg:px-2.5 lg:text-sm lg:shadow-none"
                                         )}
                                         title="Sort subgroups"
                                         aria-label="Sort subgroups"
                                     >
-                                        <span className="sm:hidden">Sort:</span>
+                                        <span className="lg:hidden">Sort:</span>
                                         {subgroupSortMode === "desc" ? (
-                                            <ArrowDownAZ className="hidden w-4 h-4 sm:block" />
+                                            <ArrowDownAZ className="hidden w-4 h-4 lg:block" />
                                         ) : subgroupSortMode === "manual" ? (
-                                            <RotateCcw className="hidden w-4 h-4 sm:block" />
+                                            <RotateCcw className="hidden w-4 h-4 lg:block" />
                                         ) : (
-                                            <ArrowUpAZ className="hidden w-4 h-4 sm:block" />
+                                            <ArrowUpAZ className="hidden w-4 h-4 lg:block" />
                                         )}
-                                        <span className="font-bold text-foreground sm:hidden">
+                                        <span className="font-bold text-foreground lg:hidden">
                                             {sortLabel}
                                         </span>
-                                        <span className="hidden sm:inline text-foreground/70">Sort:</span>
-                                        <span className="hidden sm:inline font-bold text-foreground">{sortLabel}</span>
+                                        <span className="hidden lg:inline text-foreground/70">Sort:</span>
+                                        <span className="hidden lg:inline font-bold text-foreground">{sortLabel}</span>
                                         <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
                                     </Button>
                                 </DropdownMenuTrigger>
@@ -1409,9 +1516,9 @@ const MainGroupNode = React.memo(function MainGroupNode({
                                 </DropdownMenuContent>
                             </DropdownMenu>
 
-                            <div className="hidden sm:block w-px h-4 bg-border mx-1 shrink-0" />
+                            <div className="hidden lg:block w-px h-4 bg-border mx-1 shrink-0" />
 
-                            <div className="ml-auto hidden items-center justify-end gap-1.5 shrink-0 sm:flex sm:gap-2">
+                            <div className="ml-auto hidden items-center justify-end gap-1.5 shrink-0 lg:flex lg:gap-2">
                                 <Button
                                     variant="ghost"
                                     size="icon"
@@ -1451,24 +1558,21 @@ const MainGroupNode = React.memo(function MainGroupNode({
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
-                                <div className="hidden sm:block w-px h-4 bg-border mx-1 shrink-0" />
+                                <div className="hidden lg:block w-px h-4 bg-border mx-1 shrink-0" />
 
                                 <Button
-                                    variant="outline"
                                     size="sm"
                                     onClick={() => onAddSubgroup?.(uuid)}
-                                    className={cn(
-                                        editorSurface.field,
-                                        "h-8 shrink-0 rounded-lg border-primary/18 bg-primary/[0.08] px-2.5 text-xs font-semibold text-primary shadow-[0_4px_10px_rgba(37,99,235,0.06)] hover:border-primary/26 hover:bg-primary/[0.12] hover:text-primary dark:border-primary/24 dark:bg-primary/[0.12] dark:hover:bg-primary/[0.16] sm:text-sm"
-                                    )}
+                                    className="h-8 shrink-0 rounded-lg bg-primary px-2.5 text-xs font-semibold text-primary-foreground shadow-[0_8px_18px_rgba(37,99,235,0.08)] transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out hover:bg-primary/92 active:scale-[0.985] xl:text-sm"
                                 >
                                     <Plus className="w-4 h-4" />
-                                    <span className="hidden sm:inline">New Subgroup</span>
+                                    <span className="hidden lg:inline xl:hidden">New</span>
+                                    <span className="hidden xl:inline">New Subgroup</span>
                                 </Button>
                             </div>
                             </div>
 
-                            <div className="grid grid-cols-3 gap-2 sm:hidden">
+                            <div className="grid grid-cols-3 gap-2 lg:hidden">
                                 <Button
                                     size="sm"
                                     onClick={() => onAddSubgroup?.(uuid)}
@@ -1771,6 +1875,7 @@ const UnassignedSubgroupRow = React.memo(function UnassignedSubgroupRow({
     const activeCatalogName = activeCatalogId
         ? resolveCatalogName(activeCatalogId, customNames)
         : "";
+    const isPosterImageMissing = isMissingPosterImageUrl(imageUrl);
 
     const [localExpanded, setLocalExpanded] = useState(false);
     const isExpanded = propIsExpanded !== undefined ? propIsExpanded : localExpanded;
@@ -1798,6 +1903,7 @@ const UnassignedSubgroupRow = React.memo(function UnassignedSubgroupRow({
                         {formatDisplayName(groupName)}
                     </span>
                     <AIOMismatchBadge count={mismatchCount} className="ml-1 shrink-0" />
+                    {isPosterImageMissing && <MissingImageBadge className="ml-1 shrink-0" />}
                 </button>
 
                 {/* Right: Actions */}
@@ -2066,22 +2172,30 @@ const UnassignedSubgroupRow = React.memo(function UnassignedSubgroupRow({
 export function UnifiedSubgroupEditor({
     onOpenGuide,
     aiomMismatchSummary,
+    importedAIOMetadataCatalogs,
 }: {
     onOpenGuide?: (guide: "install" | "update" | "use") => void;
     aiomMismatchSummary: AIOMetadataMismatchAnalysis;
+    importedAIOMetadataCatalogs?: AIOMetadataNormalizedCatalog[] | null;
 }) {
     const {
         subgroupOrderRaw,
         mainCatalogGroups,
         mainGroupOrderRaw,
         catalogGroups,
+        catalogGroupImageUrls,
     } = useConfigSelector((state) => ({
         subgroupOrderRaw: state.currentValues["subgroup_order"],
         mainCatalogGroups: (state.currentValues["main_catalog_groups"] as Record<string, { name?: string; subgroupNames?: string[] }> | undefined) ?? EMPTY_RECORD,
         mainGroupOrderRaw: state.currentValues["main_group_order"],
         catalogGroups: state.currentValues.catalog_groups || {},
+        catalogGroupImageUrls: state.currentValues.catalog_group_image_urls || {},
     }), shallowEqualObject);
-    const { updateValue, assignCatalogGroup, removeCatalogGroup } = useConfigActions();
+    const {
+        updateValue,
+        assignCatalogGroup,
+        removeCatalogGroup,
+    } = useConfigActions();
     const subgroupOrder = React.useMemo(
         () => ((subgroupOrderRaw as Record<string, unknown> | undefined) ?? EMPTY_RECORD),
         [subgroupOrderRaw]
@@ -2108,7 +2222,17 @@ export function UnifiedSubgroupEditor({
     const [recentUnassigns, setRecentUnassigns] = useState<Record<string, string>>({}); // subgroupName -> parentUuid
     const [expandedUnassignedSubgroup, setExpandedUnassignedSubgroup] = useState<string | null>(null);
     const [isUnassignedSectionOpen, setIsUnassignedSectionOpen] = useState(false);
+    const [isDevCatalogReassignOpen, setIsDevCatalogReassignOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedMissingMainGroups, setSelectedMissingMainGroups] = useState<Set<string>>(new Set());
+    const [postimagesGalleryUrl, setPostimagesGalleryUrl] = useState("");
+    const [postimagesPasteInput, setPostimagesPasteInput] = useState("");
+    const [isPostimagesPasteOpen, setIsPostimagesPasteOpen] = useState(false);
+    const [isPostimagesPreviewLoading, setIsPostimagesPreviewLoading] = useState(false);
+    const [postimagesStatus, setPostimagesStatus] = useState<{ tone: "neutral" | "warning" | "success" | "danger"; message: string } | null>(null);
+    const [postimagesReport, setPostimagesReport] = useState<any>(null);
+    const [postimagesApplyReport, setPostimagesApplyReport] = useState<any>(null);
+    const [selectedPostimagesMatchIds, setSelectedPostimagesMatchIds] = useState<Set<string>>(new Set());
     const deferredSearchTerm = useDeferredValue(searchTerm);
     const searchInputRef = useRef<HTMLInputElement>(null);
     const mainGroupScrollTimeoutRef = useRef<number | null>(null);
@@ -2227,6 +2351,12 @@ export function UnifiedSubgroupEditor({
             updateValue(["main_group_order"], newArray);
         }
     };
+
+    const availableAIOMetadataCatalogs = React.useMemo(
+        () => importedAIOMetadataCatalogs ?? [],
+        [importedAIOMetadataCatalogs]
+    );
+    const hasImportedAIOMetadataCatalogs = availableAIOMetadataCatalogs.length > 0;
 
     // Filter unassigned subgroups
     const assignedGroups = new Set<string>();

@@ -25,7 +25,6 @@ export type AIOMetadataMDBListSort =
     | "imdbvotes"
     | "last_air_date"
     | "imdbpopular"
-    | "tmdbpopular"
     | "rogerbert"
     | "rtomatoes"
     | "rtaudience"
@@ -38,7 +37,8 @@ export type AIOMetadataMDBListSort =
     | "runtime"
     | "title"
     | "added"
-    | "random";
+    | "random"
+    | "imdbpopular";
 
 export type AIOMetadataTraktSort =
     | "default"
@@ -133,7 +133,6 @@ export const MDBLIST_SORT_OPTIONS: Array<{ value: AIOMetadataMDBListSort; label:
     { value: "imdbvotes", label: "IMDb Votes" },
     { value: "last_air_date", label: "Last Air Date" },
     { value: "imdbpopular", label: "IMDb Popular" },
-    { value: "tmdbpopular", label: "TMDb Popular" },
     { value: "rogerbert", label: "Roger Ebert" },
     { value: "rtomatoes", label: "Rotten Tomatoes" },
     { value: "rtaudience", label: "RT Audience" },
@@ -319,6 +318,8 @@ export const DEFAULT_AIOMETADATA_EXPORT_TEMPLATE: AIOMetadataExportTemplateDefin
                     "Streaming Services",
                     "Service",
                     "Services",
+                    "Studio",
+                    "Studios",
                     "Decades",
                     "Year",
                     "Years",
@@ -329,10 +330,10 @@ export const DEFAULT_AIOMETADATA_EXPORT_TEMPLATE: AIOMetadataExportTemplateDefin
                     "Actor",
                     "Actors",
                 ],
-                namePrefixes: ["[Service]", "[Year]", "[Genre]", "[Director]", "[Actor]"],
+                namePrefixes: ["[Service]", "[Studio]", "[Year]", "[Genre]", "[Director]", "[Actor]"],
             },
             values: {
-                sort: "tmdbpopular",
+                sort: "imdbpopular",
                 order: "asc",
                 cacheTTL: 43200,
             },
@@ -344,6 +345,8 @@ export const DEFAULT_AIOMETADATA_EXPORT_TEMPLATE: AIOMetadataExportTemplateDefin
                     "Streaming Services",
                     "Service",
                     "Services",
+                    "Studio",
+                    "Studios",
                     "Decades",
                     "Year",
                     "Years",
@@ -354,7 +357,7 @@ export const DEFAULT_AIOMETADATA_EXPORT_TEMPLATE: AIOMetadataExportTemplateDefin
                     "Actor",
                     "Actors",
                 ],
-                namePrefixes: ["[Service]", "[Year]", "[Genre]", "[Director]", "[Actor]"],
+                namePrefixes: ["[Service]", "[Studio]", "[Year]", "[Genre]", "[Director]", "[Actor]"],
             },
             values: {
                 sort: "popularity",
@@ -369,6 +372,8 @@ export const DEFAULT_AIOMETADATA_EXPORT_TEMPLATE: AIOMetadataExportTemplateDefin
                     "Streaming Services",
                     "Service",
                     "Services",
+                    "Studio",
+                    "Studios",
                     "Decades",
                     "Year",
                     "Years",
@@ -379,7 +384,7 @@ export const DEFAULT_AIOMETADATA_EXPORT_TEMPLATE: AIOMetadataExportTemplateDefin
                     "Actor",
                     "Actors",
                 ],
-                namePrefixes: ["[Service]", "[Year]", "[Genre]", "[Director]", "[Actor]"],
+                namePrefixes: ["[Service]", "[Studio]", "[Year]", "[Genre]", "[Director]", "[Actor]"],
             },
             values: {
                 sort: "popularity",
@@ -424,6 +429,41 @@ export const DEFAULT_AIOMETADATA_EXPORT_TEMPLATE: AIOMetadataExportTemplateDefin
         {
             kind: "mdblist-group",
             match: {
+                widgetNames: ["Award", "Awards"],
+                namePrefixes: ["[Awards]"],
+            },
+            values: {
+                sort: "released",
+                order: "asc",
+                cacheTTL: 43200,
+            },
+        },
+        {
+            kind: "trakt-group",
+            match: {
+                widgetNames: ["Award", "Awards"],
+                namePrefixes: ["[Awards]"],
+            },
+            values: {
+                sort: "released",
+                sortDirection: "desc",
+                cacheTTL: 43200,
+            },
+        },
+        {
+            kind: "streaming-group",
+            match: {
+                widgetNames: ["Award", "Awards"],
+                namePrefixes: ["[Awards]"],
+            },
+            values: {
+                sort: "release_date",
+                sortDirection: "asc",
+            },
+        },
+        {
+            kind: "mdblist-group",
+            match: {
                 widgetNames: ["Header"],
                 namePrefixes: ["[Header]"],
             },
@@ -462,114 +502,19 @@ export const DEFAULT_AIOMETADATA_EXPORT_TEMPLATE: AIOMetadataExportTemplateDefin
                 names: ["IMDb Top Shows"],
             },
             values: {
-                sort: "tmdbpopular",
-                order: "asc",
-                cacheTTL: 43200,
-            },
-        },
-        {
-            kind: "mdblist-catalog",
-            match: {
-                names: ["Oscars 2026"],
-            },
-            values: {
-                sort: "tmdbpopular",
-                order: "asc",
-                cacheTTL: 43200,
-            },
-        },
-        {
-            kind: "mdblist-catalog",
-            match: {
-                names: [
-                    "Academy Awards",
-                    "Emmy Awards",
-                    "Golden Globe Awards",
-                    "Cannes Film Festival",
-                    "Marvel",
-                    "DC",
-                    "DC Universe",
-                ],
-            },
-            values: {
-                sort: "released",
-                order: "asc",
-                cacheTTL: 43200,
-            },
-        },
-        {
-            kind: "mdblist-catalog",
-            match: {
-                namePrefixes: [
-                    "[Discover] Latest Movies (Movies)",
-                    "[Discover] Latest Shows (Shows)",
-                    "[Discover] Latest (Movies)",
-                    "[Discover] Latest (Shows)",
-                    "[Discover] Latest Movies",
-                    "[Discover] Latest Shows",
-                    "[Discover] Latest",
-                ],
-            },
-            values: {
-                sort: "released",
-                order: "asc",
-                cacheTTL: 43200,
-            },
-        },
-        {
-            kind: "trakt-catalog",
-            match: {
-                namePrefixes: [
-                    "[Discover] Latest Movies (Movies)",
-                    "[Discover] Latest Shows (Shows)",
-                    "[Discover] Latest (Movies)",
-                    "[Discover] Latest (Shows)",
-                    "[Discover] Latest Movies",
-                    "[Discover] Latest Shows",
-                    "[Discover] Latest",
-                ],
-            },
-            values: {
-                sort: "released",
-                sortDirection: "desc",
-                cacheTTL: 43200,
-            },
-        },
-        {
-            kind: "mdblist-catalog",
-            match: {
-                namePrefixes: [
-                    "[Discover] Trending Movies (Movies)",
-                    "[Discover] Trending Shows (Shows)",
-                    "[Discover] Trending (Movies)",
-                    "[Discover] Trending (Shows)",
-                    "[Discover] Trending Movies",
-                    "[Discover] Trending Shows",
-                    "[Discover] Trending",
-                ],
-            },
-            values: {
                 sort: "imdbpopular",
                 order: "asc",
                 cacheTTL: 43200,
             },
         },
         {
-            kind: "trakt-catalog",
+            kind: "mdblist-catalog",
             match: {
-                namePrefixes: [
-                    "[Discover] Trending Movies (Movies)",
-                    "[Discover] Trending Shows (Shows)",
-                    "[Discover] Trending (Movies)",
-                    "[Discover] Trending (Shows)",
-                    "[Discover] Trending Movies",
-                    "[Discover] Trending Shows",
-                    "[Discover] Trending",
-                ],
+                names: ["Marvel Cinematic Universe", "DC Extended Universe"],
             },
             values: {
-                sort: "popularity",
-                sortDirection: "desc",
+                sort: "released",
+                order: "asc",
                 cacheTTL: 43200,
             },
         },

@@ -820,12 +820,12 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
             ...prev
         ]);
 
-        setCurrentValues(prev => disableMainGroup(uuid, prev));
+        setCurrentValues(prev => validateAndFix(disableMainGroup(uuid, prev)));
     };
 
     const restoreMainGroup = (item: DeletedMainGroup) => {
         measureSync("restoreMainGroup", () => {
-            setCurrentValues(prev => produce(prev, (draft) => {
+            setCurrentValues(prev => validateAndFix(produce(prev, (draft) => {
                 if (!draft.main_catalog_groups) draft.main_catalog_groups = {};
                 draft.main_catalog_groups[item.uuid] = {
                     name: item.name,
@@ -843,7 +843,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
                 if (!draft.main_group_order.includes(item.uuid)) {
                     draft.main_group_order.push(item.uuid);
                 }
-            }));
+            })));
         }, { uuid: item.uuid });
 
         setDeletedMainGroups(prev => prev.filter(i => i.uuid !== item.uuid || i.deletedAt !== item.deletedAt));
@@ -870,7 +870,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
             ...prev
         ]);
 
-        setCurrentValues(prev => disableGroup(name, prev));
+        setCurrentValues(prev => validateAndFix(disableGroup(name, prev)));
     };
 
     const unassignCatalogGroup = (name: string) => {
@@ -905,7 +905,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
 
     const restoreSubgroup = (item: DeletedSubgroup) => {
         measureSync("restoreSubgroup", () => {
-            setCurrentValues(prev => produce(prev, (draft) => {
+            setCurrentValues(prev => validateAndFix(produce(prev, (draft) => {
                 if (!draft.catalog_groups) draft.catalog_groups = {};
                 draft.catalog_groups[item.name] = item.catalogs;
 
@@ -933,7 +933,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
                         draft.main_catalog_groups[targetUUID].subgroupNames.push(item.name);
                     }
                 }
-            }));
+            })));
         }, { name: item.name });
 
         setDeletedSubgroups(prev => prev.filter(i => i.name !== item.name || i.deletedAt !== item.deletedAt));

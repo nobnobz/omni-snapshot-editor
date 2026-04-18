@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, useEffect, useRef, Fragment, useMemo, useCallback } from "react";
+import { useId, useState, useEffect, useRef, Fragment, useMemo, useCallback, memo } from "react";
 import { useConfigActions, useConfigSelector } from "@/context/ConfigContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,6 +49,7 @@ import {
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogHeader,
     DialogTitle,
     DialogFooter
@@ -72,13 +73,13 @@ import {
 } from "@/lib/aiometadata-sync";
 import { cn, isIos } from "@/lib/utils";
 import { useTheme } from "next-themes";
-import { editorAction, editorHover, editorSurface } from "@/components/editor/ui/style-contract";
+import { editorAction, editorHover, editorLayout, editorSurface } from "@/components/editor/ui/style-contract";
 import { EditorNotice } from "@/components/editor/ui/EditorNotice";
 import { AppMeta } from "@/components/editor/AppMeta";
-import { EditorPerfDebugPanel } from "@/components/editor/EditorPerfDebugPanel";
 import { measureAsync, measureSync } from "@/lib/perf";
 import { shallowEqualObject } from "@/lib/equality";
 import { fetchTextWithLimits } from "@/lib/remote-fetch";
+import type { CatalogFallback } from "@/lib/catalog-fallbacks";
 
 type UiNotice = {
     tone: "success" | "error" | "info";
@@ -120,22 +121,153 @@ const EDITOR_SECTIONS = [
 ];
 
 const AIOMETADATA_SYNC_STORAGE_KEY = "omni_aiometadata_sync_v1";
+const SUPPORT_URL = "https://ko-fi.com/botbidraiser";
+const IGNORED_CONFIG_KEYS = new Set([
+    "stream_button_elements_order",
+    "subtitle_font_size",
+    "subtitle_italic",
+    "isASSUseImageRender",
+    "isSRTUseImageRender",
+    "subtitle_bold",
+    "subtitle_background_color",
+    "subtitle_color",
+    "enable_external_player_trakt_scrobbling",
+    "image_cache_duration",
+    "mdblist_enabled_ratings",
+    "mdblist_badge_color_hex_values",
+    "mdblist_badge_text_overrides",
+    "disabled_shelves",
+    "show_metadata_provider",
+    "pattern_default_filter_enabled_patterns",
+    "show_only_first_regex_tag",
+    "shelf_order",
+    "always_show_titles",
+    "stream_button_elements_order",
+    "hidden_stream_button_elements",
+    "auto_play_patterns",
+    "catalog_cache_duration",
+    "default_metadata_provider",
+    "bottom_align_logo",
+    "high_contrast_focus",
+    "show_metadata_tags",
+    "recommendation_cache_duration",
+    "metadata_cache_duration",
+    "auto_play_enabled_patterns",
+    "landscape_catalogs",
+    "main_group_order",
+    "catalog_group_order",
+    "catalog_ordering",
+    "mdblist_rating_order",
+    "auto_play_enabled",
+    "auto_play_pattern_value",
+    "default_filter_enabled",
+    "auto_play_enabled_patterns",
+    "auto_play_patterns",
+    "pattern_default_filter_enabled_patterns",
+    "top_row_item_limits"
+]);
+
+const AIOMetadataExportPanelContainer = memo(function AIOMetadataExportPanelContainer({
+    importedCatalogs,
+    customFallbacks,
+}: {
+    importedCatalogs: AIOMetadataNormalizedCatalog[] | null;
+    customFallbacks: Record<string, string | CatalogFallback>;
+}) {
+    const currentValues = useConfigSelector((state) => state.currentValues);
+    return (
+        <AIOMetadataExportPanel
+            currentValues={currentValues}
+            importedCatalogs={importedCatalogs}
+            customFallbacks={customFallbacks}
+        />
+    );
+});
+
+const SettingsSectionContent = memo(function SettingsSectionContent({
+    keysToRender,
+    searchTerm,
+}: {
+    keysToRender: string[];
+    searchTerm: string;
+}) {
+    const currentValues = useConfigSelector((state) => state.currentValues);
+
+    return (
+        <div className="space-y-4">
+            {keysToRender.map((key) => {
+                const renderer = (
+                    <GenericRenderer
+                        key={key}
+                        data={currentValues[key]}
+                        path={[key]}
+                        searchQuery={searchTerm}
+                    />
+                );
+
+                if (key === "hidden_stream_button_elements") {
+                    return (
+                        <Fragment key={key}>
+                            <StreamElementOrderingEditor />
+                            <ShelfOrderingEditor />
+                        </Fragment>
+                    );
+                }
+                return renderer;
+            })}
+            {!keysToRender.includes("hidden_stream_button_elements") && (
+                <Fragment>
+                    <StreamElementOrderingEditor />
+                    <ShelfOrderingEditor />
+                </Fragment>
+            )}
+            <MdblistRatingsEditor />
+        </div>
+    );
+});
+
+const GenericSectionContent = memo(function GenericSectionContent({
+    keysToRender,
+    searchTerm,
+}: {
+    keysToRender: string[];
+    searchTerm: string;
+}) {
+    const currentValues = useConfigSelector((state) => state.currentValues);
+
+    return (
+        <div className="space-y-6">
+            <div className="space-y-4">
+                {keysToRender.map((key) => (
+                    <GenericRenderer
+                        key={key}
+                        data={currentValues[key]}
+                        path={[key]}
+                        searchQuery={searchTerm}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+});
 
 export function MainEditor() {
     const {
         originalConfig,
-        currentValues,
         catalogs,
         fileName,
         customFallbacks,
         sessionSaveStatus,
+        catalogGroupsForMismatch,
+        mainCatalogGroupsForMismatch,
     } = useConfigSelector((state) => ({
         originalConfig: state.originalConfig,
-        currentValues: state.currentValues,
         catalogs: state.catalogs,
         fileName: state.fileName,
         customFallbacks: state.customFallbacks,
         sessionSaveStatus: state.sessionSaveStatus,
+        catalogGroupsForMismatch: state.currentValues.catalog_groups || {},
+        mainCatalogGroupsForMismatch: state.currentValues.main_catalog_groups || {},
     }), shallowEqualObject);
     const {
         exportConfig,
@@ -150,6 +282,7 @@ export function MainEditor() {
 
     // Export Modal State
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+    const [isDownloadStartedDialogOpen, setIsDownloadStartedDialogOpen] = useState(false);
     const [setupName, setSetupName] = useState("");
     const [isImportPatternsOpen, setIsImportPatternsOpen] = useState(false);
     const [isGuideDialogOpen, setIsGuideDialogOpen] = useState(false);
@@ -449,51 +582,6 @@ export function MainEditor() {
         };
     }, []);
 
-    const ignoredKeys = new Set([
-        "stream_button_elements_order",
-        "subtitle_font_size",
-        "subtitle_italic",
-        "isASSUseImageRender",
-        "isSRTUseImageRender",
-        "subtitle_bold",
-        "subtitle_background_color",
-        "subtitle_color",
-        "enable_external_player_trakt_scrobbling",
-        "image_cache_duration",
-        "mdblist_enabled_ratings",
-        "mdblist_badge_color_hex_values",
-        "mdblist_badge_text_overrides",
-        "disabled_shelves",
-        "show_metadata_provider",
-        "pattern_default_filter_enabled_patterns",
-        "show_only_first_regex_tag",
-        "shelf_order",
-        "always_show_titles",
-        "stream_button_elements_order",
-        "hidden_stream_button_elements",
-        "auto_play_patterns",
-        "catalog_cache_duration",
-        "default_metadata_provider",
-        "bottom_align_logo",
-        "high_contrast_focus",
-        "show_metadata_tags",
-        "recommendation_cache_duration",
-        "metadata_cache_duration",
-        "auto_play_enabled_patterns",
-        "landscape_catalogs",
-        "main_group_order",
-        "catalog_group_order",
-        "catalog_ordering",
-        "mdblist_rating_order",
-        "auto_play_enabled",
-        "auto_play_pattern_value",
-        "default_filter_enabled",
-        "auto_play_enabled_patterns",
-        "auto_play_patterns",
-        "pattern_default_filter_enabled_patterns",
-        "top_row_item_limits"
-    ]);
-
     const sections = EDITOR_SECTIONS;
 
     const showNotice = useCallback((
@@ -623,6 +711,12 @@ export function MainEditor() {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         setIsExportModalOpen(false);
+        setIsDownloadStartedDialogOpen(true);
+    };
+
+    const openInstallGuideFromDownloadDialog = () => {
+        setIsDownloadStartedDialogOpen(false);
+        openGuide("install");
     };
 
     const handleBackToStart = () => {
@@ -753,6 +847,7 @@ export function MainEditor() {
                 const manifestText = await fetchTextWithLimits(sourceValue, {
                     timeoutMs: 12000,
                     maxBytes: 5_000_000,
+                    cache: "no-store",
                 });
                 let importText = manifestText;
                 const configLoadUrl = deriveAIOMetadataConfigLoadUrl(sourceValue);
@@ -765,6 +860,7 @@ export function MainEditor() {
                                 Accept: "application/json",
                                 "Content-Type": "application/json",
                             },
+                            cache: "no-store",
                             body: "{}",
                         });
 
@@ -951,13 +1047,13 @@ export function MainEditor() {
     const showAioSyncedState = !!activeAIOMetadataSync && !isAioImportEditorOpen;
     const aiomMismatchSummary = useMemo(() => measureSync("analyzeAIOMetadataCatalogMismatches", () => analyzeAIOMetadataCatalogMismatches({
         catalogs,
-        catalogGroups: currentValues.catalog_groups || {},
-        mainCatalogGroups: currentValues.main_catalog_groups || {},
+        catalogGroups: catalogGroupsForMismatch,
+        mainCatalogGroups: mainCatalogGroupsForMismatch,
         fallbacks: customFallbacks,
     }), {
         manifestCatalogCount: catalogs.length,
-        subgroupCount: Object.keys(currentValues.catalog_groups || {}).length,
-    }), [catalogs, currentValues.catalog_groups, currentValues.main_catalog_groups, customFallbacks]);
+        subgroupCount: Object.keys(catalogGroupsForMismatch).length,
+    }), [catalogGroupsForMismatch, catalogs, customFallbacks, mainCatalogGroupsForMismatch]);
     const aiomIssueSummaryText = useMemo(() => {
         if (!aiomMismatchSummary.hasIssues) {
             return "";
@@ -1083,7 +1179,7 @@ export function MainEditor() {
                                     variant="ghost"
                                     className="w-full justify-start gap-3 h-10 rounded-lg px-3 text-sm text-pink-600 dark:text-pink-500 hover:text-pink-700 dark:hover:text-pink-400 hover:bg-pink-500/10 font-medium"
                                 >
-                                    <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer">
+                                    <a href={SUPPORT_URL} target="_blank" rel="noopener noreferrer">
                                         <Heart className="w-4 h-4" />
                                         <span>Support Me</span>
                                     </a>
@@ -1187,6 +1283,67 @@ export function MainEditor() {
                         </Button>
                         <Button onClick={confirmDownload} className={editorAction.primary}>
                             Download
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isDownloadStartedDialogOpen} onOpenChange={setIsDownloadStartedDialogOpen}>
+                <DialogContent className={cn(editorLayout.dialogContent, "z-[92] sm:max-w-[37rem] p-0")}>
+                    <div className="p-4 sm:p-5">
+                        <DialogHeader className="gap-0">
+                            <div className="flex items-start justify-between gap-4">
+                                <div className="min-w-0 space-y-2">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary shadow-[0_4px_10px_rgba(37,99,235,0.06)]">
+                                        <Download className="h-4 w-4" />
+                                    </div>
+                                    <DialogTitle className="text-[1.35rem] font-black tracking-tight text-foreground">
+                                        Download started
+                                    </DialogTitle>
+                                    <DialogDescription className="max-w-[30rem] text-sm leading-7 text-foreground/64">
+                                        Put the downloaded snapshot into Omni&apos;s Backups folder on your phone, then import it in Omni.
+                                    </DialogDescription>
+                                </div>
+                            </div>
+                        </DialogHeader>
+
+                        <div className="mt-4 space-y-3">
+                            <div className={cn(editorSurface.panel, "rounded-xl border-slate-200/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.66),rgba(248,250,252,0.52))] p-3.5 sm:p-4 dark:border-white/8 dark:bg-[linear-gradient(180deg,rgba(20,23,29,0.9),rgba(17,20,26,0.88))]")}>
+                                <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                                    <div className="min-w-0 md:max-w-[34ch]">
+                                        <p className="text-sm font-bold tracking-tight text-foreground">Support this project</p>
+                                        <p className="mt-1 text-xs leading-relaxed text-foreground/60 [text-wrap:pretty]">
+                                            If this saved you time, you can support my work on Ko-fi.
+                                        </p>
+                                    </div>
+                                    <Button
+                                        asChild
+                                        size="sm"
+                                        className="h-9 w-full shrink-0 justify-center rounded-lg bg-pink-500 px-3 text-xs font-bold text-white shadow-[0_8px_18px_rgba(236,72,153,0.16)] transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 ease-out hover:bg-pink-500/92 active:scale-[0.985] md:w-auto md:self-end"
+                                    >
+                                        <a href={SUPPORT_URL} target="_blank" rel="noopener noreferrer">
+                                            <Heart className="mr-2 h-3.5 w-3.5" />
+                                            Support Me
+                                        </a>
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <DialogFooter className="border-t border-border/60 px-4 py-3.5 sm:px-5">
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsDownloadStartedDialogOpen(false)}
+                            className={cn(editorAction.secondary, "h-10 sm:h-9 sm:min-w-[8.5rem]")}
+                        >
+                            Dismiss
+                        </Button>
+                        <Button
+                            onClick={openInstallGuideFromDownloadDialog}
+                            className={cn(editorAction.primary, "h-10 sm:h-9 sm:min-w-[10rem]")}
+                        >
+                            How to Install
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -1298,20 +1455,7 @@ export function MainEditor() {
                     )}
 
                     {sections.map(section => {
-                        // For predefined sections, show all specified keys
-                        // For other sections, filter keys that exist in current config
-                        let sectionKeys = section.keys;
-                        if (!["settings", "groups", "catalogs", "patterns"].includes(section.id)) {
-                            sectionKeys = section.keys.filter(k => currentValues[k] !== undefined);
-                        }
-
-                        // For settings section, get all assigned keys plus all keys not in other sections
-                        let keysToRender = sectionKeys;
-
-                        // Filter out ignored keys entirely from ANY section UI
-                        keysToRender = keysToRender.filter(k => !ignoredKeys.has(k));
-
-                        if (keysToRender.length === 0 && !["aiometadata", "catalogs", "groups", "patterns"].includes(section.id)) return null;
+                        const keysToRender = section.keys.filter((key) => !IGNORED_CONFIG_KEYS.has(key));
 
                         return (
                             <section key={section.id} id={section.id} className="scroll-mt-8 pb-8 border-b border-border/20 last:border-0 last:pb-0">
@@ -1584,8 +1728,7 @@ export function MainEditor() {
                                                     </div>
                                                 </div>
                                             )}
-                                            <AIOMetadataExportPanel
-                                                currentValues={currentValues}
+                                            <AIOMetadataExportPanelContainer
                                                 importedCatalogs={aioSyncState?.catalogs ?? null}
                                                 customFallbacks={customFallbacks}
                                             />
@@ -1596,10 +1739,14 @@ export function MainEditor() {
                                                 <p className="text-sm text-foreground/70 px-1 leading-relaxed">
                                                     Create and organize groups, assign catalogs, and update your setup.
                                                 </p>
-                                                <UnifiedSubgroupEditor aiomMismatchSummary={aiomMismatchSummary} onOpenGuide={(guide) => {
-                                                    setActiveGuide(guide);
-                                                    setIsGuideDialogOpen(true);
-                                                }} />
+                                                <UnifiedSubgroupEditor
+                                                    aiomMismatchSummary={aiomMismatchSummary}
+                                                    importedAIOMetadataCatalogs={aioSyncState?.catalogs}
+                                                    onOpenGuide={(guide) => {
+                                                        setActiveGuide(guide);
+                                                        setIsGuideDialogOpen(true);
+                                                    }}
+                                                />
                                             </div>
                                         </div>
                                     ) : section.id === "catalogs" ? (
@@ -1632,48 +1779,9 @@ export function MainEditor() {
                                             <UnifiedPatternEditor />
                                         </div>
                                     ) : section.id === "settings" ? (
-                                        <div className="space-y-4">
-                                            {keysToRender.map((key) => {
-                                                const renderer = (
-                                                    <GenericRenderer
-                                                        key={key}
-                                                        data={currentValues[key]}
-                                                        path={[key]}
-                                                        searchQuery={searchTerm}
-                                                    />
-                                                );
-                                                
-                                                if (key === "hidden_stream_button_elements") {
-                                                    return (
-                                                        <Fragment key={key}>
-                                                            <StreamElementOrderingEditor />
-                                                            <ShelfOrderingEditor />
-                                                        </Fragment>
-                                                    );
-                                                }
-                                                return renderer;
-                                            })}
-                                            {!keysToRender.includes("hidden_stream_button_elements") && (
-                                                <Fragment>
-                                                    <StreamElementOrderingEditor />
-                                                    <ShelfOrderingEditor />
-                                                </Fragment>
-                                            )}
-                                            <MdblistRatingsEditor />
-                                        </div>
+                                        <SettingsSectionContent keysToRender={keysToRender} searchTerm={searchTerm} />
                                     ) : (
-                                        <div className="space-y-6">
-                                            <div className="space-y-4">
-                                                {keysToRender.map(key => (
-                                                    <GenericRenderer
-                                                        key={key}
-                                                        data={currentValues[key]}
-                                                        path={[key]}
-                                                        searchQuery={searchTerm}
-                                                    />
-                                                ))}
-                                            </div>
-                                        </div>
+                                        <GenericSectionContent keysToRender={keysToRender} searchTerm={searchTerm} />
                                     )}
                                 </div>
                             </section>
@@ -1770,7 +1878,7 @@ export function MainEditor() {
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator className="mx-1 my-1 bg-border/60" />
                                 <DropdownMenuItem asChild className="cursor-pointer rounded-xl px-3 py-2.5 text-foreground/72 focus:text-foreground focus:bg-muted/60">
-                                    <a href="https://ko-fi.com/botbidraiser" target="_blank" rel="noopener noreferrer">
+                                    <a href={SUPPORT_URL} target="_blank" rel="noopener noreferrer">
                                         <Heart className="w-4 h-4" />
                                         <span className="flex-1">Support Me</span>
                                     </a>
@@ -1833,7 +1941,6 @@ export function MainEditor() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-            <EditorPerfDebugPanel />
         </div>
     );
 }

@@ -204,7 +204,7 @@ describe("parseAIOMetadataFallbacks", () => {
                 displayType: "movie",
                 extraExportFields: {
                     showInHome: true,
-                    sort: "tmdbpopular",
+                    sort: "imdbpopular",
                     order: "asc",
                     cacheTTL: 86400,
                     metadata: {
@@ -233,7 +233,7 @@ describe("parseAIOMetadataFallbacks", () => {
                 displayType: "movie",
                 extraExportFields: {
                     showInHome: false,
-                    sort: "tmdbpopular",
+                    sort: "imdbpopular",
                     order: "asc",
                     cacheTTL: 86400,
                     metadata: {

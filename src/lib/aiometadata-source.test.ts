@@ -44,4 +44,33 @@ describe("aiometadata source helpers", () => {
 
         expect(pickRicherAIOMetadataPayload(manifestPayload, configPayload)).toBe(configPayload);
     });
+
+    it("keeps the manifest payload when the api config has fewer catalogs", () => {
+        const manifestPayload = JSON.stringify({
+            catalogs: [
+                { id: "mdblist.1", name: "Alpha Movies", type: "movie" },
+                { id: "mdblist.2", name: "Beta Movies", type: "movie" },
+            ],
+        });
+        const configPayload = JSON.stringify({
+            values: {
+                catalogs: [
+                    {
+                        id: "mdblist.1",
+                        name: "Alpha Movies",
+                        type: "movie",
+                        showInHome: true,
+                        sort: "default",
+                        order: "asc",
+                        cacheTTL: 86400,
+                        metadata: {
+                            url: "https://mdblist.com/lists/example/alpha",
+                        },
+                    },
+                ],
+            },
+        });
+
+        expect(pickRicherAIOMetadataPayload(manifestPayload, configPayload)).toBe(manifestPayload);
+    });
 });

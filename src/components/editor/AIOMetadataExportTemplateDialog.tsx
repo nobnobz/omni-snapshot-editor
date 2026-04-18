@@ -17,7 +17,7 @@ import { WandSparkles } from "lucide-react";
 
 const formatSortSummary = (sort: string, direction?: "asc" | "desc") => {
     if (sort === "random") return "Randomized order";
-    if (sort === "tmdbpopular" || sort === "popularity" || sort === "imdbpopular") return "Sort by popularity";
+    if (sort === "imdbpopular" || sort === "popularity") return "Sort by popularity";
     if (sort === "released" || sort === "release_date") {
         if (direction === "desc") return "Sort by release date, oldest first";
         if (direction === "asc") return "Sort by release date, newest first";

@@ -58,7 +58,7 @@ type DownloadableTemplate = {
     id: string;
     name: string;
     url: string;
-    version?: string;
+    version?: string | null;
 };
 
 type LoaderTemplateMenuEntry =
@@ -296,7 +296,7 @@ export function ConfigLoader() {
     const [activeGuide, setActiveGuide] = useState<"install" | "update" | "use">("use");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [downloadChoiceTemplate, setDownloadChoiceTemplate] = useState<{ name: string; url: string } | null>(null);
+    const [downloadChoiceTemplate, setDownloadChoiceTemplate] = useState<{ name: string; url: string; version?: string | null } | null>(null);
     const [aiometadataChoiceTemplates, setAiometadataChoiceTemplates] = useState<{
         fullTemplate: DownloadableTemplate | null;
         catalogsTemplate: DownloadableTemplate | null;
@@ -334,16 +334,16 @@ export function ConfigLoader() {
         }
     };
 
-    const handleDownloadTemplate = async (templateId: string, templateUrl: string, templateName: string) => {
+    const handleDownloadTemplate = async (templateId: string, templateUrl: string, templateName: string, version?: string | null) => {
         if (shouldOfferTemplateUrlChoice(templateId, templateName)) {
             setError(null);
-            setDownloadChoiceTemplate({ name: templateName, url: templateUrl });
+            setDownloadChoiceTemplate({ name: templateName, url: templateUrl, version });
             return;
         }
 
         try {
             setLoading(true);
-            await downloadTemplateFile(templateUrl, templateName);
+            await downloadTemplateFile(templateUrl, templateName, version);
         } catch (err) {
             setError("Failed to download template. Please try again.");
             console.error(err);
@@ -690,7 +690,7 @@ export function ConfigLoader() {
                                                                             });
                                                                             return;
                                                                         }
-                                                                        handleDownloadTemplate(template.id, template.url, template.name);
+                                                                        handleDownloadTemplate(template.id, template.url, template.name, template.version);
                                                                     }}
                                                                     className={cn(loaderDropdownItemClass, !isAvailable && "opacity-60 cursor-default")}
                                                                 >
@@ -945,6 +945,7 @@ export function ConfigLoader() {
                 }}
                 templateName={downloadChoiceTemplate?.name || ""}
                 templateUrl={downloadChoiceTemplate?.url || ""}
+                templateVersion={downloadChoiceTemplate?.version}
                 onBusyChange={setLoading}
                 onError={(message, error) => {
                     setError(message);

@@ -58,7 +58,7 @@ type FeatureCard = {
 
 export function Documentation({ headerAction, onOpenInstallGuide }: DocumentationProps = {}) {
     const { manifest } = useConfig();
-    const [downloadChoiceTemplate, setDownloadChoiceTemplate] = React.useState<{ name: string; url: string } | null>(null);
+    const [downloadChoiceTemplate, setDownloadChoiceTemplate] = React.useState<{ name: string; url: string; version?: string | null } | null>(null);
 
     const omniTemplate = findTemplateByKind(manifest?.templates, "omni");
     const aiomTemplate = findTemplateByKind(manifest?.templates, "aiometadata");
@@ -187,12 +187,12 @@ export function Documentation({ headerAction, onOpenInstallGuide }: Documentatio
 
     const handleDownload = async (template: typeof templates[number]) => {
         if (shouldOfferTemplateUrlChoice(template.id, template.manifestName)) {
-            setDownloadChoiceTemplate({ name: template.manifestName, url: template.url });
+            setDownloadChoiceTemplate({ name: template.manifestName, url: template.url, version: template.version });
             return;
         }
 
         try {
-            await downloadTemplateFile(template.url, template.manifestName);
+            await downloadTemplateFile(template.url, template.manifestName, template.version);
         } catch (err) {
             console.error("Download failed:", err);
         }
@@ -466,6 +466,7 @@ export function Documentation({ headerAction, onOpenInstallGuide }: Documentatio
                 }}
                 templateName={downloadChoiceTemplate?.name || ""}
                 templateUrl={downloadChoiceTemplate?.url || ""}
+                templateVersion={downloadChoiceTemplate?.version}
             />
         </GuideDialog>
     );

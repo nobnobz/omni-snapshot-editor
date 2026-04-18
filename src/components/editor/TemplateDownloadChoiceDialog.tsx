@@ -21,6 +21,7 @@ type TemplateDownloadChoiceDialogProps = {
     onOpenChange: (open: boolean) => void;
     templateName: string;
     templateUrl: string;
+    templateVersion?: string | null;
     onBusyChange?: (busy: boolean) => void;
     onError?: (message: string, error?: unknown) => void;
 };
@@ -30,6 +31,7 @@ export function TemplateDownloadChoiceDialog({
     onOpenChange,
     templateName,
     templateUrl,
+    templateVersion,
     onBusyChange,
     onError,
 }: TemplateDownloadChoiceDialogProps) {
@@ -72,7 +74,7 @@ export function TemplateDownloadChoiceDialog({
 
         onBusyChange?.(true);
         try {
-            await downloadTemplateFile(templateUrl, templateName);
+            await downloadTemplateFile(templateUrl, templateName, templateVersion);
             onOpenChange(false);
         } catch (error) {
             reportError("Failed to download template.", error);

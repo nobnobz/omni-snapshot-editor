@@ -115,8 +115,10 @@ const duplicateFallbacks = {
 const templateCurrentValues = {
     main_group_order: [
         "service-group",
+        "studio-group",
         "genre-group",
         "collections-group",
+        "awards-group",
         "header-group",
         "discover-group",
         "mixed-group",
@@ -126,6 +128,10 @@ const templateCurrentValues = {
             name: "Streaming Services",
             subgroupNames: ["Service Picks"],
         },
+        "studio-group": {
+            name: "Studios",
+            subgroupNames: ["Studio Picks"],
+        },
         "genre-group": {
             name: "Genres",
             subgroupNames: ["Genre Picks"],
@@ -133,6 +139,10 @@ const templateCurrentValues = {
         "collections-group": {
             name: "Collections",
             subgroupNames: ["Collection Picks"],
+        },
+        "awards-group": {
+            name: "Awards",
+            subgroupNames: ["Awards Picks"],
         },
         "header-group": {
             name: "Header",
@@ -149,8 +159,10 @@ const templateCurrentValues = {
     },
     catalog_groups: {
         "Service Picks": ["movie:mdblist.101", "all:trakt.list.201", "movie:streaming.netflix"],
+        "Studio Picks": ["movie:mdblist.111", "all:trakt.list.208", "movie:streaming.max"],
         "Genre Picks": ["movie:mdblist.102"],
         "Collection Picks": ["movie:mdblist.103", "all:trakt.list.202", "movie:streaming.disney"],
+        "Awards Picks": ["movie:mdblist.112", "all:trakt.list.209", "movie:streaming.hulu"],
         "Header Picks": ["movie:mdblist.104", "all:trakt.list.203"],
         Watchlist: ["all:trakt.watchlist"],
         Latest: ["movie:mdblist.107", "series:mdblist.108", "movie:trakt.list.204", "series:trakt.list.205"],
@@ -159,14 +171,20 @@ const templateCurrentValues = {
     },
     custom_catalog_names: {
         "mdblist.101": "Prime Gems",
+        "mdblist.111": "Studio Prime",
         "mdblist.102": "Action Reloaded",
         "mdblist.103": "Alien Saga",
+        "mdblist.112": "Awards Spotlight",
         "mdblist.104": "Header Spotlight",
         "trakt.list.201": "Service Queue",
+        "trakt.list.208": "Studio Queue",
         "trakt.list.202": "Collection Queue",
+        "trakt.list.209": "Awards Queue",
         "trakt.list.203": "Header Queue",
         "streaming.netflix": "Netflix",
+        "streaming.max": "Max",
         "streaming.disney": "Disney+",
+        "streaming.hulu": "Hulu",
         "trakt.watchlist": "Watchlist",
         "mdblist.107": "Latest Movies Source",
         "mdblist.108": "Latest Shows Source",
@@ -177,20 +195,26 @@ const templateCurrentValues = {
         "trakt.list.206": "Trending Movies Trakt",
         "trakt.list.207": "Trending Shows Trakt",
         "mdblist.105": "[Genre] Hidden Action",
-        "mdblist.106": "[Awards] Winner Circle",
+        "mdblist.106": "Winner Circle",
     },
 };
 
 const templateFallbacks = {
     "mdblist.101": { name: "Prime Gems", type: "movie" as const },
+    "mdblist.111": { name: "Studio Prime", type: "movie" as const },
     "mdblist.102": { name: "Action Reloaded", type: "movie" as const },
     "mdblist.103": { name: "Alien Saga", type: "movie" as const },
+    "mdblist.112": { name: "Awards Spotlight", type: "movie" as const },
     "mdblist.104": { name: "Header Spotlight", type: "movie" as const },
     "trakt.list.201": { name: "Service Queue", type: "all" as const },
+    "trakt.list.208": { name: "Studio Queue", type: "all" as const },
     "trakt.list.202": { name: "Collection Queue", type: "all" as const },
+    "trakt.list.209": { name: "Awards Queue", type: "all" as const },
     "trakt.list.203": { name: "Header Queue", type: "all" as const },
     "streaming.netflix": { name: "Netflix", type: "movie" as const },
+    "streaming.max": { name: "Max", type: "movie" as const },
     "streaming.disney": { name: "Disney+", type: "movie" as const },
+    "streaming.hulu": { name: "Hulu", type: "movie" as const },
     "trakt.watchlist": { name: "Watchlist", type: "all" as const },
     "mdblist.107": { name: "Latest Movies Source", type: "movie" as const },
     "mdblist.108": { name: "Latest Shows Source", type: "series" as const },
@@ -201,7 +225,7 @@ const templateFallbacks = {
     "trakt.list.206": { name: "Trending Movies Trakt", type: "movie" as const },
     "trakt.list.207": { name: "Trending Shows Trakt", type: "series" as const },
     "mdblist.105": { name: "[Genre] Hidden Action", type: "movie" as const },
-    "mdblist.106": { name: "[Awards] Winner Circle", type: "movie" as const },
+    "mdblist.106": { name: "Winner Circle", type: "movie" as const },
 };
 
 const discoverNamedTemplateCurrentValues = {
@@ -1172,7 +1196,23 @@ describe("aiometadata export helpers", () => {
 
         expect(result.nextOverrides.widgets["service-group"]).toEqual({
             mdblist: {
-                sort: "tmdbpopular",
+                sort: "imdbpopular",
+                order: "asc",
+                cacheTTL: 43200,
+            },
+            trakt: {
+                sort: "popularity",
+                sortDirection: "desc",
+                cacheTTL: 43200,
+            },
+            streaming: {
+                sort: "popularity",
+                sortDirection: "desc",
+            },
+        });
+        expect(result.nextOverrides.widgets["studio-group"]).toEqual({
+            mdblist: {
+                sort: "imdbpopular",
                 order: "asc",
                 cacheTTL: 43200,
             },
@@ -1188,7 +1228,7 @@ describe("aiometadata export helpers", () => {
         });
         expect(result.nextOverrides.widgets["genre-group"]).toEqual({
             mdblist: {
-                sort: "tmdbpopular",
+                sort: "imdbpopular",
                 order: "asc",
                 cacheTTL: 43200,
             },
@@ -1209,6 +1249,22 @@ describe("aiometadata export helpers", () => {
                 sortDirection: "desc",
             },
         });
+        expect(result.nextOverrides.widgets["awards-group"]).toEqual({
+            mdblist: {
+                sort: "released",
+                order: "asc",
+                cacheTTL: 43200,
+            },
+            trakt: {
+                sort: "released",
+                sortDirection: "desc",
+                cacheTTL: 43200,
+            },
+            streaming: {
+                sort: "release_date",
+                sortDirection: "asc",
+            },
+        });
         expect(result.nextOverrides.widgets["header-group"]).toEqual({
             mdblist: {
                 sort: "random",
@@ -1226,54 +1282,27 @@ describe("aiometadata export helpers", () => {
             sortDirection: "asc",
             cacheTTL: 1800,
         });
-        expect(result.nextOverrides.catalogs["mdblist.107"]).toMatchObject({
-            sort: "released",
-            order: "asc",
-            cacheTTL: 43200,
-        });
-        expect(result.nextOverrides.catalogs["mdblist.108"]).toMatchObject({
-            sort: "released",
-            order: "asc",
-            cacheTTL: 43200,
-        });
-        expect(result.nextOverrides.catalogs["trakt.list.204"]).toMatchObject({
-            sort: "released",
-            sortDirection: "desc",
-            cacheTTL: 43200,
-        });
-        expect(result.nextOverrides.catalogs["trakt.list.205"]).toMatchObject({
-            sort: "released",
-            sortDirection: "desc",
-            cacheTTL: 43200,
-        });
-        expect(result.nextOverrides.catalogs["mdblist.109"]).toMatchObject({
-            sort: "imdbpopular",
-            order: "asc",
-            cacheTTL: 43200,
-        });
-        expect(result.nextOverrides.catalogs["mdblist.110"]).toMatchObject({
-            sort: "imdbpopular",
-            order: "asc",
-            cacheTTL: 43200,
-        });
-        expect(result.nextOverrides.catalogs["trakt.list.206"]).toMatchObject({
-            sort: "popularity",
-            sortDirection: "desc",
-            cacheTTL: 43200,
-        });
-        expect(result.nextOverrides.catalogs["trakt.list.207"]).toMatchObject({
-            sort: "popularity",
-            sortDirection: "desc",
-            cacheTTL: 43200,
-        });
+        expect(result.nextOverrides.catalogs["mdblist.107"]).toBeUndefined();
+        expect(result.nextOverrides.catalogs["mdblist.108"]).toBeUndefined();
+        expect(result.nextOverrides.catalogs["trakt.list.204"]).toBeUndefined();
+        expect(result.nextOverrides.catalogs["trakt.list.205"]).toBeUndefined();
+        expect(result.nextOverrides.catalogs["mdblist.109"]).toBeUndefined();
+        expect(result.nextOverrides.catalogs["mdblist.110"]).toBeUndefined();
+        expect(result.nextOverrides.catalogs["trakt.list.206"]).toBeUndefined();
+        expect(result.nextOverrides.catalogs["trakt.list.207"]).toBeUndefined();
         expect(exportPayload.catalogs.find((catalog) => catalog.id === "mdblist.101")).toMatchObject({
-            sort: "tmdbpopular",
+            sort: "imdbpopular",
             order: "asc",
             cacheTTL: 43200,
         });
         expect(exportPayload.catalogs.find((catalog) => catalog.id === "mdblist.103")).toMatchObject({
             sort: "released",
             order: "desc",
+            cacheTTL: 43200,
+        });
+        expect(exportPayload.catalogs.find((catalog) => catalog.id === "mdblist.112")).toMatchObject({
+            sort: "released",
+            order: "asc",
             cacheTTL: 43200,
         });
         expect(exportPayload.catalogs.find((catalog) => catalog.id === "trakt.list.201")).toMatchObject({
@@ -1291,6 +1320,11 @@ describe("aiometadata export helpers", () => {
             sortDirection: "asc",
             cacheTTL: 43200,
         });
+        expect(exportPayload.catalogs.find((catalog) => catalog.id === "trakt.list.209")).toMatchObject({
+            sort: "released",
+            sortDirection: "desc",
+            cacheTTL: 43200,
+        });
         expect(exportPayload.catalogs.find((catalog) => catalog.id === "streaming.netflix")).toMatchObject({
             sort: "popularity",
             sortDirection: "desc",
@@ -1299,51 +1333,64 @@ describe("aiometadata export helpers", () => {
             sort: "release_date",
             sortDirection: "desc",
         });
+        expect(exportPayload.catalogs.find((catalog) => catalog.id === "streaming.hulu")).toMatchObject({
+            sort: "release_date",
+            sortDirection: "asc",
+        });
         expect(exportPayload.catalogs.find((catalog) => catalog.id === "streaming.netflix")).not.toHaveProperty("cacheTTL");
         expect(exportPayload.catalogs.find((catalog) => catalog.id === "streaming.disney")).not.toHaveProperty("cacheTTL");
+        expect(exportPayload.catalogs.find((catalog) => catalog.id === "streaming.hulu")).not.toHaveProperty("cacheTTL");
         expect(exportPayload.catalogs.find((catalog) => catalog.id === "mdblist.104")).toMatchObject({
             sort: "random",
             order: "asc",
             cacheTTL: 43200,
         });
         expect(exportPayload.catalogs.find((catalog) => catalog.id === "mdblist.107")).toMatchObject({
-            sort: "released",
+            sort: "default",
             order: "asc",
             cacheTTL: 43200,
+            genreSelection: "standard",
+            enableRatingPosters: true,
         });
         expect(exportPayload.catalogs.find((catalog) => catalog.id === "mdblist.108")).toMatchObject({
-            sort: "released",
+            sort: "default",
             order: "asc",
             cacheTTL: 43200,
+            genreSelection: "standard",
+            enableRatingPosters: true,
         });
         expect(exportPayload.catalogs.find((catalog) => catalog.id === "trakt.list.204")).toMatchObject({
-            sort: "released",
-            sortDirection: "desc",
+            sort: "added",
+            sortDirection: "asc",
             cacheTTL: 43200,
         });
         expect(exportPayload.catalogs.find((catalog) => catalog.id === "trakt.list.205")).toMatchObject({
-            sort: "released",
-            sortDirection: "desc",
+            sort: "added",
+            sortDirection: "asc",
             cacheTTL: 43200,
         });
         expect(exportPayload.catalogs.find((catalog) => catalog.id === "mdblist.109")).toMatchObject({
-            sort: "imdbpopular",
+            sort: "default",
             order: "asc",
             cacheTTL: 43200,
+            genreSelection: "standard",
+            enableRatingPosters: true,
         });
         expect(exportPayload.catalogs.find((catalog) => catalog.id === "mdblist.110")).toMatchObject({
-            sort: "imdbpopular",
+            sort: "default",
             order: "asc",
             cacheTTL: 43200,
+            genreSelection: "standard",
+            enableRatingPosters: true,
         });
         expect(exportPayload.catalogs.find((catalog) => catalog.id === "trakt.list.206")).toMatchObject({
-            sort: "popularity",
-            sortDirection: "desc",
+            sort: "added",
+            sortDirection: "asc",
             cacheTTL: 43200,
         });
         expect(exportPayload.catalogs.find((catalog) => catalog.id === "trakt.list.207")).toMatchObject({
-            sort: "popularity",
-            sortDirection: "desc",
+            sort: "added",
+            sortDirection: "asc",
             cacheTTL: 43200,
         });
         expect(exportPayload.catalogs.find((catalog) => catalog.id === "trakt.watchlist")).toMatchObject({
@@ -1388,14 +1435,14 @@ describe("aiometadata export helpers", () => {
 
         expect(result.nextOverrides.widgets["mixed-group"]).toBeUndefined();
         expect(result.nextOverrides.catalogs["mdblist.105"]).toMatchObject({
-            sort: "tmdbpopular",
+            sort: "imdbpopular",
             order: "asc",
             cacheTTL: 43200,
         });
         expect(result.nextOverrides.catalogs["mdblist.106"]).toBeUndefined();
     });
 
-    it("applies discover latest and trending rules for explicitly named subgroups", () => {
+    it("does not apply discover latest and trending defaults for explicitly named subgroups", () => {
         const inventory = buildAIOMetadataExportInventory({
             currentValues: discoverNamedTemplateCurrentValues,
             importedCatalogs: [],
@@ -1413,46 +1460,14 @@ describe("aiometadata export helpers", () => {
             mode: "fill-unset",
         });
 
-        expect(result.nextOverrides.catalogs["mdblist.301"]).toMatchObject({
-            sort: "released",
-            order: "asc",
-            cacheTTL: 43200,
-        });
-        expect(result.nextOverrides.catalogs["trakt.list.401"]).toMatchObject({
-            sort: "released",
-            sortDirection: "desc",
-            cacheTTL: 43200,
-        });
-        expect(result.nextOverrides.catalogs["mdblist.302"]).toMatchObject({
-            sort: "released",
-            order: "asc",
-            cacheTTL: 43200,
-        });
-        expect(result.nextOverrides.catalogs["trakt.list.402"]).toMatchObject({
-            sort: "released",
-            sortDirection: "desc",
-            cacheTTL: 43200,
-        });
-        expect(result.nextOverrides.catalogs["mdblist.303"]).toMatchObject({
-            sort: "imdbpopular",
-            order: "asc",
-            cacheTTL: 43200,
-        });
-        expect(result.nextOverrides.catalogs["trakt.list.403"]).toMatchObject({
-            sort: "popularity",
-            sortDirection: "desc",
-            cacheTTL: 43200,
-        });
-        expect(result.nextOverrides.catalogs["mdblist.304"]).toMatchObject({
-            sort: "imdbpopular",
-            order: "asc",
-            cacheTTL: 43200,
-        });
-        expect(result.nextOverrides.catalogs["trakt.list.404"]).toMatchObject({
-            sort: "popularity",
-            sortDirection: "desc",
-            cacheTTL: 43200,
-        });
+        expect(result.nextOverrides.catalogs["mdblist.301"]).toBeUndefined();
+        expect(result.nextOverrides.catalogs["trakt.list.401"]).toBeUndefined();
+        expect(result.nextOverrides.catalogs["mdblist.302"]).toBeUndefined();
+        expect(result.nextOverrides.catalogs["trakt.list.402"]).toBeUndefined();
+        expect(result.nextOverrides.catalogs["mdblist.303"]).toBeUndefined();
+        expect(result.nextOverrides.catalogs["trakt.list.403"]).toBeUndefined();
+        expect(result.nextOverrides.catalogs["mdblist.304"]).toBeUndefined();
+        expect(result.nextOverrides.catalogs["trakt.list.404"]).toBeUndefined();
     });
 
     it("applies UME sorting special cases for named catalog exceptions", () => {
@@ -1477,6 +1492,9 @@ describe("aiometadata export helpers", () => {
                         "movie:mdblist.208",
                         "movie:mdblist.209",
                         "series:mdblist.210",
+                        "movie:mdblist.211",
+                        "movie:mdblist.212",
+                        "movie:mdblist.213",
                     ],
                 },
                 custom_catalog_names: {
@@ -1490,6 +1508,9 @@ describe("aiometadata export helpers", () => {
                     "mdblist.208": "Marvel",
                     "mdblist.209": "DC Universe",
                     "mdblist.210": "DC Universe",
+                    "mdblist.211": "Marvel Cinematic Universe",
+                    "mdblist.212": "DC Extended Universe",
+                    "mdblist.213": "Disney live collection",
                 },
             },
             importedCatalogs: [],
@@ -1504,6 +1525,9 @@ describe("aiometadata export helpers", () => {
                 "mdblist.208": { name: "Marvel", type: "movie" },
                 "mdblist.209": { name: "DC Universe", type: "movie" },
                 "mdblist.210": { name: "DC Universe", type: "series" },
+                "mdblist.211": { name: "Marvel Cinematic Universe", type: "movie" },
+                "mdblist.212": { name: "DC Extended Universe", type: "movie" },
+                "mdblist.213": { name: "Disney live collection", type: "movie" },
             },
         });
 
@@ -1524,50 +1548,29 @@ describe("aiometadata export helpers", () => {
             cacheTTL: 43200,
         });
         expect(result.nextOverrides.catalogs["mdblist.202"]).toEqual({
-            sort: "tmdbpopular",
+            sort: "imdbpopular",
             order: "asc",
             cacheTTL: 43200,
         });
-        expect(result.nextOverrides.catalogs["mdblist.203"]).toEqual({
-            sort: "tmdbpopular",
-            order: "asc",
-            cacheTTL: 43200,
-        });
-        expect(result.nextOverrides.catalogs["mdblist.204"]).toEqual({
+        expect(result.nextOverrides.catalogs["mdblist.203"]).toBeUndefined();
+        expect(result.nextOverrides.catalogs["mdblist.204"]).toBeUndefined();
+        expect(result.nextOverrides.catalogs["mdblist.205"]).toBeUndefined();
+        expect(result.nextOverrides.catalogs["mdblist.206"]).toBeUndefined();
+        expect(result.nextOverrides.catalogs["mdblist.207"]).toBeUndefined();
+        expect(result.nextOverrides.catalogs["mdblist.208"]).toBeUndefined();
+        expect(result.nextOverrides.catalogs["mdblist.209"]).toBeUndefined();
+        expect(result.nextOverrides.catalogs["mdblist.210"]).toBeUndefined();
+        expect(result.nextOverrides.catalogs["mdblist.211"]).toEqual({
             sort: "released",
             order: "asc",
             cacheTTL: 43200,
         });
-        expect(result.nextOverrides.catalogs["mdblist.205"]).toEqual({
+        expect(result.nextOverrides.catalogs["mdblist.212"]).toEqual({
             sort: "released",
             order: "asc",
             cacheTTL: 43200,
         });
-        expect(result.nextOverrides.catalogs["mdblist.206"]).toEqual({
-            sort: "released",
-            order: "asc",
-            cacheTTL: 43200,
-        });
-        expect(result.nextOverrides.catalogs["mdblist.207"]).toEqual({
-            sort: "released",
-            order: "asc",
-            cacheTTL: 43200,
-        });
-        expect(result.nextOverrides.catalogs["mdblist.208"]).toEqual({
-            sort: "released",
-            order: "asc",
-            cacheTTL: 43200,
-        });
-        expect(result.nextOverrides.catalogs["mdblist.209"]).toEqual({
-            sort: "released",
-            order: "asc",
-            cacheTTL: 43200,
-        });
-        expect(result.nextOverrides.catalogs["mdblist.210"]).toEqual({
-            sort: "released",
-            order: "asc",
-            cacheTTL: 43200,
-        });
+        expect(result.nextOverrides.catalogs["mdblist.213"]).toBeUndefined();
     });
 
     it("lets named UME special cases override generic discover latest rules in fill-unset mode", () => {
@@ -1664,11 +1667,7 @@ describe("aiometadata export helpers", () => {
             order: "asc",
             cacheTTL: 43200,
         });
-        expect(result.nextOverrides.catalogs["mdblist.204"]).toEqual({
-            sort: "released",
-            order: "asc",
-            cacheTTL: 43200,
-        });
+        expect(result.nextOverrides.catalogs["mdblist.204"]).toBeUndefined();
     });
 
     it("includes named UME special cases in effective default overrides", () => {
@@ -1688,11 +1687,16 @@ describe("aiometadata export helpers", () => {
                 catalog_groups: {
                     Latest: ["movie:mdblist.201", "series:mdblist.202"],
                     "Collection Picks": ["movie:mdblist.204"],
+                    "Movie Saga Picks": ["movie:mdblist.211", "movie:mdblist.212"],
+                    "Disney Live Picks": ["movie:mdblist.213"],
                 },
                 custom_catalog_names: {
                     "mdblist.201": "IMDb Top Movies",
                     "mdblist.202": "IMDb Top Shows",
                     "mdblist.204": "Academy Awards",
+                    "mdblist.211": "Marvel Cinematic Universe",
+                    "mdblist.212": "DC Extended Universe",
+                    "mdblist.213": "Disney live collection",
                 },
             },
             importedCatalogs: [],
@@ -1700,6 +1704,9 @@ describe("aiometadata export helpers", () => {
                 "mdblist.201": { name: "IMDb Top Movies", type: "movie" },
                 "mdblist.202": { name: "IMDb Top Shows", type: "series" },
                 "mdblist.204": { name: "Academy Awards", type: "movie" },
+                "mdblist.211": { name: "Marvel Cinematic Universe", type: "movie" },
+                "mdblist.212": { name: "DC Extended Universe", type: "movie" },
+                "mdblist.213": { name: "Disney live collection", type: "movie" },
             },
         });
 
@@ -1718,15 +1725,22 @@ describe("aiometadata export helpers", () => {
             cacheTTL: 43200,
         });
         expect(effectiveOverrides.catalogs["mdblist.202"]).toEqual({
-            sort: "tmdbpopular",
+            sort: "imdbpopular",
             order: "asc",
             cacheTTL: 43200,
         });
-        expect(effectiveOverrides.catalogs["mdblist.204"]).toEqual({
+        expect(effectiveOverrides.catalogs["mdblist.204"]).toBeUndefined();
+        expect(effectiveOverrides.catalogs["mdblist.211"]).toEqual({
             sort: "released",
             order: "asc",
             cacheTTL: 43200,
         });
+        expect(effectiveOverrides.catalogs["mdblist.212"]).toEqual({
+            sort: "released",
+            order: "asc",
+            cacheTTL: 43200,
+        });
+        expect(effectiveOverrides.catalogs["mdblist.213"]).toBeUndefined();
     });
 
     it("matches UME special-case catalog rules from subgroup-derived export names", () => {
@@ -1765,11 +1779,7 @@ describe("aiometadata export helpers", () => {
             order: "asc",
             cacheTTL: 43200,
         });
-        expect(effectiveOverrides.catalogs["mdblist.502"]).toEqual({
-            sort: "released",
-            order: "asc",
-            cacheTTL: 43200,
-        });
+        expect(effectiveOverrides.catalogs["mdblist.502"]).toBeUndefined();
     });
 
     it("preserves existing matching overrides in fill-unset mode and replaces them in replace-matching mode", () => {
@@ -1841,7 +1851,7 @@ describe("aiometadata export helpers", () => {
 
         expect(replaceResult.nextOverrides.widgets["service-group"]).toEqual({
             mdblist: {
-                sort: "tmdbpopular",
+                sort: "imdbpopular",
                 order: "asc",
                 cacheTTL: 43200,
             },

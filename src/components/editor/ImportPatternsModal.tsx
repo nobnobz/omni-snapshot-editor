@@ -22,31 +22,24 @@ import { editorAction, editorLayout, editorSurface, editorToneBadge } from "@/co
 import { EditorNotice } from "@/components/editor/ui/EditorNotice";
 import { FALLBACK_TEMPLATE_URLS, findTemplateByKind, isTemplateOfKind } from "@/lib/template-manifest";
 import { fetchTextWithLimits } from "@/lib/remote-fetch";
+import {
+    applyImportedPatternsToState,
+    buildImportedPatternMetadata,
+    extractPatternImportValues,
+    PATTERN_ARRAY_KEYS,
+    PATTERN_DICT_KEYS,
+    type PatternImportValues,
+} from "@/lib/pattern-state";
 
 interface ImportPatternsModalProps {
     isOpen: boolean;
     onClose: () => void;
 }
 
-const DICT_KEYS = [
-    "regex_pattern_custom_names",
-    "regex_pattern_image_urls",
-    "pattern_image_color_indices",
-    "pattern_border_radius_indices",
-    "pattern_background_opacities",
-    "pattern_border_thickness_indices",
-    "pattern_color_indices",
-    "pattern_color_hex_values",
-];
-
-const ARRAY_KEYS = [
-    "pattern_tag_enabled_patterns",
-    "pattern_default_filter_enabled_patterns",
-    "auto_play_enabled_patterns",
-    "auto_play_patterns",
-];
-
+const DICT_KEYS = [...PATTERN_DICT_KEYS];
+const ARRAY_KEYS = [...PATTERN_ARRAY_KEYS];
 const ALL_PATTERN_KEYS = [...DICT_KEYS, ...ARRAY_KEYS];
+const DICT_KEY_SET = new Set<string>(DICT_KEYS);
 
 interface ParsedPattern {
     regex: string;
@@ -54,6 +47,8 @@ interface ParsedPattern {
     presentInKeys: string[];
     existsInCurrent: boolean;
     hasChanges: boolean;
+    orderIndex: number;
+    isActive: boolean;
 }
 
 const normalizeForCompare = (value: unknown): unknown => {
@@ -155,7 +150,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
     const deferredSearchFilter = useDeferredValue(searchFilter);
     const [isFileDropActive, setIsFileDropActive] = useState(false);
 
-    const [importedValues, setImportedValues] = useState<Record<string, unknown>>({});
+    const [importedValues, setImportedValues] = useState<PatternImportValues>({});
     const [parsedPatterns, setParsedPatterns] = useState<ParsedPattern[]>([]);
     const [selectedPatterns, setSelectedPatterns] = useState<Set<string>>(new Set());
 
@@ -177,7 +172,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
         onClose();
     };
 
-    const checkPatternHasChanges = (regex: string, extracted: Record<string, unknown>): boolean => {
+    const checkPatternHasChanges = (regex: string, extracted: PatternImportValues): boolean => {
         for (const key of DICT_KEYS) {
             const extractedDict = extracted[key];
             const importedVal = extractedDict && typeof extractedDict === "object"
@@ -219,45 +214,17 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                 decoded = rawData;
             }
 
-            const extracted: Record<string, unknown> = {};
-            for (const key of ALL_PATTERN_KEYS) {
-                if (decoded[key] !== undefined) {
-                    extracted[key] = decoded[key];
-                }
-            }
+            const extracted = extractPatternImportValues(decoded);
+            const importedMetadata = buildImportedPatternMetadata(extracted);
 
-            const allRegexes = new Set<string>();
-            for (const key of DICT_KEYS) {
-                if (extracted[key] && typeof extracted[key] === 'object') {
-                    Object.keys(extracted[key]).forEach(r => allRegexes.add(r));
-                }
-            }
-            for (const key of ARRAY_KEYS) {
-                if (Array.isArray(extracted[key])) {
-                    extracted[key].forEach((r: string) => allRegexes.add(r));
-                }
-            }
-
-            const finalParsed: ParsedPattern[] = Array.from(allRegexes).map(regex => {
-                const presentIn: string[] = [];
-                ALL_PATTERN_KEYS.forEach(k => {
-                    if (DICT_KEYS.includes(k)) {
-                        const dict = extracted[k];
-                        if (dict && typeof dict === "object" && (dict as Record<string, unknown>)[regex] !== undefined) {
-                            presentIn.push(k);
-                        }
-                    } else {
-                        if (Array.isArray(extracted[k]) && extracted[k].includes(regex)) presentIn.push(k);
-                    }
-                });
-
+            const finalParsed: ParsedPattern[] = importedMetadata.map(({ regex, orderIndex, presentInKeys, isActive }) => {
                 const customNameDict = extracted["regex_pattern_custom_names"];
                 const customName = customNameDict && typeof customNameDict === "object"
                     ? ((customNameDict as Record<string, unknown>)[regex] as string | undefined) || regex
                     : regex;
                 const exists = ALL_PATTERN_KEYS.some(k => {
                     const currentVal = currentValues[k];
-                    if (DICT_KEYS.includes(k)) {
+                    if (DICT_KEY_SET.has(k)) {
                         return currentVal && typeof currentVal === 'object' && currentVal[regex] !== undefined;
                     } else {
                         return Array.isArray(currentVal) && currentVal.includes(regex);
@@ -267,9 +234,11 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                 return {
                     regex,
                     customName,
-                    presentInKeys: presentIn,
+                    presentInKeys,
                     existsInCurrent: exists,
-                    hasChanges: checkPatternHasChanges(regex, extracted)
+                    hasChanges: checkPatternHasChanges(regex, extracted),
+                    orderIndex,
+                    isActive,
                 };
             });
 
@@ -301,25 +270,13 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
     };
 
     const handleImport = () => {
-        selectedPatterns.forEach(regex => {
-            for (const key of DICT_KEYS) {
-                const dict = importedValues[key];
-                const val = dict && typeof dict === "object"
-                    ? (dict as Record<string, unknown>)[regex]
-                    : undefined;
-                if (val !== undefined) {
-                    updateValue([key, regex], val);
-                }
-            }
-            for (const key of ARRAY_KEYS) {
-                if (Array.isArray(importedValues[key]) && importedValues[key].includes(regex)) {
-                    const currentArray = Array.isArray(currentValues[key]) ? [...currentValues[key]] : [];
-                    if (!currentArray.includes(regex)) {
-                        updateValue([key], [...currentArray, regex]);
-                    }
-                }
-            }
-        });
+        const orderedSelectedRegexes = parsedPatterns
+            .filter((pattern) => selectedPatterns.has(pattern.regex))
+            .map((pattern) => pattern.regex);
+
+        const nextValues = applyImportedPatternsToState(currentValues, importedValues, orderedSelectedRegexes);
+        updateValue([], nextValues);
+
         handleClose();
     };
 
@@ -335,6 +292,16 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
     const selectAllChanged = () => setSelectedPatterns(new Set([...newPatterns, ...updatedPatterns].map(p => p.regex)));
     const selectAllNew = () => setSelectedPatterns(new Set(newPatterns.map(p => p.regex)));
     const deselectAll = () => setSelectedPatterns(new Set());
+
+    const sortedPatterns = useMemo(() => {
+        const sortByOrder = (a: ParsedPattern, b: ParsedPattern) => a.orderIndex - b.orderIndex;
+        return {
+            newPatterns: [...newPatterns].sort(sortByOrder),
+            updatedPatterns: [...updatedPatterns].sort(sortByOrder),
+            unchangedPatterns: [...unchangedPatterns].sort(sortByOrder),
+            filteredPatterns: [...filteredPatterns].sort(sortByOrder),
+        };
+    }, [filteredPatterns, newPatterns, unchangedPatterns, updatedPatterns]);
 
     const renderPatternRow = (p: ParsedPattern) => {
         const isSynced = p.existsInCurrent && !p.hasChanges;
@@ -385,6 +352,9 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                         ) : (
                             <Badge variant="outline" className={cn("px-1.5 py-0", editorToneBadge.info)}>New</Badge>
                         )}
+                        <Badge variant="outline" className={cn("px-1.5 py-0", p.isActive ? editorToneBadge.success : editorToneBadge.neutral)}>
+                            {p.isActive ? "Active" : "Inactive"}
+                        </Badge>
                     </div>
                 </div>
             </div>
@@ -545,31 +515,31 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                                 </div>
 
                                 <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar">
-                                    {newPatterns.length > 0 && (
+                                    {sortedPatterns.newPatterns.length > 0 && (
                                         <>
                                             <div className={cn(editorSurface.sticky, "sticky top-0 z-10 border-b border-border/30 px-3 py-2 text-xs font-bold uppercase tracking-widest text-foreground/52")}>
-                                                New ({newPatterns.length})
+                                                New ({sortedPatterns.newPatterns.length})
                                             </div>
-                                            {newPatterns.map(renderPatternRow)}
+                                            {sortedPatterns.newPatterns.map(renderPatternRow)}
                                         </>
                                     )}
-                                    {updatedPatterns.length > 0 && (
+                                    {sortedPatterns.updatedPatterns.length > 0 && (
                                         <>
                                             <div className={cn(editorSurface.sticky, "sticky top-0 z-10 border-y border-border/30 px-3 py-2 text-xs font-bold uppercase tracking-widest text-foreground/52")}>
-                                                Updates ({updatedPatterns.length})
+                                                Updates ({sortedPatterns.updatedPatterns.length})
                                             </div>
-                                            {updatedPatterns.map(renderPatternRow)}
+                                            {sortedPatterns.updatedPatterns.map(renderPatternRow)}
                                         </>
                                     )}
-                                    {unchangedPatterns.length > 0 && (
+                                    {sortedPatterns.unchangedPatterns.length > 0 && (
                                         <>
                                             <div className={cn(editorSurface.sticky, "sticky top-0 z-10 border-y border-border/30 px-3 py-2 text-xs font-bold uppercase tracking-widest text-foreground/52")}>
-                                                Synced ({unchangedPatterns.length})
+                                                Synced ({sortedPatterns.unchangedPatterns.length})
                                             </div>
-                                            {unchangedPatterns.map(renderPatternRow)}
+                                            {sortedPatterns.unchangedPatterns.map(renderPatternRow)}
                                         </>
                                     )}
-                                    {filteredPatterns.length === 0 && (
+                                    {sortedPatterns.filteredPatterns.length === 0 && (
                                         <div className="p-12 text-center text-foreground/40 text-sm italic">
                                             No matches found.
                                         </div>

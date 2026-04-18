@@ -41,7 +41,7 @@ type TemplateAsset = {
     name: string;
     id: string;
     url: string;
-    version?: string;
+    version?: string | null;
 };
 
 type InstanceGroup = {
@@ -220,7 +220,7 @@ export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
         }
 
         try {
-            await downloadTemplateFile(template.url, templateName);
+            await downloadTemplateFile(template.url, templateName, template.version);
         } catch (err) {
             console.error("Download failed:", err);
         }
@@ -457,6 +457,7 @@ export function TemplateGuide({ headerAction }: TemplateGuideProps = {}) {
                 }}
                 templateName={downloadChoiceTemplate?.name || ""}
                 templateUrl={downloadChoiceTemplate?.url || ""}
+                templateVersion={downloadChoiceTemplate?.version}
             />
         </GuideDialog>
     );

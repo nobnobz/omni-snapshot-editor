@@ -18,6 +18,7 @@ import { editorSurface } from "@/components/editor/ui/style-contract";
 type DownloadTemplateOption = {
     name: string;
     url: string;
+    version?: string | null;
 };
 
 type AIOMetadataTemplateChoiceDialogProps = {
@@ -56,7 +57,7 @@ export function AIOMetadataTemplateChoiceDialog({
 
         onBusyChange?.(true);
         try {
-            await downloadTemplateFile(template.url, template.name);
+            await downloadTemplateFile(template.url, template.name, template.version);
             onOpenChange(false);
         } catch (error) {
             reportError("Failed to download template.", error);

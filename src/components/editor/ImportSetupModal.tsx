@@ -1077,15 +1077,19 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                 type="button"
                                 variant="outline"
                                 onClick={() => onOpenGuide("update")}
-                                className="h-auto w-full justify-start whitespace-normal rounded-2xl border-amber-500/18 bg-amber-500/[0.08] px-3 py-3 text-left text-amber-800 shadow-none hover:bg-amber-500/[0.12] sm:px-4 dark:border-amber-400/16 dark:bg-amber-500/[0.08] dark:text-amber-200 dark:hover:bg-amber-500/[0.12]"
+                                className={cn(
+                                    "h-auto w-full justify-start whitespace-normal rounded-xl px-3.5 py-3 text-left shadow-none sm:px-4",
+                                    editorSurface.panel,
+                                    "border-border/70 text-foreground hover:bg-muted/35 hover:border-border/80"
+                                )}
                             >
                                 <div className="flex w-full items-start gap-3">
-                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-amber-500/18 bg-white/55 dark:border-amber-400/18 dark:bg-white/[0.05]">
+                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-primary/22 bg-primary/10 text-primary dark:border-primary/24 dark:bg-primary/12">
                                         <BookOpen className="h-4 w-4" />
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <div className="text-sm font-semibold tracking-tight">How to Update</div>
-                                        <div className="mt-0.5 text-xs leading-relaxed text-amber-800/75 dark:text-amber-200/70">
+                                        <div className="text-sm font-semibold tracking-tight text-foreground">How to Update</div>
+                                        <div className="mt-0.5 text-xs leading-relaxed text-foreground/65 [text-wrap:pretty]">
                                             Open the update guide before importing an existing setup.
                                         </div>
                                     </div>

@@ -37,6 +37,7 @@ import { editorAction, editorHover, editorSurface } from "@/components/editor/ui
 import { LockedUrlInput } from "@/components/editor/LockedUrlInput";
 import { cn } from "@/lib/utils";
 import { shallowEqualObject } from "@/lib/equality";
+import { removePatternFromState } from "@/lib/pattern-state";
 import {
     arrayMove,
     SortableContext,
@@ -108,6 +109,68 @@ const formatBackgroundOpacityValue = (value: number) => {
     return `${value}%`;
 };
 
+const normalizePatternColorHex = (value: unknown, fallback: string) => {
+    if (typeof value !== "string") return fallback;
+    const trimmed = value.trim();
+    const withoutHash = trimmed.startsWith("#") ? trimmed.slice(1) : trimmed;
+    const normalized = withoutHash.startsWith("0x") || withoutHash.startsWith("0X")
+        ? withoutHash.slice(2)
+        : withoutHash;
+    if (/^([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(normalized)) {
+        return `#${normalized}`;
+    }
+    return fallback;
+};
+
+const parseHexColor = (hex: string) => {
+    const normalized = hex.replace("#", "").trim();
+    if (![3, 4, 6, 8].includes(normalized.length)) return null;
+
+    const parts = normalized.length <= 4
+        ? normalized.split("").map((part) => part + part)
+        : [normalized.slice(0, 2), normalized.slice(2, 4), normalized.slice(4, 6), normalized.slice(6, 8)];
+
+    const [r, g, b] = parts.slice(0, 3).map((part) => Number.parseInt(part, 16));
+    const aRaw = parts[3] !== undefined ? Number.parseInt(parts[3], 16) : 255;
+    if ([r, g, b, aRaw].some((n) => Number.isNaN(n))) return null;
+
+    return {
+        r,
+        g,
+        b,
+        a: aRaw / 255,
+    };
+};
+
+const hexToRgba = (hex: string, alphaOverride?: number) => {
+    const parsed = parseHexColor(hex);
+    const fallbackAlpha = alphaOverride ?? 0.18;
+    if (!parsed) return `rgba(15, 23, 42, ${fallbackAlpha})`;
+    const alpha = alphaOverride ?? parsed.a;
+    return `rgba(${parsed.r}, ${parsed.g}, ${parsed.b}, ${alpha})`;
+};
+
+const getPatternPreviewImageFilter = (value: unknown) => {
+    const index = Number(normalizePatternSelectNumber(value) || 3);
+    if (index === 1) return "brightness(0) saturate(100%)";
+    if (index === 2) return "brightness(0) saturate(100%) invert(1)";
+    return "none";
+};
+
+const getPatternPreviewRadius = (value: unknown) => {
+    const index = Number(normalizePatternSelectNumber(value) || 3);
+    return `${index * 2}px`;
+};
+
+const getPatternPreviewBackgroundAlpha = (value: unknown) => {
+    const normalized = normalizePatternSelectNumber(value);
+    if (!normalized) return undefined;
+    const opacity = Number(normalized);
+    if (!Number.isFinite(opacity)) return undefined;
+    if (opacity <= 1) return undefined;
+    return Math.min(1, opacity / 100);
+};
+
 const patternFieldSurface =
     "!border-slate-200/88 !bg-white/62 shadow-[inset_0_1px_0_rgba(255,255,255,0.74)] dark:!border-white/[0.11] dark:!bg-[linear-gradient(180deg,rgba(18,22,30,0.96),rgba(14,18,25,0.94))] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]";
 
@@ -174,6 +237,10 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
 
     const customName = currentValues["regex_pattern_custom_names"]?.[regex];
     const imageUrl = currentValues["regex_pattern_image_urls"]?.[regex];
+    const previewBackgroundHex = normalizePatternColorHex(currentValues["pattern_color_hex_values"]?.[regex], "#020617");
+    const previewBackgroundAlpha = getPatternPreviewBackgroundAlpha(currentValues["pattern_background_opacities"]?.[regex]);
+    const previewBorderRadius = getPatternPreviewRadius(currentValues["pattern_border_radius_indices"]?.[regex]);
+    const previewImageFilter = getPatternPreviewImageFilter(currentValues["pattern_image_color_indices"]?.[regex]);
 
     const handleDeleteClick = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -258,13 +325,23 @@ const PatternNode = React.memo(function PatternNode({ regex, onDelete, onRename 
                     {imageUrl && (
                         <div 
                             className={cn(
-                                "h-10 w-auto min-w-[28px] max-w-24 shrink-0 overflow-hidden rounded-md flex items-center justify-center transition-opacity border border-white/10 p-0.5",
+                                "h-[34px] w-auto min-w-[24px] max-w-20 shrink-0 overflow-hidden border border-white/10 p-[1.5px] flex items-center justify-center transition-opacity",
                                 !isTagEnabled && "opacity-30"
                             )}
-                            style={{ backgroundColor: '#020617' }}
+                            style={{
+                                backgroundColor: previewBackgroundAlpha === undefined
+                                    ? previewBackgroundHex
+                                    : hexToRgba(previewBackgroundHex, previewBackgroundAlpha),
+                                borderRadius: previewBorderRadius,
+                            }}
                         >
                             {/* eslint-disable-next-line @next/next/no-img-element -- Pattern preview accepts dynamic remote URLs and must stay lightweight. */}
-                            <img src={imageUrl} alt={customName || regex} className="h-full w-auto object-contain" />
+                            <img
+                                src={imageUrl}
+                                alt={customName || regex}
+                                className="h-full w-auto object-contain"
+                                style={{ filter: previewImageFilter }}
+                            />
                         </div>
                     )}
                     <Button
@@ -650,16 +727,8 @@ export function UnifiedPatternEditor() {
     const confirmDeletePattern = () => {
         if (!patternToDelete) return;
         const regex = patternToDelete;
-        PATTERN_DICTS.forEach(d => {
-            const dict = currentValues[d.key];
-            if (Array.isArray(dict)) {
-                if (dict.includes(regex)) {
-                    updateValue([d.key], dict.filter((r: string) => r !== regex));
-                }
-            } else if (dict && typeof dict === "object" && dict[regex] !== undefined) {
-                updateValue([d.key, regex], undefined);
-            }
-        });
+        const nextValues = removePatternFromState(currentValues, regex);
+        updateValue([], nextValues);
         setPatternToDelete(null);
     };
 
@@ -688,6 +757,10 @@ export function UnifiedPatternEditor() {
         const autoPlayEnabled = currentValues["auto_play_enabled_patterns"];
         if (Array.isArray(autoPlayEnabled) && autoPlayEnabled.includes(oldRegex)) {
             updateValue(["auto_play_enabled_patterns"], autoPlayEnabled.map((r: string) => r === oldRegex ? newRegex : r));
+        }
+        const defaultFilterEnabled = currentValues["pattern_default_filter_enabled_patterns"];
+        if (Array.isArray(defaultFilterEnabled) && defaultFilterEnabled.includes(oldRegex)) {
+            updateValue(["pattern_default_filter_enabled_patterns"], defaultFilterEnabled.map((r: string) => r === oldRegex ? newRegex : r));
         }
     };
 
@@ -812,10 +885,22 @@ export function UnifiedPatternEditor() {
                                         }),
                                     }}
                                 >
+                                    {(() => {
+                                        const overlayBackgroundHex = normalizePatternColorHex(currentValues["pattern_color_hex_values"]?.[activeId], "#020617");
+                                        const overlayBackgroundAlpha = getPatternPreviewBackgroundAlpha(currentValues["pattern_background_opacities"]?.[activeId]);
+                                        const overlayBorderRadius = getPatternPreviewRadius(currentValues["pattern_border_radius_indices"]?.[activeId]);
+                                        const overlayImageFilter = getPatternPreviewImageFilter(currentValues["pattern_image_color_indices"]?.[activeId]);
+                                        return (
                                     <div className={cn(
-                                        "flex items-center justify-between pl-2 pr-4 py-4 rounded-xl border border-primary/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.84))] shadow-2xl opacity-95 dark:bg-[linear-gradient(180deg,rgba(20,23,30,0.96),rgba(13,16,21,0.94))]",
+                                        "flex items-center justify-between pl-2 pr-4 py-4 rounded-xl border border-primary/45 shadow-2xl opacity-95 dark:bg-[linear-gradient(180deg,rgba(20,23,30,0.96),rgba(13,16,21,0.94))]",
                                         "ring-1 ring-primary/20"
-                                    )}>
+                                    )}
+                                    style={{
+                                        backgroundColor: overlayBackgroundAlpha === undefined
+                                            ? overlayBackgroundHex
+                                            : hexToRgba(overlayBackgroundHex, overlayBackgroundAlpha),
+                                        borderRadius: overlayBorderRadius,
+                                    }}>
                                         <div className="flex items-center gap-3">
                                             <GripVertical className="h-5 w-5 text-primary" />
                                             <span className="font-bold text-sm tracking-tight text-foreground truncate max-w-[200px]">
@@ -824,14 +909,26 @@ export function UnifiedPatternEditor() {
                                         </div>
                                         {currentValues["regex_pattern_image_urls"]?.[activeId] && (
                                             <div 
-                                                className="h-8 w-8 shrink-0 overflow-hidden rounded-md flex items-center justify-center border border-white/10 p-1"
-                                                style={{ backgroundColor: '#020617' }}
+                                                className="h-[27px] w-[27px] shrink-0 overflow-hidden rounded-md flex items-center justify-center border border-white/10 p-[3px]"
+                                                style={{
+                                                    backgroundColor: overlayBackgroundAlpha === undefined
+                                                        ? overlayBackgroundHex
+                                                        : hexToRgba(overlayBackgroundHex, overlayBackgroundAlpha),
+                                                    borderRadius: overlayBorderRadius,
+                                                }}
                                             >
                                                 {/* eslint-disable-next-line @next/next/no-img-element -- Dynamic pattern preview. */}
-                                                <img src={currentValues["regex_pattern_image_urls"]?.[activeId]} alt="Preview" className="h-full w-auto object-contain" />
+                                                <img
+                                                    src={currentValues["regex_pattern_image_urls"]?.[activeId]}
+                                                    alt="Preview"
+                                                    className="h-full w-auto object-contain"
+                                                    style={{ filter: overlayImageFilter }}
+                                                />
                                             </div>
                                         )}
                                     </div>
+                                        );
+                                    })()}
                                 </DragOverlay>,
                                 document.body
                             ) : null}

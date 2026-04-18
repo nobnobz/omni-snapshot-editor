@@ -13,6 +13,8 @@ const scorePayload = (jsonText: string) => {
     }, 0);
 };
 
+const getCatalogCount = (jsonText: string) => parseAIOMetadataFallbacks(jsonText).normalizedCatalogs.length;
+
 export const deriveAIOMetadataConfigLoadUrl = (manifestUrl: string) => {
     try {
         const url = new URL(manifestUrl);
@@ -29,6 +31,13 @@ export const pickRicherAIOMetadataPayload = (manifestPayload: string, configPayl
     if (!configPayload?.trim()) return manifestPayload;
 
     try {
+        const manifestCatalogCount = getCatalogCount(manifestPayload);
+        const configCatalogCount = getCatalogCount(configPayload);
+
+        if (configCatalogCount !== manifestCatalogCount) {
+            return configCatalogCount > manifestCatalogCount ? configPayload : manifestPayload;
+        }
+
         const manifestScore = scorePayload(manifestPayload);
         const configScore = scorePayload(configPayload);
         return configScore > manifestScore ? configPayload : manifestPayload;

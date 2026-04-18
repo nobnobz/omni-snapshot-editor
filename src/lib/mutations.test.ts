@@ -533,4 +533,101 @@ describe('Mutations Library', () => {
         expect(newState.main_catalog_groups["collections-uuid"].subgroupNames).toEqual([]);
         expect(newState.subgroup_order["collections-uuid"]).toBeUndefined();
     });
+
+    it('keeps subgroup references clean across delete + restore + import flows', () => {
+        const initialState = {
+            main_catalog_groups: {
+                "main-movies": {
+                    name: "Movies",
+                    subgroupNames: ["Action Picks", "Drama Picks"]
+                },
+            },
+            main_group_order: ["main-movies"],
+            subgroup_order: {
+                "main-movies": ["Action Picks", "Drama Picks"],
+            },
+            catalog_groups: {
+                "Action Picks": ["movie:one"],
+                "Drama Picks": ["movie:two"],
+            },
+            catalog_group_order: ["Action Picks", "Drama Picks"],
+            catalog_group_image_urls: {
+                "Action Picks": "https://example.com/action.png",
+            },
+            custom_catalog_names: {},
+        };
+
+        const deletedState = disableGroup("Action Picks", initialState);
+
+        const restoredState = validateAndFix({
+            ...deletedState,
+            catalog_groups: {
+                ...deletedState.catalog_groups,
+                "Action Picks": ["movie:restored"],
+            },
+            catalog_group_order: [...(deletedState.catalog_group_order || []), "Action Picks"],
+            catalog_group_image_urls: {
+                ...(deletedState.catalog_group_image_urls || {}),
+                "Action Picks": "https://example.com/action.png",
+            },
+            subgroup_order: {
+                ...deletedState.subgroup_order,
+                "main-movies": [...(deletedState.subgroup_order?.["main-movies"] || []), "Action Picks"],
+            },
+            main_catalog_groups: {
+                ...deletedState.main_catalog_groups,
+                "main-movies": {
+                    ...deletedState.main_catalog_groups["main-movies"],
+                    subgroupNames: [...(deletedState.main_catalog_groups["main-movies"]?.subgroupNames || []), "Action Picks"],
+                },
+            },
+        });
+
+        const importedState = importGroups({
+            mainGroups: {
+                "incoming-movies": {
+                    name: "Movies",
+                    subgroupNames: ["Action Collection", "Drama Picks"],
+                    posterType: "Poster",
+                    posterSize: "Default",
+                },
+            },
+            subgroups: {
+                "Action Collection": {
+                    renameFrom: "Action Picks",
+                    overwriteCatalogs: false,
+                    overwriteImage: false,
+                },
+            },
+            standaloneAssignments: {},
+        }, restoredState);
+
+        const referencedSubgroups = new Set<string>();
+        Object.values(importedState.subgroup_order || {}).forEach((subgroups) => {
+            if (Array.isArray(subgroups)) {
+                subgroups.forEach((name) => {
+                    if (typeof name === "string") referencedSubgroups.add(name);
+                });
+            }
+        });
+        Object.values(importedState.main_catalog_groups || {}).forEach((group) => {
+            if (!group || typeof group !== "object") return;
+            const subgroupNames = (group as { subgroupNames?: unknown }).subgroupNames;
+            if (Array.isArray(subgroupNames)) {
+                subgroupNames.forEach((name) => {
+                    if (typeof name === "string") referencedSubgroups.add(name);
+                });
+            }
+        });
+
+        expect(importedState.catalog_groups["Action Picks"]).toBeUndefined();
+        expect(importedState.catalog_groups["Action Collection"]).toEqual(["movie:restored"]);
+        expect(importedState.catalog_group_image_urls["Action Collection"]).toBe("https://example.com/action.png");
+        expect(importedState.subgroup_order["main-movies"]).toEqual(["Action Collection", "Drama Picks"]);
+        expect(importedState.main_catalog_groups["main-movies"].subgroupNames).toEqual(["Action Collection", "Drama Picks"]);
+
+        Object.keys(importedState.catalog_groups || {}).forEach((subgroupName) => {
+            expect(referencedSubgroups.has(subgroupName)).toBe(true);
+        });
+    });
 });
