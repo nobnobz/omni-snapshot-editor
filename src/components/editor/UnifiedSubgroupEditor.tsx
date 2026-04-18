@@ -36,7 +36,6 @@ import { CSS } from '@dnd-kit/utilities';
 import { Button } from "@/components/ui/button";
 import { GripVertical, ImageIcon, LinkIcon, ChevronRight, ChevronDown, RotateCcw, Search, X, Plus, Pencil, Trash2, FolderPlus, FolderInput, UploadCloud, AlertTriangle, Check, ArrowUpAZ, ArrowDownAZ } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
@@ -296,56 +295,6 @@ const preventTouchDropdownAutoOpen = (event: React.PointerEvent<HTMLButtonElemen
     if (event.pointerType === "touch") {
         event.preventDefault();
         event.stopPropagation();
-    }
-};
-
-const isPostimagesGalleryUrl = (value: string) => {
-    try {
-        const url = new URL(value);
-        return url.protocol === "https:"
-            && url.hostname.toLowerCase() === "postimg.cc"
-            && url.pathname.startsWith("/gallery/");
-    } catch {
-        return false;
-    }
-};
-
-const fetchGalleryText = async (galleryUrl: string) => {
-    try {
-        const response = await fetch(galleryUrl, { cache: "no-store" });
-        if (!response.ok) {
-            throw new Error(`Postimages returned ${response.status}`);
-        }
-        return {
-            text: await response.text(),
-            source: "direct" as const,
-        };
-    } catch (directError) {
-        if (!isPostimagesGalleryUrl(galleryUrl)) {
-            throw directError;
-        }
-
-        try {
-            const rawFallbackUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(galleryUrl)}`;
-            const response = await fetch(rawFallbackUrl, { cache: "no-store" });
-            if (!response.ok) {
-                throw new Error(`Postimages raw fallback returned ${response.status}`);
-            }
-            return {
-                text: await response.text(),
-                source: "raw-fallback" as const,
-            };
-        } catch {
-            const readerFallbackUrl = `https://r.jina.ai/${galleryUrl}`;
-            const response = await fetch(readerFallbackUrl, { cache: "no-store" });
-            if (!response.ok) {
-                throw new Error(`Postimages reader fallback returned ${response.status}`);
-            }
-            return {
-                text: await response.text(),
-                source: "reader-fallback" as const,
-            };
-        }
     }
 };
 
@@ -2172,7 +2121,7 @@ const UnassignedSubgroupRow = React.memo(function UnassignedSubgroupRow({
 export function UnifiedSubgroupEditor({
     onOpenGuide,
     aiomMismatchSummary,
-    importedAIOMetadataCatalogs,
+    importedAIOMetadataCatalogs: _importedAIOMetadataCatalogs,
 }: {
     onOpenGuide?: (guide: "install" | "update" | "use") => void;
     aiomMismatchSummary: AIOMetadataMismatchAnalysis;
@@ -2183,19 +2132,18 @@ export function UnifiedSubgroupEditor({
         mainCatalogGroups,
         mainGroupOrderRaw,
         catalogGroups,
-        catalogGroupImageUrls,
     } = useConfigSelector((state) => ({
         subgroupOrderRaw: state.currentValues["subgroup_order"],
         mainCatalogGroups: (state.currentValues["main_catalog_groups"] as Record<string, { name?: string; subgroupNames?: string[] }> | undefined) ?? EMPTY_RECORD,
         mainGroupOrderRaw: state.currentValues["main_group_order"],
         catalogGroups: state.currentValues.catalog_groups || {},
-        catalogGroupImageUrls: state.currentValues.catalog_group_image_urls || {},
     }), shallowEqualObject);
     const {
         updateValue,
         assignCatalogGroup,
         removeCatalogGroup,
     } = useConfigActions();
+    void _importedAIOMetadataCatalogs;
     const subgroupOrder = React.useMemo(
         () => ((subgroupOrderRaw as Record<string, unknown> | undefined) ?? EMPTY_RECORD),
         [subgroupOrderRaw]
@@ -2222,17 +2170,7 @@ export function UnifiedSubgroupEditor({
     const [recentUnassigns, setRecentUnassigns] = useState<Record<string, string>>({}); // subgroupName -> parentUuid
     const [expandedUnassignedSubgroup, setExpandedUnassignedSubgroup] = useState<string | null>(null);
     const [isUnassignedSectionOpen, setIsUnassignedSectionOpen] = useState(false);
-    const [isDevCatalogReassignOpen, setIsDevCatalogReassignOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
-    const [selectedMissingMainGroups, setSelectedMissingMainGroups] = useState<Set<string>>(new Set());
-    const [postimagesGalleryUrl, setPostimagesGalleryUrl] = useState("");
-    const [postimagesPasteInput, setPostimagesPasteInput] = useState("");
-    const [isPostimagesPasteOpen, setIsPostimagesPasteOpen] = useState(false);
-    const [isPostimagesPreviewLoading, setIsPostimagesPreviewLoading] = useState(false);
-    const [postimagesStatus, setPostimagesStatus] = useState<{ tone: "neutral" | "warning" | "success" | "danger"; message: string } | null>(null);
-    const [postimagesReport, setPostimagesReport] = useState<any>(null);
-    const [postimagesApplyReport, setPostimagesApplyReport] = useState<any>(null);
-    const [selectedPostimagesMatchIds, setSelectedPostimagesMatchIds] = useState<Set<string>>(new Set());
     const deferredSearchTerm = useDeferredValue(searchTerm);
     const searchInputRef = useRef<HTMLInputElement>(null);
     const mainGroupScrollTimeoutRef = useRef<number | null>(null);
@@ -2351,12 +2289,6 @@ export function UnifiedSubgroupEditor({
             updateValue(["main_group_order"], newArray);
         }
     };
-
-    const availableAIOMetadataCatalogs = React.useMemo(
-        () => importedAIOMetadataCatalogs ?? [],
-        [importedAIOMetadataCatalogs]
-    );
-    const hasImportedAIOMetadataCatalogs = availableAIOMetadataCatalogs.length > 0;
 
     // Filter unassigned subgroups
     const assignedGroups = new Set<string>();
