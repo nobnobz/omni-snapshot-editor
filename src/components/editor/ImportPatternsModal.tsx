@@ -41,6 +41,24 @@ const ARRAY_KEYS = [...PATTERN_ARRAY_KEYS];
 const ALL_PATTERN_KEYS = [...DICT_KEYS, ...ARRAY_KEYS];
 const DICT_KEY_SET = new Set<string>(DICT_KEYS);
 
+type PatternTemplateOption = {
+    key: "colored" | "white";
+    label: string;
+    url: string;
+};
+
+const WHITE_TAGS_TEMPLATE: PatternTemplateOption = {
+    key: "white",
+    label: "UME white tags",
+    url: "/omni-snapshot-editor/pattern-import-sources/omni-ume-minimalistic-white-tags.json",
+};
+
+const COLORED_TAGS_TEMPLATE: PatternTemplateOption = {
+    key: "colored",
+    label: "UME colored tags",
+    url: FALLBACK_TEMPLATE_URLS.omni,
+};
+
 interface ParsedPattern {
     regex: string;
     customName: string;
@@ -105,41 +123,28 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
         };
     }, [isOpen]);
 
-    const templates: { label: string; url: string }[] = useMemo(() => (
-        manifest?.templates?.length
-            ? manifest.templates
-                .filter((template) => isTemplateOfKind(template, "omni") && !!template.url)
-                .map((template) => ({ label: template.name, url: template.url }))
-            : [
-                {
-                    label: "UME Omni Template v2.0.3",
-                    url: FALLBACK_TEMPLATE_URLS.omni,
-                },
-            ]
-    ), [manifest]);
+    const templates: PatternTemplateOption[] = useMemo(() => {
+        const latestOmniTemplate = manifest?.templates?.length
+            ? manifest.templates.find((template) => template.isDefault && isTemplateOfKind(template, "omni"))
+                || findTemplateByKind(manifest?.templates, "omni")
+            : null;
 
-    const [selectedVersion, setSelectedVersion] = useState("");
+        return [
+            {
+                ...COLORED_TAGS_TEMPLATE,
+                url: latestOmniTemplate?.url || FALLBACK_TEMPLATE_URLS.omni,
+            },
+            WHITE_TAGS_TEMPLATE,
+        ];
+    }, [manifest]);
+
+    const [selectedTemplateKey, setSelectedTemplateKey] = useState<PatternTemplateOption["key"]>("colored");
 
     useEffect(() => {
-        if (templates.length === 0) {
-            setSelectedVersion("");
-            return;
-        }
-
-        const defaultTemplate = manifest?.templates?.find((template) => template.isDefault && isTemplateOfKind(template, "omni"))
-            || findTemplateByKind(manifest?.templates, "omni");
-
-        if (defaultTemplate?.name && defaultTemplate.url) {
-            setSelectedVersion((current) => (current === defaultTemplate.name ? current : defaultTemplate.name));
-            return;
-        }
-
-        setSelectedVersion((current) => (
-            current && templates.some(template => template.label === current)
-                ? current
-                : templates[0]?.label ?? ""
-        ));
-    }, [manifest, templates]);
+        setSelectedTemplateKey((current) =>
+            templates.some((template) => template.key === current) ? current : "colored"
+        );
+    }, [templates]);
 
     const [templateLoading, setTemplateLoading] = useState(false);
 
@@ -370,7 +375,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                 <DialogHeader className="shrink-0">
                     <DialogTitle>Import Patterns & Regex</DialogTitle>
                     <DialogDescription className="text-foreground/70">
-                        {step === 1 ? "Load a template or upload a config to import patterns." : `Select patterns to import from ${fileName}`}
+                        {step === 1 ? "Choose a source." : `Select patterns to import from ${fileName}`}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -380,17 +385,20 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                             <div className={cn(editorSurface.panel, "space-y-4 p-5")}>
                                 <h3 className="font-semibold text-sm text-foreground/90">Load from Template</h3>
                                 <div className="flex flex-col gap-3">
-                                    <Select value={selectedVersion} onValueChange={setSelectedVersion}>
+                                    <Select value={selectedTemplateKey} onValueChange={(value) => setSelectedTemplateKey(value as PatternTemplateOption["key"])}>
                                         <SelectTrigger
                                             className={cn(editorSurface.field, "h-10 w-full text-base font-mono sm:h-9 sm:text-sm")}
-                                            title={selectedVersion || "Select version"}
-                                            disabled={templates.length === 0}
+                                            title="Select source"
                                         >
-                                            <SelectValue placeholder="Select version" />
+                                            <SelectValue placeholder="Select source" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {templates.map(t => (
-                                                <SelectItem key={t.label} value={t.label} className="text-sm sm:text-xs font-mono cursor-pointer focus:bg-accent focus:text-accent-foreground">
+                                                <SelectItem
+                                                    key={t.key}
+                                                    value={t.key}
+                                                    className="cursor-pointer text-sm font-mono focus:bg-accent focus:text-accent-foreground sm:text-xs"
+                                                >
                                                     {t.label}
                                                 </SelectItem>
                                             ))}
@@ -398,7 +406,7 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                                     </Select>
                                     <Button
                                         onClick={async () => {
-                                            const t = templates.find(t => t.label === selectedVersion);
+                                            const t = templates.find(t => t.key === selectedTemplateKey);
                                             if (!t) return;
                                             setTemplateLoading(true);
                                             setError("");
@@ -415,16 +423,11 @@ export function ImportPatternsModal({ isOpen, onClose }: ImportPatternsModalProp
                                                 setTemplateLoading(false);
                                             }
                                         }}
-                                        disabled={templateLoading || templates.length === 0 || !selectedVersion}
+                                        disabled={templateLoading || templates.length === 0}
                                         className={cn(editorAction.primary, "h-10 w-full font-bold sm:h-9")}
                                     >
                                         {templateLoading ? "Loading..." : "Fetch Template"}
                                     </Button>
-                                    {templates.length === 0 && (
-                                        <p className="text-xs text-foreground/60">
-                                            No UME templates are available right now. You can still upload a local config file below.
-                                        </p>
-                                    )}
                                 </div>
                             </div>
 
