@@ -56,6 +56,8 @@ interface ParsedMainGroup {
     isDuplicate: boolean;
     basicNewSubgroupCount: number;
     basicUpdatedSubgroupCount: number;
+    hasNameChange: boolean;
+    hasLayoutChange: boolean;
     hasChanges?: boolean;
 }
 
@@ -134,6 +136,19 @@ const isIgnoredUpdateManagerSubgroup = (name: string) =>
 
 const buildCatalogSignature = (catalogs: string[]) =>
     JSON.stringify([...catalogs].sort((a, b) => a.localeCompare(b)));
+
+const buildMainGroupSignature = (
+    posterType: unknown,
+    posterSize: unknown,
+    subgroupCatalogs: unknown[]
+) =>
+    JSON.stringify({
+        posterType: typeof posterType === "string" ? posterType : "",
+        posterSize: typeof posterSize === "string" ? posterSize : "",
+        subgroupSignatures: subgroupCatalogs
+            .map((catalogs) => buildCatalogSignature(Array.isArray(catalogs) ? catalogs : []))
+            .sort((left, right) => left.localeCompare(right)),
+    });
 
 type ImportedMainGroupSelection = {
     name: string;
@@ -293,36 +308,33 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                 throw new Error("Invalid format. Could not find configuration data.");
             }
 
-            const currentMainGroupNames = new Set(
-                Object.values(currentValues.main_catalog_groups || {})
-                    .map((group) => {
-                        if (!group || typeof group !== "object") return undefined;
-                        const maybeName = (group as { name?: unknown }).name;
-                        return typeof maybeName === "string" ? maybeName : undefined;
-                    })
-                    .filter((name): name is string => !!name)
-            );
-            const currentMainGroupsByName = new Map(
+            const currentMainGroupsByUuid = new Map(
                 Object.entries(currentValues.main_catalog_groups || {}).flatMap(([uuid, group]) => {
                     if (!group || typeof group !== "object") return [];
-                    const maybeName = (group as { name?: unknown }).name;
-                    const subgroupNames = (group as { subgroupNames?: unknown }).subgroupNames;
-                    if (typeof maybeName !== "string" || !maybeName) return [];
+                    const subgroupNames = currentValues.subgroup_order?.[uuid] || (group as { subgroupNames?: unknown }).subgroupNames;
+                    const name = (group as { name?: unknown }).name;
+                    const posterType = (group as { posterType?: unknown }).posterType;
+                    const posterSize = (group as { posterSize?: unknown }).posterSize;
 
-                    return [[maybeName, {
-                        uuid,
+                    return [[uuid, {
+                        name: typeof name === "string" ? name : undefined,
                         subgroupNames: Array.isArray(subgroupNames)
                             ? subgroupNames.filter((entry): entry is string => typeof entry === "string")
                             : [],
+                        posterType: typeof posterType === "string" ? posterType : undefined,
+                        posterSize: typeof posterSize === "string" ? posterSize : undefined,
                     }]];
                 })
             );
+            const currentMainGroupsBySignature = new Map<string, string[]>();
             const currentCatalogGroups = (currentValues.catalog_groups || {}) as Record<string, string[]>;
             const currentCatalogGroupImageUrls = (currentValues.catalog_group_image_urls || {}) as Record<string, unknown>;
             const currentSubgroupParentGroupNames = new Map<string, Set<string>>();
             const currentMainGroups = (currentValues.main_catalog_groups || {}) as Record<string, {
                 name?: string;
                 subgroupNames?: string[];
+                posterType?: string;
+                posterSize?: string;
             }>;
             const currentMainGroupOrder = normalizeMainGroupOrder(currentMainGroups, currentValues.main_group_order);
             currentMainGroupOrder.forEach((uuid) => {
@@ -332,6 +344,14 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                 const subgroupNames = (currentValues.subgroup_order?.[uuid] || group.subgroupNames || []).filter(
                     (entry: unknown): entry is string => typeof entry === "string"
                 );
+                const subgroupCatalogs = subgroupNames.map((subgroupName: string) => currentCatalogGroups[subgroupName]);
+                const signature = buildMainGroupSignature(group.posterType, group.posterSize, subgroupCatalogs);
+
+                if (!currentMainGroupsBySignature.has(signature)) {
+                    currentMainGroupsBySignature.set(signature, []);
+                }
+                currentMainGroupsBySignature.get(signature)?.push(uuid);
+
                 subgroupNames.forEach((subgroupName: string) => {
                     if (!currentSubgroupParentGroupNames.has(subgroupName)) {
                         currentSubgroupParentGroupNames.set(subgroupName, new Set());
@@ -361,6 +381,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
             const subgroupOrder = (imported.subgroup_order || {}) as Record<string, string[]>;
             const subgroupParentGroupNames = new Map<string, Set<string>>();
             const subgroupParentGroupUuids = new Map<string, string[]>();
+            const usedCurrentMainGroupUuids = new Set<string>();
 
             const parsedMGs: ParsedMainGroup[] = [];
             for (const uuid of inMainGroupOrder) {
@@ -368,6 +389,23 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                 if (!group) continue;
                 const groupName = group.name || "Unnamed Group";
                 const subgroupNames = (subgroupOrder[uuid] || group.subgroupNames || []).filter((sg: string) => !isPlaceholderSg(sg, inCatalogsGroups[sg]));
+                const importedSubgroupCatalogs = subgroupNames.map((subgroupName) => inCatalogsGroups[subgroupName]);
+                const importedMainGroupSignature = buildMainGroupSignature(group.posterType, group.posterSize, importedSubgroupCatalogs);
+                const candidateUuidBySignature = currentMainGroupsBySignature.get(importedMainGroupSignature)?.find(
+                    (candidateUuid) => !usedCurrentMainGroupUuids.has(candidateUuid)
+                );
+                const currentMainGroup = currentMainGroupsByUuid.get(uuid)
+                    || (candidateUuidBySignature ? currentMainGroupsByUuid.get(candidateUuidBySignature) : undefined);
+                const currentMainGroupUuid = currentMainGroupsByUuid.has(uuid)
+                    ? uuid
+                    : candidateUuidBySignature;
+                if (currentMainGroupUuid) {
+                    usedCurrentMainGroupUuids.add(currentMainGroupUuid);
+                }
+                const currentMainGroupSubgroupCatalogs = currentMainGroup?.subgroupNames.reduce((acc, subgroupName) => {
+                    acc[subgroupName] = currentCatalogGroups[subgroupName];
+                    return acc;
+                }, {} as Record<string, unknown>) || {};
                 subgroupNames.forEach((subgroupName) => {
                     if (!subgroupParentGroupNames.has(subgroupName)) {
                         subgroupParentGroupNames.set(subgroupName, new Set());
@@ -380,14 +418,24 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                         subgroupParentGroupUuids.get(subgroupName)?.push(uuid);
                     }
                 });
-                const existingMainGroup = currentMainGroupsByName.get(groupName);
+                const currentMainGroupSubgroupNames = currentMainGroup?.subgroupNames || [];
+                const hasNameChange = (currentMainGroup?.name || "") !== groupName;
+                const hasLayoutChange =
+                    (currentMainGroup?.posterType ?? "") !== (group.posterType ?? "") ||
+                    (currentMainGroup?.posterSize ?? "") !== (group.posterSize ?? "");
                 const {
                     newSubgroupNames: basicNewSubgroupNames,
                     updatedSubgroupNames: basicUpdatedSubgroupNames,
                 } = classifyImportSetupMainGroupSubgroups({
                     currentCatalogGroups,
-                    currentMainGroupSubgroupNames: existingMainGroup?.subgroupNames,
-                    importedSubgroupNames: subgroupNames,
+                    currentMainGroupCatalogs: currentMainGroupSubgroupCatalogs,
+                    currentMainGroupSubgroupNames,
+                    importedSubgroups: Object.fromEntries(
+                        subgroupNames.map((subgroupName) => [
+                            subgroupName,
+                            { catalogs: inCatalogsGroups[subgroupName] },
+                        ])
+                    ),
                 });
                 const basicUpdatedSubgroupCount = basicUpdatedSubgroupNames.length;
                 const basicNewSubgroupCount = basicNewSubgroupNames.length;
@@ -399,10 +447,12 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                     basicUpdatedSubgroupNames,
                     posterType: group.posterType || "movie",
                     posterSize: group.posterSize || "normal",
-                    isDuplicate: currentMainGroupNames.has(groupName),
+                    isDuplicate: !!currentMainGroup,
                     basicNewSubgroupCount,
                     basicUpdatedSubgroupCount,
-                    hasChanges: basicNewSubgroupCount > 0 || basicUpdatedSubgroupCount > 0,
+                    hasNameChange,
+                    hasLayoutChange,
+                    hasChanges: basicNewSubgroupCount > 0 || basicUpdatedSubgroupCount > 0 || hasLayoutChange || hasNameChange,
                 });
             }
 
@@ -587,8 +637,8 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         return Array.from(selectedMainGroupUuids).some(uuid => {
             const group = parsedMainGroups.find(mg => mg.originalUuid === uuid);
             if (!group) return false;
-            const subgroups = selectedMainGroupSubgroups[uuid] || group.subgroupNames;
-            return subgroups.includes(name);
+            const { selectedSubgroups } = getMainGroupSelectionContext(group);
+            return selectedSubgroups.includes(name);
         });
     };
 
@@ -617,13 +667,42 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         [activeMainFilter]
     );
 
+    const getMainGroupSelectionContext = useCallback((
+        group: ParsedMainGroup,
+        filter: "new" | "updates" = activeMainFilter,
+        isSelected = selectedMainGroupUuids.has(group.originalUuid),
+        selectionOverrides = selectedMainGroupSubgroups
+    ) => {
+        const visibleSubgroups = getBasicVisibleSubgroups(group, filter);
+        const isMetadataOnlyChange = visibleSubgroups.length === 0 && (group.hasLayoutChange || group.hasNameChange);
+        const selectedSubgroups = isSelected
+            ? (selectionOverrides[group.originalUuid] ?? (isMetadataOnlyChange ? [] : group.subgroupNames))
+            : [];
+
+        return {
+            visibleSubgroups,
+            isMetadataOnlyChange,
+            selectedSubgroups,
+        };
+    }, [activeMainFilter, getBasicVisibleSubgroups, selectedMainGroupSubgroups, selectedMainGroupUuids]);
+
+    const hasMainGroupImportUpdate = useCallback((group: ParsedMainGroup) =>
+        group.basicNewSubgroupCount > 0 || group.basicUpdatedSubgroupCount > 0 || group.hasLayoutChange || group.hasNameChange,
+    []);
+
+    const getSelectableMainGroupCount = useCallback((group: ParsedMainGroup) => {
+        const { visibleSubgroups, isMetadataOnlyChange } = getMainGroupSelectionContext(group, "updates");
+        if (visibleSubgroups.length > 0) return visibleSubgroups.length;
+        return isMetadataOnlyChange ? 1 : 0;
+    }, [getMainGroupSelectionContext]);
+
     const filteredNewMainGroups = useMemo(
         () => filteredMainGroups.filter((mg) => getBasicVisibleSubgroups(mg, "new").length > 0),
         [filteredMainGroups, getBasicVisibleSubgroups]
     );
     const filteredUpdatedMainGroups = useMemo(
-        () => filteredMainGroups.filter((mg) => getBasicVisibleSubgroups(mg, "updates").length > 0),
-        [filteredMainGroups, getBasicVisibleSubgroups]
+        () => filteredMainGroups.filter((mg) => hasMainGroupImportUpdate(mg)),
+        [filteredMainGroups, hasMainGroupImportUpdate]
     );
     const filteredUpdatedSubgroups = useMemo(
         () => filteredSubgroups.filter(sg => sg.isDuplicate && (sg.hasNewCatalogs || sg.hasNewImage || sg.hasRename || sg.hasGroupChange)),
@@ -651,21 +730,19 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         [filteredNewMainGroups, getBasicVisibleSubgroups]
     );
     const filteredUpdatedMainSubgroupCount = useMemo(
-        () => filteredUpdatedMainGroups.reduce((total, group) => total + getBasicVisibleSubgroups(group, "updates").length, 0),
-        [filteredUpdatedMainGroups, getBasicVisibleSubgroups]
+        () => filteredUpdatedMainGroups.reduce((total, group) => total + getSelectableMainGroupCount(group), 0),
+        [filteredUpdatedMainGroups, getSelectableMainGroupCount]
     );
 
     const toggleVisibleMainGroup = (group: ParsedMainGroup) => {
-        const visibleSubgroups = getBasicVisibleSubgroups(group);
-        if (visibleSubgroups.length === 0) return;
+        const { visibleSubgroups, isMetadataOnlyChange, selectedSubgroups: currentSelected } = getMainGroupSelectionContext(group);
+        if (visibleSubgroups.length === 0 && !isMetadataOnlyChange) return;
 
-        const currentSelected = selectedMainGroupUuids.has(group.originalUuid)
-            ? (selectedMainGroupSubgroups[group.originalUuid] || group.subgroupNames)
-            : [];
-        const allVisibleSelected = visibleSubgroups.every((subgroupName) => currentSelected.includes(subgroupName));
-        const nextSelected = allVisibleSelected
-            ? currentSelected.filter((subgroupName) => !visibleSubgroups.includes(subgroupName))
-            : Array.from(new Set([...currentSelected, ...visibleSubgroups]));
+        const nextSelected = isMetadataOnlyChange
+            ? (selectedMainGroupUuids.has(group.originalUuid) ? [] : [])
+            : visibleSubgroups.every((subgroupName) => currentSelected.includes(subgroupName))
+                ? currentSelected.filter((subgroupName) => !visibleSubgroups.includes(subgroupName))
+                : Array.from(new Set([...currentSelected, ...visibleSubgroups]));
 
         setSelectedMainGroupSubgroups((previous) => {
             const next = { ...previous };
@@ -678,6 +755,14 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         });
         setSelectedMainGroupUuids((previous) => {
             const next = new Set(previous);
+            if (isMetadataOnlyChange) {
+                if (next.has(group.originalUuid)) {
+                    next.delete(group.originalUuid);
+                } else {
+                    next.add(group.originalUuid);
+                }
+                return next;
+            }
             if (nextSelected.length === 0) {
                 next.delete(group.originalUuid);
             } else {
@@ -692,16 +777,19 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         const nextSubgroupSelections = { ...selectedMainGroupSubgroups };
 
         visibleMainGroups.forEach((group) => {
-            const visibleSubgroups = getBasicVisibleSubgroups(group);
-            if (visibleSubgroups.length === 0) return;
-
-            const currentSelected = nextMainGroups.has(group.originalUuid)
-                ? (nextSubgroupSelections[group.originalUuid] || group.subgroupNames)
-                : [];
-            const mergedSelection = Array.from(new Set([...currentSelected, ...visibleSubgroups]));
+            const { visibleSubgroups, isMetadataOnlyChange, selectedSubgroups: currentSelected } = getMainGroupSelectionContext(
+                group,
+                activeMainFilter,
+                nextMainGroups.has(group.originalUuid),
+                nextSubgroupSelections
+            );
+            if (visibleSubgroups.length === 0 && !isMetadataOnlyChange) return;
+            const mergedSelection = isMetadataOnlyChange
+                ? []
+                : Array.from(new Set([...currentSelected, ...visibleSubgroups]));
 
             nextMainGroups.add(group.originalUuid);
-            if (mergedSelection.length === group.subgroupNames.length) {
+            if (mergedSelection.length === 0 || mergedSelection.length === group.subgroupNames.length) {
                 delete nextSubgroupSelections[group.originalUuid];
             } else {
                 nextSubgroupSelections[group.originalUuid] = mergedSelection;
@@ -716,13 +804,16 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         const nextSubgroupSelections = { ...selectedMainGroupSubgroups };
 
         visibleMainGroups.forEach((group) => {
-            const visibleSubgroups = getBasicVisibleSubgroups(group);
-            if (visibleSubgroups.length === 0) return;
-
-            const currentSelected = nextMainGroups.has(group.originalUuid)
-                ? (nextSubgroupSelections[group.originalUuid] || group.subgroupNames)
-                : [];
-            const remainingSelection = currentSelected.filter((subgroupName) => !visibleSubgroups.includes(subgroupName));
+            const { visibleSubgroups, isMetadataOnlyChange, selectedSubgroups: currentSelected } = getMainGroupSelectionContext(
+                group,
+                activeMainFilter,
+                nextMainGroups.has(group.originalUuid),
+                nextSubgroupSelections
+            );
+            if (visibleSubgroups.length === 0 && !isMetadataOnlyChange) return;
+            const remainingSelection = isMetadataOnlyChange
+                ? []
+                : currentSelected.filter((subgroupName) => !visibleSubgroups.includes(subgroupName));
 
             if (remainingSelection.length === 0) {
                 nextMainGroups.delete(group.originalUuid);
@@ -826,7 +917,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         selectedMainGroupUuids.forEach(uuid => {
             const mg = parsedMainGroups.find(m => m.originalUuid === uuid);
             if (!mg) return;
-            const selectedSubgroupNames = selectedMainGroupSubgroups[uuid] || mg.subgroupNames;
+            const { selectedSubgroups: selectedSubgroupNames } = getMainGroupSelectionContext(mg);
             finalMainGroups[uuid] = {
                 name: mg.name,
                 subgroupNames: selectedSubgroupNames,
@@ -883,7 +974,8 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
         Array.from(selectedMainGroupUuids).flatMap((uuid) => {
             const group = parsedMainGroups.find((mainGroup) => mainGroup.originalUuid === uuid);
             if (!group) return [];
-            return selectedMainGroupSubgroups[uuid] || group.subgroupNames;
+            const { visibleSubgroups, isMetadataOnlyChange, selectedSubgroups } = getMainGroupSelectionContext(group);
+            return selectedSubgroups.length > 0 ? selectedSubgroups : (isMetadataOnlyChange && visibleSubgroups.length === 0 ? [group.originalUuid] : []);
         })
     ).size;
     const totalSelectedSubgroups = new Set([
@@ -1047,7 +1139,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                             {isIncludedWithMain && (
                                 <>
                                     <span className="w-1 h-1 rounded-full bg-foreground/15" />
-                                    <span className="text-primary/70">Linked to Basic Import</span>
+                                    <span className="text-primary/70">Linked to Basic</span>
                                 </>
                             )}
                         </div>
@@ -1078,18 +1170,18 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                 variant="outline"
                                 onClick={() => onOpenGuide("update")}
                                 className={cn(
-                                    "h-auto w-full justify-start whitespace-normal rounded-xl px-3.5 py-3 text-left shadow-none sm:px-4",
+                                    "h-auto min-h-[5rem] w-full items-start justify-start whitespace-normal rounded-xl px-4 py-4 text-left shadow-none sm:px-5 sm:py-4",
                                     editorSurface.panel,
                                     "border-border/70 text-foreground hover:bg-muted/35 hover:border-border/80"
                                 )}
                             >
-                                <div className="flex w-full items-start gap-3">
-                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-primary/22 bg-primary/10 text-primary dark:border-primary/24 dark:bg-primary/12">
+                                <div className="flex w-full items-start gap-4 sm:items-center">
+                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-primary/22 bg-primary/10 text-primary dark:border-primary/24 dark:bg-primary/12">
                                         <BookOpen className="h-4 w-4" />
                                     </div>
                                     <div className="min-w-0 flex-1">
                                         <div className="text-sm font-semibold tracking-tight text-foreground">How to Update</div>
-                                        <div className="mt-0.5 text-xs leading-relaxed text-foreground/65 [text-wrap:pretty]">
+                                        <div className="mt-1 text-xs leading-relaxed text-foreground/65 [text-wrap:pretty]">
                                             Open the update guide before importing an existing setup.
                                         </div>
                                     </div>
@@ -1182,8 +1274,8 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                             <div className={cn(editorSurface.card, "relative flex flex-col overflow-hidden")}>
                                 <div className="sticky top-0 z-30 bg-white/80 dark:bg-[rgb(13,16,22)]/80 backdrop-blur-md border-b border-border/40 shadow-sm p-4 space-y-3.5">
                                     <TabsList className="h-11 p-1 bg-slate-100/50 dark:bg-white/10 rounded-xl grid grid-cols-2 gap-1 border-none">
-                                        <TabsTrigger value="main" className="rounded-lg font-bold shadow-sm data-[state=active]:bg-white/88 data-[state=active]:text-foreground dark:data-[state=active]:bg-[linear-gradient(180deg,rgba(33,38,47,0.94),rgba(25,29,37,0.92))] dark:data-[state=active]:text-foreground">Basic Import</TabsTrigger>
-                                        <TabsTrigger value="subgroups" className="rounded-lg font-bold shadow-sm data-[state=active]:bg-white/88 data-[state=active]:text-foreground dark:data-[state=active]:bg-[linear-gradient(180deg,rgba(33,38,47,0.94),rgba(25,29,37,0.92))] dark:data-[state=active]:text-foreground">Advanced Update</TabsTrigger>
+                                        <TabsTrigger value="main" className="rounded-lg font-bold shadow-sm data-[state=active]:bg-white/88 data-[state=active]:text-foreground dark:data-[state=active]:bg-[linear-gradient(180deg,rgba(33,38,47,0.94),rgba(25,29,37,0.92))] dark:data-[state=active]:text-foreground">Basic</TabsTrigger>
+                                        <TabsTrigger value="subgroups" className="rounded-lg font-bold shadow-sm data-[state=active]:bg-white/88 data-[state=active]:text-foreground dark:data-[state=active]:bg-[linear-gradient(180deg,rgba(33,38,47,0.94),rgba(25,29,37,0.92))] dark:data-[state=active]:text-foreground">Advanced</TabsTrigger>
                                     </TabsList>
 
                                     <div className="relative">
@@ -1191,7 +1283,7 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                         <Input
                                             value={reviewSearch}
                                             onChange={(e) => startTransition(() => setReviewSearch(e.target.value))}
-                                            placeholder={activeReviewTab === "subgroups" ? "Search Advanced Update..." : "Search Basic Import..."}
+                                            placeholder={activeReviewTab === "subgroups" ? "Search Advanced..." : "Search Basic..."}
                                             className={cn(editorSurface.field, "h-11 pl-10 rounded-xl")}
                                         />
                                     </div>
@@ -1284,9 +1376,9 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                         <div className="divide-y divide-border/50">
                                             {visibleMainGroups.map(mg => {
                                                 const isFullyImported = mg.isDuplicate && !mg.hasChanges;
-                                                const visibleSubgroups = getBasicVisibleSubgroups(mg);
+                                                const { visibleSubgroups, isMetadataOnlyChange, selectedSubgroups } = getMainGroupSelectionContext(mg);
+                                                const canToggleMainGroup = visibleSubgroups.length > 0 || isMetadataOnlyChange;
                                                 const isSelected = selectedMainGroupUuids.has(mg.originalUuid);
-                                                const selectedSubgroups = isSelected ? (selectedMainGroupSubgroups[mg.originalUuid] || mg.subgroupNames) : [];
                                                 const selectedVisibleSubgroups = visibleSubgroups.filter((subgroupName) => selectedSubgroups.includes(subgroupName));
                                                 const checkboxChecked = visibleSubgroups.length > 0
                                                     ? selectedVisibleSubgroups.length === visibleSubgroups.length
@@ -1294,11 +1386,13 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                         : selectedVisibleSubgroups.length > 0
                                                             ? "indeterminate"
                                                             : false
-                                                    : false;
+                                                    : isMetadataOnlyChange && isSelected
+                                                        ? true
+                                                        : false;
 
                                                 return (
                                                     <div key={mg.originalUuid} className={cn("flex items-start p-4 transition-colors", isSelected ? "bg-primary/[0.02]" : isFullyImported ? "opacity-50" : "")}>
-                                                        <Checkbox checked={isFullyImported ? true : checkboxChecked} disabled={isFullyImported || visibleSubgroups.length === 0} onCheckedChange={() => !isFullyImported && toggleVisibleMainGroup(mg)} className="mt-1" />
+                                                        <Checkbox checked={isFullyImported ? true : checkboxChecked} disabled={isFullyImported || !canToggleMainGroup} onCheckedChange={() => !isFullyImported && toggleVisibleMainGroup(mg)} className="mt-1" />
                                                         <div className="ml-3 flex-1 min-w-0">
                                                             <div className="font-semibold flex items-center gap-2">
                                                                 {formatDisplayName(mg.name)}
@@ -1308,6 +1402,11 @@ export function ImportSetupModal({ isOpen, onClose, onOpenGuide }: ImportSetupMo
                                                                     <Badge variant="outline" className={editorToneBadge.info}>Update</Badge>
                                                                 ) : isFullyImported ? (
                                                                     <Badge variant="outline" className="text-[10px] bg-muted/20">Imported</Badge>
+                                                                ) : null}
+                                                                {mg.hasNameChange && !visibleSubgroups.length ? (
+                                                                    <Badge variant="outline" className={editorToneBadge.neutral}>Name</Badge>
+                                                                ) : isMetadataOnlyChange ? (
+                                                                    <Badge variant="outline" className={editorToneBadge.neutral}>Layout</Badge>
                                                                 ) : null}
                                                             </div>
                                                             {visibleSubgroups.length > 0 && (

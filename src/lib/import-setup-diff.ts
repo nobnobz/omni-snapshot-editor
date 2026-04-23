@@ -8,6 +8,9 @@ const normalizeStringList = (value: unknown): string[] =>
         ? value.filter((entry): entry is string => typeof entry === "string").map((entry) => entry.trim()).filter(Boolean)
         : [];
 
+const buildCatalogSignature = (value: unknown) =>
+    JSON.stringify(normalizeCatalogList(value).sort((left, right) => left.localeCompare(right)));
+
 export const normalizeImportSetupImageUrl = (value: unknown) =>
     typeof value === "string" ? value.trim() : "";
 
@@ -38,33 +41,60 @@ export const hasImportSetupGroupPlacementChanged = (currentValue: unknown, impor
 
 export const classifyImportSetupMainGroupSubgroups = ({
     currentCatalogGroups,
+    currentMainGroupCatalogs,
     currentMainGroupSubgroupNames,
-    importedSubgroupNames,
+    importedSubgroups,
 }: {
     currentCatalogGroups: Record<string, unknown>;
+    currentMainGroupCatalogs?: Record<string, unknown>;
     currentMainGroupSubgroupNames?: unknown;
-    importedSubgroupNames: string[];
+    importedSubgroups: Record<string, { catalogs: unknown }>;
 }) => {
     const currentMainGroupSubgroupSet = new Set(normalizeStringList(currentMainGroupSubgroupNames));
     const hasCurrentMainGroup = currentMainGroupSubgroupNames !== undefined;
+    const currentMainGroupCatalogsBySignature = new Map<string, string[]>();
+
+    Object.entries(currentMainGroupCatalogs || {}).forEach(([name, catalogs]) => {
+        const signature = buildCatalogSignature(catalogs);
+        if (!currentMainGroupCatalogsBySignature.has(signature)) {
+            currentMainGroupCatalogsBySignature.set(signature, []);
+        }
+        currentMainGroupCatalogsBySignature.get(signature)?.push(name);
+    });
+
     const newSubgroupNames: string[] = [];
     const updatedSubgroupNames: string[] = [];
     const unchangedSubgroupNames: string[] = [];
 
-    importedSubgroupNames.forEach((subgroupName) => {
+    Object.entries(importedSubgroups).forEach(([subgroupName, subgroup]) => {
         const existsByName = Object.prototype.hasOwnProperty.call(currentCatalogGroups, subgroupName);
 
-        if (!existsByName) {
-            newSubgroupNames.push(subgroupName);
+        if (!hasCurrentMainGroup) {
+            if (existsByName) {
+                updatedSubgroupNames.push(subgroupName);
+            } else {
+                newSubgroupNames.push(subgroupName);
+            }
             return;
         }
 
-        if (!hasCurrentMainGroup || !currentMainGroupSubgroupSet.has(subgroupName)) {
+        if (currentMainGroupSubgroupSet.has(subgroupName)) {
+            unchangedSubgroupNames.push(subgroupName);
+            return;
+        }
+
+        if (existsByName) {
             updatedSubgroupNames.push(subgroupName);
             return;
         }
 
-        unchangedSubgroupNames.push(subgroupName);
+        const signature = buildCatalogSignature(subgroup.catalogs);
+        if ((currentMainGroupCatalogsBySignature.get(signature) || []).length > 0) {
+            updatedSubgroupNames.push(subgroupName);
+            return;
+        }
+
+        newSubgroupNames.push(subgroupName);
     });
 
     return {

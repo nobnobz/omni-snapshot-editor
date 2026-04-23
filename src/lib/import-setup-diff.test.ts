@@ -68,7 +68,9 @@ describe("import setup basic main-group diff", () => {
                 Existing: ["movie:a"],
             },
             currentMainGroupSubgroupNames: ["Existing"],
-            importedSubgroupNames: ["Existing"],
+            importedSubgroups: {
+                Existing: { catalogs: ["movie:a"] },
+            },
         })).toEqual({
             newSubgroupNames: [],
             updatedSubgroupNames: [],
@@ -82,7 +84,9 @@ describe("import setup basic main-group diff", () => {
                 Existing: ["movie:a"],
             },
             currentMainGroupSubgroupNames: [],
-            importedSubgroupNames: ["Existing"],
+            importedSubgroups: {
+                Existing: { catalogs: ["movie:a"] },
+            },
         })).toEqual({
             newSubgroupNames: [],
             updatedSubgroupNames: ["Existing"],
@@ -95,7 +99,9 @@ describe("import setup basic main-group diff", () => {
             currentCatalogGroups: {
                 Existing: ["movie:a"],
             },
-            importedSubgroupNames: ["Existing"],
+            importedSubgroups: {
+                Existing: { catalogs: ["movie:a"] },
+            },
         })).toEqual({
             newSubgroupNames: [],
             updatedSubgroupNames: ["Existing"],
@@ -107,10 +113,31 @@ describe("import setup basic main-group diff", () => {
         expect(classifyImportSetupMainGroupSubgroups({
             currentCatalogGroups: {},
             currentMainGroupSubgroupNames: [],
-            importedSubgroupNames: ["Fresh"],
+            importedSubgroups: {
+                Fresh: { catalogs: ["movie:b"] },
+            },
         })).toEqual({
             newSubgroupNames: ["Fresh"],
             updatedSubgroupNames: [],
+            unchangedSubgroupNames: [],
+        });
+    });
+
+    it("marks renamed subgroups as updates when the catalogs still match an existing subgroup", () => {
+        expect(classifyImportSetupMainGroupSubgroups({
+            currentCatalogGroups: {
+                "Old Name": ["movie:a", "movie:b"],
+            },
+            currentMainGroupCatalogs: {
+                "Old Name": ["movie:a", "movie:b"],
+            },
+            currentMainGroupSubgroupNames: ["Old Name"],
+            importedSubgroups: {
+                "New Name": { catalogs: ["movie:b", "movie:a"] },
+            },
+        })).toEqual({
+            newSubgroupNames: [],
+            updatedSubgroupNames: ["New Name"],
             unchangedSubgroupNames: [],
         });
     });

@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.7] - 2026-04-23
+### Changed
+- Bumped the in-app version display to `v0.6.7`.
+- Refined the update flow copy in the UI to better match the simplified Basic and Advanced import flow.
+
+### Fixed
+- Fixed the update-from-template process so renamed main groups and layout changes are recognized as updates instead of new groups.
+- Improved main-group matching so layout updates land in the existing `main_catalog_groups` entry without disturbing subgroup order.
+
 ## [0.6.6] - 2026-04-18
 ### Added
 - Prepared the UME v3.0 release notes and refreshed the template guidance in the editor docs.

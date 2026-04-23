@@ -123,7 +123,7 @@ export function Documentation({ headerAction, onOpenInstallGuide }: Documentatio
         {
             title: "Update from Template",
             description:
-                "Sync groups from another setup while preserving your own structure.",
+                "Sync groups from another setup with clearer matching and cleaner review.",
             icon: RefreshCcw,
         },
     ];

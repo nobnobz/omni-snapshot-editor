@@ -70,6 +70,65 @@ const mutateAssignSubgroup = (draft: MutableState, name: string, targetMainGroup
     }
 };
 
+const buildMainGroupSignature = (
+    group: { posterType?: unknown; posterSize?: unknown; subgroupNames?: unknown },
+    catalogGroups: Record<string, unknown>
+) => {
+    const subgroupNames = normalizeSubgroupNames(
+        group.subgroupNames,
+        undefined,
+        new Set(Object.keys(catalogGroups))
+    );
+
+    return JSON.stringify({
+        posterType: typeof group.posterType === "string" ? group.posterType : "",
+        posterSize: typeof group.posterSize === "string" ? group.posterSize : "",
+        subgroupSignatures: subgroupNames
+            .map((subgroupName) => JSON.stringify((Array.isArray(catalogGroups[subgroupName]) ? catalogGroups[subgroupName] : []).filter((catalogId): catalogId is string => typeof catalogId === "string").slice().sort((left, right) => left.localeCompare(right))))
+            .sort((left, right) => left.localeCompare(right)),
+    });
+};
+
+const updateMainGroupLayout = (group: MutableState[string], incomingMainGroup: { name?: string; posterType?: string; posterSize?: string }) => {
+    if (!group || typeof group !== "object") return;
+
+    if (incomingMainGroup.name !== undefined && group.name !== incomingMainGroup.name) {
+        group.name = incomingMainGroup.name;
+    }
+    if (incomingMainGroup.posterType !== undefined) {
+        group.posterType = incomingMainGroup.posterType;
+    }
+    if (incomingMainGroup.posterSize !== undefined) {
+        group.posterSize = incomingMainGroup.posterSize;
+    }
+};
+
+const updateExistingMainGroupByUuid = (
+    draft: MutableState,
+    existingUuid: string,
+    incomingMainGroup: { name?: string; posterType?: string; posterSize?: string }
+) => {
+    updateMainGroupLayout(draft.main_catalog_groups[existingUuid], incomingMainGroup);
+};
+
+const updateExistingMainGroupByName = (
+    draft: MutableState,
+    existingUuid: string,
+    incomingMainGroup: { posterType?: string; posterSize?: string },
+    incomingSubgroups: string[]
+) => {
+    if (incomingMainGroup.posterType) {
+        draft.main_catalog_groups[existingUuid].posterType = incomingMainGroup.posterType;
+    }
+    if (incomingMainGroup.posterSize) {
+        draft.main_catalog_groups[existingUuid].posterSize = incomingMainGroup.posterSize;
+    }
+
+    incomingSubgroups.forEach((subgroupName) => {
+        mutateAssignSubgroup(draft, subgroupName, existingUuid);
+    });
+};
+
 const mutateRenameGroup = (draft: MutableState, oldName: string, newName: string) => {
     if (oldName === newName) return;
 
@@ -533,34 +592,59 @@ export function importGroups(
             mutateRenameGroup(draft, previousName, incomingName);
         });
 
+        const incomingCatalogGroups = Object.fromEntries(
+            Object.entries(payload.subgroups).map(([name, subgroup]) => [
+                name,
+                subgroup.catalogs || [],
+            ])
+        );
+
+        const existingMgByUuid: Record<string, string> = {};
         const existingMgByName: Record<string, string> = {};
+        const existingMgBySignature: Record<string, string[]> = {};
         Object.entries(draft.main_catalog_groups as Record<string, unknown>).forEach(([uid, mainGroup]) => {
             if (!mainGroup || typeof mainGroup !== "object") return;
+            existingMgByUuid[uid] = uid;
             const maybeName = (mainGroup as { name?: unknown }).name;
             if (typeof maybeName === "string" && maybeName) {
                 existingMgByName[maybeName] = uid;
             }
+            const signature = buildMainGroupSignature(mainGroup as { posterType?: unknown; posterSize?: unknown; subgroupNames?: unknown }, draft.catalog_groups || {});
+            if (!existingMgBySignature[signature]) {
+                existingMgBySignature[signature] = [];
+            }
+            existingMgBySignature[signature].push(uid);
         });
         const resolvedMainGroupUuids: Record<string, string> = {};
+        const usedExistingMainGroupUuids = new Set<string>();
 
         Object.keys(payload.mainGroups).forEach((uuid) => {
             const incomingMainGroup = payload.mainGroups[uuid];
             const incomingSubgroups = [...(incomingMainGroup.subgroupNames || [])];
-            const existingUuid = existingMgByName[incomingMainGroup.name];
+            const existingUuidById = existingMgByUuid[uuid];
+            const incomingSignature = buildMainGroupSignature(incomingMainGroup, incomingCatalogGroups);
+            const existingUuidBySignature = (existingMgBySignature[incomingSignature] || []).find((candidateUuid) => !usedExistingMainGroupUuids.has(candidateUuid));
+            const existingUuidByName = existingMgByName[incomingMainGroup.name];
+            const existingUuid = existingUuidById || existingUuidBySignature || existingUuidByName;
 
-            if (existingUuid) {
+            if (existingUuidById) {
                 resolvedMainGroupUuids[uuid] = existingUuid;
+                usedExistingMainGroupUuids.add(existingUuid);
+                updateExistingMainGroupByUuid(draft, existingUuid, incomingMainGroup);
+                return;
+            }
 
-                if (incomingMainGroup.posterType) {
-                    draft.main_catalog_groups[existingUuid].posterType = incomingMainGroup.posterType;
-                }
-                if (incomingMainGroup.posterSize) {
-                    draft.main_catalog_groups[existingUuid].posterSize = incomingMainGroup.posterSize;
-                }
+            if (existingUuidBySignature) {
+                resolvedMainGroupUuids[uuid] = existingUuidBySignature;
+                usedExistingMainGroupUuids.add(existingUuidBySignature);
+                updateExistingMainGroupByUuid(draft, existingUuidBySignature, incomingMainGroup);
+                return;
+            }
 
-                incomingSubgroups.forEach((subgroupName) => {
-                    mutateAssignSubgroup(draft, subgroupName, existingUuid);
-                });
+            if (existingUuidByName) {
+                resolvedMainGroupUuids[uuid] = existingUuidByName;
+                usedExistingMainGroupUuids.add(existingUuidByName);
+                updateExistingMainGroupByName(draft, existingUuidByName, incomingMainGroup, incomingSubgroups);
                 return;
             }
 

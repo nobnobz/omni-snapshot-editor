@@ -245,6 +245,139 @@ describe('Mutations Library', () => {
         expect(newState.main_catalog_groups["incoming-main"].subgroupNames).toEqual(["Existing Subgroup"]);
     });
 
+    it('importGroups updates an existing main group layout by UUID without rewriting subgroup order', () => {
+        const initialState = {
+            main_catalog_groups: {
+                "studios-uuid": {
+                    name: "Legacy Studios",
+                    subgroupNames: ["Studio A", "Studio B"],
+                    posterType: "Poster",
+                    posterSize: "Small"
+                }
+            },
+            main_group_order: ["studios-uuid"],
+            subgroup_order: {
+                "studios-uuid": ["Studio A", "Studio B"]
+            },
+            catalog_groups: {
+                "Studio A": ["movie:one"],
+                "Studio B": ["movie:two"]
+            },
+            catalog_group_order: ["Studio A", "Studio B"],
+            catalog_group_image_urls: {},
+            custom_catalog_names: {}
+        };
+
+        const newState = importGroups({
+            mainGroups: {
+                "studios-uuid": {
+                    name: "Studios",
+                    subgroupNames: ["Studio B", "Studio A"],
+                    posterType: "Landscape",
+                    posterSize: "Small"
+                }
+            },
+            subgroups: {},
+            standaloneAssignments: {},
+        }, initialState);
+
+        expect(newState.main_catalog_groups["studios-uuid"].posterType).toBe("Landscape");
+        expect(newState.main_catalog_groups["studios-uuid"].posterSize).toBe("Small");
+        expect(newState.main_catalog_groups["studios-uuid"].subgroupNames).toEqual(["Studio A", "Studio B"]);
+        expect(newState.subgroup_order["studios-uuid"]).toEqual(["Studio A", "Studio B"]);
+        expect(Object.keys(newState.main_catalog_groups)).toEqual(["studios-uuid"]);
+    });
+
+    it('importGroups renames an existing main group by UUID without rewriting subgroup order', () => {
+        const initialState = {
+            main_catalog_groups: {
+                "studios-uuid": {
+                    name: "Legacy Studios",
+                    subgroupNames: ["Studio A", "Studio B"],
+                    posterType: "Poster",
+                    posterSize: "Small"
+                }
+            },
+            main_group_order: ["studios-uuid"],
+            subgroup_order: {
+                "studios-uuid": ["Studio A", "Studio B"]
+            },
+            catalog_groups: {
+                "Studio A": ["movie:one"],
+                "Studio B": ["movie:two"]
+            },
+            catalog_group_order: ["Studio A", "Studio B"],
+            catalog_group_image_urls: {},
+            custom_catalog_names: {}
+        };
+
+        const newState = importGroups({
+            mainGroups: {
+                "studios-uuid": {
+                    name: "Studios",
+                    subgroupNames: ["Studio A", "Studio B"],
+                    posterType: "Poster",
+                    posterSize: "Small"
+                }
+            },
+            subgroups: {},
+            standaloneAssignments: {},
+        }, initialState);
+
+        expect(newState.main_catalog_groups["studios-uuid"].name).toBe("Studios");
+        expect(newState.main_catalog_groups["studios-uuid"].posterType).toBe("Poster");
+        expect(newState.main_catalog_groups["studios-uuid"].posterSize).toBe("Small");
+        expect(newState.main_catalog_groups["studios-uuid"].subgroupNames).toEqual(["Studio A", "Studio B"]);
+        expect(newState.subgroup_order["studios-uuid"]).toEqual(["Studio A", "Studio B"]);
+        expect(Object.keys(newState.main_catalog_groups)).toEqual(["studios-uuid"]);
+    });
+
+    it('importGroups reuses an existing main group by content signature when the template UUID changed', () => {
+        const initialState = {
+            main_catalog_groups: {
+                "legacy-lists-uuid": {
+                    name: "Legacy Lists",
+                    subgroupNames: ["List A", "List B"],
+                    posterType: "Poster",
+                    posterSize: "Small"
+                }
+            },
+            main_group_order: ["legacy-lists-uuid"],
+            subgroup_order: {
+                "legacy-lists-uuid": ["List A", "List B"]
+            },
+            catalog_groups: {
+                "List A": ["movie:one"],
+                "List B": ["movie:two"]
+            },
+            catalog_group_order: ["List A", "List B"],
+            catalog_group_image_urls: {},
+            custom_catalog_names: {}
+        };
+
+        const newState = importGroups({
+            mainGroups: {
+                "incoming-lists-uuid": {
+                    name: "Lists",
+                    subgroupNames: ["List A", "List B"],
+                    posterType: "Poster",
+                    posterSize: "Small"
+                }
+            },
+            subgroups: {
+                "List A": { catalogs: ["movie:one"] },
+                "List B": { catalogs: ["movie:two"] },
+            },
+            standaloneAssignments: {},
+        }, initialState);
+
+        expect(newState.main_catalog_groups["legacy-lists-uuid"].name).toBe("Lists");
+        expect(newState.main_catalog_groups["legacy-lists-uuid"].subgroupNames).toEqual(["List A", "List B"]);
+        expect(newState.subgroup_order["legacy-lists-uuid"]).toEqual(["List A", "List B"]);
+        expect(Object.keys(newState.main_catalog_groups)).toEqual(["legacy-lists-uuid"]);
+        expect(newState.main_catalog_groups["incoming-lists-uuid"]).toBeUndefined();
+    });
+
     it('importGroups updates catalogs without touching an existing subgroup image when only catalog overwrite is requested', () => {
         const initialState = {
             main_catalog_groups: {},
