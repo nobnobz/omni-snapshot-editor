@@ -9,6 +9,10 @@ export function getTemplateDisplay(templateName: string, templateId?: string): T
   const version = templateName.match(VERSION_REGEX)?.[0] ?? null;
   const normalizedId = (templateId || "").toLowerCase();
 
+  if (normalizedId.includes("formatter") || /aiostreams formatter/i.test(templateName)) {
+    return { label: "UME AIOStreams Formatter", version };
+  }
+
   if (normalizedId.includes("ume-main") || normalizedId.includes("ume-omni") || /omni[- ]snapshot/i.test(templateName)) {
     return { label: "UME Omni Template", version };
   }

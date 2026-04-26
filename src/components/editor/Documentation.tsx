@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConfig } from "@/context/ConfigContext";
-import { downloadTemplateFile, shouldOfferTemplateUrlChoice } from "@/lib/template-download";
+import { AIOSTREAMS_FORMATTER_DOWNLOAD_URL, downloadTemplateFile, shouldOfferTemplateUrlChoice } from "@/lib/template-download";
 import { getTemplateDisplay } from "@/lib/template-display";
 import { FALLBACK_TEMPLATE_URLS, findTemplateByKind } from "@/lib/template-manifest";
 import { editorHover } from "@/components/editor/ui/style-contract";
@@ -85,6 +85,13 @@ export function Documentation({ headerAction, onOpenInstallGuide }: Documentatio
             manifestName: aiosTemplate?.name || "UME AIOStreams Template",
             url: aiosTemplate?.url || "",
             version: aiosTemplate?.version,
+        },
+        {
+            name: "AIOStreams Formatter v3.0",
+            id: "aiostreams-formatter",
+            manifestName: "UME AIOStreams Formatter v3.0",
+            url: AIOSTREAMS_FORMATTER_DOWNLOAD_URL,
+            version: "v3.0",
         },
     ];
 

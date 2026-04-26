@@ -44,7 +44,7 @@ import {
 } from "@/lib/mdblist-ratings";
 import type { OmniConfig } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { downloadTemplateFile, shouldOfferTemplateUrlChoice } from "@/lib/template-download";
+import { AIOSTREAMS_FORMATTER_DOWNLOAD_URL, downloadTemplateFile, shouldOfferTemplateUrlChoice } from "@/lib/template-download";
 import { getTemplateDisplay } from "@/lib/template-display";
 import { editorHover, editorLoader, editorSurface } from "@/components/editor/ui/style-contract";
 import { EditorNotice } from "@/components/editor/ui/EditorNotice";
@@ -531,6 +531,14 @@ export function ConfigLoader() {
             url: latestAIOS?.url || "",
             version: latestAIOS?.version || latestAIOSDisplay?.version || null,
             isAvailable: !!latestAIOS?.url,
+        },
+        {
+            type: "single",
+            id: "ume-aiostreams-formatter",
+            name: "UME AIOStreams Formatter v3.0",
+            url: AIOSTREAMS_FORMATTER_DOWNLOAD_URL,
+            version: "v3.0",
+            isAvailable: true,
         },
     ];
 

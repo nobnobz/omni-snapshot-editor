@@ -1,6 +1,9 @@
 import { matchesTemplateKind } from "./template-manifest";
 import { fetchTextWithLimits } from "./remote-fetch";
 
+export const AIOSTREAMS_FORMATTER_DOWNLOAD_URL =
+  "https://raw.githubusercontent.com/nobnobz/Omni-Template-Bot-Bid-Raiser/main/Formatter/omni-ume-formatter-v3.0.json";
+
 const sanitizeTemplateFilenameSegment = (value: string) =>
   value
     .toLowerCase()
@@ -67,7 +70,7 @@ export const buildTemplateDownloadFilename = (templateName: string, version?: st
 };
 
 export const shouldOfferTemplateUrlChoice = (templateId: string, templateName: string) =>
-  matchesTemplateKind(`${templateId} ${templateName}`, "aiostreams");
+  matchesTemplateKind(`${templateId} ${templateName}`, "aiostreams") && !/formatter/i.test(`${templateId} ${templateName}`);
 
 export const copyTemplateUrl = async (templateUrl: string) => {
   if (typeof navigator === "undefined" || !navigator.clipboard) {
