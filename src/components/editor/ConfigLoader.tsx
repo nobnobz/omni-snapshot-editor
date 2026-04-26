@@ -535,7 +535,7 @@ export function ConfigLoader() {
         {
             type: "single",
             id: "ume-aiostreams-formatter",
-            name: "UME AIOStreams Formatter v3.0",
+            name: "UME AIOStreams Formatter",
             url: AIOSTREAMS_FORMATTER_DOWNLOAD_URL,
             version: "v3.0",
             isAvailable: true,

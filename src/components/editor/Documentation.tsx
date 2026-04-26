@@ -87,9 +87,9 @@ export function Documentation({ headerAction, onOpenInstallGuide }: Documentatio
             version: aiosTemplate?.version,
         },
         {
-            name: "AIOStreams Formatter v3.0",
+            name: "AIOStreams Formatter",
             id: "aiostreams-formatter",
-            manifestName: "UME AIOStreams Formatter v3.0",
+            manifestName: "UME AIOStreams Formatter",
             url: AIOSTREAMS_FORMATTER_DOWNLOAD_URL,
             version: "v3.0",
         },
